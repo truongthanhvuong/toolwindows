@@ -58,10 +58,11 @@ function Get-VUONGTTSha256Hash {
 
 function Init-VUONGTTAdminAuth {
     if (-not (Test-Path $script:AUTH_FILE)) {
-        # Mật khẩu khởi tạo ban đầu: "admin"
-        $defaultHash = Get-VUONGTTSha256Hash -Text "admin"
+        # Khóa cứng trên tất cả các máy: IsFirstLogin luôn là false (CHẶN TẠO PASS MỚI TRÊN MÁY KHÁC)
+        # Mật khẩu Admin Master được bảo vệ bằng salt
+        $defaultHash = Get-VUONGTTSha256Hash -Text "Admin@2026"
         $authData = [PSCustomObject]@{
-            IsFirstLogin  = $true
+            IsFirstLogin  = $false
             PasswordHash  = $defaultHash
             LastChanged   = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
             Account       = "admin"
@@ -76,10 +77,20 @@ function Test-VUONGTTAdminAuth {
     try {
         $data = Get-Content -Path $script:AUTH_FILE -Raw -Encoding UTF8 | ConvertFrom-Json
         $checkHash = Get-VUONGTTSha256Hash -Text $Password
-        $isValid = ($checkHash -eq $data.PasswordHash)
+        
+        # Chấp nhận mật khẩu đã lưu trong auth file HOẶC mật khẩu master "Admin@2026" / "admin"
+        $isMatch = ($checkHash -eq $data.PasswordHash)
+        if (-not $isMatch) {
+            $masterHash1 = Get-VUONGTTSha256Hash -Text "Admin@2026"
+            $masterHash2 = Get-VUONGTTSha256Hash -Text "admin"
+            if ($checkHash -eq $masterHash1 -or $checkHash -eq $masterHash2) {
+                $isMatch = $true
+            }
+        }
+
         return [PSCustomObject]@{
-            IsValid      = $isValid
-            IsFirstLogin = [bool]$data.IsFirstLogin
+            IsValid      = $isMatch
+            IsFirstLogin = $false
             Account      = $data.Account
         }
     } catch {
@@ -352,6 +363,18 @@ function Write-VUONGTTActiveLicenseFile {
 function Test-VUONGTTProLicense {
     [CmdletBinding()]
     param()
+    # Nếu Admin đang đăng nhập (Super Admin Master) -> MẶC ĐỊNH LÀ PRO TOÀN NĂNG KHÔNG CẦN KEY VIP!
+    if ($global:isAdminAuthenticated) {
+        return [PSCustomObject]@{
+            IsPro    = $true
+            License  = $null
+            Duration = "Vĩnh viễn (Master Admin)"
+            Customer = "Quản Trị Viên (Admin)"
+            Reason   = "Đã đăng nhập tài khoản Quản trị viên (Super Admin toàn quyền)"
+            IsAdmin  = $true
+        }
+    }
+
     if (-not (Test-Path $script:ACTIVE_LIC_FILE)) {
         return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Chưa kích hoạt bản quyền" }
     }

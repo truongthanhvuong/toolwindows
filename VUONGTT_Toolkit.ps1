@@ -255,14 +255,18 @@ function Switch-Tab {
     # GATEKEEPER 2: PRO FEATURE ACCESS CONTROL
     # -------------------------------------------------------------
     if ($TargetTag -ne "AdminPortal") {
-        $policies = Get-VUONGTTFeaturePolicies
-        $policy = $policies | Where-Object { $_.Id -eq $TargetTag }
-        if ($policy -and $policy.Tier -eq "PRO") {
-            $isPro = (Test-VUONGTTProLicense).IsPro
-            if (-not $isPro) {
-                $featureName = if ($pageTitlesVI.ContainsKey($TargetTag)) { $pageTitlesVI[$TargetTag].Title } else { $TargetTag }
-                Show-VUONGTTLicenseActivationModal -PromptNotice "Chức năng '$featureName' thuộc phiên bản PRO! Vui lòng nhập License Key để kích hoạt." -TargetNextTab $TargetTag
-                return
+        # NẾU ADMIN ĐANG ĐĂNG NHẬP ($global:isAdminAuthenticated = $true):
+        # MẶC ĐỊNH SỞ HỮU TOÀN BỘ QUYỀN VIP, DÙNG MỌI TÍNH NĂNG KHÔNG CẦN KEY VIP!
+        if (-not $global:isAdminAuthenticated) {
+            $policies = Get-VUONGTTFeaturePolicies
+            $policy = $policies | Where-Object { $_.Id -eq $TargetTag }
+            if ($policy -and $policy.Tier -eq "PRO") {
+                $isPro = (Test-VUONGTTProLicense).IsPro
+                if (-not $isPro) {
+                    $featureName = if ($pageTitlesVI.ContainsKey($TargetTag)) { $pageTitlesVI[$TargetTag].Title } else { $TargetTag }
+                    Show-VUONGTTLicenseActivationModal -PromptNotice "Chức năng '$featureName' thuộc phiên bản PRO! Vui lòng nhập License Key để kích hoạt." -TargetNextTab $TargetTag
+                    return
+                }
             }
         }
     }
@@ -3264,8 +3268,26 @@ $script:adminPendingTab      = $null
 $script:licensePendingTab    = $null
 
 function Update-VUONGTTLicenseUI {
-    $pro = Test-VUONGTTProLicense
     $conv = [System.Windows.Media.BrushConverter]::new()
+    
+    # TRƯỜNG HỢP 1: ADMIN ĐANG ĐĂNG NHẬP -> VIP TOÀN NĂNG (SUPER ADMIN)
+    if ($global:isAdminAuthenticated) {
+        if ($borderLicenseBadge) {
+            $borderLicenseBadge.Background  = $conv.ConvertFromString("#FEF3C7")
+            $borderLicenseBadge.BorderBrush = $conv.ConvertFromString("#F59E0B")
+        }
+        if ($txtLicenseBadge) {
+            $txtLicenseBadge.Text       = "👑 ADMIN MASTER • TOÀN QUYỀN"
+            $txtLicenseBadge.Foreground = $conv.ConvertFromString("#B45309")
+        }
+        if ($btnActivateLicense) {
+            $btnActivateLicense.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+        return
+    }
+
+    # TRƯỜNG HỢP 2: KIỂM TRA BẢN QUYỀN MÁY BÌNH THƯỜNG
+    $pro = Test-VUONGTTProLicense
     if ($pro.IsPro) {
         if ($borderLicenseBadge) {
             $borderLicenseBadge.Background  = $conv.ConvertFromString("#ECFDF5")
@@ -3298,22 +3320,15 @@ function Show-VUONGTTAdminLoginModal {
     $script:adminPendingTab = $TargetNextTab
     if (-not $modalAdminLogin) { return }
 
-    $authCheck = Test-VUONGTTAdminAuth -Password ""
-    if ($authCheck.IsFirstLogin) {
-        $pnlFirstLoginBanner.Visibility     = [System.Windows.Visibility]::Visible
-        $lblAdminLoginNotice.Text          = "LẦN ĐẦU ĐĂNG NHẬP: Mật khẩu mặc định là 'admin'. Vui lòng nhập mật khẩu mặc định và thiết lập mật khẩu mới ngay bên dưới để bảo mật!"
-        $pnlAdminFirstChangePass.Visibility = [System.Windows.Visibility]::Visible
-        $btnModalLoginSubmit.Content       = "Đổi Pass & Vào Admin"
-    } else {
-        $pnlFirstLoginBanner.Visibility     = [System.Windows.Visibility]::Collapsed
-        $lblAdminLoginNotice.Text          = "Nhập mật khẩu quản trị viên để truy cập Admin Portal"
-        $pnlAdminFirstChangePass.Visibility = [System.Windows.Visibility]::Collapsed
-        $btnModalLoginSubmit.Content       = "Đăng Nhập"
-    }
+    # CHẶN HOÀN TOÀN BẢNG ĐỔI PASS LẦN ĐẦU TRÊN MÁY KHÁC
+    if ($pnlFirstLoginBanner) { $pnlFirstLoginBanner.Visibility = [System.Windows.Visibility]::Collapsed }
+    if ($pnlAdminFirstChangePass) { $pnlAdminFirstChangePass.Visibility = [System.Windows.Visibility]::Collapsed }
+    if ($lblAdminLoginNotice) { $lblAdminLoginNotice.Text = "Nhập mật khẩu quản trị viên để đăng nhập và mở khóa toàn bộ tính năng cao cấp." }
+    if ($btnModalLoginSubmit) { $btnModalLoginSubmit.Content = "Đăng Nhập" }
 
     $pwdAdminLogin.Password        = ""
-    $pwdAdminNewPass.Password      = ""
-    $pwdAdminConfirmPass.Password  = ""
+    if ($pwdAdminNewPass) { $pwdAdminNewPass.Password = "" }
+    if ($pwdAdminConfirmPass) { $pwdAdminConfirmPass.Password = "" }
     $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Collapsed
     $lblAdminLoginError.Text       = ""
 
@@ -3568,9 +3583,10 @@ if ($btnActivateLicense) {
 if ($btnAdminLogout) {
     $btnAdminLogout.Add_Click({
         $global:isAdminAuthenticated = $false
+        Update-VUONGTTLicenseUI
         Switch-Tab -TargetTag "SysInfo"
         $txtFooterStatus.Text = "• [LOGOUT] Đã đăng xuất khỏi Trang Quản Trị Viên."
-        [System.Windows.MessageBox]::Show("Bạn đã đăng xuất khỏi Admin Portal an toàn.", "Đăng Xuất Admin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        [System.Windows.MessageBox]::Show("Bạn đã đăng xuất khỏi Admin Portal an toàn. Hệ thống đã trở về chế độ thông thường.", "Đăng Xuất Admin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
     })
 }
 
@@ -3641,55 +3657,27 @@ if ($btnAdminChangePassSubmit) {
     })
 }
 
-# Modal Login Event Handlers
+# Modal Login Event Handlers (Chặn tạo pass mới trên máy khác - Chỉ xác thực 1 mật khẩu Admin duy nhất)
 if ($btnModalLoginSubmit) {
     $btnModalLoginSubmit.Add_Click({
-        $authCheck = Test-VUONGTTAdminAuth -Password ""
         $inputPass = $pwdAdminLogin.Password
+        if (-not $inputPass) {
+            $lblAdminLoginError.Text = "Vui lòng nhập mật khẩu Quản Trị Viên!"
+            $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
+            return
+        }
 
-        if ($authCheck.IsFirstLogin) {
-            $chkDefault = Test-VUONGTTAdminAuth -Password $inputPass
-            if (-not $chkDefault.IsValid) {
-                $lblAdminLoginError.Text = "Mật khẩu khởi tạo không đúng! Mật khẩu mặc định là 'admin'."
-                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
-                return
-            }
-
-            $newP = $pwdAdminNewPass.Password
-            $cfmP = $pwdAdminConfirmPass.Password
-            if (-not $newP -or $newP.Length -lt 4) {
-                $lblAdminLoginError.Text = "Mật khẩu mới phải có ít nhất 4 ký tự!"
-                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
-                return
-            }
-            if ($newP -ne $cfmP) {
-                $lblAdminLoginError.Text = "Xác nhận mật khẩu mới không khớp!"
-                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
-                return
-            }
-
-            $setRes = Set-VUONGTTAdminPassword -NewPassword $newP
-            if ($setRes) {
-                $global:isAdminAuthenticated = $true
-                $modalAdminLogin.Visibility = [System.Windows.Visibility]::Collapsed
-                [System.Windows.MessageBox]::Show("ĐÃ ĐỔI MẬT KHẨU ADMIN THÀNH CÔNG!`n`nVui lòng ghi nhớ mật khẩu mới để đăng nhập sau này.", "Đổi Mật Khẩu Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
-                $next = if ($script:adminPendingTab) { $script:adminPendingTab } else { "AdminPortal" }
-                Switch-Tab -TargetTag $next
-            } else {
-                $lblAdminLoginError.Text = "Lỗi khi lưu mật khẩu mới. Vui lòng thử lại!"
-                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
-            }
+        $chk = Test-VUONGTTAdminAuth -Password $inputPass
+        if ($chk.IsValid) {
+            $global:isAdminAuthenticated = $true
+            Update-VUONGTTLicenseUI
+            $modalAdminLogin.Visibility = [System.Windows.Visibility]::Collapsed
+            $next = if ($script:adminPendingTab) { $script:adminPendingTab } else { "AdminPortal" }
+            Switch-Tab -TargetTag $next
+            $txtFooterStatus.Text = "• [SUPER ADMIN] Đã đăng nhập quyền Quản trị viên. Toàn bộ tính năng đã được mở khóa VIP!"
         } else {
-            $chk = Test-VUONGTTAdminAuth -Password $inputPass
-            if ($chk.IsValid) {
-                $global:isAdminAuthenticated = $true
-                $modalAdminLogin.Visibility = [System.Windows.Visibility]::Collapsed
-                $next = if ($script:adminPendingTab) { $script:adminPendingTab } else { "AdminPortal" }
-                Switch-Tab -TargetTag $next
-            } else {
-                $lblAdminLoginError.Text = "Mật khẩu Admin không chính xác! Vui lòng thử lại."
-                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
-            }
+            $lblAdminLoginError.Text = "Mật khẩu Admin không chính xác! Vui lòng thử lại."
+            $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
         }
     })
 }

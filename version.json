@@ -1,11 +1,11 @@
 {
-  "version": "20.5.908.35",
+  "version": "20.5.908.36",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Tích hợp Trang Quản Trị Viên (Admin Portal): Bảo mật bằng mật khẩu băm SHA-256, bắt buộc đổi mật khẩu mới trong lần đầu đăng nhập để kiểm soát toàn diện công cụ.",
-    "Hệ thống Phân Quyền Tính Năng Động (Dynamic Free vs PRO Tiers): Cho phép Quản trị viên chuyển đổi tự do 20 tính năng giữa FREE và PRO; tự động khóa và chặn người dùng Free khi truy cập tính năng PRO.",
-    "Động cơ Tạo & Quản Lý License Key Khóa Phần Cứng (Single-Use HWID Lock): Tự động mã hóa gắn chặt License Key với mã phần cứng duy nhất (BIOS + Mainboard + CPU ID) của 1 máy tính, ngăn chặn tuyệt đối việc sao chép hoặc kích hoạt trên máy khác, hỗ trợ tạo, sao chép và xóa key trực tiếp trong Admin Portal.",
-    "Tích hợp giao diện Badge bản quyền động (FREE VERSION / PRO • LIFETIME) và Modal Kích hoạt License Key một chạm siêu mượt."
+    "Cố định Mật khẩu Admin Master & Chặn Tuyệt Đối Tạo Pass Mới Trên Máy Khác: Bảo vệ độc quyền quyền Quản trị viên, loại bỏ hoàn toàn biểu mẫu đổi mật khẩu lần đầu trên máy ngoài, chỉ cho phép đăng nhập bằng 1 mật khẩu Admin duy nhất.",
+    "Chế Độ Super Admin VIP Toàn Quyền: Khi đăng nhập vào tài khoản Admin, hệ thống tự động mở khóa 100% toàn bộ tính năng cao cấp (PRO) mà không cần phải nhập Key VIP hay kích hoạt bản quyền.",
+    "Tự động chuyển đổi Dynamic Badge: Hiển thị huy hiệu '👑 ADMIN MASTER • TOÀN QUYỀN' màu vàng Amber sang trọng khi Admin đang hoạt động.",
+    "Tối ưu hóa bảo mật và đồng bộ hóa kho License Key HWID Single-Use."
   ]
 }

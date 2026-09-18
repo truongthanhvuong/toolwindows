@@ -196,7 +196,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="v20.5.908.35 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="v20.5.908.36 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -2184,25 +2184,21 @@
                         <TextBlock Text="Đăng Nhập Quản Trị Viên" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
                     
-                    <TextBlock x:Name="lblAdminLoginNotice" Text="Nhập mật khẩu quản trị để truy cập Admin Portal" FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12" TextWrapping="Wrap" TextAlignment="Center"/>
+                    <TextBlock x:Name="lblAdminLoginNotice" Text="Nhập mật khẩu quản trị viên để đăng nhập và mở khóa toàn bộ tính năng cao cấp." FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,14" TextWrapping="Wrap" TextAlignment="Center"/>
 
-                    <!-- First login alert banner -->
-                    <Border x:Name="pnlFirstLoginBanner" Background="#FEF3C7" BorderBrush="#FCD34D" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,12" Visibility="Collapsed">
-                        <TextBlock Text="⚠️ LẦN ĐẦU ĐĂNG NHẬP: Mật khẩu mặc định là 'admin'. Bạn cần đổi mật khẩu mới để bắt đầu sử dụng Admin Portal!" FontSize="11.5" Foreground="#92400E" TextWrapping="Wrap"/>
-                    </Border>
+                    <!-- First login alert banner (Đã chặn vĩnh viễn trên máy khác) -->
+                    <Border x:Name="pnlFirstLoginBanner" Visibility="Collapsed" Height="0" Margin="0"/>
 
-                    <!-- Normal Password Field -->
+                    <!-- Normal Password Field (Ô nhập duy nhất) -->
                     <StackPanel x:Name="pnlAdminNormalLogin">
-                        <TextBlock Text="Mật khẩu Admin:" FontWeight="Bold" FontSize="13" Margin="0,0,0,4"/>
-                        <PasswordBox x:Name="pwdAdminLogin" Height="34" FontSize="14" VerticalContentAlignment="Center" Margin="0,0,0,12"/>
+                        <TextBlock Text="Mật khẩu Quản Trị Viên (Admin):" FontWeight="Bold" FontSize="13" Margin="0,0,0,6"/>
+                        <PasswordBox x:Name="pwdAdminLogin" Height="36" FontSize="14" VerticalContentAlignment="Center" Margin="0,0,0,12"/>
                     </StackPanel>
 
-                    <!-- Change Password Fields (for first login mandatory change) -->
-                    <StackPanel x:Name="pnlAdminFirstChangePass" Visibility="Collapsed">
-                        <TextBlock Text="Mật khẩu mới:" FontWeight="Bold" FontSize="13" Margin="0,0,0,4"/>
-                        <PasswordBox x:Name="pwdAdminNewPass" Height="34" FontSize="14" VerticalContentAlignment="Center" Margin="0,0,0,8"/>
-                        <TextBlock Text="Xác nhận mật khẩu mới:" FontWeight="Bold" FontSize="13" Margin="0,0,0,4"/>
-                        <PasswordBox x:Name="pwdAdminConfirmPass" Height="34" FontSize="14" VerticalContentAlignment="Center" Margin="0,0,0,12"/>
+                    <!-- Change Password Fields (Đã chặn vĩnh viễn khỏi màn hình đăng nhập) -->
+                    <StackPanel x:Name="pnlAdminFirstChangePass" Visibility="Collapsed" Height="0" Margin="0">
+                        <PasswordBox x:Name="pwdAdminNewPass" Visibility="Collapsed"/>
+                        <PasswordBox x:Name="pwdAdminConfirmPass" Visibility="Collapsed"/>
                     </StackPanel>
 
                     <TextBlock x:Name="lblAdminLoginError" Text="" Foreground="#BE123C" FontWeight="Bold" FontSize="12" Margin="0,0,0,10" HorizontalAlignment="Center" Visibility="Collapsed"/>
