@@ -217,3 +217,184 @@ function Invoke-VUONGTTLaunchPartitionTools {
         return "[LỖI] $($_.Exception.Message)"
     }
 }
+
+# =========================================================================
+# KIỂM TRA SỨC KHỎE Ổ CỨNG CHUYÊN SÂU (SMART / RELIABILITY HEALTH CHECK)
+# =========================================================================
+function Get-VUONGTTDiskHealthReport {
+    $log = @()
+    $timestamp = (Get-Date).ToString("HH:mm:ss")
+    $log += "================================================================================"
+    $log += "         BÁO CÁO KIỂM TRA SỨC KHỎE & THÔNG SỐ Ổ CỨNG (VUONGTT SMART)"
+    $log += "================================================================================"
+    
+    try {
+        $pDisks = Get-PhysicalDisk -ErrorAction SilentlyContinue | Sort-Object DeviceId
+        if (-not $pDisks -or $pDisks.Count -eq 0) {
+            $log += "[!] Không truy xuất được PhysicalDisk. Đang thử đọc qua WMI Win32_DiskDrive..."
+            $wDisks = Get-CimInstance Win32_DiskDrive -ErrorAction SilentlyContinue
+            foreach ($wd in $wDisks) {
+                $sz = [math]::Round($wd.Size / 1GB, 1)
+                $log += "• Ổ Đĩa: $($wd.Model) (Index $($wd.Index))"
+                $log += "  - Dung lượng    : $sz GB"
+                $log += "  - Trạng thái WMI: $($wd.Status) [OK]"
+                $log += "  - Giao tiếp     : $($wd.InterfaceType)"
+            }
+        } else {
+            foreach ($pd in $pDisks) {
+                $sz = [math]::Round($pd.Size / 1GB, 1)
+                $healthVI = switch ($pd.HealthStatus) {
+                    "Healthy"   { "🟢 TỐT (Healthy 100% - Hoạt động hoàn hảo)" }
+                    "Warning"   { "🟡 CẢNH BÁO (Warning - Cần sao lưu dữ liệu)" }
+                    "Unhealthy" { "🔴 NGUY HIỂM (Bad Sector / Hỏng hóc)" }
+                    default     { "$($pd.HealthStatus)" }
+                }
+
+                $log += "--------------------------------------------------------------------------------"
+                $log += "💽 Ổ ĐĨA $($pd.DeviceId): $($pd.FriendlyName) ($sz GB)"
+                $log += "• Sức Khỏe Tổng Thể : $healthVI"
+                $log += "• Trạng Thái Vận Hành: $($pd.OperationalStatus)"
+                $log += "• Loại Ổ Đĩa (Media) : $($pd.MediaType) • Chuẩn Kết Nối: $($pd.BusType)"
+
+                # Storage Reliability Counter (Nhiệt độ, Độ mòn, Giờ chạy)
+                try {
+                    $rc = Get-StorageReliabilityCounter -PhysicalDisk $pd -ErrorAction SilentlyContinue
+                    if ($rc) {
+                        if ($rc.Temperature -and $rc.Temperature -gt 0 -and $rc.Temperature -lt 120) {
+                            $tempVal = $rc.Temperature
+                            $tempNote = if ($tempVal -lt 45) { "Mát mẻ" } elseif ($tempVal -lt 60) { "Bình thường" } else { "Nóng - Cần tản nhiệt" }
+                            $log += "• Nhiệt Độ Hoạt Động : $tempVal°C ($tempNote)"
+                        }
+                        if ($null -ne $rc.Wear) {
+                            $remainLife = 100 - $rc.Wear
+                            $log += "• Mức Độ Hao Mòn (Wear): $($rc.Wear)% (Tuổi thọ chip nhớ ước tính còn: $remainLife%)"
+                        }
+                        if ($rc.PowerOnHours -and $rc.PowerOnHours -gt 0) {
+                            $days = [math]::Round($rc.PowerOnHours / 24, 1)
+                            $log += "• Tổng Giờ Hoạt Động : $($rc.PowerOnHours) giờ (~ $days ngày sử dụng liên tục)"
+                        }
+                        $log += "• Số Lỗi Đọc / Ghi   : Đọc: $($rc.ReadErrorsTotal) | Ghi: $($rc.WriteErrorsTotal)"
+                    }
+                } catch {}
+
+                # Thống kê phân vùng đang gán trên ổ đĩa này
+                try {
+                    $parts = Get-Partition -DiskNumber $pd.DeviceId -ErrorAction SilentlyContinue | Where-Object { $_.DriveLetter }
+                    if ($parts) {
+                        $pNames = ($parts | ForEach-Object { "$($_.DriveLetter): (" + [math]::Round($_.Size/1GB, 1) + " GB)" }) -join ", "
+                        $log += "• Phân Vùng Đang Gán : $pNames"
+                    }
+                } catch {}
+            }
+        }
+    } catch {
+        $log += "[LỖI TRUY XUẤT SỨC KHỎE] $($_.Exception.Message)"
+    }
+
+    $log += "================================================================================"
+    $log += "💡 KHUYẾN NGHỊ: Nếu sức khỏe ổ báo Warning hoặc nhiệt độ trên 65°C, hãy sao lưu dữ liệu ngay lập tức."
+    return ($log -join "`n")
+}
+
+# =========================================================================
+# CHIA PHÂN VÙNG Ổ ĐĨA AN TOÀN (SPLIT / SHRINK PARTITION & CREATE NEW VOLUME)
+# =========================================================================
+function Invoke-VUONGTTSplitPartition {
+    param(
+        [string]$SourceDriveLetter = "C",
+        [int]$SplitSizeGB = 30,
+        [string]$NewDriveLetter = "E",
+        [string]$NewVolumeLabel = "DATA"
+    )
+
+    $log = @()
+    $timestamp = (Get-Date).ToString("HH:mm:ss")
+    $srcClean = $SourceDriveLetter.Trim().TrimEnd(':')
+    $newClean = $NewDriveLetter.Trim().TrimEnd(':')
+
+    $log += "[$timestamp] [BẮT ĐẦU CHIA PHÂN VÙNG: TÁCH TỪ Ổ ${srcClean}: -> TẠO Ổ MỚI ${newClean}:]"
+    
+    try {
+        # 1. Kiểm tra phân vùng nguồn
+        $srcPart = Get-Partition -DriveLetter $srcClean -ErrorAction Stop
+        $srcVol  = Get-Volume -DriveLetter $srcClean -ErrorAction Stop
+
+        $freeGB = [math]::Round($srcVol.SizeRemaining / 1GB, 2)
+        $log += "• Ổ nguồn ${srcClean}: Hiện có $freeGB GB dung lượng trống."
+
+        if ($freeGB -le ($SplitSizeGB + 2)) {
+            $log += "[LỖI] Ổ ${srcClean}: không đủ dung lượng trống để tách $SplitSizeGB GB (Cần chừa tối thiểu 2-5GB an toàn cho hệ điều hành)!"
+            return ($log -join "`n")
+        }
+
+        # 2. Thu nhỏ (Shrink) phân vùng nguồn
+        $currentBytes = $srcPart.Size
+        $shrinkBytes  = [int64]$SplitSizeGB * 1GB
+        $targetBytes  = $currentBytes - $shrinkBytes
+
+        $log += "• Đang thu nhỏ phân vùng ${srcClean}: bớt $SplitSizeGB GB..."
+        
+        $resizeOk = $false
+        try {
+            Resize-Partition -DriveLetter $srcClean -Size $targetBytes -ErrorAction Stop
+            $resizeOk = $true
+            $log += "[OK] Thu nhỏ phân vùng ${srcClean}: thành công!"
+        } catch {
+            $log += "[CHÚ Ý] Resize-Partition trả về: $($_.Exception.Message). Đang chuyển sang chế độ DiskPart tự động..."
+            # DiskPart Fallback
+            $dpScript = @"
+select volume $srcClean
+shrink desired=$($SplitSizeGB * 1024)
+exit
+"@
+            $dpFile = [System.IO.Path]::GetTempFileName()
+            Set-Content -Path $dpFile -Value $dpScript -Encoding ASCII
+            $p = Start-Process -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile`"" -Wait -PassThru -NoNewWindow
+            Remove-Item -Path $dpFile -Force -ErrorAction SilentlyContinue
+            if ($p.ExitCode -eq 0) {
+                $resizeOk = $true
+                $log += "[OK] DiskPart thu nhỏ thành công!"
+            } else {
+                $log += "[LỖI] Không thể thu nhỏ ổ ${srcClean}: qua DiskPart (ExitCode: $($p.ExitCode)). Có thể file hệ thống bị khóa hoặc phân mảnh."
+                return ($log -join "`n")
+            }
+        }
+
+        # 3. Tạo phân vùng mới trong khoảng trống vừa tạo
+        $log += "• Đang tạo phân vùng mới ${newClean}: ($SplitSizeGB GB) trên ổ đĩa $($srcPart.DiskNumber)..."
+        Start-Sleep -Milliseconds 800
+
+        try {
+            $newPart = New-Partition -DiskNumber $srcPart.DiskNumber -UseMaximumSize -DriveLetter $newClean -ErrorAction Stop
+            $log += "[OK] Đã tạo thành công phân vùng mới với ký tự ${newClean}:!"
+            
+            $log += "• Đang định dạng NTFS nhanh (Quick Format) với tên nhãn '$NewVolumeLabel'..."
+            Format-Volume -DriveLetter $newClean -FileSystem NTFS -NewFileSystemLabel $NewVolumeLabel -Confirm:$false -ErrorAction Stop | Out-Null
+            $log += "[OK] Định dạng hoàn tất! Ổ đĩa ${newClean}: ('$NewVolumeLabel') đã sẵn sàng sử dụng trong File Explorer!"
+        } catch {
+            $log += "[CHÚ Ý] Lỗi khi tạo qua PowerShell: $($_.Exception.Message). Đang thực thi qua DiskPart..."
+            $dpScript2 = @"
+select disk $($srcPart.DiskNumber)
+create partition primary
+format fs=ntfs quick label="$NewVolumeLabel"
+assign letter=$newClean
+exit
+"@
+            $dpFile2 = [System.IO.Path]::GetTempFileName()
+            Set-Content -Path $dpFile2 -Value $dpScript2 -Encoding ASCII
+            $p2 = Start-Process -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile2`"" -Wait -PassThru -NoNewWindow
+            Remove-Item -Path $dpFile2 -Force -ErrorAction SilentlyContinue
+            if ($p2.ExitCode -eq 0) {
+                $log += "[OK] DiskPart đã tạo và định dạng phân vùng ${newClean}: thành công!"
+            } else {
+                $log += "[LỖI] Không thể tạo phân vùng mới: $($_.Exception.Message)"
+            }
+        }
+
+        $log += "[$timestamp] [HOÀN TẤT] Quá trình chia ổ đĩa hoàn thành 100%!"
+    } catch {
+        $log += "[LỖI NGOẠI LỆ] $($_.Exception.Message)"
+    }
+
+    return ($log -join "`n")
+}

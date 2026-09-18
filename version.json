@@ -1,11 +1,12 @@
 {
-  "version": "20.5.908.39",
+  "version": "20.5.908.40",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Khắc phục triệt để lỗi đăng nhập Admin trên các máy tính khác: Gán chết mật khẩu Quản trị viên Master vĩnh viễn, hoạt động độc lập 100% Offline không cần Internet.",
-    "Bảo mật mật mã cấp độ cao: Mật khẩu Admin Master được mã hóa một chiều Salted SHA-256 an toàn tuyệt đối, không lưu ký tự dạng thô (plain-text) trong mã nguồn.",
-    "Tự động nhận diện và mở khóa toàn bộ quyền VIP (PRO Features) ngay khi Quản trị viên đăng nhập mà không cần nhập thêm bất kỳ License Key nào.",
-    "Hiển thị Dynamic Badge 'ADMIN PORTAL (VIP)' ngay trên thanh tiêu đề ứng dụng khi đang ở chế độ Quản trị viên."
+    "Khắc phục hoàn toàn lỗi phím Enter: Hỗ trợ gõ xong bấm Enter tự động submit ngay trên Modal Đăng nhập Admin, Kích hoạt License, Đổi mật khẩu, Tìm lỗi máy in, Tra cứu CPU và Chia ổ đĩa.",
+    "Chọn từng mã lỗi máy in với hiệu ứng ô được chọn độc quyền: Khi click chọn lỗi cần sửa, duy nhất ô đó phát sáng nổi bật (Red/Amber viền 2.5px), các ô khác tự động làm mờ trung tính.",
+    "Quản lý phân vùng đĩa chuyên nghiệp: Thêm tính năng Kiểm tra sức khỏe ổ cứng chuyên sâu (SMART, nhiệt độ, độ hao mòn chip nhớ) và Chia phân vùng ổ đĩa an toàn (Shrink & Quick Format NTFS).",
+    "Tra cứu CPU + Main nâng cao: Cho phép nhập thủ công có gợi ý tự động, tích hợp bảng so sánh đối đầu chi tiết 2 CPU (Cores/Threads, Xung nhịp, Cache L3, TDP, RAM, Mainboard và điểm Cinebench R23).",
+    "Thêm chức năng Advanced IP Scanner: Quét dải IP mạng LAN siêu tốc, dò tìm thiết bị online, nhận diện Hostname, MAC Address, Vendor nhà sản xuất và Cổng dịch vụ mở (SMB 445, Web 80, RDP 3389, Máy in 9100)."
   ]
 }

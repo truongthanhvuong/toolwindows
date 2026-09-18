@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.35
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.40
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -60,6 +60,7 @@ $corePath = Join-Path $ScriptDir "src\Core"
 . (Join-Path $corePath "AccountingApps.ps1")
 . (Join-Path $corePath "AppUpdater.ps1")
 . (Join-Path $corePath "LicenseManager.ps1")
+. (Join-Path $corePath "IpScanner.ps1")
 
 # Load Main UI XAML
 $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
@@ -155,7 +156,7 @@ $menuButtons = @(
     "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuUninstaller", "btnMenuFonts",
     "btnMenuCleaner", "btnMenuTweaks", "btnMenuPrinterLAN", "btnMenuBackupDriver",
     "btnMenuDevMgmt", "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition",
-    "btnMenuAdmin"
+    "btnMenuIpScanner", "btnMenuAdmin"
 )
 
 # Pages Dictionary
@@ -180,6 +181,7 @@ $pages = @{
     "BitLocker"    = Get-Control "pageBitLocker"
     "AutoWin"      = Get-Control "pageAutoWin"
     "Partition"    = Get-Control "pagePartition"
+    "IpScanner"    = Get-Control "pageIpScanner"
     "AdminPortal"  = Get-Control "pageAdminPortal"
 }
 
@@ -204,6 +206,7 @@ $pageTitlesVI = @{
     "BitLocker"    = @{ Title = "Quản Lý & Tắt BitLocker - EFS"; Icon = "🔒" }
     "AutoWin"      = @{ Title = "Bộ Công Cụ Cài Win & Bypass"; Icon = "🚀" }
     "Partition"    = @{ Title = "Quản Lý Phân Vùng Ổ Đĩa (Partition Pro)"; Icon = "💽" }
+    "IpScanner"    = @{ Title = "Advanced IP Scanner (Quét IP & Dò Thiết Bị LAN)"; Icon = "🌐" }
     "AdminPortal"  = @{ Title = "Quản Trị Viên (Admin Portal)"; Icon = "👑" }
 }
 
@@ -228,6 +231,7 @@ $pageTitlesEN = @{
     "BitLocker"    = @{ Title = "Manage BitLocker - EFS"; Icon = "🔒" }
     "AutoWin"      = @{ Title = "Auto Windows Deploy"; Icon = "🚀" }
     "Partition"    = @{ Title = "Disk Partition Pro"; Icon = "💽" }
+    "IpScanner"    = @{ Title = "Advanced IP Scanner"; Icon = "🌐" }
     "AdminPortal"  = @{ Title = "Administrator Portal"; Icon = "👑" }
 }
 
@@ -1030,29 +1034,80 @@ $btnReloadCustomize.Add_Click({
 })
 
 # =========================================================================
-# MODULE 3: TRA CỨU CPU + MAIN
+# MODULE 3: TRA CỨU CPU + MAIN & SO SÁNH HIỆU NĂNG
 # =========================================================================
-$cmbCpuSearch       = Get-Control "cmbCpuSearch"
-$btnSearchCpu       = Get-Control "btnSearchCpu"
-$txtCpuFoundName    = Get-Control "txtCpuFoundName"
-$txtCpuFoundSocket  = Get-Control "txtCpuFoundSocket"
-$txtCpuFoundArch    = Get-Control "txtCpuFoundArch"
-$txtCpuNotes        = Get-Control "txtCpuNotes"
-$panelChipsets      = Get-Control "panelChipsets"
+$cmbCpuSearch          = Get-Control "cmbCpuSearch"
+$btnSearchCpu          = Get-Control "btnSearchCpu"
+$txtCpuFoundName       = Get-Control "txtCpuFoundName"
+$txtCpuFoundSocket     = Get-Control "txtCpuFoundSocket"
+$txtCpuFoundArch       = Get-Control "txtCpuFoundArch"
+$txtCpuSpecsPill       = Get-Control "txtCpuSpecsPill"
+$txtCpuR23Score        = Get-Control "txtCpuR23Score"
+$txtCpuNotes           = Get-Control "txtCpuNotes"
+$panelChipsets         = Get-Control "panelChipsets"
+
+$cmbCpuCompare1        = Get-Control "cmbCpuCompare1"
+$cmbCpuCompare2        = Get-Control "cmbCpuCompare2"
+$btnCompareCpu         = Get-Control "btnCompareCpu"
+$txtCpuCompareReport   = Get-Control "txtCpuCompareReport"
 
 function Search-CpuInfo {
-    $q = if ($cmbCpuSearch.Text) { $cmbCpuSearch.Text } else { "285K" }
+    $q = if ($cmbCpuSearch -and $cmbCpuSearch.Text) { $cmbCpuSearch.Text.Trim() } else { "285K" }
+    if ([string]::IsNullOrEmpty($q)) { $q = "285K" }
+    
+    # Check enhanced spec DB first
+    $spec = Find-CpuSpecByQuery -Query $q
     $item = Find-CpuOrChipset -Query $q
-    if ($item) {
+
+    if ($spec) {
+        $txtCpuFoundName.Text   = $spec.Name
+        $txtCpuFoundSocket.Text = $spec.Socket
+        $txtCpuFoundArch.Text   = "$($spec.Arch) • Tiến trình $($spec.Node)"
+        if ($txtCpuSpecsPill) {
+            $txtCpuSpecsPill.Text = "$($spec.Cores)C/$($spec.Threads)T • $($spec.BaseClock) - $($spec.BoostClock) • L3 $($spec.L3Cache) • TDP $($spec.TDP)"
+        }
+        if ($txtCpuR23Score) {
+            $txtCpuR23Score.Text = "Cinebench R23: $([string]::Format('{0:N0}', $spec.R23Single)) Single / $([string]::Format('{0:N0}', $spec.R23Multi)) Multi"
+        }
+        if ($txtCpuNotes) {
+            $notesList = @(
+                "- Chuẩn RAM hỗ trợ: $($spec.RAM)",
+                "- Mainboard khuyến nghị: $($spec.Main)",
+                "- Socket: $($spec.Socket) | TDP: $($spec.TDP) | Bộ nhớ đệm L3: $($spec.L3Cache)"
+            )
+            if ($item -and $item.Notes) {
+                $notesList += $item.Notes
+            }
+            $txtCpuNotes.Text = ($notesList -join "`n")
+        }
+    } elseif ($item) {
         $txtCpuFoundName.Text   = $item.DisplayName
         $txtCpuFoundSocket.Text = $item.Socket
         $txtCpuFoundArch.Text   = $item.Arch
-        $txtCpuNotes.Text       = ($item.Notes -join "`n")
+        if ($txtCpuNotes) { $txtCpuNotes.Text = ($item.Notes -join "`n") }
+    }
 
-        # Populate Chipset Badges
+    # Populate Chipset Badges
+    if ($panelChipsets) {
         $panelChipsets.Children.Clear()
         $conv = [System.Windows.Media.BrushConverter]::new()
-        foreach ($c in $item.Chipsets) {
+        $chipsetsToRender = @()
+
+        if ($item -and $item.Chipsets) {
+            $chipsetsToRender = $item.Chipsets
+        } elseif ($spec -and $spec.Main) {
+            $mainList = $spec.Main.Split(',')
+            $isFirst = $true
+            foreach ($m in $mainList) {
+                $chipsetsToRender += [PSCustomObject]@{
+                    Name = $m.Trim()
+                    IsPrimary = $isFirst
+                }
+                $isFirst = $false
+            }
+        }
+
+        foreach ($c in $chipsetsToRender) {
             $bd = New-Object System.Windows.Controls.Border
             $bd.CornerRadius = [System.Windows.CornerRadius]::new(4)
             $bd.Padding      = [System.Windows.Thickness]::new(10, 4, 10, 4)
@@ -1080,8 +1135,32 @@ function Search-CpuInfo {
     }
 }
 
-$btnSearchCpu.Add_Click({ Search-CpuInfo })
-$cmbCpuSearch.Add_SelectionChanged({ Search-CpuInfo })
+if ($btnSearchCpu) { $btnSearchCpu.Add_Click({ Search-CpuInfo }) }
+if ($cmbCpuSearch) {
+    $cmbCpuSearch.Add_SelectionChanged({ Search-CpuInfo })
+    # Enter key to search
+    $cmbCpuSearch.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Enter) {
+            Search-CpuInfo
+            $_.Handled = $true
+        }
+    })
+}
+
+# CPU Side-by-Side Comparison Handler
+if ($btnCompareCpu) {
+    $btnCompareCpu.Add_Click({
+        $q1 = if ($cmbCpuCompare1 -and $cmbCpuCompare1.Text) { $cmbCpuCompare1.Text.Trim() } else { "14400" }
+        $q2 = if ($cmbCpuCompare2 -and $cmbCpuCompare2.Text) { $cmbCpuCompare2.Text.Trim() } else { "9800X3D" }
+        
+        $txtFooterStatus.Text = "• [Đang xử lý] Đang tính toán và so sánh hiệu năng: $q1 VS $q2..."
+        $cmp = Compare-VUONGTTCpu -Cpu1Query $q1 -Cpu2Query $q2
+        if ($txtCpuCompareReport) {
+            $txtCpuCompareReport.Text = $cmp.ReportText
+        }
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tất so sánh đối đầu $($cmp.Cpu1.Name) và $($cmp.Cpu2.Name)!"
+    })
+}
 
 # =========================================================================
 # MODULE 4: CÀI ĐẶT OFFICE (TỰ ĐỘNG)
@@ -1264,23 +1343,26 @@ $printerActionsMap = @(
     @{ Ctl=$btnOpenPrintMgmt2;      Action="open_printmgmt";  DefaultColor="#475569"; Keywords=@("print management", "quan ly in") }
 )
 
-# Active Button Highlight Function
+# Active Button Highlight Function (Chỉ hiệu ứng ô được chọn, các ô khác làm mờ trung tính)
 function Set-ActivePrinterButton {
     param($activeCtl)
     $bc = [System.Windows.Media.BrushConverter]::new()
     foreach ($item in $printerActionsMap) {
         if (-not $item.Ctl) { continue }
         if ($item.Ctl -eq $activeCtl) {
-            # Selected button: Highlight Red (#DC2626) with full opacity
+            # Selected button: Highlight Red (#DC2626) with full opacity and amber highlight border
             $item.Ctl.Background = $bc.ConvertFromString("#DC2626")
             $item.Ctl.Foreground = [System.Windows.Media.Brushes]::White
             $item.Ctl.Opacity = 1.0
+            $item.Ctl.BorderBrush = $bc.ConvertFromString("#F59E0B")
+            $item.Ctl.BorderThickness = [System.Windows.Thickness]::new(2.5)
         } else {
-            # Unselected buttons: restore default theme color
-            $defCol = if ($item.DefaultColor) { $item.DefaultColor } else { "#475569" }
-            $item.Ctl.Background = $bc.ConvertFromString($defCol)
+            # Unselected buttons: Muted dark slate (#334155), no active border, lowered opacity
+            $item.Ctl.Background = $bc.ConvertFromString("#334155")
             $item.Ctl.Foreground = [System.Windows.Media.Brushes]::White
-            $item.Ctl.Opacity = 0.85
+            $item.Ctl.Opacity = 0.55
+            $item.Ctl.BorderBrush = $bc.ConvertFromString("#475569")
+            $item.Ctl.BorderThickness = [System.Windows.Thickness]::new(1)
         }
     }
 }
@@ -1360,6 +1442,14 @@ function Filter-PrinterButtons {
 }
 
 $txtPrinterSearch.Add_TextChanged({ Filter-PrinterButtons })
+$txtPrinterSearch.Add_KeyDown({
+    if ($_.Key -eq [System.Windows.Input.Key]::Enter) {
+        if ($btnAutoFixMatched) {
+            $btnAutoFixMatched.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+            $_.Handled = $true
+        }
+    }
+})
 
 # Auto Fix Matched Error Button
 if ($btnAutoFixMatched) {
@@ -2828,6 +2918,7 @@ if ($btnFixStoreAppX) {
 
 # --- Module 15: Quản Lý Phân Vùng Ổ Đĩa (Partition Wizard Pro) ---
 $btnRefreshDisks       = Get-Control "btnRefreshDisks"
+$btnCheckDiskHealth    = Get-Control "btnCheckDiskHealth"
 $btnOpenDiskMgmt       = Get-Control "btnOpenDiskMgmt"
 $btnOpenDiskPart       = Get-Control "btnOpenDiskPart"
 $btnLaunchMiniTool     = Get-Control "btnLaunchMiniTool"
@@ -2839,6 +2930,13 @@ $txtNewVolumeLabel     = Get-Control "txtNewVolumeLabel"
 $btnChangeLabel        = Get-Control "btnChangeLabel"
 $txtNewDriveLetter     = Get-Control "txtNewDriveLetter"
 $btnChangeDriveLetter  = Get-Control "btnChangeDriveLetter"
+
+$cmbSplitSourceDrive   = Get-Control "cmbSplitSourceDrive"
+$txtSplitSizeGB        = Get-Control "txtSplitSizeGB"
+$cmbSplitNewLetter     = Get-Control "cmbSplitNewLetter"
+$txtSplitNewLabel      = Get-Control "txtSplitNewLabel"
+$btnExecuteSplit       = Get-Control "btnExecuteSplit"
+
 $panelDisksContainer   = Get-Control "panelDisksContainer"
 $txtPartitionLog       = Get-Control "txtPartitionLog"
 $btnClearPartitionLog  = Get-Control "btnClearPartitionLog"
@@ -2847,6 +2945,8 @@ function Refresh-DiskPartitionDisplay {
     if (-not $panelDisksContainer) { return }
     $panelDisksContainer.Children.Clear()
     if ($cmbPartitionDrives) { $cmbPartitionDrives.Items.Clear() }
+    if ($cmbSplitSourceDrive) { $cmbSplitSourceDrive.Items.Clear() }
+    if ($cmbSplitNewLetter) { $cmbSplitNewLetter.Items.Clear() }
 
     $txtFooterStatus.Text = "• [Đang xử lý] Đang nạp danh sách ổ đĩa và phân vùng hệ thống..."
     $diskMap = Get-VUONGTTDiskPartitionMap
@@ -3015,6 +3115,25 @@ function Refresh-DiskPartitionDisplay {
     if ($cmbPartitionDrives -and $cmbPartitionDrives.Items.Count -gt 0) {
         $cmbPartitionDrives.SelectedIndex = 0
     }
+    if ($cmbSplitSourceDrive) {
+        foreach ($l in $lettersAdded) {
+            $cmbSplitSourceDrive.Items.Add($l) | Out-Null
+        }
+        if ($cmbSplitSourceDrive.Items.Count -gt 0) {
+            $cmbSplitSourceDrive.SelectedIndex = 0
+        }
+    }
+    if ($cmbSplitNewLetter) {
+        $allLetters = [char[]]([char]'D'..[char]'Z') | ForEach-Object { [string]$_ }
+        foreach ($cand in $allLetters) {
+            if ($lettersAdded -notcontains $cand) {
+                $cmbSplitNewLetter.Items.Add($cand) | Out-Null
+            }
+        }
+        if ($cmbSplitNewLetter.Items.Count -gt 0) {
+            $cmbSplitNewLetter.SelectedIndex = 0
+        }
+    }
     $txtFooterStatus.Text = "• [OK] Đã hiển thị thông tin $($diskMap.Count) ổ đĩa và $($lettersAdded.Count) phân vùng."
 }
 
@@ -3108,6 +3227,49 @@ if ($btnChangeDriveLetter) {
 if ($btnClearPartitionLog) {
     $btnClearPartitionLog.Add_Click({
         $txtPartitionLog.Text = "Sẵn sàng thực thi các tác vụ phân vùng đĩa và kiểm tra ổ cứng."
+    })
+}
+
+if ($btnCheckDiskHealth) {
+    $btnCheckDiskHealth.Add_Click({
+        $txtPartitionLog.Text = "Đang kiểm tra thông số SMART và sức khỏe chi tiết toàn bộ ổ cứng..."
+        $txtFooterStatus.Text = "• [Đang xử lý] Đang kiểm tra sức khỏe SMART toàn bộ ổ đĩa..."
+        [System.Windows.Forms.Application]::DoEvents()
+        $report = Get-VUONGTTDiskHealthReport
+        $txtPartitionLog.Text = "$report`n`n$($txtPartitionLog.Text)"
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tất kiểm tra sức khỏe SMART ổ cứng!"
+    })
+}
+
+if ($btnExecuteSplit) {
+    $btnExecuteSplit.Add_Click({
+        $srcDrive = if ($cmbSplitSourceDrive -and $cmbSplitSourceDrive.SelectedItem) { $cmbSplitSourceDrive.SelectedItem.ToString() } else { "C" }
+        $splitSize = if ($txtSplitSizeGB -and $txtSplitSizeGB.Text) { [int]$txtSplitSizeGB.Text.Trim() } else { 30 }
+        $newLetter = if ($cmbSplitNewLetter -and $cmbSplitNewLetter.SelectedItem) { $cmbSplitNewLetter.SelectedItem.ToString() } else { "E" }
+        $newLabel = if ($txtSplitNewLabel -and $txtSplitNewLabel.Text) { $txtSplitNewLabel.Text.Trim() } else { "DATA" }
+
+        $confirm = [System.Windows.MessageBox]::Show("BẠN CÓ CHẮC CHẮN MUỐN CHIA PHÂN VÙNG?`n`n• Ổ nguồn thu nhỏ: ${srcDrive}:`n• Cắt bớt: $splitSize GB`n• Tạo ổ mới: ${newLetter}: ('$newLabel')`n`nThao tác này an toàn và không làm mất dữ liệu trên ổ nguồn.", "Xác nhận chia ổ đĩa", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+        $txtFooterStatus.Text = "• [Đang xử lý] Đang thu nhỏ phân vùng ${srcDrive}: và tạo ổ mới ${newLetter}:..."
+        $txtPartitionLog.Text = "Bắt đầu tiến trình chia phân vùng tự động..."
+        [System.Windows.Forms.Application]::DoEvents()
+
+        $res = Invoke-VUONGTTSplitPartition -SourceDriveLetter $srcDrive -SplitSizeGB $splitSize -NewDriveLetter $newLetter -NewVolumeLabel $newLabel
+        $txtPartitionLog.Text = "$res`n`n$($txtPartitionLog.Text)"
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tất chia phân vùng ổ đĩa!"
+        Refresh-DiskPartitionDisplay
+    })
+}
+
+if ($txtSplitSizeGB) {
+    $txtSplitSizeGB.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Enter) {
+            if ($btnExecuteSplit) {
+                $btnExecuteSplit.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+                $_.Handled = $true
+            }
+        }
     })
 }
 
@@ -3684,6 +3846,23 @@ if ($btnAdminChangePassSubmit) {
     })
 }
 
+if ($pwdAdminChangeConfirm) {
+    $pwdAdminChangeConfirm.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Enter -and $btnAdminChangePassSubmit) {
+            $btnAdminChangePassSubmit.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+            $_.Handled = $true
+        }
+    })
+}
+if ($pwdAdminChangeNew) {
+    $pwdAdminChangeNew.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Enter -and $pwdAdminChangeConfirm) {
+            $pwdAdminChangeConfirm.Focus() | Out-Null
+            $_.Handled = $true
+        }
+    })
+}
+
 # Modal Login Event Handlers (Chặn tạo pass mới trên máy khác - Chỉ xác thực 1 mật khẩu Admin duy nhất)
 if ($btnModalLoginSubmit) {
     $btnModalLoginSubmit.Add_Click({
@@ -3705,6 +3884,15 @@ if ($btnModalLoginSubmit) {
         } else {
             $lblAdminLoginError.Text = "Mật khẩu Admin không chính xác! Vui lòng thử lại."
             $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
+        }
+    })
+}
+
+if ($pwdAdminLogin) {
+    $pwdAdminLogin.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Enter -and $btnModalLoginSubmit) {
+            $btnModalLoginSubmit.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+            $_.Handled = $true
         }
     })
 }
@@ -3744,9 +3932,245 @@ if ($btnModalActivateSubmit) {
     })
 }
 
+if ($txtModalLicenseKey) {
+    $txtModalLicenseKey.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Enter -and $btnModalActivateSubmit) {
+            $btnModalActivateSubmit.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+            $_.Handled = $true
+        }
+    })
+}
+
 if ($btnModalActivateCancel) {
     $btnModalActivateCancel.Add_Click({
         $modalActivatePro.Visibility = [System.Windows.Visibility]::Collapsed
+    })
+}
+
+# =========================================================================
+# MODULE 20: ADVANCED IP SCANNER (QUÉT IP & DÒ THIẾT BỊ MẠNG LAN)
+# =========================================================================
+$txtIpScanStart     = Get-Control "txtIpScanStart"
+$txtIpScanEnd       = Get-Control "txtIpScanEnd"
+$btnDetectSubnet    = Get-Control "btnDetectSubnet"
+$btnStartIpScan     = Get-Control "btnStartIpScan"
+$btnStopIpScan      = Get-Control "btnStopIpScan"
+$btnCopySelectedIp  = Get-Control "btnCopySelectedIp"
+$btnOpenSmbShare    = Get-Control "btnOpenSmbShare"
+$btnOpenWebAdmin    = Get-Control "btnOpenWebAdmin"
+$btnExportIpCsv     = Get-Control "btnExportIpCsv"
+$lblIpScanStatus    = Get-Control "lblIpScanStatus"
+$lblIpScanStats     = Get-Control "lblIpScanStats"
+$prgIpScan          = Get-Control "prgIpScan"
+$lstIpDevices       = Get-Control "lstIpDevices"
+
+$global:cancelIpScan = $false
+$global:scannedDevicesList = New-Object System.Collections.ArrayList
+
+function Detect-LocalSubnet {
+    try {
+        $sub = Get-VUONGTTLocalSubnetInfo
+        if ($sub) {
+            if ($txtIpScanStart) { $txtIpScanStart.Text = $sub.StartIP }
+            if ($txtIpScanEnd)   { $txtIpScanEnd.Text   = $sub.EndIP }
+            if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đã nhận diện mạng LAN: $($sub.SubnetPrefix).0/24 (IP máy bạn: $($sub.LocalIP))" }
+        }
+    } catch {}
+}
+
+# Auto-detect subnet on startup
+Detect-LocalSubnet
+
+if ($btnDetectSubnet) {
+    $btnDetectSubnet.Add_Click({
+        Detect-LocalSubnet
+        $txtFooterStatus.Text = "• [OK] Đã nhận diện dải IP mạng LAN cục bộ!"
+    })
+}
+
+if ($txtIpScanStart) {
+    $txtIpScanStart.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Enter -and $btnStartIpScan) {
+            $btnStartIpScan.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+            $_.Handled = $true
+        }
+    })
+}
+if ($txtIpScanEnd) {
+    $txtIpScanEnd.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Enter -and $btnStartIpScan) {
+            $btnStartIpScan.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+            $_.Handled = $true
+        }
+    })
+}
+
+if ($btnStartIpScan) {
+    $btnStartIpScan.Add_Click({
+        $startIp = if ($txtIpScanStart) { $txtIpScanStart.Text.Trim() } else { "192.168.1.1" }
+        $endIp   = if ($txtIpScanEnd)   { $txtIpScanEnd.Text.Trim() }   else { "192.168.1.254" }
+
+        $btnStartIpScan.IsEnabled = $false
+        $btnStopIpScan.IsEnabled  = $true
+        $global:cancelIpScan      = $false
+        $global:scannedDevicesList.Clear()
+        if ($lstIpDevices) { $lstIpDevices.Items.Clear() }
+        if ($prgIpScan)    { $prgIpScan.Value = 0 }
+        if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đang quét dải IP từ $startIp đến $endIp..." }
+        $txtFooterStatus.Text = "• [Đang quét] Đang kiểm tra phản hồi từ các thiết bị trong mạng..."
+
+        [System.Windows.Forms.Application]::DoEvents()
+
+        try {
+            $p1 = $startIp.Split('.')
+            $p2 = $endIp.Split('.')
+            $prefix = "$($p1[0]).$($p1[1]).$($p1[2])"
+            $from = [int]$p1[3]
+            $to   = [int]$p2[3]
+            if ($to -lt $from) { $to = 254 }
+            $total = ($to - $from + 1)
+
+            $arpTable = Get-VUONGTTArpTable
+            $pingers = @()
+
+            for ($i = $from; $i -le $to; $i++) {
+                if ($global:cancelIpScan) { break }
+                $ipStr = "$prefix.$i"
+                $pinger = New-Object System.Net.NetworkInformation.Ping
+                $task = $pinger.SendPingAsync($ipStr, 350)
+                $pingers += [PSCustomObject]@{ IP = $ipStr; Pinger = $pinger; Task = $task }
+
+                if ($pingers.Count -ge 32 -or $i -eq $to) {
+                    [System.Threading.Tasks.Task]::WaitAll(($pingers.Task)) | Out-Null
+                    foreach ($item in $pingers) {
+                        if ($global:cancelIpScan) { break }
+                        $res = $item.Task.Result
+                        if ($res.Status -eq [System.Net.NetworkInformation.IPStatus]::Success) {
+                            $devIp = $item.IP
+                            $mac = if ($arpTable.ContainsKey($devIp)) { $arpTable[$devIp] } else { "-" }
+                            $vendor = Get-VUONGTTMacVendor -MacAddress $mac
+                            $hostname = $devIp
+                            try {
+                                $entry = [System.Net.Dns]::GetHostEntry($devIp)
+                                if ($entry -and $entry.HostName) { $hostname = $entry.HostName }
+                            } catch {}
+
+                            $ports = @()
+                            foreach ($pt in @(445, 80, 3389, 9100)) {
+                                try {
+                                    $tcp = New-Object System.Net.Sockets.TcpClient
+                                    $async = $tcp.BeginConnect($devIp, $pt, $null, $null)
+                                    $ok = $async.AsyncWaitHandle.WaitOne(120, $false)
+                                    if ($ok -and $tcp.Connected) {
+                                        $pName = switch ($pt) { 445 { "SMB" } 80 { "Web" } 3389 { "RDP" } 9100 { "In(9100)" } }
+                                        $ports += "$pName"
+                                    }
+                                    $tcp.Close()
+                                } catch {}
+                            }
+                            $portText = if ($ports.Count -gt 0) { $ports -join ", " } else { "ICMP" }
+
+                            $row = [PSCustomObject]@{
+                                Status     = "🟢 Online"
+                                IP         = $devIp
+                                Hostname   = $hostname
+                                MacAddress = $mac
+                                Vendor     = $vendor
+                                Ports      = $portText
+                                Ping       = "$($res.RoundtripTime) ms"
+                            }
+                            $global:scannedDevicesList.Add($row) | Out-Null
+                            if ($lstIpDevices) { $lstIpDevices.Items.Add($row) | Out-Null }
+                            if ($lblIpScanStats) { $lblIpScanStats.Text = "Tổng thiết bị Online: $($global:scannedDevicesList.Count)" }
+                        }
+                    }
+                    $pingers.Clear()
+                    if ($prgIpScan) {
+                        $pct = [math]::Min(100, [math]::Round((($i - $from + 1) / $total) * 100))
+                        $prgIpScan.Value = $pct
+                    }
+                    [System.Windows.Forms.Application]::DoEvents()
+                }
+            }
+            if ($lblIpScanStatus) {
+                if ($global:cancelIpScan) {
+                    $lblIpScanStatus.Text = "Đã dừng quét IP. Tìm thấy $($global:scannedDevicesList.Count) thiết bị Online."
+                } else {
+                    $lblIpScanStatus.Text = "Quét hoàn tất 100%! Đã tìm thấy $($global:scannedDevicesList.Count) thiết bị Online."
+                }
+            }
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét IP mạng LAN!"
+        } catch {
+            if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Lỗi khi quét: $($_.Exception.Message)" }
+        } finally {
+            $btnStartIpScan.IsEnabled = $true
+            $btnStopIpScan.IsEnabled  = $false
+        }
+    })
+}
+
+if ($btnStopIpScan) {
+    $btnStopIpScan.Add_Click({
+        $global:cancelIpScan = $true
+        if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đang yêu cầu dừng quét..." }
+    })
+}
+
+if ($btnCopySelectedIp) {
+    $btnCopySelectedIp.Add_Click({
+        if ($lstIpDevices -and $lstIpDevices.SelectedItem) {
+            $sel = $lstIpDevices.SelectedItem
+            $clipText = "IP: $($sel.IP) | Hostname: $($sel.Hostname) | MAC: $($sel.MacAddress) | Vendor: $($sel.Vendor)"
+            [System.Windows.Clipboard]::SetText($clipText)
+            $txtFooterStatus.Text = "• [COPY] Đã sao chép thông tin thiết bị $($sel.IP) vào Clipboard!"
+        } else {
+            [System.Windows.MessageBox]::Show("Vui lòng chọn 1 thiết bị trong danh sách để sao chép!", "Thông báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+}
+
+if ($btnOpenSmbShare) {
+    $btnOpenSmbShare.Add_Click({
+        if ($lstIpDevices -and $lstIpDevices.SelectedItem) {
+            $sel = $lstIpDevices.SelectedItem
+            Start-Process "explorer.exe" -ArgumentList "\\$($sel.IP)"
+            $txtFooterStatus.Text = "• [OK] Đang mở thư mục chia sẻ: \\$($sel.IP)"
+        } else {
+            [System.Windows.MessageBox]::Show("Vui lòng chọn 1 thiết bị trong danh sách để mở ổ chia sẻ!", "Thông báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+}
+
+if ($btnOpenWebAdmin) {
+    $btnOpenWebAdmin.Add_Click({
+        if ($lstIpDevices -and $lstIpDevices.SelectedItem) {
+            $sel = $lstIpDevices.SelectedItem
+            Start-Process "http://$($sel.IP)"
+            $txtFooterStatus.Text = "• [OK] Đang mở trang web quản trị: http://$($sel.IP)"
+        }
+    })
+}
+
+if ($btnExportIpCsv) {
+    $btnExportIpCsv.Add_Click({
+        if ($global:scannedDevicesList.Count -eq 0) {
+            [System.Windows.MessageBox]::Show("Chưa có dữ liệu thiết bị nào để xuất báo cáo!", "Thông báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            return
+        }
+        $deskPath = [Environment]::GetFolderPath("Desktop")
+        $csvPath  = Join-Path $deskPath "VUONGTT_LAN_IP_Report_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+        $global:scannedDevicesList | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
+        $txtFooterStatus.Text = "• [CSV] Đã xuất báo cáo thiết bị ra Desktop!"
+        [System.Windows.MessageBox]::Show("Đã xuất báo cáo thành công ra Desktop:`n$csvPath", "Xuất Báo Cáo CSV", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($lstIpDevices) {
+    $lstIpDevices.Add_MouseDoubleClick({
+        if ($lstIpDevices.SelectedItem) {
+            $sel = $lstIpDevices.SelectedItem
+            Start-Process "explorer.exe" -ArgumentList "\\$($sel.IP)"
+        }
     })
 }
 

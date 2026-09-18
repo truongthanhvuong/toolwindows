@@ -175,3 +175,146 @@ function Find-CpuOrChipset {
     # Fallback to first item
     return $script:CPU_MAIN_DATA[0]
 }
+
+# =========================================================================
+# GỢI Ý TÌM KIẾM CPU THÔNG MINH (AUTO-SUGGEST LIST)
+# =========================================================================
+function Get-VUONGTTCpuSuggestions {
+    param([string]$Query)
+    $suggestions = @()
+    $q = if ($Query) { $Query.Trim().ToUpper() } else { "" }
+
+    $allNames = @(
+        "Intel Core Ultra 9 285K", "Intel Core Ultra 7 265K", "Intel Core Ultra 5 245K",
+        "AMD Ryzen 7 9800X3D", "AMD Ryzen 9 9950X", "AMD Ryzen 9 9900X", "AMD Ryzen 7 9700X", "AMD Ryzen 5 9600X",
+        "AMD Ryzen 7 7800X3D", "AMD Ryzen 9 7950X", "AMD Ryzen 9 7900X", "AMD Ryzen 7 7700X", "AMD Ryzen 5 7600X", "AMD Ryzen 5 7500F",
+        "Intel Core i9-14900K", "Intel Core i7-14700K", "Intel Core i5-14600K", "Intel Core i5-14400F", "Intel Core i5-14400",
+        "Intel Core i9-13900K", "Intel Core i7-13700K", "Intel Core i5-13600K", "Intel Core i5-13400F",
+        "Intel Core i9-12900K", "Intel Core i7-12700K", "Intel Core i5-12600K", "Intel Core i5-12400F", "Intel Core i3-12100F",
+        "AMD Ryzen 7 5700X3D", "AMD Ryzen 7 5800X3D", "AMD Ryzen 9 5950X", "AMD Ryzen 7 5700X", "AMD Ryzen 5 5600X", "AMD Ryzen 5 5600", "AMD Ryzen 5 3600",
+        "Intel Core i5-10400F", "Intel Core i5-11400F", "Intel Core i7-10700K", "Intel Core i5-9400F", "Intel Core i5-8400", "Intel Core i5-6500"
+    )
+
+    if ([string]::IsNullOrWhiteSpace($q)) {
+        return @("Intel Core Ultra 9 285K", "AMD Ryzen 7 9800X3D", "Intel Core i5-14400F", "AMD Ryzen 5 7600X", "Intel Core i5-12400F", "AMD Ryzen 5 5600X")
+    }
+
+    foreach ($name in $allNames) {
+        if ($name.ToUpper().Contains($q) -or $q.Contains($name.ToUpper())) {
+            $suggestions += $name
+        }
+    }
+
+    # If few matches, scan database keywords
+    if ($suggestions.Count -lt 3) {
+        foreach ($item in $script:CPU_MAIN_DATA) {
+            foreach ($kw in $item.Keywords) {
+                if ($kw.ToUpper().Contains($q) -and ($suggestions -notcontains $item.DisplayName)) {
+                    $suggestions += $item.DisplayName
+                    break
+                }
+            }
+        }
+    }
+
+    if ($suggestions.Count -eq 0) {
+        $suggestions = @("Intel Core Ultra 9 285K", "AMD Ryzen 7 9800X3D", "Intel Core i5-14400F")
+    }
+
+    return ($suggestions | Select-Object -Unique -First 8)
+}
+
+# =========================================================================
+# THÔNG SỐ ĐỐI ĐẦU & SO SÁNH 2 CPU (SIDE-BY-SIDE CPU COMPARISON)
+# =========================================================================
+$script:CPU_SPEC_DB = @{
+    "285K" = @{ Name="Intel Core Ultra 9 285K"; Socket="LGA 1851"; Node="TSMC N3B (3nm)"; Cores="24 (8P + 16E)"; Threads="24"; BaseClock="3.7 GHz"; BoostClock="5.7 GHz"; L3Cache="36 MB"; TDP="125W (Max 250W)"; RAM="DDR5-6400"; iGPU="Intel Graphics Xe (4 Xe-cores)"; R23Single=2350; R23Multi=43000; Main="Z890, B860, H810" };
+    "9800X3D" = @{ Name="AMD Ryzen 7 9800X3D"; Socket="Socket AM5"; Node="TSMC 4nm (Zen 5)"; Cores="8 (8P)"; Threads="16"; BaseClock="4.7 GHz"; BoostClock="5.2 GHz"; L3Cache="96 MB (3D V-Cache)"; TDP="120W"; RAM="DDR5-6000 EXPO"; iGPU="Radeon Graphics (2 CUs)"; R23Single=2150; R23Multi=24000; Main="X870E, X870, B650E, B650" };
+    "9950X" = @{ Name="AMD Ryzen 9 9950X"; Socket="Socket AM5"; Node="TSMC 4nm (Zen 5)"; Cores="16 (16P)"; Threads="32"; BaseClock="4.3 GHz"; BoostClock="5.7 GHz"; L3Cache="64 MB"; TDP="170W (Max 230W)"; RAM="DDR5-6000"; iGPU="Radeon Graphics"; R23Single=2300; R23Multi=44500; Main="X870E, X870, B650" };
+    "14900K" = @{ Name="Intel Core i9-14900K"; Socket="LGA 1700"; Node="Intel 7 (10nm)"; Cores="24 (8P + 16E)"; Threads="32"; BaseClock="3.2 GHz"; BoostClock="6.0 GHz"; L3Cache="36 MB"; TDP="125W (Max 253W)"; RAM="DDR4 / DDR5"; iGPU="Intel UHD 770"; R23Single=2300; R23Multi=40000; Main="Z790, B760" };
+    "14700K" = @{ Name="Intel Core i7-14700K"; Socket="LGA 1700"; Node="Intel 7 (10nm)"; Cores="20 (8P + 12E)"; Threads="28"; BaseClock="3.4 GHz"; BoostClock="5.6 GHz"; L3Cache="33 MB"; TDP="125W (Max 253W)"; RAM="DDR4 / DDR5"; iGPU="Intel UHD 770"; R23Single=2180; R23Multi=35000; Main="Z790, B760" };
+    "14400" = @{ Name="Intel Core i5-14400 / 14400F"; Socket="LGA 1700"; Node="Intel 7 (10nm)"; Cores="10 (6P + 4E)"; Threads="16"; BaseClock="2.5 GHz"; BoostClock="4.7 GHz"; L3Cache="20 MB"; TDP="65W (Max 148W)"; RAM="DDR4 / DDR5"; iGPU="Intel UHD 730 (hoặc None với bản F)"; R23Single=1780; R23Multi=16200; Main="B760, H610, B660" };
+    "7800X3D" = @{ Name="AMD Ryzen 7 7800X3D"; Socket="Socket AM5"; Node="TSMC 5nm (Zen 4)"; Cores="8 (8P)"; Threads="16"; BaseClock="4.2 GHz"; BoostClock="5.0 GHz"; L3Cache="96 MB (3D V-Cache)"; TDP="120W"; RAM="DDR5-6000 EXPO"; iGPU="Radeon Graphics"; R23Single=1820; R23Multi=18500; Main="B650, X670, A620" };
+    "7600X" = @{ Name="AMD Ryzen 5 7600X / 7600"; Socket="Socket AM5"; Node="TSMC 5nm (Zen 4)"; Cores="6 (6P)"; Threads="12"; BaseClock="4.7 GHz"; BoostClock="5.3 GHz"; L3Cache="32 MB"; TDP="105W (hoặc 65W)"; RAM="DDR5-6000"; iGPU="Radeon Graphics"; R23Single=1980; R23Multi=15200; Main="B650, A620" };
+    "13600K" = @{ Name="Intel Core i5-13600K"; Socket="LGA 1700"; Node="Intel 7 (10nm)"; Cores="14 (6P + 8E)"; Threads="20"; BaseClock="3.5 GHz"; BoostClock="5.1 GHz"; L3Cache="24 MB"; TDP="125W (Max 181W)"; RAM="DDR4 / DDR5"; iGPU="Intel UHD 770"; R23Single=2000; R23Multi=24000; Main="Z790, B760, B660" };
+    "12400F" = @{ Name="Intel Core i5-12400F"; Socket="LGA 1700"; Node="Intel 7 (10nm)"; Cores="6 (6P)"; Threads="12"; BaseClock="2.5 GHz"; BoostClock="4.4 GHz"; L3Cache="18 MB"; TDP="65W (Max 117W)"; RAM="DDR4 / DDR5"; iGPU="Không có (Cần card rời)"; R23Single=1690; R23Multi=12400; Main="B760, H610, B660" };
+    "5600X" = @{ Name="AMD Ryzen 5 5600X / 5600"; Socket="Socket AM4"; Node="TSMC 7nm (Zen 3)"; Cores="6 (6P)"; Threads="12"; BaseClock="3.7 GHz"; BoostClock="4.6 GHz"; L3Cache="32 MB"; TDP="65W"; RAM="DDR4-3200"; iGPU="Không có (Cần card rời)"; R23Single=1550; R23Multi=11600; Main="B550, B450, A520" };
+    "5700X3D" = @{ Name="AMD Ryzen 7 5700X3D"; Socket="Socket AM4"; Node="TSMC 7nm (Zen 3)"; Cores="8 (8P)"; Threads="16"; BaseClock="3.0 GHz"; BoostClock="4.1 GHz"; L3Cache="96 MB (3D V-Cache)"; TDP="105W"; RAM="DDR4-3200"; iGPU="Không có"; R23Single=1380; R23Multi=13800; Main="B550, B450" };
+    "10400" = @{ Name="Intel Core i5-10400 / 10400F"; Socket="LGA 1200"; Node="14nm+++"; Cores="6 (6P)"; Threads="12"; BaseClock="2.9 GHz"; BoostClock="4.3 GHz"; L3Cache="12 MB"; TDP="65W"; RAM="DDR4-2666"; iGPU="Intel UHD 630"; R23Single=1120; R23Multi=8200; Main="B560, H510, B460, H410" };
+    "9400F" = @{ Name="Intel Core i5-9400F"; Socket="LGA 1151v2"; Node="14nm++"; Cores="6 (6P)"; Threads="6"; BaseClock="2.9 GHz"; BoostClock="4.1 GHz"; L3Cache="9 MB"; TDP="65W"; RAM="DDR4-2666"; iGPU="Không có"; R23Single=980; R23Multi=5600; Main="B365, B360, H310" };
+    "6500" = @{ Name="Intel Core i5-6500"; Socket="LGA 1151"; Node="14nm"; Cores="4 (4P)"; Threads="4"; BaseClock="3.2 GHz"; BoostClock="3.6 GHz"; L3Cache="6 MB"; TDP="65W"; RAM="DDR4-2133 / DDR3L"; iGPU="Intel HD 530"; R23Single=850; R23Multi=3400; Main="B250, H110, B150" }
+}
+
+function Find-CpuSpecByQuery {
+    param([string]$Query)
+    if ([string]::IsNullOrWhiteSpace($Query)) { return $script:CPU_SPEC_DB["14400"] }
+    $q = $Query.Trim().ToUpper()
+
+    foreach ($k in $script:CPU_SPEC_DB.Keys) {
+        $spec = $script:CPU_SPEC_DB[$k]
+        if ($k.ToUpper() -eq $q -or $spec.Name.ToUpper().Contains($q) -or $q.Contains($k.ToUpper())) {
+            return $spec
+        }
+    }
+
+    # Partial keyword match
+    if ($q -like "*285*" -or $q -like "*ARROW*") { return $script:CPU_SPEC_DB["285K"] }
+    if ($q -like "*9800*" -or $q -like "*9800X3D*") { return $script:CPU_SPEC_DB["9800X3D"] }
+    if ($q -like "*9950*") { return $script:CPU_SPEC_DB["9950X"] }
+    if ($q -like "*14900*") { return $script:CPU_SPEC_DB["14900K"] }
+    if ($q -like "*14700*") { return $script:CPU_SPEC_DB["14700K"] }
+    if ($q -like "*14400*") { return $script:CPU_SPEC_DB["14400"] }
+    if ($q -like "*7800*" -or $q -like "*7800X3D*") { return $script:CPU_SPEC_DB["7800X3D"] }
+    if ($q -like "*7600*") { return $script:CPU_SPEC_DB["7600X"] }
+    if ($q -like "*13600*") { return $script:CPU_SPEC_DB["13600K"] }
+    if ($q -like "*12400*") { return $script:CPU_SPEC_DB["12400F"] }
+    if ($q -like "*5600*") { return $script:CPU_SPEC_DB["5600X"] }
+    if ($q -like "*5700X3D*") { return $script:CPU_SPEC_DB["5700X3D"] }
+    if ($q -like "*10400*") { return $script:CPU_SPEC_DB["10400"] }
+
+    return $script:CPU_SPEC_DB["14400"]
+}
+
+function Compare-VUONGTTCpu {
+    param(
+        [string]$Cpu1Query = "14400",
+        [string]$Cpu2Query = "9800X3D"
+    )
+
+    $cpu1 = Find-CpuSpecByQuery -Query $Cpu1Query
+    $cpu2 = Find-CpuSpecByQuery -Query $Cpu2Query
+
+    $winnerMulti = if ($cpu1.R23Multi -gt $cpu2.R23Multi) { "$($cpu1.Name) (+$( [math]::Round((($cpu1.R23Multi - $cpu2.R23Multi)/$cpu2.R23Multi)*100, 1) )%)" } else { "$($cpu2.Name) (+$( [math]::Round((($cpu2.R23Multi - $cpu1.R23Multi)/$cpu1.R23Multi)*100, 1) )%)" }
+    $winnerSingle = if ($cpu1.R23Single -gt $cpu2.R23Single) { "$($cpu1.Name) (+$( [math]::Round((($cpu1.R23Single - $cpu2.R23Single)/$cpu2.R23Single)*100, 1) )%)" } else { "$($cpu2.Name) (+$( [math]::Round((($cpu2.R23Single - $cpu1.R23Single)/$cpu1.R23Single)*100, 1) )%)" }
+
+    $lines = @()
+    $lines += "================================================================================"
+    $lines += "        BẢNG SO SÁNH HIỆU NĂNG & THÔNG SỐ ĐỐI ĐẦU: $($cpu1.Name) VS $($cpu2.Name)"
+    $lines += "================================================================================"
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "TIÊU CHÍ SO SÁNH", $cpu1.Name, $cpu2.Name
+    $lines += "--------------------------------------------------------------------------------"
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Socket cắm", $cpu1.Socket, $cpu2.Socket
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Tiến trình công nghệ", $cpu1.Node, $cpu2.Node
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Số Nhân / Luồng", "$($cpu1.Cores) / $($cpu1.Threads)", "$($cpu2.Cores) / $($cpu2.Threads)"
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Xung Cơ bản / Turbo", "$($cpu1.BaseClock) / $($cpu1.BoostClock)", "$($cpu2.BaseClock) / $($cpu2.BoostClock)"
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Bộ nhớ đệm L3 Cache", $cpu1.L3Cache, $cpu2.L3Cache
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Mức ăn điện TDP", $cpu1.TDP, $cpu2.TDP
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Chuẩn RAM hỗ trợ", $cpu1.RAM, $cpu2.RAM
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Mainboard tương thích", $cpu1.Main, $cpu2.Main
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Cinebench R23 Đơn nhân", "$($cpu1.R23Single) pts", "$($cpu2.R23Single) pts"
+    $lines += "{0,-24} | {1,-35} | {2,-35}" -f "• Cinebench R23 Đa nhân", "$($cpu1.R23Multi) pts", "$($cpu2.R23Multi) pts"
+    $lines += "--------------------------------------------------------------------------------"
+    $lines += "🏆 ĐÁNH GIÁ TỔNG QUAN:"
+    $lines += "• Thắng về Đa Nhiệm / Đa Nhân: $winnerMulti"
+    $lines += "• Thắng về Đơn Nhân / Ứng Dụng Nhanh: $winnerSingle"
+    if ($cpu1.L3Cache -like "*3D V-Cache*" -or $cpu2.L3Cache -like "*3D V-Cache*") {
+        $lines += "• Nhận xét Gaming: Dòng trang bị 3D V-Cache có FPS trung bình và 1% Low FPS trong Game vượt trội hoàn toàn nhờ dung lượng cache khủng."
+    }
+    $lines += "================================================================================"
+
+    return [PSCustomObject]@{
+        Cpu1        = $cpu1
+        Cpu2        = $cpu2
+        ReportText  = ($lines -join "`n")
+    }
+}
