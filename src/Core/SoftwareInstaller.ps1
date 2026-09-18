@@ -194,13 +194,117 @@ function Get-VUONGTTInstalledSoftware {
     [CmdletBinding()]
     param([string]$FilterText = "")
 
+    if (-not ([System.Management.Automation.PSTypeName]'VUONGTT.InstalledAppItem').Type) {
+        Add-Type -TypeDefinition @"
+namespace VUONGTT
+{
+    using System;
+    using System.ComponentModel;
+
+    public class InstalledAppItem : INotifyPropertyChanged
+    {
+        private bool _isChecked = false;
+        private string _displayName = "";
+        private string _displayVersion = "";
+        private string _publisher = "";
+        private string _installDate = "";
+        private double _sizeMb = 0;
+        private string _sizeFormatted = "";
+        private string _installLocation = "";
+        private string _uninstallString = "";
+        private string _quietUninstallString = "";
+        private string _registryPath = "";
+        private string _registryKeyName = "";
+
+        public bool IsChecked
+        {
+            get { return _isChecked; }
+            set { if (_isChecked != value) { _isChecked = value; OnPropertyChanged("IsChecked"); } }
+        }
+
+        public string DisplayName
+        {
+            get { return _displayName; }
+            set { _displayName = value; OnPropertyChanged("DisplayName"); }
+        }
+
+        public string DisplayVersion
+        {
+            get { return _displayVersion; }
+            set { _displayVersion = value; OnPropertyChanged("DisplayVersion"); }
+        }
+
+        public string Publisher
+        {
+            get { return _publisher; }
+            set { _publisher = value; OnPropertyChanged("Publisher"); }
+        }
+
+        public string InstallDate
+        {
+            get { return _installDate; }
+            set { _installDate = value; OnPropertyChanged("InstallDate"); }
+        }
+
+        public double SizeMb
+        {
+            get { return _sizeMb; }
+            set { _sizeMb = value; OnPropertyChanged("SizeMb"); }
+        }
+
+        public string SizeFormatted
+        {
+            get { return _sizeFormatted; }
+            set { _sizeFormatted = value; OnPropertyChanged("SizeFormatted"); }
+        }
+
+        public string InstallLocation
+        {
+            get { return _installLocation; }
+            set { _installLocation = value; OnPropertyChanged("InstallLocation"); }
+        }
+
+        public string UninstallString
+        {
+            get { return _uninstallString; }
+            set { _uninstallString = value; OnPropertyChanged("UninstallString"); }
+        }
+
+        public string QuietUninstallString
+        {
+            get { return _quietUninstallString; }
+            set { _quietUninstallString = value; OnPropertyChanged("QuietUninstallString"); }
+        }
+
+        public string RegistryPath
+        {
+            get { return _registryPath; }
+            set { _registryPath = value; OnPropertyChanged("RegistryPath"); }
+        }
+
+        public string RegistryKeyName
+        {
+            get { return _registryKeyName; }
+            set { _registryKeyName = value; OnPropertyChanged("RegistryKeyName"); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string name)
+        {
+            if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs(name));
+        }
+    }
+}
+"@
+    }
+
     $regPaths = @(
         "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*",
         "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
     )
 
-    $apps = @()
+    $apps = [System.Collections.Generic.List[VUONGTT.InstalledAppItem]]::new()
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
     foreach ($p in $regPaths) {
@@ -224,19 +328,21 @@ function Get-VUONGTTInstalledSoftware {
                         "$($_.InstallDate.Substring(6,2))/$($_.InstallDate.Substring(4,2))/$($_.InstallDate.Substring(0,4))"
                     } else { "--" }
 
-                    $apps += [PSCustomObject]@{
-                        DisplayName          = $name.Trim()
-                        DisplayVersion       = if ($_.DisplayVersion) { $_.DisplayVersion.Trim() } else { "--" }
-                        Publisher            = if ($_.Publisher) { $_.Publisher.Trim() } else { "Chưa xác định" }
-                        InstallDate          = $instDate
-                        SizeMb               = $sizeMb
-                        SizeFormatted        = $sizeFormatted
-                        InstallLocation      = if ($_.InstallLocation) { $_.InstallLocation.Trim() } else { "" }
-                        UninstallString      = if ($_.UninstallString) { $_.UninstallString.Trim() } else { "" }
-                        QuietUninstallString = if ($_.QuietUninstallString) { $_.QuietUninstallString.Trim() } else { "" }
-                        RegistryPath         = $_.PSPath
-                        RegistryKeyName      = $_.PSChildName
-                    }
+                    $appItem = [VUONGTT.InstalledAppItem]::new()
+                    $appItem.IsChecked            = $false
+                    $appItem.DisplayName          = $name.Trim()
+                    $appItem.DisplayVersion       = if ($_.DisplayVersion) { $_.DisplayVersion.Trim() } else { "--" }
+                    $appItem.Publisher            = if ($_.Publisher) { $_.Publisher.Trim() } else { "Chưa xác định" }
+                    $appItem.InstallDate          = $instDate
+                    $appItem.SizeMb               = $sizeMb
+                    $appItem.SizeFormatted        = $sizeFormatted
+                    $appItem.InstallLocation      = if ($_.InstallLocation) { $_.InstallLocation.Trim() } else { "" }
+                    $appItem.UninstallString      = if ($_.UninstallString) { $_.UninstallString.Trim() } else { "" }
+                    $appItem.QuietUninstallString = if ($_.QuietUninstallString) { $_.QuietUninstallString.Trim() } else { "" }
+                    $appItem.RegistryPath         = if ($_.PSPath) { $_.PSPath } else { "" }
+                    $appItem.RegistryKeyName      = if ($_.PSChildName) { $_.PSChildName } else { "" }
+
+                    $apps.Add($appItem)
                 }
             }
         }

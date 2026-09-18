@@ -1397,15 +1397,25 @@
 
                         <!-- Software List View -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12" Padding="6">
-                            <ListView x:Name="lvInstalledApps" Height="360" Background="Transparent" BorderThickness="0" SelectionMode="Single">
+                            <ListView x:Name="lvInstalledApps" Height="360" Background="Transparent" BorderThickness="0" SelectionMode="Extended">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Tên Phần Mềm" Width="320" DisplayMemberBinding="{Binding DisplayName}"/>
-                                        <GridViewColumn Header="Phiên Bản" Width="110" DisplayMemberBinding="{Binding DisplayVersion}"/>
-                                        <GridViewColumn Header="Nhà Phát Triển" Width="170" DisplayMemberBinding="{Binding Publisher}"/>
+                                        <GridViewColumn Width="46">
+                                            <GridViewColumn.Header>
+                                                <CheckBox x:Name="chkSelectAllUninstApps" ToolTip="Chọn / Bỏ chọn tất cả phần mềm" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </GridViewColumn.Header>
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Tên Phần Mềm" Width="300" DisplayMemberBinding="{Binding DisplayName}"/>
+                                        <GridViewColumn Header="Phiên Bản" Width="105" DisplayMemberBinding="{Binding DisplayVersion}"/>
+                                        <GridViewColumn Header="Nhà Phát Triển" Width="160" DisplayMemberBinding="{Binding Publisher}"/>
                                         <GridViewColumn Header="Ngày Cài" Width="95" DisplayMemberBinding="{Binding InstallDate}"/>
                                         <GridViewColumn Header="Dung Lượng" Width="90" DisplayMemberBinding="{Binding SizeFormatted}"/>
-                                        <GridViewColumn Header="Thư Mục Cài Đặt" Width="260" DisplayMemberBinding="{Binding InstallLocation}"/>
+                                        <GridViewColumn Header="Thư Mục Cài Đặt" Width="240" DisplayMemberBinding="{Binding InstallLocation}"/>
                                     </GridView>
                                 </ListView.View>
                             </ListView>
@@ -1415,8 +1425,10 @@
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12" Padding="12,10">
                             <Grid>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                                    <Button x:Name="btnUninstallClean" Content="⚡ GỠ SẠCH TRIỆT ĐỂ (Clean Uninstall)" Background="#BE123C" Style="{StaticResource ActionBtn}" Padding="16,0,16,0" ToolTip="Gỡ cài đặt gốc + Tự động quét &amp; xóa sạch tệp rác trong AppData/ProgramData và các khóa Registry còn sót lại"/>
-                                    <Button x:Name="btnUninstallStandard" Content="🗑️ Gỡ Cài Đặt Tiêu Chuẩn" Background="#B45309" Style="{StaticResource ActionBtn}" Padding="14,0,14,0" ToolTip="Thực thi lệnh gỡ cài đặt gốc của nhà sản xuất"/>
+                                    <Button x:Name="btnUninstallClean" Content="⚡ GỠ SẠCH TRIỆT ĐỂ (HÀNG LOẠT)" Background="#BE123C" Style="{StaticResource ActionBtn}" Padding="16,0,16,0" ToolTip="Gỡ bỏ tuần tự các phần mềm đã tick chọn + Quét sạch toàn bộ tệp rác trong AppData/ProgramData và các khóa Registry còn sót lại"/>
+                                    <Button x:Name="btnUninstallStandard" Content="🗑️ Gỡ Cài Đặt Tiêu Chuẩn" Background="#B45309" Style="{StaticResource ActionBtn}" Padding="14,0,14,0" ToolTip="Thực thi lệnh gỡ cài đặt gốc của nhà sản xuất cho các mục đã chọn"/>
+                                    <Button x:Name="btnSelectAllUninstApps" Content="☑️ Chọn Hết" Background="#475569" Style="{StaticResource ActionBtn}" Width="100" Margin="8,0,0,0" ToolTip="Tick chọn tất cả các phần mềm đang hiển thị"/>
+                                    <Button x:Name="btnDeselectAllUninstApps" Content="⬜ Bỏ Chọn" Background="#64748B" Style="{StaticResource ActionBtn}" Width="95" Margin="6,0,0,0" ToolTip="Bỏ tick chọn toàn bộ phần mềm"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                     <Button x:Name="btnOpenAppFolder" Content="📁 Mở Thư Mục" Background="#334155" Style="{StaticResource ActionBtn}" Width="120"/>

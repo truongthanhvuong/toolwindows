@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.31
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.32
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -1590,15 +1590,27 @@ $txtInstalledAppsCount   = Get-Control "txtInstalledAppsCount"
 $btnRefreshInstalledApps = Get-Control "btnRefreshInstalledApps"
 $txtSearchInstalledApps  = Get-Control "txtSearchInstalledApps"
 $btnClearSearchApps      = Get-Control "btnClearSearchApps"
-$lvInstalledApps         = Get-Control "lvInstalledApps"
-$btnUninstallClean       = Get-Control "btnUninstallClean"
-$btnUninstallStandard    = Get-Control "btnUninstallStandard"
-$btnOpenAppFolder        = Get-Control "btnOpenAppFolder"
-$btnOpenAppRegistry      = Get-Control "btnOpenAppRegistry"
-$txtUninstallerLog       = Get-Control "txtUninstallerLog"
-$btnClearUninstallerLog  = Get-Control "btnClearUninstallerLog"
+$lvInstalledApps            = Get-Control "lvInstalledApps"
+$chkSelectAllUninstApps     = Get-Control "chkSelectAllUninstApps"
+$btnSelectAllUninstApps     = Get-Control "btnSelectAllUninstApps"
+$btnDeselectAllUninstApps   = Get-Control "btnDeselectAllUninstApps"
+$btnUninstallClean          = Get-Control "btnUninstallClean"
+$btnUninstallStandard       = Get-Control "btnUninstallStandard"
+$btnOpenAppFolder           = Get-Control "btnOpenAppFolder"
+$btnOpenAppRegistry         = Get-Control "btnOpenAppRegistry"
+$txtUninstallerLog          = Get-Control "txtUninstallerLog"
+$btnClearUninstallerLog     = Get-Control "btnClearUninstallerLog"
 
 $script:allInstalledApps = @()
+
+function Update-VUONGTTSelectedAppsCount {
+    $total = if ($script:allInstalledApps) { $script:allInstalledApps.Count } else { 0 }
+    $selCount = @($script:allInstalledApps | Where-Object { $_.IsChecked -eq $true }).Count
+    $shownCount = if ($lvInstalledApps.ItemsSource) { $lvInstalledApps.ItemsSource.Count } else { 0 }
+    if ($txtInstalledAppsCount) {
+        $txtInstalledAppsCount.Text = "Phát hiện $total phần mềm đã cài đặt trên máy (Đang hiển thị: $shownCount mục | Đã tick chọn: $selCount phần mềm)"
+    }
+}
 
 function Refresh-InstalledAppsGrid {
     param([string]$Filter = "")
@@ -1625,13 +1637,52 @@ function Refresh-InstalledAppsGrid {
     $cnt = if ($filtered) { $filtered.Count } else { 0 }
     $total = if ($script:allInstalledApps) { $script:allInstalledApps.Count } else { 0 }
 
-    if ($txtInstalledAppsCount) {
-        $txtInstalledAppsCount.Text = "Phát hiện $total phần mềm đã cài đặt trên máy (Đang hiển thị: $cnt mục)"
-    }
+    if ($chkSelectAllUninstApps) { $chkSelectAllUninstApps.IsChecked = $false }
+    Update-VUONGTTSelectedAppsCount
+
     $txtFooterStatus.Text = "• [OK] Đã phát hiện $total phần mềm cài đặt trên máy."
     if ($txtUninstallerLog) {
-        $txtUninstallerLog.Text = "✅ Đã nạp xong danh sách $total phần mềm!`nHướng dẫn: Nhấp chọn một phần mềm ở bảng trên rồi nhấn 'Gỡ Sạch Triệt Để' hoặc 'Gỡ Cài Đặt Tiêu Chuẩn'."
+        $txtUninstallerLog.Text = "✅ Đã nạp xong danh sách $total phần mềm!`nHướng dẫn: Tick chọn các ô vuông để gỡ hàng loạt, hoặc nhấp chọn một phần mềm rồi nhấn 'Gỡ Sạch Triệt Để' hoặc 'Gỡ Cài Đặt Tiêu Chuẩn'."
     }
+}
+
+# Sự kiện Header CheckBox: Chọn tất cả / Bỏ chọn tất cả
+if ($chkSelectAllUninstApps) {
+    $chkSelectAllUninstApps.Add_Click({
+        $state = ($chkSelectAllUninstApps.IsChecked -eq $true)
+        if ($lvInstalledApps.ItemsSource) {
+            foreach ($item in $lvInstalledApps.ItemsSource) {
+                $item.IsChecked = $state
+            }
+        }
+        Update-VUONGTTSelectedAppsCount
+    })
+}
+
+# Sự kiện nút Chọn Hết
+if ($btnSelectAllUninstApps) {
+    $btnSelectAllUninstApps.Add_Click({
+        if ($lvInstalledApps.ItemsSource) {
+            foreach ($item in $lvInstalledApps.ItemsSource) {
+                $item.IsChecked = $true
+            }
+        }
+        if ($chkSelectAllUninstApps) { $chkSelectAllUninstApps.IsChecked = $true }
+        Update-VUONGTTSelectedAppsCount
+    })
+}
+
+# Sự kiện nút Bỏ Chọn
+if ($btnDeselectAllUninstApps) {
+    $btnDeselectAllUninstApps.Add_Click({
+        if ($script:allInstalledApps) {
+            foreach ($item in $script:allInstalledApps) {
+                $item.IsChecked = $false
+            }
+        }
+        if ($chkSelectAllUninstApps) { $chkSelectAllUninstApps.IsChecked = $false }
+        Update-VUONGTTSelectedAppsCount
+    })
 }
 
 if ($btnRefreshInstalledApps) {
@@ -1660,18 +1711,27 @@ if ($btnClearUninstallerLog) {
     })
 }
 
-# 1. Gỡ cài đặt tiêu chuẩn
+# 1. Gỡ cài đặt tiêu chuẩn (Hỗ trợ 1 hoặc Hàng Loạt)
 if ($btnUninstallStandard) {
     $btnUninstallStandard.Add_Click({
-        $selected = $lvInstalledApps.SelectedItem
-        if (-not $selected) {
-            [System.Windows.MessageBox]::Show("Vui lòng nhấp chọn một phần mềm trong danh sách để gỡ cài đặt!", "Chưa Chọn Phần Mềm", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        $selectedList = @($script:allInstalledApps | Where-Object { $_.IsChecked -eq $true })
+        if ($selectedList.Count -eq 0 -and $lvInstalledApps.SelectedItem) {
+            $selectedList = @($lvInstalledApps.SelectedItem)
+        }
+
+        if ($selectedList.Count -eq 0) {
+            [System.Windows.MessageBox]::Show("Vui lòng tick chọn ít nhất một phần mềm trong danh sách để gỡ cài đặt!", "Chưa Chọn Phần Mềm", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
             return
         }
 
+        $namesList = ($selectedList | ForEach-Object { "• $($_.DisplayName) (v$($_.DisplayVersion))" }) -join "`n"
+        if ($selectedList.Count -gt 10) {
+            $namesList = (($selectedList | Select-Object -First 10 | ForEach-Object { "• $($_.DisplayName)" }) -join "`n") + "`n... và $($selectedList.Count - 10) phần mềm khác."
+        }
+
         $confirm = [System.Windows.MessageBox]::Show(
-            "Bạn có chắc chắn muốn gỡ cài đặt phần mềm này không?`n`n• Tên phần mềm: $($selected.DisplayName)`n• Phiên bản: $($selected.DisplayVersion)`n• Nhà sản xuất: $($selected.Publisher)`n`nLưu ý: Chế độ này sẽ thực thi bộ gỡ cài đặt gốc của nhà sản xuất.",
-            "Xác Nhận Gỡ Cài Đặt",
+            "BẠN CÓ CHẮC CHẮN MUỐN GỠ CÀI ĐẶT TIÊU CHUẨN $($selectedList.Count) PHẦN MỀM ĐÃ CHỌN?`n`nDanh sách phần mềm:`n$namesList`n`nLưu ý: Hệ thống sẽ lần lượt gọi bộ gỡ cài đặt gốc của nhà sản xuất cho từng phần mềm.",
+            "Xác Nhận Gỡ Cài Đặt Tiêu Chuẩn",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Question
         )
@@ -1687,8 +1747,20 @@ if ($btnUninstallStandard) {
                 if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
             }
 
-            $res = Invoke-VUONGTTUninstallSoftware -AppItem $selected -CleanDeepScan:$false -OnLog $onLogBlock
-            [System.Windows.MessageBox]::Show("Đã hoàn tất tiến trình gỡ cài đặt cho $($selected.DisplayName)!", "Gỡ Cài Đặt Tiêu Chuẩn", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            $idx = 1
+            $totalBatch = $selectedList.Count
+            foreach ($appItem in $selectedList) {
+                $txtFooterStatus.Text = "• [TIẾN ĐỘ $idx/$totalBatch] Đang gỡ bỏ: $($appItem.DisplayName)..."
+                & $onLogBlock "=========================================================="
+                & $onLogBlock "▶ [TIẾN ĐỘ $idx / $totalBatch] Đang gỡ bỏ: $($appItem.DisplayName)..."
+                & $onLogBlock "=========================================================="
+                $null = Invoke-VUONGTTUninstallSoftware -AppItem $appItem -CleanDeepScan:$false -OnLog $onLogBlock
+                $idx++
+            }
+
+            & $onLogBlock "🎉 [HOÀN TẤT] Đã hoàn thành gỡ cài đặt toàn bộ $totalBatch phần mềm!"
+            $txtFooterStatus.Text = "• [OK] Đã hoàn thành gỡ cài đặt $totalBatch phần mềm."
+            [System.Windows.MessageBox]::Show("Đã hoàn tất tiến trình gỡ cài đặt cho $totalBatch phần mềm đã chọn!", "Gỡ Cài Đặt Tiêu Chuẩn Hoàn Tất", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
             
             # Quét lại danh sách
             $script:allInstalledApps = @()
@@ -1697,18 +1769,27 @@ if ($btnUninstallStandard) {
     })
 }
 
-# 2. Gỡ sạch triệt để (Clean Uninstall - Deep Clean)
+# 2. Gỡ sạch triệt để (Clean Uninstall - Deep Clean) (Hỗ trợ 1 hoặc Hàng Loạt)
 if ($btnUninstallClean) {
     $btnUninstallClean.Add_Click({
-        $selected = $lvInstalledApps.SelectedItem
-        if (-not $selected) {
-            [System.Windows.MessageBox]::Show("Vui lòng nhấp chọn một phần mềm trong danh sách để gỡ sạch triệt để!", "Chưa Chọn Phần Mềm", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        $selectedList = @($script:allInstalledApps | Where-Object { $_.IsChecked -eq $true })
+        if ($selectedList.Count -eq 0 -and $lvInstalledApps.SelectedItem) {
+            $selectedList = @($lvInstalledApps.SelectedItem)
+        }
+
+        if ($selectedList.Count -eq 0) {
+            [System.Windows.MessageBox]::Show("Vui lòng tick chọn ít nhất một phần mềm trong danh sách để gỡ sạch triệt để!", "Chưa Chọn Phần Mềm", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
             return
         }
 
+        $namesList = ($selectedList | ForEach-Object { "• $($_.DisplayName) (v$($_.DisplayVersion))" }) -join "`n"
+        if ($selectedList.Count -gt 10) {
+            $namesList = (($selectedList | Select-Object -First 10 | ForEach-Object { "• $($_.DisplayName)" }) -join "`n") + "`n... và $($selectedList.Count - 10) phần mềm khác."
+        }
+
         $confirm = [System.Windows.MessageBox]::Show(
-            "BẠN CÓ MUỐN GỠ SẠCH TRIỆT ĐỂ (CLEAN UNINSTALL) PHẦN MỀM NÀY?`n`n• Tên phần mềm: $($selected.DisplayName)`n• Phiên bản: $($selected.DisplayVersion)`n• Nhà phát triển: $($selected.Publisher)`n`nQuy trình Gỡ Sạch Triệt Để sẽ tự động thực hiện:`n1. Khởi chạy trình gỡ cài đặt gốc của phần mềm.`n2. Quét & xóa sạch toàn bộ thư mục cài đặt gốc còn sót lại.`n3. Quét & xóa sạch tệp rác trong AppData & ProgramData.`n4. Quét & xóa sạch các khóa Registry còn sót lại.`n5. Xóa các biểu tượng Shortcut trên Desktop và Start Menu.`n`nBạn có muốn tiếp tục không?",
-            "Xác Nhận Gỡ Sạch Triệt Để (Clean Deep Scan)",
+            "BẠN CÓ MUỐN GỠ SẠCH TRIỆT ĐỂ (CLEAN DEEP UNINSTALL) $($selectedList.Count) PHẦN MỀM ĐÃ CHỌN?`n`nDanh sách phần mềm:`n$namesList`n`nQuy trình Gỡ Sạch Triệt Để sẽ tự động thực hiện cho từng phần mềm:`n1. Khởi chạy trình gỡ cài đặt gốc.`n2. Quét & xóa sạch toàn bộ thư mục cài đặt gốc còn sót lại.`n3. Quét & xóa sạch tệp rác trong AppData & ProgramData.`n4. Quét & xóa sạch các khóa Registry còn sót lại.`n5. Xóa biểu tượng Shortcut trên Desktop và Start Menu.`n`nBạn có muốn tiếp tục không?",
+            "Xác Nhận Gỡ Sạch Triệt Để Hàng Loạt",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Warning
         )
@@ -1724,8 +1805,21 @@ if ($btnUninstallClean) {
                 if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
             }
 
-            $res = Invoke-VUONGTTUninstallSoftware -AppItem $selected -CleanDeepScan:$true -OnLog $onLogBlock
-            [System.Windows.MessageBox]::Show("GỠ SẠCH HOÀN TẤT!`n`nPhần mềm $($selected.DisplayName) đã được gỡ bỏ và dọn dẹp sạch sẽ toàn bộ tệp rác & Registry còn sót lại.", "Gỡ Sạch Triệt Để Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            $idx = 1
+            $totalBatch = $selectedList.Count
+            foreach ($appItem in $selectedList) {
+                $txtFooterStatus.Text = "• [GỠ SẠCH $idx/$totalBatch] Đang xử lý: $($appItem.DisplayName)..."
+                & $onLogBlock "=========================================================="
+                & $onLogBlock "⚡ [GỠ SẠCH $idx / $totalBatch] Bắt đầu gỡ & quét rác: $($appItem.DisplayName)..."
+                & $onLogBlock "=========================================================="
+                $null = Invoke-VUONGTTUninstallSoftware -AppItem $appItem -CleanDeepScan:$true -OnLog $onLogBlock
+                $idx++
+            }
+
+            & $onLogBlock "=========================================================="
+            & $onLogBlock "🎉 [HOÀN TẤT TOÀN BỘ] Đã gỡ sạch triệt để và quét rác $totalBatch phần mềm!"
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất gỡ sạch triệt để $totalBatch phần mềm."
+            [System.Windows.MessageBox]::Show("GỠ SẠCH HOÀN TẤT!`n`nĐã gỡ bỏ và dọn dẹp sạch sẽ toàn bộ $totalBatch phần mềm đã chọn (bao gồm tệp rác & Registry còn sót lại).", "Gỡ Sạch Triệt Để Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
 
             # Quét lại danh sách
             $script:allInstalledApps = @()

@@ -1,11 +1,11 @@
 {
-  "version": "20.5.908.31",
+  "version": "20.5.908.32",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Gộp 2 tab trùng lặp 'Kiểm Tra Laptop (Đã Sửa?)' và 'Test Bàn Phím, Loa, Mic, Cam' thành 1 tab duy nhất: 'Kiểm Tra Laptop & Ngoại Vi' (Laptop & Hardware Diagnostics) toàn diện.",
-    "Khắc phục triệt để chế độ Tối (Dark Mode) chuẩn phong cách Apple Dark: Độ tương phản cao, làm rõ nét toàn bộ chữ (#FFFFFF, #CBD5E1), sửa lỗi nút 'Tối' bị mờ chữ trên nền sáng.",
-    "Kích hoạt hệ thống chuyển đổi ngôn ngữ song ngữ Tiếng Việt (VN VI) & Tiếng Anh (US EN) thời gian thực cho toàn bộ thanh Menu Sidebar, Tiêu đề trang và Nhóm chức năng.",
-    "Sửa lỗi hiển thị lặp nhãn 'Tải hệ thống' trên màn hình chính và tối ưu màu sắc các đồng hồ đo hiệu năng RAM, Mạng, Ổ đĩa."
+    "Tích hợp tính năng Tick chọn và Gỡ bỏ hàng loạt phần mềm (Batch Multi-Select Uninstaller & Batch Deep Clean): Hỗ trợ Checkbox trên từng ứng dụng, Header Chọn Tất Cả/Bỏ Chọn, các nút chọn nhanh thông minh.",
+    "Hỗ trợ gỡ bỏ tuần tự hàng loạt theo tiến độ thời gian thực (1/N, 2/N...), ghi log chi tiết từng ứng dụng và tự động quét sạch triệt để toàn bộ thư mục tệp rác & Registry còn sót lại.",
+    "Gộp 2 tab trùng lặp phần cứng thành 'Kiểm Tra Laptop & Ngoại Vi' toàn diện.",
+    "Khắc phục triệt để chế độ Tối (Dark Mode) chuẩn phong cách Apple Dark siêu nét và kích hoạt hệ thống chuyển đổi ngôn ngữ song ngữ Tiếng Việt & Tiếng Anh."
   ]
 }
