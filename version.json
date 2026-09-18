@@ -1,13 +1,12 @@
 {
-  "version": "20.5.908.27",
+  "version": "20.5.908.28",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Khắc phục triệt để lỗi XAML Test Màn Hình (Dead Pixel Tester 9 dải màu chuyên nghiệp).",
-    "Thêm trình Test Bàn Phím Trực Quan Offline (Visual Keyboard Tester - không cần mạng).",
-    "Thêm tính năng CPU Burn-In Stress Test 100% (15s) kiểm tra ổn định nguồn & tản nhiệt.",
-    "Thêm kiểm tra độ trễ mạng (Ping) Router, Google DNS 8.8.8.8, Cloudflare 1.1.1.1.",
-    "Thêm kiểm tra tần số âm thanh Bass (120-200Hz) và Treble (2500-4500Hz) phát hiện rè màng loa.",
-    "Tối ưu hóa giao diện trang Laptop Check và Test Hardware."
+    "Sửa lỗi xuất file Excel/CSV: Tích hợp SaveFileDialog chuẩn, tự động nhận diện OneDrive Desktop.",
+    "Khắc phục hiển thị Driver thiếu bị rỗng tên (Mã lỗi 28): Nhận diện Vendor PCI NVIDIA, AMD, Realtek, Intel.",
+    "Bổ sung hệ thống phát hiện Card Màn Hình Rời Multi-GPU: Hiển thị song song GPU 0 (iGPU) và GPU 1 (dGPU Card Rời).",
+    "Phát hiện Card rời NVIDIA/AMD ngay cả khi chưa cài Driver (kèm cảnh báo và hướng dẫn cài đặt).",
+    "Gán Hardware ID thực tế cho GPU (thay vì cố định VEN_10DE DEV_PCI)."
   ]
 }

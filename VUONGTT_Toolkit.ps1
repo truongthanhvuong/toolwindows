@@ -377,8 +377,17 @@ $lblGpuBoard           = Get-Control "lblGpuBoard"
 $lblGpuVram            = Get-Control "lblGpuVram"
 $lblGpuArch            = Get-Control "lblGpuArch"
 $lblGpuBus             = Get-Control "lblGpuBus"
+$lblGpuPci             = Get-Control "lblGpuPci"
 $lblGpuDriver          = Get-Control "lblGpuDriver"
 $lblGpuRes             = Get-Control "lblGpuRes"
+
+$panelGpu1Container    = Get-Control "panelGpu1Container"
+$lblGpu1Title          = Get-Control "lblGpu1Title"
+$lblGpu1Vendor         = Get-Control "lblGpu1Vendor"
+$lblGpu1Vram           = Get-Control "lblGpu1Vram"
+$lblGpu1Pci            = Get-Control "lblGpu1Pci"
+$lblGpu1Driver         = Get-Control "lblGpu1Driver"
+$lblGpu1Status         = Get-Control "lblGpu1Status"
 
 $lblRamTotal           = Get-Control "lblRamTotal"
 $lblRamSlots           = Get-Control "lblRamSlots"
@@ -439,8 +448,31 @@ function Refresh-SysInfoDisplay {
         $lblGpuVram.Text    = $d.GpuVram
         $lblGpuArch.Text    = $d.GpuArch
         $lblGpuBus.Text     = $d.GpuBus
+        if ($lblGpuPci)     { $lblGpuPci.Text = $d.GpuHardwareID }
         $lblGpuDriver.Text  = $d.GpuDriver
         $lblGpuRes.Text     = $d.GpuResolution
+
+        # GPU 1: Card Do Hoa Roi (NVIDIA / AMD)
+        if ($panelGpu1Container) {
+            if ($d.HasGpu1) {
+                $panelGpu1Container.Visibility = [System.Windows.Visibility]::Visible
+                if ($lblGpu1Title)  { $lblGpu1Title.Text  = $d.Gpu1Name }
+                if ($lblGpu1Vendor) { $lblGpu1Vendor.Text = $d.Gpu1Vendor }
+                if ($lblGpu1Vram)   { $lblGpu1Vram.Text   = $d.Gpu1Vram }
+                if ($lblGpu1Pci)    { $lblGpu1Pci.Text    = $d.Gpu1HardwareID }
+                if ($lblGpu1Driver) { $lblGpu1Driver.Text = $d.Gpu1Driver }
+                if ($lblGpu1Status) {
+                    $lblGpu1Status.Text = $d.Gpu1Status
+                    if ($d.Gpu1Status -like "*Chưa*" -or $d.Gpu1Status -like "*Lỗi*") {
+                        $lblGpu1Status.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                    } else {
+                        $lblGpu1Status.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#047857")
+                    }
+                }
+            } else {
+                $panelGpu1Container.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+        }
 
         $lblRamTotal.Text          = $d.TotalRamGB
         $lblRamSlots.Text          = $d.SlotUsage
@@ -534,17 +566,44 @@ THÔNG TIN CẤU HÌNH MÁY TÍNH - $env:COMPUTERNAME
     } catch {}
 })
 
-$btnExportCsv.Add_Click({
-    $p = "$env:USERPROFILE\Desktop\Hardware_Specs_$($env:COMPUTERNAME).csv"
-    $res = Export-HardwareInfoToCsv -FilePath $p
-    [System.Windows.MessageBox]::Show($res, "Xuất CSV", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
-})
+# Xuat cau hinh ra Excel / CSV thong qua SaveFileDialog an toan tuyet doi
+$exportAction = {
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        $sfd = New-Object System.Windows.Forms.SaveFileDialog
+        $sfd.Filter = "Tệp CSV Microsoft Excel (*.csv)|*.csv|Tất cả tệp (*.*)|*.*"
+        $sfd.FileName = "Hardware_Specs_$($env:COMPUTERNAME).csv"
+        $sfd.InitialDirectory = Get-VUONGTTSafeDesktopPath
+        $sfd.Title = "Chọn nơi lưu tệp thông số cấu hình phần cứng"
+        
+        if ($sfd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            $res = Export-HardwareInfoToCsv -FilePath $sfd.FileName
+            if ($res.Success) {
+                $txtFooterStatus.Text = "• [OK] Đã xuất cấu hình ra $($sfd.FileName)"
+                $choice = [System.Windows.MessageBox]::Show(
+                    "$($res.Message)`n`nBạn có muốn mở tệp vừa xuất bằng Microsoft Excel ngay bây giờ không?",
+                    "Xuất Cấu Hình Thành Công",
+                    [System.Windows.MessageBoxButton]::YesNo,
+                    [System.Windows.MessageBoxImage]::Information
+                )
+                if ($choice -eq [System.Windows.MessageBoxResult]::Yes) {
+                    Start-Process $sfd.FileName
+                }
+            } else {
+                [System.Windows.MessageBox]::Show($res.Message, "Lỗi Xuất File", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    } catch {
+        # Fallback an toan neu SaveFileDialog khong khoi tao duoc
+        $safeDesktop = Get-VUONGTTSafeDesktopPath
+        $target = Join-Path $safeDesktop "Hardware_Specs_$($env:COMPUTERNAME).csv"
+        $res = Export-HardwareInfoToCsv -FilePath $target
+        [System.Windows.MessageBox]::Show($res.Message, "Xuất Cấu Hình", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    }
+}
 
-$btnExportExcel.Add_Click({
-    $p = "$env:USERPROFILE\Desktop\Hardware_Specs_$($env:COMPUTERNAME).csv"
-    $res = Export-HardwareInfoToCsv -FilePath $p
-    [System.Windows.MessageBox]::Show("$res`n(Bạn có thể mở tệp này trực tiếp bằng Microsoft Excel)", "Xuất Excel / CSV", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
-})
+$btnExportCsv.Add_Click($exportAction)
+$btnExportExcel.Add_Click($exportAction)
 
 $btnDriverVendor.Add_Click({
     Start-Process "https://www.intel.com/content/www/us/en/support/detect.html"
@@ -553,10 +612,32 @@ $btnDriverVendor.Add_Click({
 $btnMissingDriver.Add_Click({
     $prob = Get-CimInstance Win32_PnPEntity -ErrorAction SilentlyContinue | Where-Object { $_.ConfigManagerErrorCode -ne 0 -and $_.ConfigManagerErrorCode -ne $null }
     if ($prob) {
-        $names = ($prob | ForEach-Object { "• $($_.Name) (Mã lỗi: $($_.ConfigManagerErrorCode))" }) -join "`n"
-        [System.Windows.MessageBox]::Show("Phát hiện $($prob.Count) thiết bị chưa đủ Driver:`n$names", "Driver Thiếu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        $lines = @()
+        foreach ($dev in $prob) {
+            $devName = if ($dev.Name) { $dev.Name } elseif ($dev.Description) { $dev.Description } elseif ($dev.Caption) { $dev.Caption } else { "Thiết bị phần cứng" }
+            $hwId = if ($dev.DeviceID) { $dev.DeviceID } else { "" }
+            
+            # Phan tich thong minh PCI Vendor & Device ID
+            if ($hwId -like "PCI\VEN_*") {
+                $ven = if ($hwId -match "VEN_([0-9A-Fa-f]{4})") { $matches[1].ToUpper() } else { "" }
+                $devCode = if ($hwId -match "DEV_([0-9A-Fa-f]{4})") { $matches[1].ToUpper() } else { "" }
+                $venName = switch ($ven) {
+                    "10DE" { "Card Đồ Họa Rời NVIDIA" }
+                    "1002" { "Card Đồ Họa AMD / Radeon" }
+                    "8086" { "Thiết Bị Intel (Chipset / Audio / Graphics)" }
+                    "10EC" { "Card Âm Thanh / Card Mạng Realtek" }
+                    "14E4" { "Card Mạng Broadcom" }
+                    "168C" { "Card Wi-Fi Qualcomm Atheros" }
+                    default { "Vendor ID: $ven" }
+                }
+                $devName = "$venName ($devName) [VEN_$ven DEV_$devCode]"
+            }
+            $lines += "• $devName (Mã lỗi: $($dev.ConfigManagerErrorCode))"
+        }
+        $names = ($lines -join "`n")
+        [System.Windows.MessageBox]::Show("Phát hiện $($prob.Count) thiết bị chưa đủ Driver trên máy:`n`n$names`n`n👉 Gợi ý: Nếu có card đồ họa rời NVIDIA/AMD, bạn có thể bấm nút 'Driver Hãng' để tải driver tự động.", "Kiểm Tra Driver Thiếu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
     } else {
-        [System.Windows.MessageBox]::Show("Tuyệt vời! Toàn bộ Driver trên máy đều hoạt động hoàn hảo không thiếu thiết bị nào.", "Kiểm Tra Driver", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        [System.Windows.MessageBox]::Show("Tuyệt vời! Toàn bộ Driver trên máy đều hoạt động hoàn hảo, không có thiết bị nào bị lỗi hoặc thiếu driver.", "Kiểm Tra Driver", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
     }
 })
 
