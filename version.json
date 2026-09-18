@@ -1,12 +1,12 @@
 {
-  "version": "20.5.908.29",
+  "version": "20.5.908.30",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Sửa triệt để bug mở Trình Test Bàn Phím (Offline) - Chuyển sang XamlReader::Parse và loại bỏ hoàn toàn lỗi Exception calling ShowDialog on null.",
-    "Nâng cấp toàn bộ hệ thống Typography sang hệ Font Apple cao cấp (SF Pro Display, SF Pro Text, -apple-system, Segoe UI Variable Display).",
-    "Bật chế độ hiển thị ClearType Subpixel Rendering & Display Formatting Mode siêu nét chuẩn Retina.",
-    "Đồng bộ hóa giao diện Apple Font cho cửa sổ chính, modal Office và các công cụ chẩn đoán phần cứng.",
-    "Đảm bảo toàn bộ mã nguồn lưu chuẩn UTF-8 with BOM tương thích 100% với Windows PowerShell 5.1 và compiled EXE."
+    "Thêm tính năng Quản lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro): Tự động phát hiện 100% phần mềm đã cài đặt trên máy tính (64-bit, 32-bit và CurrentUser).",
+    "Hỗ trợ Gỡ Sạch Triệt Để (Deep Clean): Chạy uninstaller gốc kết hợp quét dọn sạch toàn bộ rác thừa trong AppData, LocalAppData, ProgramData, Registry Keys và Shortcuts Start Menu/Desktop.",
+    "Bảo vệ dữ liệu hệ thống an toàn cao cấp: Tự động loại trừ các thành phần cốt lõi của Windows, Drivers và Hotfix cập nhật.",
+    "Tìm kiếm lọc phần mềm theo thời gian thực (Real-time Filter) kèm hiển thị ngày cài đặt, phiên bản, dung lượng và nhà phát hành chi tiết.",
+    "Nâng cấp toàn bộ hệ thống Typography chuẩn Apple Font Retina hiển thị sắc nét, tối ưu hiệu năng và độ ổn định."
   ]
 }

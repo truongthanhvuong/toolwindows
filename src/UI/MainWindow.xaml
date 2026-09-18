@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.29"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.30"
         Height="880" Width="1420"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
@@ -196,7 +196,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="v20.5.908.29 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="v20.5.908.30 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -292,6 +292,12 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="📦" Margin="0,0,8,0"/>
                                 <TextBlock Text="Cài app tùy chỉnh"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="btnMenuUninstaller" Style="{StaticResource MenuBtn}" Tag="Uninstaller">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🗑️" Margin="0,0,8,0"/>
+                                <TextBlock Text="Gỡ Bỏ Phần Mềm (Clean)"/>
                             </StackPanel>
                         </Button>
                         <Button x:Name="btnMenuFonts" Style="{StaticResource MenuBtn}" Tag="Fonts">
@@ -1356,6 +1362,88 @@
                     </StackPanel>
                 </ScrollViewer>
 
+                <!-- ================= PAGE: GỠ BỎ PHẦN MỀM (CLEAN UNINSTALLER PRO) ================= -->
+                <ScrollViewer x:Name="pageUninstaller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
+                    <StackPanel>
+                        <!-- Header Card -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="🗑️ Quản Lý &amp; Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)" FontWeight="Bold" FontSize="16"/>
+                                        <Border Background="#FEF3C7" CornerRadius="4" Padding="6,1,6,1" Margin="8,0,0,0">
+                                            <TextBlock Text="DEEP CLEAN" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock x:Name="txtInstalledAppsCount" Text="Đang sẵn sàng quét toàn bộ phần mềm đã cài đặt trên hệ thống..." FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button x:Name="btnRefreshInstalledApps" Content="🔄 Quét Lại Danh Sách" Background="#334155" Style="{StaticResource ActionBtn}" Width="165" Height="32"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Search Bar -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12" Padding="12,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="🔍 Tìm kiếm:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0"/>
+                                <TextBox x:Name="txtSearchInstalledApps" Grid.Column="1" Height="30" FontSize="13" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+                                <Button x:Name="btnClearSearchApps" Grid.Column="2" Content="❌ Xóa Lọc" Background="#64748B" Style="{StaticResource ActionBtn}" Width="90" Height="30"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Software List View -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12" Padding="6">
+                            <ListView x:Name="lvInstalledApps" Height="360" Background="Transparent" BorderThickness="0" SelectionMode="Single">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Tên Phần Mềm" Width="320" DisplayMemberBinding="{Binding DisplayName}"/>
+                                        <GridViewColumn Header="Phiên Bản" Width="110" DisplayMemberBinding="{Binding DisplayVersion}"/>
+                                        <GridViewColumn Header="Nhà Phát Triển" Width="170" DisplayMemberBinding="{Binding Publisher}"/>
+                                        <GridViewColumn Header="Ngày Cài" Width="95" DisplayMemberBinding="{Binding InstallDate}"/>
+                                        <GridViewColumn Header="Dung Lượng" Width="90" DisplayMemberBinding="{Binding SizeFormatted}"/>
+                                        <GridViewColumn Header="Thư Mục Cài Đặt" Width="260" DisplayMemberBinding="{Binding InstallLocation}"/>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Border>
+
+                        <!-- Action Toolbar -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12" Padding="12,10">
+                            <Grid>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                    <Button x:Name="btnUninstallClean" Content="⚡ GỠ SẠCH TRIỆT ĐỂ (Clean Uninstall)" Background="#BE123C" Style="{StaticResource ActionBtn}" Padding="16,0,16,0" ToolTip="Gỡ cài đặt gốc + Tự động quét &amp; xóa sạch tệp rác trong AppData/ProgramData và các khóa Registry còn sót lại"/>
+                                    <Button x:Name="btnUninstallStandard" Content="🗑️ Gỡ Cài Đặt Tiêu Chuẩn" Background="#B45309" Style="{StaticResource ActionBtn}" Padding="14,0,14,0" ToolTip="Thực thi lệnh gỡ cài đặt gốc của nhà sản xuất"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button x:Name="btnOpenAppFolder" Content="📁 Mở Thư Mục" Background="#334155" Style="{StaticResource ActionBtn}" Width="120"/>
+                                    <Button x:Name="btnOpenAppRegistry" Content="🔑 Mở Registry" Background="#475569" Style="{StaticResource ActionBtn}" Width="120"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Execution Log Card -->
+                        <Border Style="{StaticResource CardBorder}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <TextBlock Text="📄 Nhật Ký Gỡ Cài Đặt &amp; Quét Rác Chi Tiết" FontWeight="Bold" FontSize="13.5" VerticalAlignment="Center"/>
+                                    <Button x:Name="btnClearUninstallerLog" Content="Xóa Log" Background="#64748B" Style="{StaticResource ActionBtn}" Height="26" Width="75" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <TextBox x:Name="txtUninstallerLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="12.5" Height="110" Text="Chọn một phần mềm ở bảng trên rồi bấm 'Gỡ Sạch Triệt Để' hoặc 'Gỡ Cài Đặt Tiêu Chuẩn'."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
                 <!-- ================= PAGE 9: TEST LAPTOP & PHẦN CỨNG ================= -->
                 <ScrollViewer x:Name="pageLaptopCheck" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
@@ -1864,7 +1952,7 @@
                 <Grid VerticalAlignment="Center">
                     <TextBlock x:Name="txtFooterStatus" Text="• [OK] Sẵn sàng..." FontSize="12" Foreground="#047857" VerticalAlignment="Center"/>
                     <TextBlock Text="VUONGTT Tool Pro 2026" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBlock Text="v20.5.908.29" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    <TextBlock Text="v20.5.908.30" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
         </Grid>

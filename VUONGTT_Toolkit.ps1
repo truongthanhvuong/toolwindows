@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.29
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.30
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -105,7 +105,7 @@ $btnLangEN          = Get-Control "btnLangEN"
 $menuButtons = @(
     "btnMenuSysInfo", "btnMenuCustomize", "btnMenuUsers", "btnMenuBenchmark",
     "btnMenuLaptopCheck", "btnMenuCpuMain", "btnMenuTestHardware",
-    "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuFonts",
+    "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuUninstaller", "btnMenuFonts",
     "btnMenuCleaner", "btnMenuTweaks", "btnMenuPrinterLAN", "btnMenuBackupDriver",
     "btnMenuDevMgmt", "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition"
 )
@@ -122,6 +122,7 @@ $pages = @{
     "Office"       = Get-Control "pageOffice"
     "Software"     = Get-Control "pageSoftware"
     "CustomApp"    = Get-Control "pageCustomApp"
+    "Uninstaller"  = Get-Control "pageUninstaller"
     "Fonts"        = Get-Control "pageFonts"
     "Cleaner"      = Get-Control "pageCleaner"
     "Tweaks"       = Get-Control "pageTweaks"
@@ -145,6 +146,7 @@ $pageTitles = @{
     "Office"       = @{ Title = "Cài Đặt Office (Tự Động)"; Icon = "📑" }
     "Software"     = @{ Title = "Tải Ứng Dụng Thiết Yếu"; Icon = "📥" }
     "CustomApp"    = @{ Title = "Cài App Tùy Chỉnh & Silent"; Icon = "📦" }
+    "Uninstaller"  = @{ Title = "Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)"; Icon = "🗑️" }
     "Fonts"        = @{ Title = "Cài Font Tiếng Việt Đầy Đủ"; Icon = "🔤" }
     "Cleaner"      = @{ Title = "Tối Ưu & Dọn Dẹp Hệ Thống"; Icon = "🚀" }
     "Tweaks"       = @{ Title = "Tinh Chỉnh Windows Chuyên Sâu"; Icon = "⚙️" }
@@ -211,6 +213,12 @@ function Switch-Tab {
         "Office"       { Refresh-OfficeStatusBadge }
         "Software"     { $txtFooterStatus.Text = "• [OK] Kho 26 phần mềm thiết yếu sẵn sàng." }
         "CustomApp"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt ứng dụng tùy chỉnh hoặc file cài đặt silent." }
+        "Uninstaller"  {
+            $txtFooterStatus.Text = "• [OK] Đang ở trang Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)."
+            if (-not $script:allInstalledApps -or $script:allInstalledApps.Count -eq 0) {
+                Refresh-InstalledAppsGrid
+            }
+        }
         "Fonts"        { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt trọn bộ Font tiếng Việt VNI, TCVN3, Unicode." }
         "Cleaner"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và giải phóng bộ nhớ RAM." }
         "Tweaks"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng tinh chỉnh Windows và sửa lỗi hệ thống." }
@@ -1382,6 +1390,194 @@ $btnInstallVni.Add_Click({
     $res = Install-VietnameseFonts -FontType "VNI"
     $txtCustomAppLog.Text = $res
 })
+
+# =========================================================================
+# MODULE: GỠ BỎ PHẦN MỀM (CLEAN UNINSTALLER PRO)
+# =========================================================================
+$txtInstalledAppsCount   = Get-Control "txtInstalledAppsCount"
+$btnRefreshInstalledApps = Get-Control "btnRefreshInstalledApps"
+$txtSearchInstalledApps  = Get-Control "txtSearchInstalledApps"
+$btnClearSearchApps      = Get-Control "btnClearSearchApps"
+$lvInstalledApps         = Get-Control "lvInstalledApps"
+$btnUninstallClean       = Get-Control "btnUninstallClean"
+$btnUninstallStandard    = Get-Control "btnUninstallStandard"
+$btnOpenAppFolder        = Get-Control "btnOpenAppFolder"
+$btnOpenAppRegistry      = Get-Control "btnOpenAppRegistry"
+$txtUninstallerLog       = Get-Control "txtUninstallerLog"
+$btnClearUninstallerLog  = Get-Control "btnClearUninstallerLog"
+
+$script:allInstalledApps = @()
+
+function Refresh-InstalledAppsGrid {
+    param([string]$Filter = "")
+    if (-not $lvInstalledApps) { return }
+
+    if (-not $Filter -or $script:allInstalledApps.Count -eq 0) {
+        $txtFooterStatus.Text = "• [SCAN] Đang phát hiện phần mềm đã cài trên Windows..."
+        if ($txtUninstallerLog) { $txtUninstallerLog.Text = "Đang quét danh sách phần mềm từ Registry 64-bit, 32-bit và CurrentUser..." }
+        if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
+        
+        $script:allInstalledApps = Get-VUONGTTInstalledSoftware
+    }
+
+    $filtered = if ($Filter -and $Filter.Trim().Length -gt 0) {
+        $q = $Filter.Trim()
+        $script:allInstalledApps | Where-Object {
+            $_.DisplayName -like "*$q*" -or $_.Publisher -like "*$q*" -or $_.DisplayVersion -like "*$q*"
+        }
+    } else {
+        $script:allInstalledApps
+    }
+
+    $lvInstalledApps.ItemsSource = @($filtered)
+    $cnt = if ($filtered) { $filtered.Count } else { 0 }
+    $total = if ($script:allInstalledApps) { $script:allInstalledApps.Count } else { 0 }
+
+    if ($txtInstalledAppsCount) {
+        $txtInstalledAppsCount.Text = "Phát hiện $total phần mềm đã cài đặt trên máy (Đang hiển thị: $cnt mục)"
+    }
+    $txtFooterStatus.Text = "• [OK] Đã phát hiện $total phần mềm cài đặt trên máy."
+    if ($txtUninstallerLog) {
+        $txtUninstallerLog.Text = "✅ Đã nạp xong danh sách $total phần mềm!`nHướng dẫn: Nhấp chọn một phần mềm ở bảng trên rồi nhấn 'Gỡ Sạch Triệt Để' hoặc 'Gỡ Cài Đặt Tiêu Chuẩn'."
+    }
+}
+
+if ($btnRefreshInstalledApps) {
+    $btnRefreshInstalledApps.Add_Click({
+        $script:allInstalledApps = @()
+        Refresh-InstalledAppsGrid -Filter $txtSearchInstalledApps.Text
+    })
+}
+
+if ($txtSearchInstalledApps) {
+    $txtSearchInstalledApps.Add_TextChanged({
+        Refresh-InstalledAppsGrid -Filter $txtSearchInstalledApps.Text
+    })
+}
+
+if ($btnClearSearchApps) {
+    $btnClearSearchApps.Add_Click({
+        if ($txtSearchInstalledApps) { $txtSearchInstalledApps.Text = "" }
+        Refresh-InstalledAppsGrid
+    })
+}
+
+if ($btnClearUninstallerLog) {
+    $btnClearUninstallerLog.Add_Click({
+        if ($txtUninstallerLog) { $txtUninstallerLog.Text = "Nhật ký đã được xóa." }
+    })
+}
+
+# 1. Gỡ cài đặt tiêu chuẩn
+if ($btnUninstallStandard) {
+    $btnUninstallStandard.Add_Click({
+        $selected = $lvInstalledApps.SelectedItem
+        if (-not $selected) {
+            [System.Windows.MessageBox]::Show("Vui lòng nhấp chọn một phần mềm trong danh sách để gỡ cài đặt!", "Chưa Chọn Phần Mềm", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+
+        $confirm = [System.Windows.MessageBox]::Show(
+            "Bạn có chắc chắn muốn gỡ cài đặt phần mềm này không?`n`n• Tên phần mềm: $($selected.DisplayName)`n• Phiên bản: $($selected.DisplayVersion)`n• Nhà sản xuất: $($selected.Publisher)`n`nLưu ý: Chế độ này sẽ thực thi bộ gỡ cài đặt gốc của nhà sản xuất.",
+            "Xác Nhận Gỡ Cài Đặt",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Question
+        )
+
+        if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
+            $txtUninstallerLog.Text = ""
+            $logBuilder = [System.Text.StringBuilder]::new()
+            $onLogBlock = {
+                param($msg)
+                $null = $logBuilder.AppendLine($msg)
+                $txtUninstallerLog.Text = $logBuilder.ToString()
+                $txtUninstallerLog.ScrollToEnd()
+                if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
+            }
+
+            $res = Invoke-VUONGTTUninstallSoftware -AppItem $selected -CleanDeepScan:$false -OnLog $onLogBlock
+            [System.Windows.MessageBox]::Show("Đã hoàn tất tiến trình gỡ cài đặt cho $($selected.DisplayName)!", "Gỡ Cài Đặt Tiêu Chuẩn", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            
+            # Quét lại danh sách
+            $script:allInstalledApps = @()
+            Refresh-InstalledAppsGrid -Filter $txtSearchInstalledApps.Text
+        }
+    })
+}
+
+# 2. Gỡ sạch triệt để (Clean Uninstall - Deep Clean)
+if ($btnUninstallClean) {
+    $btnUninstallClean.Add_Click({
+        $selected = $lvInstalledApps.SelectedItem
+        if (-not $selected) {
+            [System.Windows.MessageBox]::Show("Vui lòng nhấp chọn một phần mềm trong danh sách để gỡ sạch triệt để!", "Chưa Chọn Phần Mềm", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+
+        $confirm = [System.Windows.MessageBox]::Show(
+            "BẠN CÓ MUỐN GỠ SẠCH TRIỆT ĐỂ (CLEAN UNINSTALL) PHẦN MỀM NÀY?`n`n• Tên phần mềm: $($selected.DisplayName)`n• Phiên bản: $($selected.DisplayVersion)`n• Nhà phát triển: $($selected.Publisher)`n`nQuy trình Gỡ Sạch Triệt Để sẽ tự động thực hiện:`n1. Khởi chạy trình gỡ cài đặt gốc của phần mềm.`n2. Quét & xóa sạch toàn bộ thư mục cài đặt gốc còn sót lại.`n3. Quét & xóa sạch tệp rác trong AppData & ProgramData.`n4. Quét & xóa sạch các khóa Registry còn sót lại.`n5. Xóa các biểu tượng Shortcut trên Desktop và Start Menu.`n`nBạn có muốn tiếp tục không?",
+            "Xác Nhận Gỡ Sạch Triệt Để (Clean Deep Scan)",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Warning
+        )
+
+        if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
+            $txtUninstallerLog.Text = ""
+            $logBuilder = [System.Text.StringBuilder]::new()
+            $onLogBlock = {
+                param($msg)
+                $null = $logBuilder.AppendLine($msg)
+                $txtUninstallerLog.Text = $logBuilder.ToString()
+                $txtUninstallerLog.ScrollToEnd()
+                if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
+            }
+
+            $res = Invoke-VUONGTTUninstallSoftware -AppItem $selected -CleanDeepScan:$true -OnLog $onLogBlock
+            [System.Windows.MessageBox]::Show("GỠ SẠCH HOÀN TẤT!`n`nPhần mềm $($selected.DisplayName) đã được gỡ bỏ và dọn dẹp sạch sẽ toàn bộ tệp rác & Registry còn sót lại.", "Gỡ Sạch Triệt Để Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+
+            # Quét lại danh sách
+            $script:allInstalledApps = @()
+            Refresh-InstalledAppsGrid -Filter $txtSearchInstalledApps.Text
+        }
+    })
+}
+
+# 3. Mở thư mục cài đặt
+if ($btnOpenAppFolder) {
+    $btnOpenAppFolder.Add_Click({
+        $selected = $lvInstalledApps.SelectedItem
+        if (-not $selected) {
+            [System.Windows.MessageBox]::Show("Vui lòng chọn một phần mềm trong bảng!", "Thông Báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+
+        $folder = $selected.InstallLocation
+        if ($folder -and (Test-Path $folder -ErrorAction SilentlyContinue)) {
+            Start-Process "explorer.exe" -ArgumentList "`"$folder`""
+        } else {
+            [System.Windows.MessageBox]::Show("Ứng dụng này không có thông tin thư mục cài đặt cố định trong Registry hoặc thư mục không còn tồn tại!", "Thư Mục Không Tồn Tại", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+}
+
+# 4. Mở Registry Key
+if ($btnOpenAppRegistry) {
+    $btnOpenAppRegistry.Add_Click({
+        $selected = $lvInstalledApps.SelectedItem
+        if (-not $selected -or -not $selected.RegistryPath) {
+            [System.Windows.MessageBox]::Show("Vui lòng chọn một phần mềm trong bảng!", "Thông Báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+
+        try {
+            $cleanReg = $selected.RegistryPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', ''
+            Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit" -Name "LastKey" -Value $cleanReg -ErrorAction SilentlyContinue
+            Start-Process "regedit.exe"
+        } catch {
+            Start-Process "regedit.exe"
+        }
+    })
+}
 
 # =========================================================================
 # MODULE 8: TEST LAPTOP & PHẦN CỨNG
