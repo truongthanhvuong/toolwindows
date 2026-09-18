@@ -35,17 +35,54 @@ function Get-VUONGTTAppUpdateInfo {
             $localPath = if ($CheckUrl -like "file://*") { [System.Uri]::new($CheckUrl).LocalPath } else { $CheckUrl }
             $jsonText = [System.IO.File]::ReadAllText($localPath, [System.Text.Encoding]::UTF8)
         } else {
-            $req = [System.Net.HttpWebRequest]::Create($CheckUrl)
-            $req.Timeout = $TimeoutSec * 1000
-            $req.UserAgent = "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))"
-            $resp = $req.GetResponse()
-            
-            $stream = $resp.GetResponseStream()
-            $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)
-            $jsonText = $reader.ReadToEnd()
-            $reader.Close()
-            $stream.Close()
-            $resp.Close()
+            # 1. Tầng 1: Truy vấn thời gian thực qua GitHub REST API (0 giây delay, loại bỏ triệt để Fastly CDN Cache)
+            $apiFetched = $false
+            if ($CheckUrl -like "*github*") {
+                try {
+                    $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main"
+                    $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
+                    $apiReq.Timeout = 3500
+                    $apiReq.UserAgent = "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))"
+                    $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+                    $apiReq.Headers.Add("Pragma", "no-cache")
+                    $apiResp = $apiReq.GetResponse()
+                    $apiStream = $apiResp.GetResponseStream()
+                    $apiReader = New-Object System.IO.StreamReader($apiStream, [System.Text.Encoding]::UTF8)
+                    $apiRaw = $apiReader.ReadToEnd()
+                    $apiReader.Close(); $apiStream.Close(); $apiResp.Close()
+
+                    $apiObj = ConvertFrom-Json $apiRaw
+                    if ($apiObj -and $apiObj.content) {
+                        $cleanBase64 = $apiObj.content -replace '\s+', ''
+                        $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                        $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes)
+                        $apiFetched = $true
+                    }
+                } catch {
+                    $apiFetched = $false
+                }
+            }
+
+            # 2. Tầng 2: Fallback sang Raw URL kèm Cache-Busting nếu GitHub API bị chặn hoặc lỗi
+            if (-not $apiFetched -or -not $jsonText) {
+                $rawUrl = $CheckUrl
+                $sep = if ($rawUrl -like "*\?*") { "&" } else { "?" }
+                $rawUrlWithBust = "$rawUrl$($sep)nocache=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+
+                $req = [System.Net.HttpWebRequest]::Create($rawUrlWithBust)
+                $req.Timeout = $TimeoutSec * 1000
+                $req.UserAgent = "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))"
+                $req.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+                $req.Headers.Add("Pragma", "no-cache")
+                $resp = $req.GetResponse()
+                
+                $stream = $resp.GetResponseStream()
+                $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)
+                $jsonText = $reader.ReadToEnd()
+                $reader.Close()
+                $stream.Close()
+                $resp.Close()
+            }
         }
 
         if ($jsonText) {
@@ -180,8 +217,14 @@ function Invoke-VUONGTTAppSelfUpdate {
         $client = New-Object System.Net.WebClient
         $client.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
 
+        $dlUrlWithCacheBust = $DownloadUrl
+        if ($dlUrlWithCacheBust -like "http*") {
+            $sep = if ($dlUrlWithCacheBust -like "*\?*") { "&" } else { "?" }
+            $dlUrlWithCacheBust = "$dlUrlWithCacheBust$($sep)nocache=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+        }
+
         if ($OnProgress) { & $OnProgress "Đang kết nối máy chủ và tải bản cập nhật mới nhất: $DownloadUrl..." }
-        $client.DownloadFile($DownloadUrl, $tempDownloadExe)
+        $client.DownloadFile($dlUrlWithCacheBust, $tempDownloadExe)
 
         if (-not (Test-Path $tempDownloadExe) -or (Get-Item $tempDownloadExe).Length -lt 50000) {
             return "[LỖI] Tải bản cập nhật thất bại hoặc tệp tin bị lỗi! Vui lòng thử lại sau."
