@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.41"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.42"
         Height="780" Width="1280"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
@@ -183,6 +183,112 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- iOS Style Toggle Switch -->
+        <Style x:Key="ToggleSwitch" TargetType="CheckBox">
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,3,0,3"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="Track" Grid.Column="0" Width="36" Height="20" CornerRadius="10" Background="#94A3B8" HorizontalAlignment="Left">
+                                <Ellipse x:Name="Thumb" Width="14" Height="14" Fill="White" HorizontalAlignment="Left" Margin="3,0,0,0"/>
+                            </Border>
+                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="#2563EB"/>
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Software Store Filter Tab Button -->
+        <Style x:Key="FilterTabBtn" TargetType="Button">
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"/>
+            <Setter Property="Background" Value="{DynamicResource CardInnerBgBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="10,0,10,0"/>
+            <Setter Property="Margin" Value="2,2,2,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#E2E8F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Software Store App Card CheckBox -->
+        <Style x:Key="AppStoreCard" TargetType="CheckBox">
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"/>
+            <Setter Property="Background" Value="{DynamicResource CardInnerBgBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Width" Value="216"/>
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="CardBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="6,4,6,4">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="IconBadge" Width="30" Height="30" CornerRadius="5" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,7,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Path=Tag, RelativeSource={RelativeSource TemplatedParent}}" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Grid.Column="1" Text="{TemplateBinding Content}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <Border x:Name="CheckBadge" Grid.Column="2" Width="18" Height="18" CornerRadius="9" Background="#E2E8F0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,0,0">
+                                    <TextBlock x:Name="CheckMark" Text="✓" FontSize="11" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="#3B82F6"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="#10B981"/>
+                                <Setter TargetName="CardBorder" Property="Background" Value="#ECFDF5"/>
+                                <Setter TargetName="CheckBadge" Property="Background" Value="#10B981"/>
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid x:Name="MainRootGrid">
@@ -219,7 +325,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="v20.5.908.41 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="v20.5.908.42 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -334,8 +440,14 @@
                         </Button>
                         <Button x:Name="btnMenuTweaks" Style="{StaticResource MenuBtn}" Tag="Tweaks">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="⚙️" Margin="0,0,8,0"/>
-                                <TextBlock Text="Tinh chỉnh Windows"/>
+                                <TextBlock Text="⚡" Margin="0,0,8,0"/>
+                                <TextBlock Text="Tối Ưu Windows (Tweaks Pro)"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="btnMenuConfig" Style="{StaticResource MenuBtn}" Tag="Config">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🛠️" Margin="0,0,8,0"/>
+                                <TextBlock Text="Cấu Hình &amp; Sửa Lỗi (Config)"/>
                             </StackPanel>
                         </Button>
 
@@ -1375,98 +1487,137 @@
 
                 <!-- ================= PAGE 7: TẢI ỨNG DỤNG & CÀI APP ================= -->
                 <ScrollViewer x:Name="pageSoftware" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
-                    <StackPanel>
-                        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Kho Phần Mềm Thiết Yếu &amp; Tự Động Cập Nhật" FontSize="18" FontWeight="Bold"/>
-                                    <TextBlock Text="Chọn các phần mềm cần thiết rồi nhấn Cài Đặt. Hỗ trợ cập nhật tự động toàn bộ qua Winget." FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
-                                </StackPanel>
-                                <WrapPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <Button x:Name="btnSelectAllApps" Content="✓ Chọn tất cả" Background="#334155" Style="{StaticResource ActionBtn}"/>
-                                    <Button x:Name="btnUnselectAllApps" Content="✕ Bỏ chọn" Background="#475569" Style="{StaticResource ActionBtn}"/>
-                                    <Button x:Name="btnInstallSelectedApps" Content="🚀 Cài Đặt Mục Đã Chọn" Background="#047857" Style="{StaticResource ActionBtn}"/>
-                                    <Button x:Name="btnUpdateAllApps" Content="🔄 Tự Động Update Tất Cả" Background="#B45309" Style="{StaticResource ActionBtn}"/>
-                                </WrapPanel>
-                            </Grid>
+                    <StackPanel Margin="0,0,0,16">
+                        <!-- Top Category Filter Tabs Bar (Image 2 & 3) -->
+                        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="8,6,8,6" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <WrapPanel>
+                                <Button x:Name="btnTabAll" Content="Tất Cả (All)" Background="#2563EB" Foreground="White" Style="{StaticResource FilterTabBtn}"/>
+                                <Button x:Name="btnTabBrowsers" Content="Trình Duyệt (Browsers)" Style="{StaticResource FilterTabBtn}"/>
+                                <Button x:Name="btnTabComms" Content="Liên Lạc (Communications)" Style="{StaticResource FilterTabBtn}"/>
+                                <Button x:Name="btnTabDev" Content="Lập Trình (Development)" Style="{StaticResource FilterTabBtn}"/>
+                                <Button x:Name="btnTabDocs" Content="Văn Phòng (Document)" Style="{StaticResource FilterTabBtn}"/>
+                                <Button x:Name="btnTabMedia" Content="Đa Phương Tiện (Multimedia)" Style="{StaticResource FilterTabBtn}"/>
+                                <Button x:Name="btnTabUtils" Content="Tiện Ích (Utilities)" Style="{StaticResource FilterTabBtn}"/>
+                                <Button x:Name="btnTabAccounting" Content="Kế Toán &amp; Thuế (Accounting)" Style="{StaticResource FilterTabBtn}"/>
+                            </WrapPanel>
                         </Border>
 
-                        <Border Style="{StaticResource CardBorder}">
-                            <StackPanel>
-                                <GroupBox Header="1. Văn Phòng, Soạn Thảo &amp; PDF" FontWeight="Bold" Padding="6" Margin="0,2,0,6">
-                                    <WrapPanel>
-                                        <CheckBox x:Name="app_office365" Content="🏢 Microsoft 365 (Office 365 Mới Nhất)" IsChecked="True" Width="260" Margin="4"/>
-                                        <CheckBox x:Name="app_foxitpdf" Content="📄 Foxit PDF Reader" Margin="4" Width="200"/>
-                                        <CheckBox x:Name="app_acrobat" Content="📄 Adobe Acrobat Reader DC" Margin="4" Width="210"/>
-                                    </WrapPanel>
-                                </GroupBox>
-                                <GroupBox Header="2. Bộ Gõ Tiếng Việt &amp; Nén Tệp" FontWeight="Bold" Padding="6" Margin="0,2,0,6">
-                                    <WrapPanel>
-                                        <CheckBox x:Name="app_unikey" Content="⌨️ UniKey 4.3 RC5" IsChecked="True" Width="200" Margin="4"/>
-                                        <CheckBox x:Name="app_evkey" Content="⌨️ EVKey" Width="180" Margin="4"/>
-                                        <CheckBox x:Name="app_7zip" Content="🗜️ 7-Zip 64-bit" IsChecked="True" Width="180" Margin="4"/>
-                                        <CheckBox x:Name="app_winrar" Content="🗜️ WinRAR 64-bit" Width="180" Margin="4"/>
-                                    </WrapPanel>
-                                </GroupBox>
-                                <GroupBox Header="3. Trình Duyệt Web &amp; Liên Lạc" FontWeight="Bold" Padding="6" Margin="0,2,0,6">
-                                    <WrapPanel>
-                                        <CheckBox x:Name="app_chrome" Content="🌐 Google Chrome" IsChecked="True" Width="200" Margin="4"/>
-                                        <CheckBox x:Name="app_coccoc" Content="🌐 Cốc Cốc Browser" Width="190" Margin="4"/>
-                                        <CheckBox x:Name="app_firefox" Content="🌐 Mozilla Firefox" Width="180" Margin="4"/>
-                                        <CheckBox x:Name="app_brave" Content="🦁 Brave Browser" Width="170" Margin="4"/>
-                                        <CheckBox x:Name="app_zalo" Content="💬 Zalo PC" IsChecked="True" Width="160" Margin="4"/>
-                                        <CheckBox x:Name="app_telegram" Content="✈️ Telegram Desktop" Width="180" Margin="4"/>
-                                        <CheckBox x:Name="app_discord" Content="🎧 Discord PC" Width="160" Margin="4"/>
-                                    </WrapPanel>
-                                </GroupBox>
-                                <GroupBox Header="4. Điều Khiển Từ Xa &amp; Tiện Ích Kỹ Thuật" FontWeight="Bold" Padding="6" Margin="0,2,0,6">
-                                    <WrapPanel>
-                                        <CheckBox x:Name="app_ultraviewer" Content="🖥️ UltraViewer 6.6" IsChecked="True" Width="190" Margin="4"/>
-                                        <CheckBox x:Name="app_anydesk" Content="🖥️ AnyDesk Remote" Width="190" Margin="4"/>
-                                        <CheckBox x:Name="app_rustdesk" Content="🛡️ RustDesk" Width="160" Margin="4"/>
-                                        <CheckBox x:Name="app_teamviewer" Content="🌐 TeamViewer" Width="160" Margin="4"/>
-                                        <CheckBox x:Name="app_vlc" Content="🎬 VLC Media Player" Width="180" Margin="4"/>
-                                        <CheckBox x:Name="app_notepadplus" Content="📝 Notepad++" Width="170" Margin="4"/>
-                                        <CheckBox x:Name="app_crystaldisk" Content="💾 CrystalDiskInfo" Width="180" Margin="4"/>
-                                        <CheckBox x:Name="app_cpuz" Content="⚡ CPU-Z" Width="140" Margin="4"/>
-                                        <CheckBox x:Name="app_revo" Content="🧹 Revo Uninstaller" Width="180" Margin="4"/>
-                                    </WrapPanel>
-                                </GroupBox>
-                                <GroupBox Header="5. Đồ Họa, Video, Tải File &amp; Lập Trình" FontWeight="Bold" Padding="6" Margin="0,2,0,6">
-                                    <WrapPanel>
-                                        <CheckBox x:Name="app_capcut" Content="🎬 CapCut PC" Width="180" Margin="4"/>
-                                        <CheckBox x:Name="app_obs" Content="📹 OBS Studio" Width="170" Margin="4"/>
-                                        <CheckBox x:Name="app_everything" Content="🔍 Everything Search" IsChecked="True" Width="190" Margin="4"/>
-                                        <CheckBox x:Name="app_fdm" Content="⚡ Free Download Manager" Width="220" Margin="4"/>
-                                        <CheckBox x:Name="app_crystaldiskmark" Content="📊 CrystalDiskMark" Width="180" Margin="4"/>
-                                        <CheckBox x:Name="app_vscode" Content="💻 Visual Studio Code" Width="190" Margin="4"/>
-                                        <CheckBox x:Name="app_git" Content="🌿 Git for Windows" Width="180" Margin="4"/>
-                                    </WrapPanel>
-                                </GroupBox>
+                        <!-- Main 2-Column Software Layout -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="190"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                                <!-- Group 6: Ứng Dụng Kế Toán, Thuế & Hóa Đơn Điện Tử -->
-                                <GroupBox Header="6. Ứng Dụng Kế Toán, Thuế &amp; Hóa Đơn Điện Tử (Tự Tải Mới Nhất Từ Trang Chủ)" FontWeight="Bold" Padding="6" Margin="0,2,0,6">
-                                    <StackPanel>
-                                        <WrapPanel Margin="0,0,0,6">
-                                            <CheckBox x:Name="app_htkk" Content="📑 HTKK (Hỗ Trợ Kê Khai Thuế Mới Nhất)" IsChecked="True" Width="280" Margin="4"/>
-                                            <CheckBox x:Name="app_itaxviewer" Content="📄 iTaxViewer (Đọc Tờ Khai XML)" IsChecked="True" Width="230" Margin="4"/>
-                                            <CheckBox x:Name="app_misasme" Content="📊 MISA SME (Kế Toán Doanh Nghiệp)" Width="250" Margin="4"/>
-                                            <CheckBox x:Name="app_meinvoice" Content="🧾 MISA meInvoice (Hóa Đơn ĐT)" Width="230" Margin="4"/>
-                                            <CheckBox x:Name="app_kbhxh" Content="🏢 KBHXH (Bảo Hiểm Xã Hội Điện Tử)" Width="260" Margin="4"/>
-                                            <CheckBox x:Name="app_javatax" Content="☕ Java Token JRE (Ký Số &amp; Thuế)" Width="230" Margin="4"/>
-                                        </WrapPanel>
-                                        <!-- Dedicated Action Buttons for Accounting -->
-                                        <WrapPanel Margin="0,4,0,2">
-                                            <Button x:Name="btnInstallAccountingOnly" Content="🚀 Cài Đặt Gói Kế Toán (Bản Mới Nhất)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0"/>
-                                            <Button x:Name="btnUpdateAccounting" Content="🔄 Tự Động Cập Nhật Mới Nhất" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="220" Padding="14,0,14,0"/>
-                                            <Button x:Name="btnOpenTaxPortal" Content="🌐 Mở Cổng Thuế (thuedientu.gdt.gov.vn)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0"/>
+                            <!-- LEFT SIDEBAR: Actions & Package Manager -->
+                            <Border Grid.Column="0" Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="12" Margin="0,0,8,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="Thao Tác (Actions)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                    <Button x:Name="btnInstallSelectedApps" Content="🚀 Cài Đặt / Update" Background="#059669" Style="{StaticResource ActionBtn}" Height="34" Margin="0,2,0,3"/>
+                                    <Button x:Name="btnUninstallApps" Content="🗑️ Gỡ Cài Đặt" Background="#DC2626" Style="{StaticResource ActionBtn}" Height="34" Margin="0,2,0,3"/>
+                                    <Button x:Name="btnUpdateAllApps" Content="🔄 Nâng Cấp Tất Cả" Background="#D97706" Style="{StaticResource ActionBtn}" Height="34" Margin="0,2,0,10"/>
+
+                                    <TextBlock Text="Trình Quản Lý Gói" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,4"/>
+                                    <RadioButton x:Name="rbPkgWinget" Content="WinGet (Microsoft)" IsChecked="True" FontSize="12" Margin="0,2,0,2"/>
+                                    <RadioButton x:Name="rbPkgDirect" Content="Tải Trực Tiếp (Direct)" FontSize="12" Margin="0,2,0,10"/>
+
+                                    <TextBlock Text="Lựa Chọn (Selection)" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,4"/>
+                                    <Button x:Name="btnSelectAllApps" Content="✓ Chọn Tất Cả" Background="#334155" Style="{StaticResource ActionBtn}" Height="28" Margin="0,2,0,2"/>
+                                    <Button x:Name="btnUnselectAllApps" Content="✕ Bỏ Chọn Tất Cả" Background="#64748B" Style="{StaticResource ActionBtn}" Height="28" Margin="0,2,0,4"/>
+                                    <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="4" Padding="6,4,6,4" Margin="0,4,0,0">
+                                        <TextBlock x:Name="txtSelectedAppsCount" Text="Đã chọn: 7 ứng dụng" FontSize="11.5" FontWeight="Bold" Foreground="#059669" HorizontalAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- RIGHT CONTENT: App Cards Grid -->
+                            <Border Grid.Column="1" Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <!-- 1. Browsers -->
+                                    <StackPanel x:Name="secBrowsers" Margin="0,0,0,8">
+                                        <TextBlock Text="🌐 Trình Duyệt Web (Browsers)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="app_chrome" Style="{StaticResource AppStoreCard}" Tag="🌐" Content="Google Chrome" IsChecked="True"/>
+                                            <CheckBox x:Name="app_coccoc" Style="{StaticResource AppStoreCard}" Tag="🌐" Content="Cốc Cốc Browser"/>
+                                            <CheckBox x:Name="app_firefox" Style="{StaticResource AppStoreCard}" Tag="🦊" Content="Mozilla Firefox"/>
+                                            <CheckBox x:Name="app_brave" Style="{StaticResource AppStoreCard}" Tag="🦁" Content="Brave Browser"/>
                                         </WrapPanel>
                                     </StackPanel>
-                                </GroupBox>
+
+                                    <!-- 2. Communications -->
+                                    <StackPanel x:Name="secComms" Margin="0,4,0,8">
+                                        <TextBlock Text="💬 Liên Lạc &amp; Chat (Communications)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="app_zalo" Style="{StaticResource AppStoreCard}" Tag="💬" Content="Zalo PC" IsChecked="True"/>
+                                            <CheckBox x:Name="app_telegram" Style="{StaticResource AppStoreCard}" Tag="✈️" Content="Telegram Desktop"/>
+                                            <CheckBox x:Name="app_discord" Style="{StaticResource AppStoreCard}" Tag="🎧" Content="Discord PC"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+
+                                    <!-- 3. Development -->
+                                    <StackPanel x:Name="secDev" Margin="0,4,0,8">
+                                        <TextBlock Text="💻 Lập Trình &amp; Phát Triển (Development)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="app_vscode" Style="{StaticResource AppStoreCard}" Tag="💻" Content="Visual Studio Code"/>
+                                            <CheckBox x:Name="app_git" Style="{StaticResource AppStoreCard}" Tag="🌿" Content="Git for Windows"/>
+                                            <CheckBox x:Name="app_notepadplus" Style="{StaticResource AppStoreCard}" Tag="📝" Content="Notepad++ 64-bit"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+
+                                    <!-- 4. Document & Office -->
+                                    <StackPanel x:Name="secDocs" Margin="0,4,0,8">
+                                        <TextBlock Text="📄 Văn Phòng, Gõ Tiếng Việt &amp; PDF (Document)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="app_office365" Style="{StaticResource AppStoreCard}" Tag="🏢" Content="Microsoft 365" IsChecked="True"/>
+                                            <CheckBox x:Name="app_unikey" Style="{StaticResource AppStoreCard}" Tag="⌨️" Content="UniKey 4.3 RC5" IsChecked="True"/>
+                                            <CheckBox x:Name="app_evkey" Style="{StaticResource AppStoreCard}" Tag="⌨️" Content="EVKey Tiếng Việt"/>
+                                            <CheckBox x:Name="app_foxitpdf" Style="{StaticResource AppStoreCard}" Tag="📄" Content="Foxit PDF Reader"/>
+                                            <CheckBox x:Name="app_acrobat" Style="{StaticResource AppStoreCard}" Tag="📄" Content="Adobe Acrobat Reader"/>
+                                            <CheckBox x:Name="app_7zip" Style="{StaticResource AppStoreCard}" Tag="🗜️" Content="7-Zip 64-bit" IsChecked="True"/>
+                                            <CheckBox x:Name="app_winrar" Style="{StaticResource AppStoreCard}" Tag="🗜️" Content="WinRAR 64-bit"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+
+                                    <!-- 5. Multimedia -->
+                                    <StackPanel x:Name="secMedia" Margin="0,4,0,8">
+                                        <TextBlock Text="🎬 Đa Phương Tiện, Video &amp; Livestream (Multimedia)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="app_vlc" Style="{StaticResource AppStoreCard}" Tag="🎬" Content="VLC Media Player"/>
+                                            <CheckBox x:Name="app_capcut" Style="{StaticResource AppStoreCard}" Tag="🎬" Content="CapCut Video Editor"/>
+                                            <CheckBox x:Name="app_obs" Style="{StaticResource AppStoreCard}" Tag="📹" Content="OBS Studio"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+
+                                    <!-- 6. Utilities & Remote -->
+                                    <StackPanel x:Name="secUtils" Margin="0,4,0,8">
+                                        <TextBlock Text="🛠️ Tiện Ích Kỹ Thuật &amp; Điều Khiển Từ Xa (Utilities)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="app_ultraviewer" Style="{StaticResource AppStoreCard}" Tag="🖥️" Content="UltraViewer 6.6" IsChecked="True"/>
+                                            <CheckBox x:Name="app_anydesk" Style="{StaticResource AppStoreCard}" Tag="🖥️" Content="AnyDesk Remote"/>
+                                            <CheckBox x:Name="app_rustdesk" Style="{StaticResource AppStoreCard}" Tag="🛡️" Content="RustDesk OpenSource"/>
+                                            <CheckBox x:Name="app_teamviewer" Style="{StaticResource AppStoreCard}" Tag="🌐" Content="TeamViewer"/>
+                                            <CheckBox x:Name="app_everything" Style="{StaticResource AppStoreCard}" Tag="🔍" Content="Everything Search" IsChecked="True"/>
+                                            <CheckBox x:Name="app_crystaldisk" Style="{StaticResource AppStoreCard}" Tag="💾" Content="CrystalDiskInfo"/>
+                                            <CheckBox x:Name="app_cpuz" Style="{StaticResource AppStoreCard}" Tag="⚡" Content="CPU-Z Hardware"/>
+                                            <CheckBox x:Name="app_revo" Style="{StaticResource AppStoreCard}" Tag="🧹" Content="Revo Uninstaller"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+
+                                    <!-- 7. Accounting & Tax -->
+                                    <StackPanel x:Name="secAccounting" Margin="0,4,0,4">
+                                        <TextBlock Text="📊 Kế Toán, Hóa Đơn Điện Tử &amp; Kê Khai Thuế (Accounting)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="app_htkk" Style="{StaticResource AppStoreCard}" Tag="📑" Content="HTKK Thuế Mới Nhất" IsChecked="True"/>
+                                            <CheckBox x:Name="app_itaxviewer" Style="{StaticResource AppStoreCard}" Tag="📄" Content="iTaxViewer Đọc XML" IsChecked="True"/>
+                                            <CheckBox x:Name="app_misasme" Style="{StaticResource AppStoreCard}" Tag="📊" Content="MISA SME Doanh Nghiệp"/>
+                                            <CheckBox x:Name="app_meinvoice" Style="{StaticResource AppStoreCard}" Tag="🧾" Content="MISA meInvoice Hóa Đơn"/>
+                                            <CheckBox x:Name="app_kbhxh" Style="{StaticResource AppStoreCard}" Tag="🏢" Content="KBHXH Bảo Hiểm"/>
+                                            <CheckBox x:Name="app_javatax" Style="{StaticResource AppStoreCard}" Tag="☕" Content="Java Token Ký Số"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
 
                                 <!-- Installation Status & Progress Panel -->
                                 <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="12,10,12,10" Margin="0,6,0,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
@@ -1497,8 +1648,6 @@
                                 <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="8" Margin="0,0,0,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <TextBox x:Name="txtSoftwareLog" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" FontSize="13" Height="160" Text="Sẵn sàng tải và cài đặt phần mềm."/>
                                 </Border>
-                            </StackPanel>
-                        </Border>
                     </StackPanel>
                 </ScrollViewer>
 
@@ -1774,49 +1923,239 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- ================= PAGE 11: TINH CHỈNH WINDOWS ================= -->
+                <!-- ================= PAGE 11: TỐI ƯU WINDOWS (TWEAKS PRO) ================= -->
                 <ScrollViewer x:Name="pageTweaks" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
-                    <StackPanel>
-                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="⚙️ TINH CHỈNH TÙY BIẾN GIAO DIỆN &amp; HỆ ĐIỀU HÀNH" FontSize="16" FontWeight="Bold" Margin="0,0,0,8"/>
-                                <WrapPanel Margin="0,0,0,4">
-                                    <Button x:Name="btnEnableClassicMenu" Content="🖱️ Menu Chuột Phải Cổ Điển" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="195" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnRestoreWin11Menu" Content="Khôi Phục Menu Win 11" Background="#64748B" Style="{StaticResource ActionBtn}" MinWidth="160" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnShowExtensions" Content="👁️ Hiện Đuôi File &amp; Ẩn" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="175" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnTakeOwnershipOn" Content="🔑 Thêm Take Ownership Chuột Phải" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="255" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnTakeOwnershipOff" Content="Gỡ Take Ownership" Background="#64748B" Style="{StaticResource ActionBtn}" MinWidth="150" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnClassicPhotoViewer" Content="🖼️ Bật Photo Viewer Cổ Điển (Win 7)" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="250" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnDisableTelemetry" Content="🛡️ Tắt Telemetry &amp; Bing" Background="#BE123C" Style="{StaticResource ActionBtn}" MinWidth="180" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnUltimatePlan" Content="⚡ Ultimate Performance" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="185" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnDisableUAC" Content="🛡️ Tắt Popup UAC" Background="#BE123C" Style="{StaticResource ActionBtn}" MinWidth="160" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnEnableUAC" Content="Bật Lại UAC" Background="#64748B" Style="{StaticResource ActionBtn}" MinWidth="130" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnDisableHibernation" Content="💤 Tắt Ngủ Đông (Thu hồi RAM ổ C)" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnDisableAutoReboot" Content="🚫 Chặn Auto Restart Sau Update" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="12,0,12,0"/>
-                                    <Button x:Name="btnOptimizeGaming" Content="🎮 Tối Ưu FPS (Tắt Game Bar DVR)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="235" Padding="12,0,12,0"/>
-                                </WrapPanel>
-                            </StackPanel>
+                    <StackPanel Margin="0,0,0,16">
+                        <!-- Top Recommended Presets Bar (Matching WinUtil Image 1) -->
+                        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="12,10,12,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Khuyến Nghị Chọn Sẵn (Recommended Selections):" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                <UniformGrid Grid.Row="1" Columns="6" Margin="0,2,0,0">
+                                    <Button x:Name="btnPresetStandard" Content="Chuẩn (Standard)" Background="#2563EB" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
+                                    <Button x:Name="btnPresetMinimal" Content="Tối Giản (Minimal)" Background="#334155" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
+                                    <Button x:Name="btnPresetAdvanced" Content="Nâng Cao (Advanced)" Background="#D97706" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
+                                    <Button x:Name="btnPresetClear" Content="Bỏ Chọn (Clear)" Background="#64748B" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
+                                    <Button x:Name="btnGetInstalledTweaks" Content="Lấy Tweak Đang Dùng" Background="#059669" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
+                                    <Button x:Name="btnAppXRemoval" Content="Dọn App Rác (AppX)" Background="#DC2626" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
+                                </UniformGrid>
+                            </Grid>
                         </Border>
 
-                        <!-- Tiện ích sửa lỗi hệ thống -->
-                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="🛠️ TIỆN ÍCH SỬA LỖI WINDOWS CHUYÊN SÂU" FontSize="17" FontWeight="Bold" Margin="0,0,0,10"/>
-                                <WrapPanel>
-                                    <Button x:Name="btnResetNetwork" Content="🌐 Reset Mạng (Winsock, IP, DNS)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnRepairWinUpdate" Content="🔄 Sửa Lỗi Windows Update" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="210" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnFixTaskbar" Content="🪟 Sửa Lỗi Taskbar &amp; Start Menu" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnFixNoInternet" Content="📶 Sửa Lỗi Báo 'No Internet'" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="210" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnFixSysMainCpu" Content="⚡ Fix CPU 100% (SysMain/Search)" Background="#BE123C" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnFixStoreAppX" Content="🏬 Sửa Lỗi Microsoft Store" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="210" Padding="14,0,14,0"/>
-                                </WrapPanel>
-                            </StackPanel>
+                        <!-- Main 2-Column Tweaks Body -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- LEFT COLUMN: Essential & Advanced Tweaks -->
+                            <Border Grid.Column="0" Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14" Margin="0,0,6,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <!-- Essential Tweaks -->
+                                    <TextBlock Text="Cơ Bản An Toàn (Essential Tweaks)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                    <StackPanel Margin="2,0,0,10">
+                                        <CheckBox x:Name="chk_ActivityHistory" Content="Tắt Lịch Sử Hoạt Động (Activity History - Disable)" ToolTip="Tắt đồng bộ lịch sử mở tệp và ứng dụng gửi về Microsoft" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_BitLocker" Content="Tắt Mã Hóa Ổ C (BitLocker - Disable)" ToolTip="Tắt mã hóa BitLocker trên ổ đĩa hệ thống C:" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_ConsumerFeatures" Content="Chặn Tự Cài App Rác (ConsumerFeatures - Disable)" ToolTip="Ngăn Windows tự tải game rác (Candy Crush, Disney...) vào máy" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_DeliveryOptimization" Content="Tắt Tải Ngang Hàng (Delivery Optimization - Disable)" ToolTip="Ngăn máy chia sẻ bản cập nhật cho các máy khác trên Internet" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_DiskCleanup" Content="Chạy Dọn Rác Hệ Thống (Disk Cleanup - Run)" ToolTip="Chạy công cụ giải phóng dung lượng đĩa tự động" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_EndTaskRightClick" Content="Bật End Task Chuột Phải Taskbar (End Task With Right Click)" ToolTip="Cho phép bấm chuột phải vào biểu tượng ứng dụng trên Taskbar để tắt nhanh tức thì" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_AutoFolderDiscovery" Content="Tắt Tự Dò Thư Mục (Folder Discovery - Disable)" ToolTip="Tăng tốc độ mở thư mục trong File Explorer" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_Hibernation" Content="Tắt Chế Độ Ngủ Đông (Hibernation - Disable)" ToolTip="Xóa tệp hiberfil.sys thu hồi ngay 8GB - 32GB ổ đĩa C:" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_LocationTracking" Content="Tắt Định Vị Vị Trí (Location Tracking - Disable)" ToolTip="Vô hiệu hóa cảm biến định vị vị trí địa lý của Windows" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_StoreSearchRec" Content="Tắt Gợi Ý MS Store (Store Recommended Results - Disable)" ToolTip="Không hiển thị app gợi ý của Store khi gõ tìm kiếm" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_PreventDeviceApps" Content="Chặn Tải App Kèm Thiết Bị (Prevent Device Companion Apps)" ToolTip="Không tự tải app rác khi cắm chuột/bàn phím mới" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_RestorePoint" Content="Tạo Điểm Khôi Phục (Restore Point - Create)" ToolTip="Tạo Restore Point sao lưu hệ thống trước khi tinh chỉnh" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_ServicesManual" Content="Chuyển Dịch Vụ Thừa Sang Thủ Công (Services - Set to Manual)" ToolTip="Đặt các dịch vụ không thiết yếu sang chế độ Manual" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_StartMenuLayout" Content="Bật Bố Cục Start Cũ (Start Menu Previous Layout - Enable)" ToolTip="Sử dụng giao diện Start Menu gọn gàng" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_Telemetry" Content="Tắt Thu Thập Dữ Liệu (Telemetry - Disable)" ToolTip="Tắt DiagTrack và các tiến trình chẩn đoán gửi về Microsoft" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_TempFiles" Content="Dọn Tệp Tạm &amp; Cache (Temporary Files - Remove)" ToolTip="Xóa toàn bộ Temp, Prefetch và tệp rác hệ thống" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_Widgets" Content="Gỡ Bỏ Widgets Tin Tức (Widgets - Remove)" ToolTip="Loại bỏ bảng tin tức và widget ngốn RAM trên Taskbar" Margin="0,2,0,2"/>
+                                    </StackPanel>
+
+                                    <!-- Advanced Tweaks -->
+                                    <TextBlock Text="Nâng Cao - CẨN THẬN (Advanced Tweaks - CAUTION)" FontWeight="Bold" FontSize="15" Foreground="#DC2626" Margin="0,6,0,6"/>
+                                    <StackPanel Margin="2,0,0,10">
+                                        <CheckBox x:Name="chk_BackgroundApps" Content="Tắt App Chạy Ngầm (Background Apps - Disable)" ToolTip="Tiết kiệm tối đa pin và tài nguyên CPU/RAM" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_ReservedStorage" Content="Tắt Bộ Nhớ Dự Phòng (Disable Reserved Storage)" ToolTip="Thu hồi ~7GB dung lượng ổ C bị Windows giữ riêng" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_IPv6PreferIPv4" Content="Ưu Tiên IPv4 Hơn IPv6 (IPv6 - Set IPv4 as Preferred)" ToolTip="Khắc phục triệt để nghẽn mạng do mạng IPv6 chập chờn" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_ClassicContextMenu" Content="Menu Chuột Phải Win 10 (Right-Click Menu Previous Layout)" ToolTip="Mở ngay menu chuột phải đầy đủ mà không cần bấm 'Show more options'" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_VisualEffects" Content="Tối Ưu Hiệu Năng Tối Đa (Visual Effects - Best Performance)" ToolTip="Tắt hiệu ứng chuyển cảnh giúp máy mượt mà tức thì" Margin="0,2,0,2"/>
+                                        <CheckBox x:Name="chk_GameMode" Content="Tối Ưu Chơi Game (Game Mode &amp; Tắt Game Bar DVR)" ToolTip="Tắt Xbox Game Bar ghi ngầm giúp tăng FPS game" Margin="0,2,0,2"/>
+                                    </StackPanel>
+
+                                    <!-- DNS Configuration Dropdown -->
+                                    <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="10,8,10,8" Margin="0,4,0,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <DockPanel>
+                                            <TextBlock Text="DNS - Máy chủ phân giải:" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                            <ComboBox x:Name="cmbDnsProvider" Height="28" Width="170" HorizontalAlignment="Right">
+                                                <ComboBoxItem Content="Mặc định (Default DHCP)" IsSelected="True"/>
+                                                <ComboBoxItem Content="Cloudflare (1.1.1.1)"/>
+                                                <ComboBoxItem Content="Google (8.8.8.8)"/>
+                                                <ComboBoxItem Content="Quad9 (9.9.9.9)"/>
+                                                <ComboBoxItem Content="AdGuard (94.140.14.14)"/>
+                                            </ComboBox>
+                                        </DockPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- RIGHT COLUMN: Customize Preferences (Toggles) & Performance Plans -->
+                            <Border Grid.Column="1" Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14" Margin="6,0,0,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="Tùy Chỉnh Cá Nhân (Customize Preferences)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                                    <StackPanel Margin="2,0,0,10">
+                                        <CheckBox x:Name="tog_DarkTheme" Style="{StaticResource ToggleSwitch}" Content="Giao Diện Tối (Dark Theme for Windows)" ToolTip="Bật chế độ Dark Mode cho hệ thống và ứng dụng"/>
+                                        <CheckBox x:Name="tog_LongPaths" Style="{StaticResource ToggleSwitch}" Content="Cho Phép Đường Dẫn Dài (Enable Long Paths)" ToolTip="Bỏ giới hạn 260 ký tự đường dẫn tệp tin"/>
+                                        <CheckBox x:Name="tog_ShowFileExt" Style="{StaticResource ToggleSwitch}" Content="Hiện Đuôi File (File Explorer File Extensions)" ToolTip="Hiển thị phần mở rộng tệp tin (.exe, .docx, .png...)"/>
+                                        <CheckBox x:Name="tog_ShowHiddenFiles" Style="{StaticResource ToggleSwitch}" Content="Hiện Tệp Ẩn (File Explorer Hidden Files)" ToolTip="Hiển thị các tệp tin và thư mục bị ẩn"/>
+                                        <CheckBox x:Name="tog_NumLock" Style="{StaticResource ToggleSwitch}" Content="Bật Phím Số Khi Khởi Động (Num Lock on Startup)" ToolTip="Tự động bật đèn bàn phím số khi vào Windows"/>
+                                        <CheckBox x:Name="tog_TaskbarCenter" Style="{StaticResource ToggleSwitch}" Content="Căn Giữa Biểu Tượng (Taskbar Centered Icons)" ToolTip="Căn giữa hoặc đưa sang trái thanh tác vụ"/>
+                                        <CheckBox x:Name="tog_TaskbarSearch" Style="{StaticResource ToggleSwitch}" Content="Hiện Ô Tìm Kiếm (Taskbar Search Icon)" ToolTip="Bật tắt ô tìm kiếm trên thanh Taskbar"/>
+                                        <CheckBox x:Name="tog_TaskbarTaskView" Style="{StaticResource ToggleSwitch}" Content="Nút Đa Nhiệm (Taskbar Task View Icon)" ToolTip="Bật tắt nút Task View đa màn hình ảo"/>
+                                        <CheckBox x:Name="tog_StartBing" Style="{StaticResource ToggleSwitch}" Content="Tìm Kiếm Web Trong Start (Start Menu Bing Search)" ToolTip="Bật tắt gợi ý tìm kiếm Web Bing trong Start Menu"/>
+                                        <CheckBox x:Name="tog_WindowSnap" Style="{StaticResource ToggleSwitch}" Content="Chia Cửa Sổ (Window Snapping)" ToolTip="Kéo cửa sổ vào mép để tự chia đôi hoặc góc màn hình"/>
+                                    </StackPanel>
+
+                                    <!-- Performance Plans (NOT FOR LAPTOPS) -->
+                                    <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="12,10,12,10" Margin="0,8,0,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="Gói Nguồn Điện (Performance Plans - NOT FOR LAPTOPS)" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                            <Grid Margin="0,2,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnEnableUltimatePlan" Content="⚡ Bật Ultimate Profile" Background="#B45309" Style="{StaticResource ActionBtn}" Height="30" Margin="0,0,3,0"/>
+                                                <Button x:Name="btnDisableUltimatePlan" Content="Tắt Ultimate (Balanced)" Background="#64748B" Style="{StaticResource ActionBtn}" Height="30" Margin="3,0,0,0"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Bottom Action Buttons & Note -->
+                        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="btnRunTweaks" Content="⚡ Áp Dụng Tweaks (Run Tweaks)" Background="#059669" Style="{StaticResource ActionBtn}" MinWidth="220" Height="36" Margin="0,0,8,0"/>
+                                <Button x:Name="btnUndoTweaks" Content="🔄 Hoàn Tác Tweaks Đã Chọn (Undo Tweaks)" Background="#D97706" Style="{StaticResource ActionBtn}" MinWidth="240" Height="36" Grid.Column="1" Margin="0,0,12,0"/>
+                                <TextBlock Grid.Column="2" Text="* Chú thích: Rê chuột vào từng mục để xem giải thích chi tiết. Có thể hoàn tác mọi thay đổi an toàn." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                            </Grid>
                         </Border>
 
+                        <!-- Tweaks Execution Log -->
                         <Border Style="{StaticResource CardBorder}">
                             <StackPanel>
-                                <TextBlock Text="📄 Nhật Ký Thực Thi" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
-                                <TextBox x:Name="txtTweaksLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="130" Text="Sẵn sàng thực thi các tinh chỉnh và tiện ích sửa lỗi Windows."/>
+                                <TextBlock Text="📄 Nhật Ký Thực Thi Tinh Chỉnh (Execution Log)" FontSize="13.5" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBox x:Name="txtTweaksLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" FontSize="12.5" Height="130" Text="Sẵn sàng thực thi tinh chỉnh Windows. Chọn các mục mong muốn hoặc chọn nhanh theo Khuyến Nghị ở trên rồi nhấn 'Áp Dụng Tweaks'."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ================= PAGE CONFIG: CẤU HÌNH & SỬA LỖI WINDOWS (IMAGE 4) ================= -->
+                <ScrollViewer x:Name="pageConfig" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
+                    <StackPanel Margin="0,0,0,16">
+                        <!-- Top Banner -->
+                        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="⚙️ Cấu Hình Tính Năng Windows &amp; Bảng Điều Khiển Cổ Điển (Config &amp; Fixes)" FontSize="17" FontWeight="Bold"/>
+                                <TextBlock Text="Cài đặt các tính năng tùy chọn Windows, 1-Click sửa lỗi hệ thống, mở nhanh các bảng điều khiển truyền thống." FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Main 2-Column Body -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- LEFT COLUMN: Features & Fixes -->
+                            <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                <!-- Features Group -->
+                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="Tính Năng Tùy Chọn (Features)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                        <StackPanel Margin="2,0,0,8">
+                                            <CheckBox x:Name="chk_FeatNetFx3" Content=".NET Framework (Versions 2.0, 3.5, 4.x) - Bật" Margin="0,2,0,2"/>
+                                            <CheckBox x:Name="chk_FeatHyperV" Content="Hyper-V (Ảo Hóa Máy Ảo) - Bật" Margin="0,2,0,2"/>
+                                            <CheckBox x:Name="chk_FeatF8Boot" Content="Menu Khởi Động Cứu Hộ F8 (Legacy F8 Boot Recovery) - Bật" Margin="0,2,0,2"/>
+                                            <CheckBox x:Name="chk_FeatDirectPlay" Content="Linh Kiện Game Cũ (Legacy DirectPlay &amp; WMP) - Bật" Margin="0,2,0,2"/>
+                                            <CheckBox x:Name="chk_FeatNFS" Content="Dịch Vụ Chia Sẻ Tệp (Network File System NFS) - Bật" Margin="0,2,0,2"/>
+                                            <CheckBox x:Name="chk_FeatRegBackup" Content="Tự Động Sao Lưu Registry Hàng Ngày (Registry Backup) - Bật" Margin="0,2,0,2"/>
+                                            <CheckBox x:Name="chk_FeatSandbox" Content="Hộp Cát Cách Ly An Toàn (Windows Sandbox) - Bật" Margin="0,2,0,2"/>
+                                            <CheckBox x:Name="chk_FeatWSL" Content="Hệ Thống Phụ Linux (Windows Subsystem for Linux - WSL) - Bật" Margin="0,2,0,2"/>
+                                        </StackPanel>
+                                        <Button x:Name="btnInstallFeatures" Content="🚀 Cài Đặt Tính Năng Đã Chọn (Install Features)" Background="#2563EB" Style="{StaticResource ActionBtn}" Height="34" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Fixes Group -->
+                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="Bộ Công Cụ Sửa Lỗi (Fixes)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                        <UniformGrid Columns="2" Margin="0,2,0,0">
+                                            <Button x:Name="btnFixAutoLogon" Content="🔑 AutoLogon - Chạy" Background="#334155" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            <Button x:Name="btnFixNetworkReset" Content="🌐 Reset Mạng - Chạy" Background="#059669" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            <Button x:Name="btnFixNtpServer" Content="⏰ Đồng Bộ Giờ NTP - Chạy" Background="#334155" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            <Button x:Name="btnFixSystemCorruption" Content="🛠️ Sửa File Hỏng SFC/DISM" Background="#BE123C" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            <Button x:Name="btnFixWindowsUpdate" Content="🔄 Reset Windows Update" Background="#D97706" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            <Button x:Name="btnFixWinGet" Content="📦 Cài Lại WinGet - Chạy" Background="#334155" Style="{StaticResource ActionBtn}" Height="32"/>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- RIGHT COLUMN: Legacy Windows Panels & Remote Access -->
+                            <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="Bảng Điều Khiển Cổ Điển (Legacy Windows Panels)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                        <UniformGrid Columns="2" Margin="0,2,0,0">
+                                            <Button x:Name="btnPanelCompMgmt" Content="🖥️ Computer Management" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelControl" Content="⚙️ Control Panel" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelMouse" Content="🖱️ Mouse Properties" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelNetwork" Content="🌐 Network (ncpa.cpl)" Background="#059669" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelPower" Content="⚡ Power Panel" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelPrinters" Content="🖨️ Printer Panel" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelAppWiz" Content="📦 Programs &amp; Features" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelRegion" Content="🌍 Region (intl.cpl)" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelSecurity" Content="🛡️ Security &amp; Maintenance" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelSound" Content="🔊 Sound (mmsys.cpl)" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelSysProperties" Content="💻 System Properties" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelTimeDate" Content="📅 Time and Date" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelFirewall" Content="🧱 Defender Firewall" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                            <Button x:Name="btnPanelRestore" Content="🔄 Windows Restore" Background="#334155" Style="{StaticResource ActionBtn}" Height="30"/>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Remote Access Group -->
+                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="Truy Cập Từ Xa (Remote Access)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                        <Button x:Name="btnEnableOpenSSH" Content="🔒 Kích Hoạt Máy Chủ OpenSSH Server (sshd)" Background="#059669" Style="{StaticResource ActionBtn}" Height="34" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Config Log -->
+                        <Border Style="{StaticResource CardBorder}">
+                            <StackPanel>
+                                <TextBlock Text="📄 Nhật Ký Thực Thi Cấu Hình &amp; Sửa Lỗi" FontSize="13.5" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBox x:Name="txtConfigLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" FontSize="12.5" Height="130" Text="Sẵn sàng thao tác các tính năng và công cụ sửa lỗi hệ thống Windows."/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -2398,7 +2737,7 @@
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock Text="v20.5.908.41" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="v20.5.908.42" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>

@@ -1,11 +1,13 @@
 {
-  "version": "20.5.908.41",
+  "version": "20.5.908.42",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Thêm thanh tiến trình cài đặt ứng dụng (ProgressBar) và luồng log chi tiết thời gian thực (Live Streaming Log) cho Kho ứng dụng thiết yếu, Cài app tùy chỉnh, và Gói kế toán/thuế.",
-    "Tự động mở ứng dụng sau khi cài xong (Auto-Launch Installed App): Nhận diện thông minh 4 cấp (App Exec Map, Registry App Paths, System PATH, Start Menu & Desktop Shortcuts), tích hợp checkbox bật/tắt tiện lợi.",
-    "Bác Sĩ Driver Pro (Driver Doctor): Kiểm tra sâu toàn bộ bus PnP, chẩn đoán lỗi phần cứng (Code 28, Code 10, Code 43...), cảnh báo chạy màn hình cơ bản (Basic Display Adapter) hoặc lỗi Audio.",
-    "Trung tâm cài đặt Driver thiếu 1-Click: Tích hợp quét & cập nhật tự động qua Windows Update (Pnputil + Windows Update Catalog), tích hợp Snappy Driver Installer Origin (SDIO), 3DP Chip & 3DP Net, và cổng tra cứu Driver chính hãng theo Serial/Tag."
+    "Nâng cấp Bảng Tối Ưu Hóa Windows Pro (WinUtil Style): Tích hợp cấu hình nhanh Standard, Minimal, Advanced, Clear, Get Installed Tweaks, AppX Removal; chia 2 cột Essential Tweaks & Advanced Tweaks (CAUTION) kèm thanh chọn DNS thông minh.",
+    "Bổ sung Tùy chọn Tinh chỉnh hệ thống (Customize Preferences) với công tắc Toggle Switch hiện đại phong cách Apple/iOS cùng kế hoạch hiệu năng Ultimate Performance Profile.",
+    "Hỗ trợ Song ngữ Anh - Việt hoàn chỉnh (Bilingual VI/EN) và đồng bộ chủ đề màu sắc Dark/Light chuẩn giao diện VUONGTT Tool Pro 2026.",
+    "Thiết kế lại Kho Phần Mềm dạng Thẻ Lưới (Grid Cards) với biểu tượng Logo chính hãng, huy hiệu đã chọn góc xanh lá, và thanh lọc danh mục trực quan (Browsers, Communications, Development, Document, Games, Multimedia, Utilities, Accounting).",
+    "Bổ sung Trang Cấu hình & Sửa lỗi hệ thống (pageConfig): Quản lý Windows Optional Features (.NET 3.5, Hyper-V, WSL 2, Sandbox, NFS...), Sửa lỗi 1-Click (AutoLogon, Reset Network, SFC/DISM, Reset Update, WinGet), và mở nhanh 14 Bảng điều khiển Legacy Windows Panels.",
+    "Đại tu Engine Advanced IP Scanner siêu tốc: Áp dụng động cơ C# đa luồng bất đồng bộ (Zero UI Freezing) quét mượt mà không đơ giật giao diện, dừng tức thì và tự động nhận diện Hostname, MAC, Vendor, Cổng dịch vụ SMB/Web/RDP."
   ]
 }

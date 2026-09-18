@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.41
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.42
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -61,6 +61,7 @@ $corePath = Join-Path $ScriptDir "src\Core"
 . (Join-Path $corePath "AppUpdater.ps1")
 . (Join-Path $corePath "LicenseManager.ps1")
 . (Join-Path $corePath "IpScanner.ps1")
+. (Join-Path $corePath "ConfigManager.ps1")
 
 # Load Main UI XAML
 $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
@@ -173,7 +174,7 @@ $menuButtons = @(
     "btnMenuSysInfo", "btnMenuCustomize", "btnMenuUsers", "btnMenuBenchmark",
     "btnMenuLaptopCheck", "btnMenuCpuMain",
     "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuUninstaller", "btnMenuFonts",
-    "btnMenuCleaner", "btnMenuTweaks", "btnMenuPrinterLAN", "btnMenuBackupDriver",
+    "btnMenuCleaner", "btnMenuTweaks", "btnMenuConfig", "btnMenuPrinterLAN", "btnMenuBackupDriver",
     "btnMenuDevMgmt", "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition",
     "btnMenuIpScanner", "btnMenuAdmin"
 )
@@ -193,6 +194,7 @@ $pages = @{
     "Fonts"        = Get-Control "pageFonts"
     "Cleaner"      = Get-Control "pageCleaner"
     "Tweaks"       = Get-Control "pageTweaks"
+    "Config"       = Get-Control "pageConfig"
     "PrinterLAN"   = Get-Control "pagePrinterLAN"
     "BackupDriver" = Get-Control "pageBackupDriver"
     "DevMgmt"      = Get-Control "pageBackupDriver"
@@ -217,7 +219,8 @@ $pageTitlesVI = @{
     "Uninstaller"  = @{ Title = "Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)"; Icon = "🗑️" }
     "Fonts"        = @{ Title = "Cài Font Tiếng Việt Đầy Đủ"; Icon = "🔤" }
     "Cleaner"      = @{ Title = "Tối Ưu & Dọn Dẹp Hệ Thống"; Icon = "🚀" }
-    "Tweaks"       = @{ Title = "Tinh Chỉnh Windows Chuyên Sâu"; Icon = "⚙️" }
+    "Tweaks"       = @{ Title = "Tối Ưu Hóa Windows (Tweaks Pro)"; Icon = "⚡" }
+    "Config"       = @{ Title = "Cấu Hình Tính Năng & Sửa Lỗi Hệ Thống"; Icon = "🛠️" }
     "PrinterLAN"   = @{ Title = "Sửa Lỗi Máy In (87 Chức Năng)"; Icon = "🖨️" }
     "BackupDriver" = @{ Title = "Sao Lưu & Khôi Phục Driver Thiết Bị"; Icon = "💾" }
     "DevMgmt"      = @{ Title = "Quản Lý Thiết Bị (Device Manager)"; Icon = "🛠️" }
@@ -242,7 +245,8 @@ $pageTitlesEN = @{
     "Uninstaller"  = @{ Title = "Clean Uninstaller Pro"; Icon = "🗑️" }
     "Fonts"        = @{ Title = "Install Vietnamese Fonts"; Icon = "🔤" }
     "Cleaner"      = @{ Title = "System Cleaner & Junk"; Icon = "🚀" }
-    "Tweaks"       = @{ Title = "Deep Windows Tweaks"; Icon = "⚙️" }
+    "Tweaks"       = @{ Title = "Windows Tweaks Pro"; Icon = "⚡" }
+    "Config"       = @{ Title = "Windows Config & Fixes Manager"; Icon = "🛠️" }
     "PrinterLAN"   = @{ Title = "Printer Repair (87 Tools)"; Icon = "🖨️" }
     "BackupDriver" = @{ Title = "Backup & Restore Drivers"; Icon = "💾" }
     "DevMgmt"      = @{ Title = "Open Device Manager"; Icon = "🛠️" }
@@ -431,7 +435,8 @@ function Set-ToolkitLanguage {
             "btnMenuUninstaller"  = "Gỡ Bỏ Phần Mềm (Clean)"
             "btnMenuFonts"        = "Cài font tiếng Việt"
             "btnMenuCleaner"      = "Tối Ưu & Dọn Dẹp"
-            "btnMenuTweaks"       = "Tinh chỉnh Windows"
+            "btnMenuTweaks"       = "Tối Ưu Windows (Tweaks Pro)"
+            "btnMenuConfig"       = "Cấu Hình & Sửa Lỗi (Config)"
             "btnMenuPrinterLAN"   = "Sửa Lỗi Máy In (87 Chức Năng)"
             "btnMenuBackupDriver" = "Backup Driver Thiết Bị"
             "btnMenuDevMgmt"      = "Mở Device Manager"
@@ -439,6 +444,7 @@ function Set-ToolkitLanguage {
             "btnMenuBitLocker"    = "Tắt BitLocker - EFS"
             "btnMenuAutoWin"      = "Cài Win & Tự Động Hóa"
             "btnMenuPartition"    = "Quản Lý Phân Vùng Ổ Đĩa"
+            "btnMenuIpScanner"    = "Advanced IP Scanner"
         }
         foreach ($btnName in $menuTextsVI.Keys) {
             $b = Get-Control $btnName
@@ -486,7 +492,8 @@ function Set-ToolkitLanguage {
             "btnMenuUninstaller"  = "Clean Uninstaller Pro"
             "btnMenuFonts"        = "Install Vietnamese Fonts"
             "btnMenuCleaner"      = "System Cleaner & Junk"
-            "btnMenuTweaks"       = "Deep Windows Tweaks"
+            "btnMenuTweaks"       = "Windows Tweaks Pro"
+            "btnMenuConfig"       = "Windows Config & Fixes"
             "btnMenuPrinterLAN"   = "Printer Repair (87 Tools)"
             "btnMenuBackupDriver" = "Backup & Restore Drivers"
             "btnMenuDevMgmt"      = "Open Device Manager"
@@ -494,6 +501,7 @@ function Set-ToolkitLanguage {
             "btnMenuBitLocker"    = "Manage BitLocker - EFS"
             "btnMenuAutoWin"      = "Auto Windows Deploy"
             "btnMenuPartition"    = "Disk Partition Pro"
+            "btnMenuIpScanner"    = "Advanced IP Scanner"
         }
         foreach ($btnName in $menuTextsEN.Keys) {
             $b = Get-Control $btnName
@@ -1768,13 +1776,142 @@ $btnSelectAllApps.Add_Click({
         $c = Get-Control $name
         if ($c) { $c.IsChecked = $true }
     }
+    Update-VUONGTTAppSelectionCount
 })
 $btnUnselectAllApps.Add_Click({
     foreach ($name in $appControls) {
         $c = Get-Control $name
         if ($c) { $c.IsChecked = $false }
     }
+    Update-VUONGTTAppSelectionCount
 })
+
+# --- App Filter Tabs Wiring ---
+$btnTabAll        = Get-Control "btnTabAll"
+$btnTabBrowsers   = Get-Control "btnTabBrowsers"
+$btnTabComms      = Get-Control "btnTabComms"
+$btnTabDev        = Get-Control "btnTabDev"
+$btnTabDocs       = Get-Control "btnTabDocs"
+$btnTabMedia      = Get-Control "btnTabMedia"
+$btnTabUtils      = Get-Control "btnTabUtils"
+$btnTabAccounting = Get-Control "btnTabAccounting"
+
+$secBrowsers   = Get-Control "secBrowsers"
+$secComms      = Get-Control "secComms"
+$secDev        = Get-Control "secDev"
+$secDocs       = Get-Control "secDocs"
+$secMedia      = Get-Control "secMedia"
+$secUtils      = Get-Control "secUtils"
+$secAccounting = Get-Control "secAccounting"
+
+$txtSelectedAppsCount = Get-Control "txtSelectedAppsCount"
+$btnUninstallApps     = Get-Control "btnUninstallApps"
+
+function Update-VUONGTTAppSelectionCount {
+    $cCount = 0
+    foreach ($name in $appControls) {
+        $c = Get-Control $name
+        if ($c -and $c.IsChecked) { $cCount++ }
+    }
+    if ($txtSelectedAppsCount) {
+        $txtSelectedAppsCount.Text = "Đã chọn: $cCount ứng dụng"
+    }
+}
+
+foreach ($name in $appControls) {
+    $c = Get-Control $name
+    if ($c) {
+        $c.Add_Checked({ Update-VUONGTTAppSelectionCount })
+        $c.Add_Unchecked({ Update-VUONGTTAppSelectionCount })
+    }
+}
+Update-VUONGTTAppSelectionCount
+
+function Set-VUONGTTAppFilterTab {
+    param([string]$Category)
+    
+    $sections = @{
+        "Browsers"   = $secBrowsers
+        "Comms"      = $secComms
+        "Dev"        = $secDev
+        "Docs"       = $secDocs
+        "Media"      = $secMedia
+        "Utils"      = $secUtils
+        "Accounting" = $secAccounting
+    }
+
+    $tabButtons = @{
+        "All"        = $btnTabAll
+        "Browsers"   = $btnTabBrowsers
+        "Comms"      = $btnTabComms
+        "Dev"        = $btnTabDev
+        "Docs"       = $btnTabDocs
+        "Media"      = $btnTabMedia
+        "Utils"      = $btnTabUtils
+        "Accounting" = $btnTabAccounting
+    }
+
+    $activeBrush   = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2563EB")
+    $inactiveBrush = $window.Resources["CardInnerBgBrush"]
+
+    foreach ($k in $tabButtons.Keys) {
+        $tb = $tabButtons[$k]
+        if ($tb) {
+            if ($k -eq $Category) {
+                $tb.Background = $activeBrush
+                $tb.Foreground = [System.Windows.Media.Brushes]::White
+            } else {
+                $tb.Background = $inactiveBrush
+                $tb.Foreground = $window.Resources["TextPrimaryBrush"]
+            }
+        }
+    }
+
+    foreach ($k in $sections.Keys) {
+        $sec = $sections[$k]
+        if ($sec) {
+            if ($Category -eq "All" -or $Category -eq $k) {
+                $sec.Visibility = [System.Windows.Visibility]::Visible
+            } else {
+                $sec.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+        }
+    }
+}
+
+if ($btnTabAll)        { $btnTabAll.Add_Click({ Set-VUONGTTAppFilterTab "All" }) }
+if ($btnTabBrowsers)   { $btnTabBrowsers.Add_Click({ Set-VUONGTTAppFilterTab "Browsers" }) }
+if ($btnTabComms)      { $btnTabComms.Add_Click({ Set-VUONGTTAppFilterTab "Comms" }) }
+if ($btnTabDev)        { $btnTabDev.Add_Click({ Set-VUONGTTAppFilterTab "Dev" }) }
+if ($btnTabDocs)       { $btnTabDocs.Add_Click({ Set-VUONGTTAppFilterTab "Docs" }) }
+if ($btnTabMedia)      { $btnTabMedia.Add_Click({ Set-VUONGTTAppFilterTab "Media" }) }
+if ($btnTabUtils)      { $btnTabUtils.Add_Click({ Set-VUONGTTAppFilterTab "Utils" }) }
+if ($btnTabAccounting) { $btnTabAccounting.Add_Click({ Set-VUONGTTAppFilterTab "Accounting" }) }
+
+if ($btnUninstallApps) {
+    $btnUninstallApps.Add_Click({
+        $selected = @()
+        foreach ($name in $appControls) {
+            $c = Get-Control $name
+            if ($c -and $c.IsChecked) { $selected += $name.Replace("app_", "") }
+        }
+        if ($selected.Count -eq 0) {
+            [System.Windows.MessageBox]::Show("Vui lòng tích chọn ứng dụng cần gỡ!", "Gỡ Cài Đặt", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+        $confirm = [System.Windows.MessageBox]::Show("Bạn có chắc chắn muốn gỡ cài đặt $($selected.Count) ứng dụng đã chọn?", "Xác nhận gỡ bỏ", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+        if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
+            if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("`r`n[GỠ CÀI ĐẶT] Đang gỡ bỏ các ứng dụng đã chọn...`r`n") }
+            foreach ($appId in $selected) {
+                $appObj = $script:VUONGTT_APPS | Where-Object { $_.Id -eq $appId }
+                if ($appObj -and $appObj.WingetId) {
+                    Start-Process "winget.exe" -ArgumentList "uninstall --id $($appObj.WingetId) --silent" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                    if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("[OK] Đã gửi lệnh gỡ: $($appObj.Name)`r`n") }
+                }
+            }
+        }
+    })
+}
 
 if ($btnClearSoftwareLog) {
     $btnClearSoftwareLog.Add_Click({
@@ -3038,173 +3175,277 @@ if ($btnClearCleanerLog) {
     })
 }
 
-# --- Tinh Chỉnh Windows ---
-$btnEnableClassicMenu  = Get-Control "btnEnableClassicMenu"
-$btnRestoreWin11Menu   = Get-Control "btnRestoreWin11Menu"
-$btnShowExtensions     = Get-Control "btnShowExtensions"
-$btnTakeOwnershipOn    = Get-Control "btnTakeOwnershipOn"
-$btnTakeOwnershipOff   = Get-Control "btnTakeOwnershipOff"
-$btnClassicPhotoViewer = Get-Control "btnClassicPhotoViewer"
-$btnDisableTelemetry   = Get-Control "btnDisableTelemetry"
-$btnUltimatePlan       = Get-Control "btnUltimatePlan"
-$btnDisableUAC         = Get-Control "btnDisableUAC"
-$btnEnableUAC          = Get-Control "btnEnableUAC"
-$btnDisableHibernation = Get-Control "btnDisableHibernation"
-$btnDisableAutoReboot  = Get-Control "btnDisableAutoReboot"
-$btnOptimizeGaming     = Get-Control "btnOptimizeGaming"
+# =========================================================================
+# MODULE 11: TỐI ƯU HÓA WINDOWS (TWEAKS PRO - WINUTIL SPEC)
+# =========================================================================
+$btnPresetStandard    = Get-Control "btnPresetStandard"
+$btnPresetMinimal     = Get-Control "btnPresetMinimal"
+$btnPresetAdvanced    = Get-Control "btnPresetAdvanced"
+$btnPresetClear       = Get-Control "btnPresetClear"
+$btnGetInstalledTweaks= Get-Control "btnGetInstalledTweaks"
+$btnAppXRemoval       = Get-Control "btnAppXRemoval"
 
-$btnResetNetwork     = Get-Control "btnResetNetwork"
-$btnRepairWinUpdate  = Get-Control "btnRepairWinUpdate"
-$btnFixTaskbar       = Get-Control "btnFixTaskbar"
-$btnFixNoInternet    = Get-Control "btnFixNoInternet"
-$btnFixSysMainCpu    = Get-Control "btnFixSysMainCpu"
-$btnFixStoreAppX     = Get-Control "btnFixStoreAppX"
-$txtTweaksLog        = Get-Control "txtTweaksLog"
+$btnRunTweaks         = Get-Control "btnRunTweaks"
+$btnUndoTweaks        = Get-Control "btnUndoTweaks"
+$cmbDnsProvider       = Get-Control "cmbDnsProvider"
+$btnEnableUltimatePlan = Get-Control "btnEnableUltimatePlan"
+$btnDisableUltimatePlan= Get-Control "btnDisableUltimatePlan"
+$txtTweaksLog         = Get-Control "txtTweaksLog"
 
-if ($btnEnableClassicMenu) {
-    $btnEnableClassicMenu.Add_Click({
-        $msg = Set-VUONGTTClassicContextMenu -Enable $true
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã bật Menu chuột phải cổ điển"
-    })
-}
-if ($btnRestoreWin11Menu) {
-    $btnRestoreWin11Menu.Add_Click({
-        $msg = Set-VUONGTTClassicContextMenu -Enable $false
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã khôi phục Menu Win 11"
-    })
-}
-if ($btnShowExtensions) {
-    $btnShowExtensions.Add_Click({
-        $msg = Set-VUONGTTShowFileExtensions
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã hiện đuôi file và file ẩn"
-    })
-}
-if ($btnTakeOwnershipOn) {
-    $btnTakeOwnershipOn.Add_Click({
-        $msg = Set-VUONGTTTakeOwnershipMenu -Enable $true
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã thêm Take Ownership vào chuột phải"
-    })
-}
-if ($btnTakeOwnershipOff) {
-    $btnTakeOwnershipOff.Add_Click({
-        $msg = Set-VUONGTTTakeOwnershipMenu -Enable $false
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã gỡ Take Ownership"
-    })
-}
-if ($btnClassicPhotoViewer) {
-    $btnClassicPhotoViewer.Add_Click({
-        $msg = Set-VUONGTTClassicPhotoViewer
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã bật Windows Photo Viewer cổ điển"
-    })
-}
-if ($btnDisableTelemetry) {
-    $btnDisableTelemetry.Add_Click({
-        $msg = Disable-VUONGTTTelemetry
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã tắt Telemetry & Bing"
-    })
-}
-if ($btnUltimatePlan) {
-    $btnUltimatePlan.Add_Click({
-        powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 | Out-Null
-        $txtTweaksLog.Text = "Đã thêm gói nguồn điện Ultimate Performance!"
-        $txtFooterStatus.Text = "• [OK] Đã thêm gói Ultimate Performance"
-    })
-}
-if ($btnDisableUAC) {
-    $btnDisableUAC.Add_Click({
-        $msg = Set-VUONGTTToggleUAC -Disable $true
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã tắt thông báo UAC"
-    })
-}
-if ($btnEnableUAC) {
-    $btnEnableUAC.Add_Click({
-        $msg = Set-VUONGTTToggleUAC -Disable $false
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã bật lại UAC mặc định"
-    })
-}
-if ($btnDisableHibernation) {
-    $btnDisableHibernation.Add_Click({
-        $msg = Set-VUONGTTToggleHibernation -Enable $false
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã tắt Ngủ Đông và thu hồi file hiberfil.sys"
-    })
-}
-if ($btnDisableAutoReboot) {
-    $btnDisableAutoReboot.Add_Click({
-        $msg = Set-VUONGTTDisableAutoRebootUpdate
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã chặn Auto Restart sau Update"
-    })
-}
-if ($btnOptimizeGaming) {
-    $btnOptimizeGaming.Add_Click({
-        $msg = Set-VUONGTTToggleGameMode
-        $txtTweaksLog.Text = $msg
-        $txtFooterStatus.Text = "• [OK] Đã tối ưu Game Mode & tắt Xbox DVR"
+$allTweakCheckboxes = @(
+    "chk_ActivityHistory", "chk_BitLocker", "chk_ConsumerFeatures", "chk_DeliveryOptimization",
+    "chk_DiskCleanup", "chk_EndTaskRightClick", "chk_AutoFolderDiscovery", "chk_Hibernation",
+    "chk_LocationTracking", "chk_StoreSearchRec", "chk_PreventDeviceApps", "chk_RestorePoint",
+    "chk_ServicesManual", "chk_StartMenuLayout", "chk_Telemetry", "chk_TempFiles", "chk_Widgets",
+    "chk_BackgroundApps", "chk_ReservedStorage", "chk_IPv6PreferIPv4", "chk_ClassicContextMenu",
+    "chk_VisualEffects", "chk_GameMode",
+    "tog_DarkTheme", "tog_LongPaths", "tog_ShowFileExt", "tog_ShowHiddenFiles", "tog_NumLock",
+    "tog_TaskbarCenter", "tog_TaskbarSearch", "tog_TaskbarTaskView", "tog_StartBing", "tog_WindowSnap"
+)
+
+# Presets wiring
+if ($btnPresetStandard) {
+    $btnPresetStandard.Add_Click({
+        $standardTweaks = @(
+            "chk_ActivityHistory", "chk_ConsumerFeatures", "chk_DeliveryOptimization", "chk_DiskCleanup",
+            "chk_EndTaskRightClick", "chk_AutoFolderDiscovery", "chk_Hibernation", "chk_LocationTracking",
+            "chk_StoreSearchRec", "chk_PreventDeviceApps", "chk_RestorePoint", "chk_Telemetry",
+            "chk_TempFiles", "chk_Widgets", "tog_DarkTheme", "tog_LongPaths", "tog_ShowFileExt",
+            "tog_ShowHiddenFiles", "tog_NumLock"
+        )
+        foreach ($name in $allTweakCheckboxes) {
+            $c = Get-Control $name
+            if ($c) { $c.IsChecked = ($standardTweaks -contains $name) }
+        }
+        if ($txtTweaksLog) { $txtTweaksLog.Text = "[CHỌN NHANH] Đã chọn toàn bộ Tinh Chỉnh Chuẩn (Standard) khuyên dùng an toàn 100%!" }
+        $txtFooterStatus.Text = "• [OK] Đã nạp Preset Chuẩn (Standard)"
     })
 }
 
-if ($btnResetNetwork) {
-    $btnResetNetwork.Add_Click({
-        $txtTweaksLog.Text = "Đang đặt lại thiết lập mạng Winsock, TCP/IP và Flush DNS..."
-        $res = Invoke-VUONGTTResetNetwork
-        $txtTweaksLog.Text = $res
-        $txtFooterStatus.Text = "• [OK] Đã reset cấu hình mạng hệ thống"
+if ($btnPresetMinimal) {
+    $btnPresetMinimal.Add_Click({
+        $minimalTweaks = @("chk_ActivityHistory", "chk_Telemetry", "chk_TempFiles", "chk_EndTaskRightClick", "tog_ShowFileExt")
+        foreach ($name in $allTweakCheckboxes) {
+            $c = Get-Control $name
+            if ($c) { $c.IsChecked = ($minimalTweaks -contains $name) }
+        }
+        if ($txtTweaksLog) { $txtTweaksLog.Text = "[CHỌN NHANH] Đã chọn Tinh Chỉnh Tối Giản (Minimal) nhẹ nhàng!" }
+        $txtFooterStatus.Text = "• [OK] Đã nạp Preset Tối Giản (Minimal)"
     })
 }
 
-if ($btnRepairWinUpdate) {
-    $btnRepairWinUpdate.Add_Click({
-        $txtTweaksLog.Text = "Đang dọn dẹp SoftwareDistribution và khởi động lại dịch vụ Windows Update..."
-        $res = Invoke-VUONGTTRepairWindowsUpdate
-        $txtTweaksLog.Text = $res
-        $txtFooterStatus.Text = "• [OK] Đã hoàn tất sửa lỗi Windows Update"
+if ($btnPresetAdvanced) {
+    $btnPresetAdvanced.Add_Click({
+        foreach ($name in $allTweakCheckboxes) {
+            $c = Get-Control $name
+            if ($c) { $c.IsChecked = $true }
+        }
+        if ($txtTweaksLog) { $txtTweaksLog.Text = "[CHỌN NHANH] Đã chọn Toàn Bộ Tinh Chỉnh Nâng Cao (Gaming / Triệt để)!" }
+        $txtFooterStatus.Text = "• [OK] Đã nạp Preset Nâng Cao (Advanced)"
     })
 }
 
-if ($btnFixTaskbar) {
-    $btnFixTaskbar.Add_Click({
-        $txtTweaksLog.Text = "Đang khởi động lại Windows Explorer và sửa lỗi Taskbar/Start Menu..."
-        $res = Invoke-VUONGTTFixTaskbarStartMenu
-        $txtTweaksLog.Text = $res
-        $txtFooterStatus.Text = "• [OK] Đã làm mới thanh tác vụ Taskbar"
+if ($btnPresetClear) {
+    $btnPresetClear.Add_Click({
+        foreach ($name in $allTweakCheckboxes) {
+            $c = Get-Control $name
+            if ($c) { $c.IsChecked = $false }
+        }
+        if ($txtTweaksLog) { $txtTweaksLog.Text = "Đã bỏ chọn toàn bộ các mục tinh chỉnh." }
+        $txtFooterStatus.Text = "• [OK] Đã bỏ chọn toàn bộ Tweaks"
     })
 }
 
-if ($btnFixNoInternet) {
-    $btnFixNoInternet.Add_Click({
-        $txtTweaksLog.Text = "Đang thiết lập lại thông số NCSI No Internet trong Registry..."
-        $res = Invoke-VUONGTTFixNetworkNoInternet
-        $txtTweaksLog.Text = $res
-        $txtFooterStatus.Text = "• [OK] Đã sửa lỗi thông báo No Internet"
+if ($btnGetInstalledTweaks) {
+    $btnGetInstalledTweaks.Add_Click({
+        if ($txtTweaksLog) { $txtTweaksLog.Text = "Đang kiểm tra các tinh chỉnh hiện có trên máy tính..." }
+        $dark = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "AppsUseLightTheme" -ErrorAction SilentlyContinue
+        $cDark = Get-Control "tog_DarkTheme"; if ($cDark -and $dark -and $dark.AppsUseLightTheme -eq 0) { $cDark.IsChecked = $true }
+        
+        $ext = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -ErrorAction SilentlyContinue
+        $cExt = Get-Control "tog_ShowFileExt"; if ($cExt -and $ext -and $ext.HideFileExt -eq 0) { $cExt.IsChecked = $true }
+        
+        $hid = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -ErrorAction SilentlyContinue
+        $cHid = Get-Control "tog_ShowHiddenFiles"; if ($cHid -and $hid -and $hid.Hidden -eq 1) { $cHid.IsChecked = $true }
+
+        $long = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -ErrorAction SilentlyContinue
+        $cLong = Get-Control "tog_LongPaths"; if ($cLong -and $long -and $long.LongPathsEnabled -eq 1) { $cLong.IsChecked = $true }
+
+        if ($txtTweaksLog) { $txtTweaksLog.Text = "[OK] Đã phát hiện và đánh dấu các thiết lập đang kích hoạt trên máy!" }
+        $txtFooterStatus.Text = "• [OK] Đã nạp trạng thái tinh chỉnh hiện tại"
     })
 }
 
-if ($btnFixSysMainCpu) {
-    $btnFixSysMainCpu.Add_Click({
-        $txtTweaksLog.Text = "Đang tối ưu hóa dịch vụ SysMain và Windows Search..."
-        $res = Invoke-VUONGTTFixSysMainSearchCPU
-        $txtTweaksLog.Text = $res
-        $txtFooterStatus.Text = "• [OK] Đã sửa lỗi CPU 100% SysMain"
+if ($btnAppXRemoval) {
+    $btnAppXRemoval.Add_Click({
+        $confirm = [System.Windows.MessageBox]::Show("Bạn có muốn dọn dẹp các AppX Bloatware rác mặc định của Windows (Clipchamp, Solitaire, Xbox...)?", "Dọn App Rác Windows", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+        if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
+            $junkApps = @("*bing*", "*solitaire*", "*clipchamp*", "*skype*", "*gethelp*", "*feedback*")
+            if ($txtTweaksLog) { $txtTweaksLog.Text = "Đang tiến hành gỡ bỏ các ứng dụng rác AppX...`r`n" }
+            foreach ($j in $junkApps) {
+                Get-AppxPackage -AllUsers -Name $j -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
+                if ($txtTweaksLog) { $txtTweaksLog.AppendText("[OK] Đã gỡ: $j`r`n") }
+            }
+            if ($txtTweaksLog) { $txtTweaksLog.AppendText("Hoàn tất dọn dẹp ứng dụng rác AppX!`r`n") }
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất gỡ bỏ AppX Bloatware"
+        }
     })
 }
 
-if ($btnFixStoreAppX) {
-    $btnFixStoreAppX.Add_Click({
-        $txtTweaksLog.Text = "Đang đăng ký lại toàn bộ gói ứng dụng Microsoft Store và AppX..."
-        $res = Invoke-VUONGTTFixStoreAppX
-        $txtTweaksLog.Text = $res
-        $txtFooterStatus.Text = "• [OK] Đã làm mới Microsoft Store"
+# Run Tweaks
+if ($btnRunTweaks) {
+    $btnRunTweaks.Add_Click({
+        if ($txtTweaksLog) {
+            $txtTweaksLog.Text = "=== [BẮT ĐẦU ÁP DỤNG CÁC TINH CHỈNH ĐÃ CHỌN - $(Get-Date -Format 'HH:mm:ss')] ===`r`n"
+        }
+        $count = 0
+        foreach ($name in $allTweakCheckboxes) {
+            $c = Get-Control $name
+            if ($c -and $c.IsChecked) {
+                $key = $name.Replace("chk_", "").Replace("tog_", "")
+                $res = Invoke-VUONGTTSingleTweak -TweakKey $key -Enable $true
+                if ($txtTweaksLog) { $txtTweaksLog.AppendText("$res`r`n") }
+                $count++
+            }
+        }
+
+        # Apply DNS if selected
+        if ($cmbDnsProvider -and $cmbDnsProvider.SelectedItem) {
+            $dnsText = $cmbDnsProvider.SelectedItem.Content.ToString()
+            if ($dnsText -like "*Cloudflare*") { $dRes = Set-VUONGTTDns "Cloudflare" }
+            elseif ($dnsText -like "*Google*") { $dRes = Set-VUONGTTDns "Google" }
+            elseif ($dnsText -like "*Quad9*") { $dRes = Set-VUONGTTDns "Quad9" }
+            elseif ($dnsText -like "*AdGuard*") { $dRes = Set-VUONGTTDns "AdGuard" }
+            else { $dRes = Set-VUONGTTDns "Default" }
+            if ($txtTweaksLog) { $txtTweaksLog.AppendText("$dRes`r`n") }
+        }
+
+        if ($txtTweaksLog) { $txtTweaksLog.AppendText("=== [HOÀN TẤT] Đã áp dụng thành công $count mục tinh chỉnh! ===`r`n") }
+        $txtFooterStatus.Text = "• [OK] Đã áp dụng thành công các tinh chỉnh Windows!"
     })
+}
+
+# Undo Tweaks
+if ($btnUndoTweaks) {
+    $btnUndoTweaks.Add_Click({
+        if ($txtTweaksLog) {
+            $txtTweaksLog.Text = "=== [BẮT ĐẦU HOÀN TÁC CÁC TINH CHỈNH ĐÃ CHỌN - $(Get-Date -Format 'HH:mm:ss')] ===`r`n"
+        }
+        $count = 0
+        foreach ($name in $allTweakCheckboxes) {
+            $c = Get-Control $name
+            if ($c -and $c.IsChecked) {
+                $key = $name.Replace("chk_", "").Replace("tog_", "")
+                $res = Invoke-VUONGTTSingleTweak -TweakKey $key -Enable $false
+                if ($txtTweaksLog) { $txtTweaksLog.AppendText("$res`r`n") }
+                $count++
+            }
+        }
+        if ($txtTweaksLog) { $txtTweaksLog.AppendText("=== [HOÀN TẤT] Đã hoàn tác $count mục tinh chỉnh về mặc định! ===`r`n") }
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tác các tinh chỉnh về mặc định!"
+    })
+}
+
+if ($btnEnableUltimatePlan) {
+    $btnEnableUltimatePlan.Add_Click({
+        $res = Set-VUONGTTUltimatePerformancePlan -Enable $true
+        if ($txtTweaksLog) { $txtTweaksLog.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Đã kích hoạt Ultimate Performance Power Plan"
+    })
+}
+
+if ($btnDisableUltimatePlan) {
+    $btnDisableUltimatePlan.Add_Click({
+        $res = Set-VUONGTTUltimatePerformancePlan -Enable $false
+        if ($txtTweaksLog) { $txtTweaksLog.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Đã chuyển về Balanced Power Plan"
+    })
+}
+
+# =========================================================================
+# MODULE CONFIG: CẤU HÌNH TÍNH NĂNG & SỬA LỖI HỆ THỐNG (IMAGE 4)
+# =========================================================================
+$btnInstallFeatures      = Get-Control "btnInstallFeatures"
+$btnFixAutoLogon         = Get-Control "btnFixAutoLogon"
+$btnFixNetworkReset      = Get-Control "btnFixNetworkReset"
+$btnFixNtpServer         = Get-Control "btnFixNtpServer"
+$btnFixSystemCorruption  = Get-Control "btnFixSystemCorruption"
+$btnFixWindowsUpdate     = Get-Control "btnFixWindowsUpdate"
+$btnFixWinGet            = Get-Control "btnFixWinGet"
+$btnEnableOpenSSH        = Get-Control "btnEnableOpenSSH"
+$txtConfigLog            = Get-Control "txtConfigLog"
+
+# Install Features
+if ($btnInstallFeatures) {
+    $btnInstallFeatures.Add_Click({
+        if ($txtConfigLog) { $txtConfigLog.Text = "=== [BẮT ĐẦU CÀI ĐẶT TÍNH NĂNG WINDOWS] ===`r`n" }
+
+        $feats = @(
+            @{ Control="chk_FeatNetFx3"; DismName="NetFx3" },
+            @{ Control="chk_FeatHyperV"; DismName="Microsoft-Hyper-V" },
+            @{ Control="chk_FeatDirectPlay"; DismName="DirectPlay" },
+            @{ Control="chk_FeatNFS"; DismName="ServicesForNFS-ClientOnly" },
+            @{ Control="chk_FeatSandbox"; DismName="Containers-DisposableClientVM" },
+            @{ Control="chk_FeatWSL"; DismName="Microsoft-Windows-Subsystem-Linux" }
+        )
+
+        foreach ($f in $feats) {
+            $ctrl = Get-Control $f.Control
+            if ($ctrl -and $ctrl.IsChecked) {
+                $res = Enable-VUONGTTOptionalFeature -FeatureName $f.DismName
+                if ($txtConfigLog) { $txtConfigLog.AppendText("$res`r`n") }
+            }
+        }
+
+        $chkF8 = Get-Control "chk_FeatF8Boot"
+        if ($chkF8 -and $chkF8.IsChecked) {
+            $resF8 = Set-VUONGTTLegacyF8Boot -Enable $true
+            if ($txtConfigLog) { $txtConfigLog.AppendText("$resF8`r`n") }
+        }
+
+        $chkReg = Get-Control "chk_FeatRegBackup"
+        if ($chkReg -and $chkReg.IsChecked) {
+            $resReg = Enable-VUONGTTRegistryBackupDaily
+            if ($txtConfigLog) { $txtConfigLog.AppendText("$resReg`r`n") }
+        }
+
+        if ($txtConfigLog) { $txtConfigLog.AppendText("=== [HOÀN TẤT] Quá trình thiết lập tính năng đã xong! ===`r`n") }
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tất cài đặt tính năng Windows!"
+    })
+}
+
+# 6 Fixes
+if ($btnFixAutoLogon)        { $btnFixAutoLogon.Add_Click({ Open-VUONGTTLegacyPanel "autologon" }) }
+if ($btnFixNetworkReset)     { $btnFixNetworkReset.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTResetNetwork) } }) }
+if ($btnFixNtpServer)        { $btnFixNtpServer.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTSyncNtpServer) } }) }
+if ($btnFixSystemCorruption) { $btnFixSystemCorruption.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTRepairSystemFiles) } }) }
+if ($btnFixWindowsUpdate)    { $btnFixWindowsUpdate.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTRepairWindowsUpdate) } }) }
+if ($btnFixWinGet)           { $btnFixWinGet.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTReinstallWinget) } }) }
+if ($btnEnableOpenSSH)       { $btnEnableOpenSSH.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Enable-VUONGTTOpenSSHServer) } }) }
+
+# 14 Legacy Panels
+$panelMap = @{
+    "btnPanelCompMgmt"      = "compmgmt"
+    "btnPanelControl"       = "control"
+    "btnPanelMouse"         = "main"
+    "btnPanelNetwork"       = "ncpa"
+    "btnPanelPower"         = "power"
+    "btnPanelPrinters"      = "printers"
+    "btnPanelAppWiz"        = "appwiz"
+    "btnPanelRegion"        = "region"
+    "btnPanelSecurity"      = "security"
+    "btnPanelSound"         = "sound"
+    "btnPanelSysProperties" = "sysdm"
+    "btnPanelTimeDate"      = "timedate"
+    "btnPanelFirewall"      = "firewall"
+    "btnPanelRestore"       = "restore"
+}
+foreach ($btnId in $panelMap.Keys) {
+    $b = Get-Control $btnId
+    if ($b) {
+        $panelTarget = $panelMap[$btnId]
+        $b.Add_Click({ Open-VUONGTTLegacyPanel $panelTarget })
+    }
 }
 
 # --- Module 15: Quản Lý Phân Vùng Ổ Đĩa (Partition Wizard Pro) ---
@@ -4303,14 +4544,11 @@ if ($btnStartIpScan) {
 
         $btnStartIpScan.IsEnabled = $false
         $btnStopIpScan.IsEnabled  = $true
-        $global:cancelIpScan      = $false
         $global:scannedDevicesList.Clear()
         if ($lstIpDevices) { $lstIpDevices.Items.Clear() }
         if ($prgIpScan)    { $prgIpScan.Value = 0 }
-        if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đang quét dải IP từ $startIp đến $endIp..." }
-        $txtFooterStatus.Text = "• [Đang quét] Đang kiểm tra phản hồi từ các thiết bị trong mạng..."
-
-        [System.Windows.Forms.Application]::DoEvents()
+        if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đang quét siêu tốc đa luồng dải IP từ $startIp đến $endIp..." }
+        $txtFooterStatus.Text = "• [Đang quét] Đang quét IP mạng LAN siêu tốc (Zero-Lag Async Engine)..."
 
         try {
             $p1 = $startIp.Split('.')
@@ -4319,81 +4557,63 @@ if ($btnStartIpScan) {
             $from = [int]$p1[3]
             $to   = [int]$p2[3]
             if ($to -lt $from) { $to = 254 }
-            $total = ($to - $from + 1)
 
-            $arpTable = Get-VUONGTTArpTable
-            $pingers = @()
+            $arpMap = Get-VUONGTTArpTableDict
+            $vendorMap = Get-VUONGTTVendorDictionary
 
-            for ($i = $from; $i -le $to; $i++) {
-                if ($global:cancelIpScan) { break }
-                $ipStr = "$prefix.$i"
-                $pinger = New-Object System.Net.NetworkInformation.Ping
-                $task = $pinger.SendPingAsync($ipStr, 350)
-                $pingers += [PSCustomObject]@{ IP = $ipStr; Pinger = $pinger; Task = $task }
+            [VUONGTT.Network.FastScanner]::StartScan($prefix, $from, $to, $arpMap, $vendorMap)
 
-                if ($pingers.Count -ge 32 -or $i -eq $to) {
-                    [System.Threading.Tasks.Task]::WaitAll(($pingers.Task)) | Out-Null
-                    foreach ($item in $pingers) {
-                        if ($global:cancelIpScan) { break }
-                        $res = $item.Task.Result
-                        if ($res.Status -eq [System.Net.NetworkInformation.IPStatus]::Success) {
-                            $devIp = $item.IP
-                            $mac = if ($arpTable.ContainsKey($devIp)) { $arpTable[$devIp] } else { "-" }
-                            $vendor = Get-VUONGTTMacVendor -MacAddress $mac
-                            $hostname = $devIp
-                            try {
-                                $entry = [System.Net.Dns]::GetHostEntry($devIp)
-                                if ($entry -and $entry.HostName) { $hostname = $entry.HostName }
-                            } catch {}
-
-                            $ports = @()
-                            foreach ($pt in @(445, 80, 3389, 9100)) {
-                                try {
-                                    $tcp = New-Object System.Net.Sockets.TcpClient
-                                    $async = $tcp.BeginConnect($devIp, $pt, $null, $null)
-                                    $ok = $async.AsyncWaitHandle.WaitOne(120, $false)
-                                    if ($ok -and $tcp.Connected) {
-                                        $pName = switch ($pt) { 445 { "SMB" } 80 { "Web" } 3389 { "RDP" } 9100 { "In(9100)" } }
-                                        $ports += "$pName"
-                                    }
-                                    $tcp.Close()
-                                } catch {}
-                            }
-                            $portText = if ($ports.Count -gt 0) { $ports -join ", " } else { "ICMP" }
-
+            if (-not $script:ipScanTimer) {
+                $script:ipScanTimer = New-Object System.Windows.Threading.DispatcherTimer
+                $script:ipScanTimer.Interval = [TimeSpan]::FromMilliseconds(50)
+                $script:ipScanTimer.Add_Tick({
+                    $dev = $null
+                    $addedAny = $false
+                    while ([VUONGTT.Network.FastScanner]::DiscoveredQueue.TryDequeue([ref]$dev)) {
+                        if ($dev) {
                             $row = [PSCustomObject]@{
-                                Status     = "🟢 Online"
-                                IP         = $devIp
-                                Hostname   = $hostname
-                                MacAddress = $mac
-                                Vendor     = $vendor
-                                Ports      = $portText
-                                Ping       = "$($res.RoundtripTime) ms"
+                                Status     = $dev.Status
+                                IP         = $dev.IP
+                                Hostname   = $dev.Hostname
+                                MacAddress = $dev.MacAddress
+                                Vendor     = $dev.Vendor
+                                Ports      = $dev.Ports
+                                Ping       = $dev.PingTime
                             }
                             $global:scannedDevicesList.Add($row) | Out-Null
                             if ($lstIpDevices) { $lstIpDevices.Items.Add($row) | Out-Null }
-                            if ($lblIpScanStats) { $lblIpScanStats.Text = "Tổng thiết bị Online: $($global:scannedDevicesList.Count)" }
+                            $addedAny = $true
                         }
                     }
-                    $pingers.Clear()
-                    if ($prgIpScan) {
-                        $pct = [math]::Min(100, [math]::Round((($i - $from + 1) / $total) * 100))
+                    if ($addedAny -and $lblIpScanStats) {
+                        $lblIpScanStats.Text = "Tổng thiết bị Online: $($global:scannedDevicesList.Count)"
+                    }
+
+                    $tot = [VUONGTT.Network.FastScanner]::TotalCount
+                    $done = [VUONGTT.Network.FastScanner]::CompletedCount
+                    if ($tot -gt 0 -and $prgIpScan) {
+                        $pct = [math]::Min(100, [math]::Round(($done / $tot) * 100))
                         $prgIpScan.Value = $pct
                     }
-                    [System.Windows.Forms.Application]::DoEvents()
-                }
+
+                    if (-not [VUONGTT.Network.FastScanner]::IsRunning) {
+                        $script:ipScanTimer.Stop()
+                        $btnStartIpScan.IsEnabled = $true
+                        $btnStopIpScan.IsEnabled  = $false
+
+                        if ([VUONGTT.Network.FastScanner]::IsCancelled) {
+                            if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đã dừng quét IP. Tìm thấy $($global:scannedDevicesList.Count) thiết bị Online." }
+                            $txtFooterStatus.Text = "• [Dừng] Đã dừng quét IP!"
+                        } else {
+                            if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Quét hoàn tất 100%! Đã tìm thấy $($global:scannedDevicesList.Count) thiết bị Online." }
+                            $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét IP mạng LAN siêu tốc!"
+                        }
+                    }
+                })
             }
-            if ($lblIpScanStatus) {
-                if ($global:cancelIpScan) {
-                    $lblIpScanStatus.Text = "Đã dừng quét IP. Tìm thấy $($global:scannedDevicesList.Count) thiết bị Online."
-                } else {
-                    $lblIpScanStatus.Text = "Quét hoàn tất 100%! Đã tìm thấy $($global:scannedDevicesList.Count) thiết bị Online."
-                }
-            }
-            $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét IP mạng LAN!"
+            $script:ipScanTimer.Start()
         } catch {
             if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Lỗi khi quét: $($_.Exception.Message)" }
-        } finally {
             $btnStartIpScan.IsEnabled = $true
             $btnStopIpScan.IsEnabled  = $false
         }
@@ -4402,8 +4622,9 @@ if ($btnStartIpScan) {
 
 if ($btnStopIpScan) {
     $btnStopIpScan.Add_Click({
-        $global:cancelIpScan = $true
+        [VUONGTT.Network.FastScanner]::Cancel()
         if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đang yêu cầu dừng quét..." }
+        $txtFooterStatus.Text = "• [Dừng] Đang dừng quét mạng..."
     })
 }
 

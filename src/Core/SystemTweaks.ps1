@@ -569,4 +569,294 @@ function Set-VUONGTTToggleGameMode {
     }
 }
 
+function Set-VUONGTTDns {
+    param([string]$DnsProvider)
+    try {
+        $adapters = Get-NetAdapter | Where-Object { $_.Status -eq "Up" }
+        switch ($DnsProvider) {
+            "Cloudflare" {
+                foreach ($a in $adapters) {
+                    Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses ("1.1.1.1", "1.0.0.1") -ErrorAction SilentlyContinue
+                }
+                return "[OK] Đã cấu hình DNS Cloudflare (1.1.1.1, 1.0.0.1) cho toàn bộ card mạng!"
+            }
+            "Google" {
+                foreach ($a in $adapters) {
+                    Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses ("8.8.8.8", "8.8.4.4") -ErrorAction SilentlyContinue
+                }
+                return "[OK] Đã cấu hình DNS Google (8.8.8.8, 8.8.4.4) cho toàn bộ card mạng!"
+            }
+            "Quad9" {
+                foreach ($a in $adapters) {
+                    Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses ("9.9.9.9", "149.112.112.112") -ErrorAction SilentlyContinue
+                }
+                return "[OK] Đã cấu hình DNS Quad9 (9.9.9.9, 149.112.112.112) cho toàn bộ card mạng!"
+            }
+            "AdGuard" {
+                foreach ($a in $adapters) {
+                    Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses ("94.140.14.14", "94.140.15.15") -ErrorAction SilentlyContinue
+                }
+                return "[OK] Đã cấu hình DNS AdGuard Chặn Quảng Cáo (94.140.14.14, 94.140.15.15)!"
+            }
+            default {
+                foreach ($a in $adapters) {
+                    Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ResetServerAddresses -ErrorAction SilentlyContinue
+                }
+                return "[OK] Đã khôi phục DNS tự động từ Modem/Router (DHCP Default)!"
+            }
+        }
+    } catch {
+        return "[LỖI] Cấu hình DNS thất bại: $($_.Exception.Message)"
+    }
+}
+
+function Set-VUONGTTUltimatePerformancePlan {
+    param([bool]$Enable = $true)
+    try {
+        if ($Enable) {
+            $guid = "e9a42b02-d5df-448d-aa00-03f14749eb61"
+            powercfg -duplicatescheme $guid 2>&1 | Out-Null
+            powercfg -setactive $guid 2>&1 | Out-Null
+            return "[OK] Đã kích hoạt gói điện năng Tối Đa Hiệu Năng (Ultimate Performance Power Plan)!"
+        } else {
+            powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>&1 | Out-Null
+            return "[OK] Đã chuyển về chế độ Tiêu chuẩn cân bằng (Balanced Power Plan)!"
+        }
+    } catch {
+        return "[LỖI] Thay đổi Power Plan thất bại: $($_.Exception.Message)"
+    }
+}
+
+function Invoke-VUONGTTSingleTweak {
+    param(
+        [string]$TweakKey,
+        [bool]$Enable = $true
+    )
+
+    try {
+        switch ($TweakKey) {
+            # === ESSENTIAL TWEAKS ===
+            "ActivityHistory" {
+                $p = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 0 } else { 1 }
+                Set-ItemProperty -Path $p -Name "EnableActivityFeed" -Value $val -Type DWord -Force
+                Set-ItemProperty -Path $p -Name "PublishUserActivities" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Tắt Lịch Sử Hoạt Động (Activity History): $statusTxt"
+            }
+            "BitLocker" {
+                if ($Enable) {
+                    manage-bde -off C: 2>&1 | Out-Null
+                    return "[OK] Đã gửi lệnh tắt BitLocker ổ C:."
+                }
+                return "[OK] Bỏ qua BitLocker."
+            }
+            "ConsumerFeatures" {
+                $p = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $p -Name "DisableWindowsConsumerFeatures" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Chặn tự cài ứng dụng rác ConsumerFeatures: $statusTxt"
+            }
+            "DeliveryOptimization" {
+                $p = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 0 } else { 1 }
+                Set-ItemProperty -Path $p -Name "DODownloadMode" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Tối ưu băng thông Delivery Optimization: $statusTxt"
+            }
+            "DiskCleanup" {
+                if ($Enable) {
+                    Start-Process "cleanmgr.exe" -ArgumentList "/sagerun:1" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                    return "[OK] Đã chạy dọn dẹp đĩa Disk Cleanup tự động."
+                }
+                return "[OK] Bỏ qua dọn đĩa."
+            }
+            "EndTaskRightClick" {
+                $p = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $p -Name "TaskbarEndTask" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Bật chức năng Kết Thúc Tác Vụ chuột phải trên Taskbar (End Task With Right Click): $statusTxt"
+            }
+            "AutoFolderDiscovery" {
+                $p = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { "NotSpecified" } else { "Generic" }
+                Set-ItemProperty -Path $p -Name "FolderType" -Value $val -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Tắt tự động dò thư mục File Explorer: $statusTxt"
+            }
+            "Hibernation" {
+                if ($Enable) {
+                    powercfg -h off 2>&1 | Out-Null
+                    return "[OK] Đã tắt chế độ Ngủ Đông (Hibernation) và xóa hiberfil.sys giải phóng RAM ổ C."
+                } else {
+                    powercfg -h on 2>&1 | Out-Null
+                    return "[OK] Đã bật lại chế độ Ngủ Đông (Hibernation)."
+                }
+            }
+            "LocationTracking" {
+                $p = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $p -Name "DisableLocation" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Tắt định vị vị trí người dùng (Location Tracking): $statusTxt"
+            }
+            "StoreSearchRec" {
+                $p = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $p -Name "DisableStoreSearchInstall" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Tắt gợi ý tìm kiếm Microsoft Store: $statusTxt"
+            }
+            "Telemetry" {
+                if ($Enable) {
+                    return (Disable-VUONGTTTelemetry)
+                } else {
+                    $pol = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+                    if (Test-Path $pol) { Set-ItemProperty -Path $pol -Name "AllowTelemetry" -Value 1 -Type DWord -Force }
+                    return "[OK] Đã khôi phục mức Telemetry chuẩn."
+                }
+            }
+            "TempFiles" {
+                if ($Enable) {
+                    return (Invoke-VUONGTTDeepClean)
+                }
+                return "[OK] Bỏ qua dọn file tạm."
+            }
+            "Widgets" {
+                $p = "HKLM:\SOFTWARE\Policies\Microsoft\Dsh"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 0 } else { 1 }
+                Set-ItemProperty -Path $p -Name "AllowNewsAndInterests" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Gỡ bỏ Widgets tin tức thanh tác vụ: $statusTxt"
+            }
+
+            # === ADVANCED TWEAKS ===
+            "BackgroundApps" {
+                $p = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $p -Name "GlobalUserDisabled" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Tắt ứng dụng chạy ngầm không cần thiết (Background Apps): $statusTxt"
+            }
+            "ReservedStorage" {
+                if ($Enable) {
+                    DISM.exe /Online /Set-ReservedStorageState /State:Disabled 2>&1 | Out-Null
+                    return "[OK] Tắt bộ nhớ dự phòng Windows (Reserved Storage - tiết kiệm ~7GB ổ C)."
+                } else {
+                    DISM.exe /Online /Set-ReservedStorageState /State:Enabled 2>&1 | Out-Null
+                    return "[OK] Bật lại bộ nhớ dự phòng Reserved Storage."
+                }
+            }
+            "IPv6PreferIPv4" {
+                $p = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 0x20 } else { 0 }
+                Set-ItemProperty -Path $p -Name "DisabledComponents" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Ưu tiên IPv4 hơn IPv6: $statusTxt"
+            }
+            "ClassicContextMenu" {
+                return (Set-VUONGTTClassicContextMenu -Enable $Enable)
+            }
+            "VisualEffects" {
+                if ($Enable) {
+                    return (Set-VUONGTTOptimizeVisualEffects)
+                }
+                return "[OK] Giữ nguyên hiệu ứng trực quan."
+            }
+
+            # === PREFERENCES (TOGGLE SWITCHES) ===
+            "DarkTheme" {
+                $p = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 0 } else { 1 }
+                Set-ItemProperty -Path $p -Name "AppsUseLightTheme" -Value $val -Type DWord -Force
+                Set-ItemProperty -Path $p -Name "SystemUsesLightTheme" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Chế độ Tối (Dark Theme for Windows): $statusTxt"
+            }
+            "LongPaths" {
+                $p = "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $p -Name "LongPathsEnabled" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Cho phép đường dẫn dài trên 260 ký tự (Enable Long Paths): $statusTxt"
+            }
+            "ShowFileExt" {
+                $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                $val = if ($Enable) { 0 } else { 1 }
+                Set-ItemProperty -Path $adv -Name "HideFileExt" -Value $val -Force
+                Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Hiện phần mở rộng tệp tin (.exe, .docx...): $statusTxt"
+            }
+            "ShowHiddenFiles" {
+                $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                $val = if ($Enable) { 1 } else { 2 }
+                Set-ItemProperty -Path $adv -Name "Hidden" -Value $val -Force
+                Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Hiện tệp và thư mục ẩn (File Explorer Hidden Files): $statusTxt"
+            }
+            "GameMode" {
+                return (Set-VUONGTTToggleGameMode)
+            }
+            "NumLockStartup" {
+                $p = "HKU:\.DEFAULT\Control Panel\Keyboard"
+                $val = if ($Enable) { "2" } else { "0" }
+                Set-ItemProperty -Path $p -Name "InitialKeyboardIndicators" -Value $val -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Tự động bật phím số NumLock khi khởi động: $statusTxt"
+            }
+            "TaskbarCenter" {
+                $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $adv -Name "TaskbarAl" -Value $val -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT (Sang Trái)" }
+                return "[OK] Đưa biểu tượng Taskbar vào giữa: $statusTxt"
+            }
+            "TaskbarSearch" {
+                $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $adv -Name "SearchboxTaskbarMode" -Value $val -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Biểu tượng tìm kiếm trên Taskbar: $statusTxt"
+            }
+            "TaskbarTaskView" {
+                $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $adv -Name "ShowTaskViewButton" -Value $val -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Nút Task View trên Taskbar: $statusTxt"
+            }
+            "StartMenuBingSearch" {
+                $p = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
+                $val = if ($Enable) { 0 } else { 1 }
+                Set-ItemProperty -Path $p -Name "DisableSearchBoxSuggestions" -Value $val -Type DWord -Force
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Tìm kiếm Web Bing trong Start Menu: $statusTxt"
+            }
+            default {
+                return "[BỎ QUA] Tweak chưa hỗ trợ: $TweakKey"
+            }
+        }
+    } catch {
+        return "[LỖI] Tweak $TweakKey thất bại: $($_.Exception.Message)"
+    }
+}
+
+
+
 
