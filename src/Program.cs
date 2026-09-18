@@ -190,14 +190,29 @@ namespace VUONGTT
                     scriptPath = Path.Combine(tempDir, "VUONGTT_Toolkit.ps1");
                 }
 
+                string currentExe = Application.ExecutablePath;
+                string runtimeDir = Path.GetDirectoryName(scriptPath);
+                try
+                {
+                    File.WriteAllText(Path.Combine(runtimeDir, "launcher_info.txt"), currentExe);
+                    string tempRuntime = Path.Combine(Path.GetTempPath(), "VUONGTT_Toolkit_Runtime");
+                    if (Directory.Exists(tempRuntime))
+                    {
+                        File.WriteAllText(Path.Combine(tempRuntime, "launcher_info.txt"), currentExe);
+                    }
+                    Environment.SetEnvironmentVariable("VUONGTT_ORIGINAL_EXE", currentExe);
+                }
+                catch { }
+
                 // Khởi động PowerShell với chế độ Single Thread Apartment (-Sta) và thực thi ẩn Console
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = "powershell.exe";
-                psi.Arguments = string.Format("-NoProfile -ExecutionPolicy Bypass -Sta -WindowStyle Hidden -File \"{0}\"", scriptPath);
-                psi.WorkingDirectory = Path.GetDirectoryName(scriptPath);
+                psi.Arguments = string.Format("-NoProfile -ExecutionPolicy Bypass -Sta -WindowStyle Hidden -File \"{0}\" \"{1}\"", scriptPath, currentExe);
+                psi.WorkingDirectory = runtimeDir;
                 psi.WindowStyle = ProcessWindowStyle.Hidden;
                 psi.CreateNoWindow = true;
-                psi.UseShellExecute = true;
+                psi.UseShellExecute = false;
+                psi.EnvironmentVariables["VUONGTT_ORIGINAL_EXE"] = currentExe;
 
                 Process.Start(psi);
 

@@ -6,11 +6,22 @@
 ========================================================================================
 #>
 
+param(
+    [string]$SourceExePath
+)
+
+if ($SourceExePath -and (Test-Path $SourceExePath -ErrorAction SilentlyContinue)) {
+    $global:VUONGTT_TARGET_EXE = $SourceExePath
+    $env:VUONGTT_ORIGINAL_EXE = $SourceExePath
+}
+
 # Requires Administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     try {
-        Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Sta -File `"$PSCommandPath`"" -Verb RunAs
+        $argList = "-NoProfile -ExecutionPolicy Bypass -Sta -File `"$PSCommandPath`""
+        if ($SourceExePath) { $argList += " `"$SourceExePath`"" }
+        Start-Process powershell.exe -ArgumentList $argList -Verb RunAs
         Exit
     } catch {
         Add-Type -AssemblyName System.Windows.Forms
