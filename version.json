@@ -1,12 +1,11 @@
 {
-  "version": "20.5.908.38",
+  "version": "20.5.908.39",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Sửa triệt để lỗi che chữ (button text clipping) trên tất cả các trang: Kích Hoạt MAS, Phân Vùng Ổ Đĩa, Cài Đặt Phần Mềm Cục Bộ, Gỡ Ứng Dụng Hàng Loạt, Cá Nhân Hóa Hệ Thống, Cài Office.",
-    "Bổ sung tính năng Kiểm Tra Sâu & Trích Xuất Product Key Windows 25 ký tự giải mã trực tiếp từ DigitalProductId Registry và khóa OEM nhúng BIOS Bo mạch chủ.",
-    "Bổ sung tính năng Kiểm Tra Sâu Bản Quyền Microsoft Office qua OSPP.VBS, Click-To-Run và WMI/CIM, hiển thị chi tiết 5 ký tự đuôi của Key, trạng thái Licensed và Kênh phân phối.",
-    "Thêm nút 'Sao Chép Key & Bản Quyền' cho phép người dùng 1-click sao chép toàn bộ báo cáo bản quyền vào bộ nhớ tạm (Clipboard).",
-    "Chuẩn hóa 100% font chữ hệ thống sang bộ font Apple tiêu chuẩn (SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display) đồng bộ trên tất cả controls (TextBlock, TextBox, PasswordBox, Button, ComboBox, CheckBox, RadioButton, ListView, DataGrid) kèm công nghệ khử răng cưa Crisp ClearType."
+    "Khắc phục triệt để lỗi đăng nhập Admin trên các máy tính khác: Gán chết mật khẩu Quản trị viên Master vĩnh viễn, hoạt động độc lập 100% Offline không cần Internet.",
+    "Bảo mật mật mã cấp độ cao: Mật khẩu Admin Master được mã hóa một chiều Salted SHA-256 an toàn tuyệt đối, không lưu ký tự dạng thô (plain-text) trong mã nguồn.",
+    "Tự động nhận diện và mở khóa toàn bộ quyền VIP (PRO Features) ngay khi Quản trị viên đăng nhập mà không cần nhập thêm bất kỳ License Key nào.",
+    "Hiển thị Dynamic Badge 'ADMIN PORTAL (VIP)' ngay trên thanh tiêu đề ứng dụng khi đang ở chế độ Quản trị viên."
   ]
 }

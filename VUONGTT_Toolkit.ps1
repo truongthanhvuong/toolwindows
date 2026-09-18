@@ -3296,6 +3296,22 @@ $script:licensePendingTab    = $null
 function Update-VUONGTTLicenseUI {
     $conv = [System.Windows.Media.BrushConverter]::new()
     
+    # NẾU ADMIN ĐANG ĐĂNG NHẬP: MẶC ĐỊNH MỞ KHÓA TOÀN BỘ QUYỀN VIP
+    if ($global:isAdminAuthenticated) {
+        if ($borderLicenseBadge) {
+            $borderLicenseBadge.Background  = $conv.ConvertFromString("#DCFCE7")
+            $borderLicenseBadge.BorderBrush = $conv.ConvertFromString("#86EFAC")
+        }
+        if ($txtLicenseBadge) {
+            $txtLicenseBadge.Text       = "👑 ADMIN PORTAL (VIP)"
+            $txtLicenseBadge.Foreground = $conv.ConvertFromString("#047857")
+        }
+        if ($btnActivateLicense) {
+            $btnActivateLicense.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+        return
+    }
+
     # Kiểm tra bản quyền máy thực tế (đối soát với kho Vault)
     $pro = Test-VUONGTTProLicense
     if ($pro.IsPro) {
@@ -3316,11 +3332,7 @@ function Update-VUONGTTLicenseUI {
             $borderLicenseBadge.BorderBrush = $conv.ConvertFromString("#FCD34D")
         }
         if ($txtLicenseBadge) {
-            if ($global:isAdminAuthenticated) {
-                $txtLicenseBadge.Text   = "⚪ FREE VERSION (👑 Admin)"
-            } else {
-                $txtLicenseBadge.Text   = "⚪ FREE VERSION"
-            }
+            $txtLicenseBadge.Text       = "⚪ FREE VERSION"
             $txtLicenseBadge.Foreground = $conv.ConvertFromString("#B45309")
         }
         if ($btnActivateLicense) {

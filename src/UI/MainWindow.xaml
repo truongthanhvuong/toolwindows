@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.38"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.39"
         Height="880" Width="1420"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"

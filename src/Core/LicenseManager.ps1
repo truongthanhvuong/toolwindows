@@ -45,10 +45,14 @@ function Get-VUONGTTHardwareId {
 }
 
 # -------------------------------------------------------------------------
-# 2. ADMIN AUTHENTICATION & PASSWORD MANAGEMENT
+# 2. ADMIN AUTHENTICATION & ENCRYPTED MASTER ACCESS (OFFLINE RESILIENT)
 # -------------------------------------------------------------------------
+# BẢO MẬT MẬT MÃ ADMIN: Salted SHA-256 Master Hash (Không lưu mật khẩu dạng plain-text)
+$script:MASTER_ADMIN_SALT = "VUONGTT_ADMIN_SALT_v2026_MASTER"
+$script:MASTER_ADMIN_HASH = "C3D35E18E6BEC6539690B9911694A664CDE362406B5528FA74B18AC4FC9FC374"
+
 function Get-VUONGTTSha256Hash {
-    param([string]$Text, [string]$Salt = "VUONGTT_SALT_2026")
+    param([string]$Text, [string]$Salt = "VUONGTT_ADMIN_SALT_v2026_MASTER")
     $sha = [System.Security.Cryptography.SHA256]::Create()
     $rawStr = $Text + ":" + $Salt
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($rawStr)
@@ -59,11 +63,10 @@ function Get-VUONGTTSha256Hash {
 function Init-VUONGTTAdminAuth {
     if (-not (Test-Path $script:AUTH_FILE)) {
         # Khóa cứng trên tất cả các máy: IsFirstLogin luôn là false (CHẶN TẠO PASS MỚI TRÊN MÁY KHÁC)
-        # Mật khẩu Admin Master được bảo vệ bằng salt
-        $defaultHash = Get-VUONGTTSha256Hash -Text "Admin@2026"
+        # Mật khẩu Admin Master được bảo vệ bằng salt và mã hóa một chiều
         $authData = [PSCustomObject]@{
             IsFirstLogin  = $false
-            PasswordHash  = $defaultHash
+            PasswordHash  = $script:MASTER_ADMIN_HASH
             LastChanged   = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
             Account       = "admin"
         }
@@ -73,36 +76,55 @@ function Init-VUONGTTAdminAuth {
 
 function Test-VUONGTTAdminAuth {
     param([string]$Password)
-    Init-VUONGTTAdminAuth
-    try {
-        $data = Get-Content -Path $script:AUTH_FILE -Raw -Encoding UTF8 | ConvertFrom-Json
-        $checkHash = Get-VUONGTTSha256Hash -Text $Password
-        
-        # Chấp nhận mật khẩu đã lưu trong auth file HOẶC mật khẩu master "Admin@2026" / "admin"
-        $isMatch = ($checkHash -eq $data.PasswordHash)
-        if (-not $isMatch) {
-            $masterHash1 = Get-VUONGTTSha256Hash -Text "Admin@2026"
-            $masterHash2 = Get-VUONGTTSha256Hash -Text "admin"
-            if ($checkHash -eq $masterHash1 -or $checkHash -eq $masterHash2) {
-                $isMatch = $true
-            }
-        }
-
-        return [PSCustomObject]@{
-            IsValid      = $isMatch
-            IsFirstLogin = $false
-            Account      = $data.Account
-        }
-    } catch {
+    if ([string]::IsNullOrEmpty($Password)) {
         return [PSCustomObject]@{ IsValid = $false; IsFirstLogin = $false; Account = "admin" }
     }
+
+    # 1. KIỂM TRA TRỰC TIẾP MẬT KHẨU GỐC GÁN CHẾT (MÃ HÓA MẬT MÃ - HOẠT ĐỘNG 100% OFFLINE TRÊN MỌI MÁY)
+    $masterCheck = Get-VUONGTTSha256Hash -Text $Password -Salt $script:MASTER_ADMIN_SALT
+    if ($masterCheck -eq $script:MASTER_ADMIN_HASH) {
+        return [PSCustomObject]@{
+            IsValid      = $true
+            IsFirstLogin = $false
+            Account      = "admin"
+        }
+    }
+
+    # 2. KIỂM TRA MẬT KHẨU TÙY BIẾN ĐÃ ĐỔI TRONG FILE AUTH (NẾU CÓ)
+    try {
+        Init-VUONGTTAdminAuth
+        if (Test-Path $script:AUTH_FILE) {
+            $data = Get-Content -Path $script:AUTH_FILE -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($data -and $data.PasswordHash) {
+                $customCheck = Get-VUONGTTSha256Hash -Text $Password -Salt $script:MASTER_ADMIN_SALT
+                if ($customCheck -eq $data.PasswordHash) {
+                    return [PSCustomObject]@{
+                        IsValid      = $true
+                        IsFirstLogin = $false
+                        Account      = $data.Account
+                    }
+                }
+                # Tương thích ngược với salt cũ nếu file cũ tồn tại
+                $legacyCheck = Get-VUONGTTSha256Hash -Text $Password -Salt "VUONGTT_SALT_2026"
+                if ($legacyCheck -eq $data.PasswordHash) {
+                    return [PSCustomObject]@{
+                        IsValid      = $true
+                        IsFirstLogin = $false
+                        Account      = $data.Account
+                    }
+                }
+            }
+        }
+    } catch {}
+
+    return [PSCustomObject]@{ IsValid = $false; IsFirstLogin = $false; Account = "admin" }
 }
 
 function Set-VUONGTTAdminPassword {
     param([string]$NewPassword)
     Init-VUONGTTAdminAuth
     try {
-        $newHash = Get-VUONGTTSha256Hash -Text $NewPassword
+        $newHash = Get-VUONGTTSha256Hash -Text $NewPassword -Salt $script:MASTER_ADMIN_SALT
         $authData = [PSCustomObject]@{
             IsFirstLogin  = $false
             PasswordHash  = $newHash
