@@ -89,11 +89,11 @@ function Start-ScreenDeadPixelTest {
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="VUONGTT Screen Dead Pixel Tester"
-        WindowStyle="None" WindowState="Maximized" Topmost="True" Background="Red" Cursor="None">
-    <Grid>
-        <Border Background="#99000000" CornerRadius="8" Padding="16,8" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,36">
+        WindowStyle="None" WindowState="Maximized" Topmost="True" Background="Red" Focusable="True" Cursor="Hand">
+    <Grid Background="Transparent">
+        <Border x:Name="hintBorder" Background="#B3000000" CornerRadius="10" Padding="20,10" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40">
             <TextBlock x:Name="txtHint" Text="[1/9] MÀU ĐỎ (PURE RED) | Chuột Trái / Space: Đổi màu | Chuột Phải: Lùi màu | ESC: Thoát" 
-                       Foreground="White" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                       Foreground="White" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
         </Border>
     </Grid>
 </Window>
@@ -105,9 +105,9 @@ function Start-ScreenDeadPixelTest {
         }
 
         $colorList = @(
-            @{ Name = "[1/9] MÀU ĐỎ (PURE RED) - Kiểm tra điểm chết sub-pixel đỏ"; Brush = [System.Windows.Media.Brushes]::Red; IsDark = $false },
-            @{ Name = "[2/9] MÀU XANH LÁ (PURE GREEN) - Kiểm tra điểm chết sub-pixel xanh lá"; Brush = [System.Windows.Media.Brushes]::Lime; IsDark = $false },
-            @{ Name = "[3/9] MÀU XANH DƯƠNG (PURE BLUE) - Kiểm tra điểm chết sub-pixel xanh dương"; Brush = [System.Windows.Media.Brushes]::Blue; IsDark = $true },
+            @{ Name = "[1/9] MÀU ĐỎ (PURE RED) - Kiểm tra điểm chết sub-pixel Đỏ"; Brush = [System.Windows.Media.Brushes]::Red; IsDark = $false },
+            @{ Name = "[2/9] MÀU XANH LÁ (PURE GREEN) - Kiểm tra điểm chết sub-pixel Xanh lá"; Brush = [System.Windows.Media.Brushes]::Lime; IsDark = $false },
+            @{ Name = "[3/9] MÀU XANH DƯƠNG (PURE BLUE) - Kiểm tra điểm chết sub-pixel Xanh dương"; Brush = [System.Windows.Media.Brushes]::Blue; IsDark = $true },
             @{ Name = "[4/9] MÀU TRẮNG (PURE WHITE) - Kiểm tra đốm mờ, bụi bẩn lót phản quang màn hình"; Brush = [System.Windows.Media.Brushes]::White; IsDark = $false },
             @{ Name = "[5/9] MÀU ĐEN (PURE BLACK) - Kiểm tra hở sáng viền (IPS Glow), điểm sáng (Hot Pixel)"; Brush = [System.Windows.Media.Brushes]::Black; IsDark = $true },
             @{ Name = "[6/9] MÀU VÀNG (YELLOW) - Kiểm tra pha trộn màu Red + Green"; Brush = [System.Windows.Media.Brushes]::Yellow; IsDark = $false },
@@ -115,42 +115,75 @@ function Start-ScreenDeadPixelTest {
             @{ Name = "[8/9] MÀU TÍM (MAGENTA) - Kiểm tra pha trộn màu Red + Blue"; Brush = [System.Windows.Media.Brushes]::Magenta; IsDark = $false },
             @{ Name = "[9/9] MÀU XÁM 50% (GRAY) - Kiểm tra độ đồng đều ánh sáng toàn tấm nền"; Brush = [System.Windows.Media.Brushes]::Gray; IsDark = $true }
         )
-        $idx = 0
+
+        # Sử dụng đối tượng tham chiếu để duy trì giá trị index xuyên suốt các sự kiện WPF
+        $state = [PSCustomObject]@{ Index = 0 }
 
         $updateColor = {
-            $item = $colorList[$idx]
+            $item = $colorList[$state.Index]
             $win.Background = $item.Brush
             $txtHint = $win.FindName("txtHint")
             if ($txtHint) {
-                $txtHint.Text = "$($item.Name) | Phím Space / Click: Tiếp | Phím Mũi Tên Trái: Lùi | ESC: Thoát"
+                $txtHint.Text = "$($item.Name) | Click Trái / Space / Cuộn Chuột: Tiếp | Click Phải: Lùi | ESC: Thoát"
             }
         }
 
-        $win.Add_MouseLeftButtonDown({
-            $idx++
-            if ($idx -ge $colorList.Count) { $idx = 0 }
+        # Đảm bảo cửa sổ nhận tiêu điểm bàn phím ngay khi mở
+        $win.Add_Loaded({
+            $win.Activate()
+            $win.Focus()
             & $updateColor
         })
 
-        $win.Add_MouseRightButtonDown({
-            $idx--
-            if ($idx -lt 0) { $idx = $colorList.Count - 1 }
-            & $updateColor
-        })
-
-        $win.Add_KeyDown({
+        # Bắt sự kiện nhấn chuột Tunneling (PreviewMouseDown) đảm bảo 100% bắt được sự kiện
+        $win.Add_PreviewMouseDown({
             param($s, $e)
-            if ($e.Key -eq [System.Windows.Input.Key]::Escape) {
+            if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Left) {
+                $state.Index++
+                if ($state.Index -ge $colorList.Count) { $state.Index = 0 }
+                & $updateColor
+            } elseif ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right) {
+                $state.Index--
+                if ($state.Index -lt 0) { $state.Index = $colorList.Count - 1 }
+                & $updateColor
+            } elseif ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Middle) {
                 $win.Close()
-            } elseif ($e.Key -eq [System.Windows.Input.Key]::Left -or $e.Key -eq [System.Windows.Input.Key]::Back) {
-                $idx--
-                if ($idx -lt 0) { $idx = $colorList.Count - 1 }
+            }
+        })
+
+        # Hỗ trợ con lăn chuột cuộn tới / cuộn lùi màu sắc
+        $win.Add_PreviewMouseWheel({
+            param($s, $e)
+            if ($e.Delta -lt 0) {
+                $state.Index++
+                if ($state.Index -ge $colorList.Count) { $state.Index = 0 }
                 & $updateColor
             } else {
-                $idx++
-                if ($idx -ge $colorList.Count) { $idx = 0 }
+                $state.Index--
+                if ($state.Index -lt 0) { $state.Index = $colorList.Count - 1 }
                 & $updateColor
             }
+        })
+
+        # Bắt sự kiện bàn phím Tunneling (PreviewKeyDown)
+        $win.Add_PreviewKeyDown({
+            param($s, $e)
+            if ($e.Key -eq [System.Windows.Input.Key]::Escape -or $e.Key -eq [System.Windows.Input.Key]::Q) {
+                $win.Close()
+            } elseif ($e.Key -eq [System.Windows.Input.Key]::Left -or $e.Key -eq [System.Windows.Input.Key]::Back -or $e.Key -eq [System.Windows.Input.Key]::Up -or $e.Key -eq [System.Windows.Input.Key]::PageUp) {
+                $state.Index--
+                if ($state.Index -lt 0) { $state.Index = $colorList.Count - 1 }
+                & $updateColor
+            } else {
+                $state.Index++
+                if ($state.Index -ge $colorList.Count) { $state.Index = 0 }
+                & $updateColor
+            }
+        })
+
+        # Click đúp để thoát nhanh
+        $win.Add_MouseDoubleClick({
+            $win.Close()
         })
 
         $win.ShowDialog() | Out-Null

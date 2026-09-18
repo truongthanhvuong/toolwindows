@@ -1,11 +1,11 @@
 {
-  "version": "20.5.908.32",
+  "version": "20.5.908.33",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Tích hợp tính năng Tick chọn và Gỡ bỏ hàng loạt phần mềm (Batch Multi-Select Uninstaller & Batch Deep Clean): Hỗ trợ Checkbox trên từng ứng dụng, Header Chọn Tất Cả/Bỏ Chọn, các nút chọn nhanh thông minh.",
-    "Hỗ trợ gỡ bỏ tuần tự hàng loạt theo tiến độ thời gian thực (1/N, 2/N...), ghi log chi tiết từng ứng dụng và tự động quét sạch triệt để toàn bộ thư mục tệp rác & Registry còn sót lại.",
-    "Gộp 2 tab trùng lặp phần cứng thành 'Kiểm Tra Laptop & Ngoại Vi' toàn diện.",
-    "Khắc phục triệt để chế độ Tối (Dark Mode) chuẩn phong cách Apple Dark siêu nét và kích hoạt hệ thống chuyển đổi ngôn ngữ song ngữ Tiếng Việt & Tiếng Anh."
+    "Sửa lỗi Test Màn Hình Full Màu (Dead Pixel): Khắc phục triệt để lỗi bấm chuột/bàn phím không đổi màu (fix scope index biến, thêm Tunneling Preview Events, hỗ trợ Click trái/phải, phím Space/Mũi tên và Cuộn chuột siêu nhạy).",
+    "Nâng cấp kho Font Chữ Tiếng Việt & Bổ sung Trọn Bộ Font AutoCAD (.SHX & TTF): Tự động phát hiện tất cả các phiên bản AutoCAD trên máy để nạp font bản vẽ kỹ thuật chống lỗi ???, hỗ trợ nạp tùy chọn từ file ZIP/thư mục và đăng ký GDI Windows realtime.",
+    "Nâng cấp động cơ kiểm tra cập nhật Realtime Dual-Engine cho AppUpdater loại bỏ 100% độ trễ CDN Fastly cache 5 phút.",
+    "Tích hợp tính năng Tick chọn và Gỡ bỏ hàng loạt phần mềm (Batch Multi-Select Uninstaller & Batch Deep Clean)."
   ]
 }

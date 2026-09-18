@@ -1715,11 +1715,13 @@
                             <StackPanel>
                                 <TextBlock Text="⚡ TÙY CHỌN CÀI ĐẶT FONT CHỮ" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
                                 <WrapPanel>
-                                    <Button x:Name="btnInstallAllFonts" Content="🚀 Cài Đặt Tất Cả Font (Khuyên Dùng)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="270" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnInstallAllFonts" Content="🚀 Cài Đặt Tất Cả Font (Khuyên Dùng)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnInstallAutoCADFonts" Content="📐 Cài Trọn Bộ Font AutoCAD (.SHX &amp; TTF)" Background="#0284C7" Style="{StaticResource ActionBtn}" MinWidth="320" Padding="14,0,14,0" ToolTip="Tự động quét và nạp trọn bộ Font .SHX &amp; TTF vào tất cả các phiên bản AutoCAD trên máy tính, chống lỗi dấu hỏi ??? trên bản vẽ"/>
                                     <Button x:Name="btnInstallVNIFonts" Content="📑 Cài Bộ Font VNI (VNI-Times...)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0"/>
                                     <Button x:Name="btnInstallTCVN3Fonts" Content="📜 Cài Bộ Font TCVN3 (.VnTime...)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0"/>
                                     <Button x:Name="btnInstallGoogleFonts" Content="🌐 Cài Google Fonts Tiếng Việt" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnOpenFontFolder" Content="📂 Mở Thư Mục Fonts Hệ Thống" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnInstallCustomFonts" Content="📦 Cài Từ File ZIP / Thư Mục Tùy Chọn" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="280" Padding="14,0,14,0" ToolTip="Chọn file ZIP hoặc thư mục chứa font trên máy để tự động nạp vào Windows Fonts và AutoCAD"/>
+                                    <Button x:Name="btnOpenFontFolder" Content="📂 Mở Thư Mục Fonts Hệ Thống" Background="#64748B" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="14,0,14,0"/>
                                 </WrapPanel>
                             </StackPanel>
                         </Border>

@@ -1,7 +1,7 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.908.32"
+$script:APP_CURRENT_VERSION = "20.5.908.33"
 $script:UPDATE_CHECK_URL    = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json"
 
 function Get-VUONGTTCurrentVersion {
