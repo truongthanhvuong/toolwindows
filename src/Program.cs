@@ -15,8 +15,8 @@ using System.Drawing;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.908.36")]
-[assembly: AssemblyFileVersion("20.5.908.36")]
+[assembly: AssemblyVersion("20.5.908.37")]
+[assembly: AssemblyFileVersion("20.5.908.37")]
 
 namespace VUONGTT
 {

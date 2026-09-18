@@ -265,12 +265,31 @@ function Remove-VUONGTTLicenseKey {
     Init-VUONGTTLicenseVault
     try {
         $vault = Get-VUONGTTAllLicenses
+        $targetKey = $vault | Where-Object { $_.Key -eq $Key }
         $newVault = @($vault | Where-Object { $_.Key -ne $Key })
         if ($newVault.Count -eq 0) {
             "[]" | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
         } else {
             $newVault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
         }
+
+        # NẾU KEY BỊ XÓA LÀ KEY ĐANG DÙNG TRÊN MÁY NÀY HOẶC TRÙNG HWID -> THU HỒI BẢN QUYỀN MÁY TỨC THÌ
+        if (Test-Path $script:ACTIVE_LIC_FILE) {
+            try {
+                $base64 = Get-Content -Path $script:ACTIVE_LIC_FILE -Raw -ErrorAction SilentlyContinue
+                if ($base64) {
+                    $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64.Trim()))
+                    $lic = ConvertFrom-Json $json
+                    if ($lic.Key -eq $Key) {
+                        Remove-Item -Path $script:ACTIVE_LIC_FILE -Force -ErrorAction SilentlyContinue
+                    }
+                }
+            } catch {}
+        }
+        if ($targetKey -and $targetKey.UsedHWID -eq (Get-VUONGTTHardwareId)) {
+            Remove-Item -Path $script:ACTIVE_LIC_FILE -Force -ErrorAction SilentlyContinue
+        }
+
         return $true
     } catch {
         return $false
@@ -363,18 +382,6 @@ function Write-VUONGTTActiveLicenseFile {
 function Test-VUONGTTProLicense {
     [CmdletBinding()]
     param()
-    # Nếu Admin đang đăng nhập (Super Admin Master) -> MẶC ĐỊNH LÀ PRO TOÀN NĂNG KHÔNG CẦN KEY VIP!
-    if ($global:isAdminAuthenticated) {
-        return [PSCustomObject]@{
-            IsPro    = $true
-            License  = $null
-            Duration = "Vĩnh viễn (Master Admin)"
-            Customer = "Quản Trị Viên (Admin)"
-            Reason   = "Đã đăng nhập tài khoản Quản trị viên (Super Admin toàn quyền)"
-            IsAdmin  = $true
-        }
-    }
-
     if (-not (Test-Path $script:ACTIVE_LIC_FILE)) {
         return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Chưa kích hoạt bản quyền" }
     }
@@ -388,6 +395,15 @@ function Test-VUONGTTProLicense {
         $currentHWID = Get-VUONGTTHardwareId
         if ($lic.HWID -ne $currentHWID) {
             return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "HWID không khớp (File bản quyền sao chép từ máy khác)" }
+        }
+
+        # ĐỐI SOÁT VỚI KHO VAULT: NẾU KEY ĐÃ BỊ ADMIN XÓA KHỎI KHO -> TỰ ĐỘNG THU HỒI BẢN QUYỀN MÁY
+        $vault = Get-VUONGTTAllLicenses
+        $vaultKey = $vault | Where-Object { $_.Key -eq $lic.Key }
+        if (-not $vaultKey) {
+            # Key đã bị Admin xóa khỏi Vault -> Xóa sạch active license trên máy và trả về Free
+            Remove-Item -Path $script:ACTIVE_LIC_FILE -Force -ErrorAction SilentlyContinue
+            return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "License Key đã bị xóa khỏi hệ thống (Bản quyền bị thu hồi)" }
         }
 
         # Check cryptographic signature

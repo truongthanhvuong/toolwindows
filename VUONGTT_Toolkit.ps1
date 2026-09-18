@@ -3270,23 +3270,7 @@ $script:licensePendingTab    = $null
 function Update-VUONGTTLicenseUI {
     $conv = [System.Windows.Media.BrushConverter]::new()
     
-    # TRƯỜNG HỢP 1: ADMIN ĐANG ĐĂNG NHẬP -> VIP TOÀN NĂNG (SUPER ADMIN)
-    if ($global:isAdminAuthenticated) {
-        if ($borderLicenseBadge) {
-            $borderLicenseBadge.Background  = $conv.ConvertFromString("#FEF3C7")
-            $borderLicenseBadge.BorderBrush = $conv.ConvertFromString("#F59E0B")
-        }
-        if ($txtLicenseBadge) {
-            $txtLicenseBadge.Text       = "👑 ADMIN MASTER • TOÀN QUYỀN"
-            $txtLicenseBadge.Foreground = $conv.ConvertFromString("#B45309")
-        }
-        if ($btnActivateLicense) {
-            $btnActivateLicense.Visibility = [System.Windows.Visibility]::Collapsed
-        }
-        return
-    }
-
-    # TRƯỜNG HỢP 2: KIỂM TRA BẢN QUYỀN MÁY BÌNH THƯỜNG
+    # Kiểm tra bản quyền máy thực tế (đối soát với kho Vault)
     $pro = Test-VUONGTTProLicense
     if ($pro.IsPro) {
         if ($borderLicenseBadge) {
@@ -3306,7 +3290,11 @@ function Update-VUONGTTLicenseUI {
             $borderLicenseBadge.BorderBrush = $conv.ConvertFromString("#FCD34D")
         }
         if ($txtLicenseBadge) {
-            $txtLicenseBadge.Text       = "⚪ FREE VERSION"
+            if ($global:isAdminAuthenticated) {
+                $txtLicenseBadge.Text   = "⚪ FREE VERSION (👑 Admin)"
+            } else {
+                $txtLicenseBadge.Text   = "⚪ FREE VERSION"
+            }
             $txtLicenseBadge.Foreground = $conv.ConvertFromString("#B45309")
         }
         if ($btnActivateLicense) {
@@ -3553,7 +3541,8 @@ function Render-VUONGTTAdminKeys {
             if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
                 Remove-VUONGTTLicenseKey -Key $keyVal | Out-Null
                 Render-VUONGTTAdminKeys
-                $txtFooterStatus.Text = "• [DELETE] Đã xóa thành công License Key $keyVal khỏi kho."
+                Update-VUONGTTLicenseUI
+                $txtFooterStatus.Text = "• [DELETE] Đã xóa thành công License Key $keyVal khỏi kho và thu hồi bản quyền nếu máy đang sử dụng key này."
             }
         }.GetNewClosure())
 

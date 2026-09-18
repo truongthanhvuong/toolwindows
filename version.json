@@ -1,11 +1,11 @@
 {
-  "version": "20.5.908.36",
+  "version": "20.5.908.37",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Cố định Mật khẩu Admin Master & Chặn Tuyệt Đối Tạo Pass Mới Trên Máy Khác: Bảo vệ độc quyền quyền Quản trị viên, loại bỏ hoàn toàn biểu mẫu đổi mật khẩu lần đầu trên máy ngoài, chỉ cho phép đăng nhập bằng 1 mật khẩu Admin duy nhất.",
-    "Chế Độ Super Admin VIP Toàn Quyền: Khi đăng nhập vào tài khoản Admin, hệ thống tự động mở khóa 100% toàn bộ tính năng cao cấp (PRO) mà không cần phải nhập Key VIP hay kích hoạt bản quyền.",
-    "Tự động chuyển đổi Dynamic Badge: Hiển thị huy hiệu '👑 ADMIN MASTER • TOÀN QUYỀN' màu vàng Amber sang trọng khi Admin đang hoạt động.",
-    "Tối ưu hóa bảo mật và đồng bộ hóa kho License Key HWID Single-Use."
+    "Sửa triệt để lỗi Thu Hồi Bản Quyền khi Xóa Key: Khi Quản trị viên bấm xóa License Key trong Admin Portal, hệ thống tự động phát hiện và xóa sạch file bản quyền active_license.lic trên máy, lập tức trả máy về FREE VERSION không còn bị kẹt PRO.",
+    "Đối soát thời gian thực giữa Active License và License Vault: Nếu License Key không còn tồn tại trong kho (đã bị xóa), bản quyền lập tức bị vô hiệu hóa.",
+    "Tích hợp trọn bộ 14 Skills Superpowers vào dự án (.agents/skills, AGENTS.md, GEMINI.md) chuẩn hóa toàn bộ quy trình lập trình tác nhân AI thông minh.",
+    "Cập nhật giao diện Dynamic Badge tự động đồng bộ tức thì sau mọi thao tác Cấp / Xóa License Key."
   ]
 }
