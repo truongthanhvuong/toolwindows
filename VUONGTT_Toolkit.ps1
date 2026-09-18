@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.40
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.41
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -141,6 +141,25 @@ $txtModalLicenseKey         = Get-Control "txtModalLicenseKey"
 $lblActivateError           = Get-Control "lblActivateError"
 $btnModalActivateCancel     = Get-Control "btnModalActivateCancel"
 $btnModalActivateSubmit     = Get-Control "btnModalActivateSubmit"
+
+# Modal: Driver Doctor Controls
+$modalDriverDoctor           = Get-Control "modalDriverDoctor"
+$btnModalDriverDoctorClose   = Get-Control "btnModalDriverDoctorClose"
+$btnModalDriverDoctorDone    = Get-Control "btnModalDriverDoctorDone"
+$lblDriverDoctorTotal        = Get-Control "lblDriverDoctorTotal"
+$lblDriverDoctorIssues       = Get-Control "lblDriverDoctorIssues"
+$lblDriverDoctorGpu          = Get-Control "lblDriverDoctorGpu"
+$lblDriverDoctorMachine      = Get-Control "lblDriverDoctorMachine"
+$txtDriverDoctorDetails      = Get-Control "txtDriverDoctorDetails"
+$btnDriverAutoWinUpdate      = Get-Control "btnDriverAutoWinUpdate"
+$btnDriverSDIO               = Get-Control "btnDriverSDIO"
+$btnDriver3DPChip            = Get-Control "btnDriver3DPChip"
+$btnDriver3DPNet             = Get-Control "btnDriver3DPNet"
+$btnDriverOEMSupport         = Get-Control "btnDriverOEMSupport"
+$btnDriverOpenDevMgmt        = Get-Control "btnDriverOpenDevMgmt"
+$btnDriverDoctorRescan       = Get-Control "btnDriverDoctorRescan"
+$prgDriverDoctor             = Get-Control "prgDriverDoctor"
+$lblDriverDoctorStatus       = Get-Control "lblDriverDoctorStatus"
 
 # Theme Buttons
 $btnThemeDefault    = Get-Control "btnThemeDefault"
@@ -907,41 +926,144 @@ $exportAction = {
 $btnExportCsv.Add_Click($exportAction)
 $btnExportExcel.Add_Click($exportAction)
 
+function Show-VUONGTTDriverDoctorModal {
+    if (-not $modalDriverDoctor) { return }
+    $modalDriverDoctor.Visibility = [System.Windows.Visibility]::Visible
+    if ($prgDriverDoctor) { $prgDriverDoctor.Value = 15 }
+    if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "Đang kiểm tra sâu bus PnP và chẩn đoán toàn bộ Driver..." }
+    if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = "Đang truy vấn hệ thống và phân tích mã lỗi phần cứng..." }
+
+    if ([System.Windows.Forms.Application]::MessageLoop) {
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+
+    try {
+        $diag = Get-VUONGTTDeepDriverDiagnostic
+        if ($lblDriverDoctorTotal) { $lblDriverDoctorTotal.Text = "$($diag.TotalDevices)" }
+        if ($lblDriverDoctorIssues) { 
+            $lblDriverDoctorIssues.Text = "$($diag.IssueCount) Lỗi"
+            $lblDriverDoctorIssues.Foreground = if ($diag.IssueCount -gt 0) { [System.Windows.Media.Brushes]::Crimson } else { [System.Windows.Media.Brushes]::ForestGreen }
+        }
+        if ($lblDriverDoctorGpu) { 
+            $lblDriverDoctorGpu.Text = if ($diag.HasGpuWarning) { "Thiếu Driver!" } else { "Tối ưu [OK]" }
+            $lblDriverDoctorGpu.Foreground = if ($diag.HasGpuWarning) { [System.Windows.Media.Brushes]::Crimson } else { [System.Windows.Media.Brushes]::ForestGreen }
+        }
+        if ($lblDriverDoctorMachine) { 
+            $lblDriverDoctorMachine.Text = "$($diag.Manufacturer) / $($diag.Model)" 
+        }
+
+        if ($diag.IssueList -and $diag.IssueList.Count -gt 0) {
+            $lines = @("=== PHÁT HIỆN $($diag.IssueCount) THIẾT BỊ CẦN BỔ SUNG / SỬA LỖI DRIVER ===")
+            $idx = 0
+            foreach ($iss in $diag.IssueList) {
+                $idx++
+                $lines += "`n[$idx] $($iss.Name)"
+                $lines += "   • Hãng sản xuất/Vendor: $($iss.Vendor)"
+                $lines += "   • Trạng thái lỗi: $($iss.Description)"
+                if ($iss.HardwareID) { $lines += "   • Hardware ID: $($iss.HardwareID)" }
+                $lines += "   👉 Hướng xử lý: $($iss.Suggestion)"
+            }
+            $lines += "`n💡 Bấm các nút bên dưới để Tự động cập nhật qua Windows Update, Snappy Driver Installer (SDIO) hoặc 3DP Chip ngay!"
+            if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = ($lines -join "`n") }
+            if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Phát hiện $($diag.IssueCount) thiết bị phần cứng cần xử lý Driver." }
+        } else {
+            $msg = "=== TOÀN BỘ DRIVER PHẦN CỨNG HOẠT ĐỘNG HOÀN HẢO ===`n`n" +
+                   "• Đã quét kiểm tra sâu: $($diag.TotalDevices) thiết bị PnP.`n" +
+                   "• Thiết bị lỗi / chấm than vàng (Code 28, 10, 43...): 0 thiết bị.`n" +
+                   "• Card màn hình (GPU): $($diag.GpuStatus)`n" +
+                   "• Thông tin máy: $($diag.Manufacturer) $($diag.Model)" + (if ($diag.SerialNumber) { " (Serial/Tag: $($diag.SerialNumber))" } else { "" }) + "`n`n" +
+                   "Chúc mừng! Máy tính của bạn đã được cài đặt đầy đủ tất cả các driver tối ưu."
+            if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = $msg }
+            if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Không có thiết bị nào bị lỗi hoặc thiếu driver." }
+        }
+    } catch {
+        if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = "Lỗi khi quét Driver: $($_.Exception.Message)" }
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Lỗi truy vấn phần cứng: $($_.Exception.Message)" }
+    }
+
+    if ($prgDriverDoctor) { $prgDriverDoctor.Value = 100 }
+}
+
 $btnDriverVendor.Add_Click({
-    Start-Process "https://www.intel.com/content/www/us/en/support/detect.html"
+    Open-VUONGTTOfficialDriverPortal
 })
 
 $btnMissingDriver.Add_Click({
-    $prob = Get-CimInstance Win32_PnPEntity -ErrorAction SilentlyContinue | Where-Object { $_.ConfigManagerErrorCode -ne 0 -and $_.ConfigManagerErrorCode -ne $null }
-    if ($prob) {
-        $lines = @()
-        foreach ($dev in $prob) {
-            $devName = if ($dev.Name) { $dev.Name } elseif ($dev.Description) { $dev.Description } elseif ($dev.Caption) { $dev.Caption } else { "Thiết bị phần cứng" }
-            $hwId = if ($dev.DeviceID) { $dev.DeviceID } else { "" }
-            
-            # Phan tich thong minh PCI Vendor & Device ID
-            if ($hwId -like "PCI\VEN_*") {
-                $ven = if ($hwId -match "VEN_([0-9A-Fa-f]{4})") { $matches[1].ToUpper() } else { "" }
-                $devCode = if ($hwId -match "DEV_([0-9A-Fa-f]{4})") { $matches[1].ToUpper() } else { "" }
-                $venName = switch ($ven) {
-                    "10DE" { "Card Đồ Họa Rời NVIDIA" }
-                    "1002" { "Card Đồ Họa AMD / Radeon" }
-                    "8086" { "Thiết Bị Intel (Chipset / Audio / Graphics)" }
-                    "10EC" { "Card Âm Thanh / Card Mạng Realtek" }
-                    "14E4" { "Card Mạng Broadcom" }
-                    "168C" { "Card Wi-Fi Qualcomm Atheros" }
-                    default { "Vendor ID: $ven" }
-                }
-                $devName = "$venName ($devName) [VEN_$ven DEV_$devCode]"
-            }
-            $lines += "• $devName (Mã lỗi: $($dev.ConfigManagerErrorCode))"
-        }
-        $names = ($lines -join "`n")
-        [System.Windows.MessageBox]::Show("Phát hiện $($prob.Count) thiết bị chưa đủ Driver trên máy:`n`n$names`n`n👉 Gợi ý: Nếu có card đồ họa rời NVIDIA/AMD, bạn có thể bấm nút 'Driver Hãng' để tải driver tự động.", "Kiểm Tra Driver Thiếu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
-    } else {
-        [System.Windows.MessageBox]::Show("Tuyệt vời! Toàn bộ Driver trên máy đều hoạt động hoàn hảo, không có thiết bị nào bị lỗi hoặc thiếu driver.", "Kiểm Tra Driver", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
-    }
+    Show-VUONGTTDriverDoctorModal
 })
+
+# Wire Modal Driver Doctor Events
+if ($btnModalDriverDoctorClose) {
+    $btnModalDriverDoctorClose.Add_Click({ $modalDriverDoctor.Visibility = [System.Windows.Visibility]::Collapsed })
+}
+if ($btnModalDriverDoctorDone) {
+    $btnModalDriverDoctorDone.Add_Click({ $modalDriverDoctor.Visibility = [System.Windows.Visibility]::Collapsed })
+}
+if ($btnDriverDoctorRescan) {
+    $btnDriverDoctorRescan.Add_Click({ Show-VUONGTTDriverDoctorModal })
+}
+
+if ($btnDriverAutoWinUpdate) {
+    $btnDriverAutoWinUpdate.Add_Click({
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "Đang quét PnP & Windows Update..." }
+        if ($prgDriverDoctor) { $prgDriverDoctor.Value = 40 }
+        $res = Invoke-VUONGTTWindowsUpdateDriverScan -OnProgress {
+            param($m)
+            if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = "$m`n$($txtDriverDoctorDetails.Text)" }
+            if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
+        }
+        if ($prgDriverDoctor) { $prgDriverDoctor.Value = 100 }
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Quét Windows Update hoàn tất." }
+        [System.Windows.MessageBox]::Show($res, "Windows Update Driver", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($btnDriverSDIO) {
+    $btnDriverSDIO.Add_Click({
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "Đang kết nối Snappy Driver Installer Origin..." }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "sdio" -OnProgress {
+            param($m)
+            if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = "$m`n$($txtDriverDoctorDetails.Text)" }
+        }
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• $res" }
+    })
+}
+
+if ($btnDriver3DPChip) {
+    $btnDriver3DPChip.Add_Click({
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "Đang khởi chạy 3DP Chip..." }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "3dpchip" -OnProgress {
+            param($m)
+            if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = "$m`n$($txtDriverDoctorDetails.Text)" }
+        }
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• $res" }
+    })
+}
+
+if ($btnDriver3DPNet) {
+    $btnDriver3DPNet.Add_Click({
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "Đang mở 3DP Net..." }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "3dpnet" -OnProgress {
+            param($m)
+            if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = "$m`n$($txtDriverDoctorDetails.Text)" }
+        }
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• $res" }
+    })
+}
+
+if ($btnDriverOEMSupport) {
+    $btnDriverOEMSupport.Add_Click({
+        $portal = Open-VUONGTTOfficialDriverPortal
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Đã mở trang Driver hãng: $($portal.Manufacturer)" }
+    })
+}
+
+if ($btnDriverOpenDevMgmt) {
+    $btnDriverOpenDevMgmt.Add_Click({
+        Start-Process "devmgmt.msc"
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Đã mở Device Manager" }
+    })
+}
 
 # =========================================================================
 # MODULE 2: TÙY CHỈNH THÔNG TIN MÁY (System Properties)
@@ -1600,23 +1722,36 @@ $btnDisableBuiltinAdmin.Add_Click({
 # =========================================================================
 # MODULE 7: TẢI ỨNG DỤNG & CÀI APP TÙY CHỈNH & FONT
 # =========================================================================
-$btnSelectAllApps       = Get-Control "btnSelectAllApps"
-$btnUnselectAllApps     = Get-Control "btnUnselectAllApps"
-$btnInstallSelectedApps = Get-Control "btnInstallSelectedApps"
-$btnUpdateAllApps       = Get-Control "btnUpdateAllApps"
-$txtSoftwareLog         = Get-Control "txtSoftwareLog"
+$btnSelectAllApps          = Get-Control "btnSelectAllApps"
+$btnUnselectAllApps        = Get-Control "btnUnselectAllApps"
+$btnInstallSelectedApps    = Get-Control "btnInstallSelectedApps"
+$btnUpdateAllApps          = Get-Control "btnUpdateAllApps"
+$txtSoftwareLog            = Get-Control "txtSoftwareLog"
 
-$txtCustomAppInput      = Get-Control "txtCustomAppInput"
-$btnInstallCustomApp    = Get-Control "btnInstallCustomApp"
-$txtCustomAppLog        = Get-Control "txtCustomAppLog"
+$prgSoftware               = Get-Control "prgSoftware"
+$lblSoftwareProgressText   = Get-Control "lblSoftwareProgressText"
+$lblSoftwareProgressPercent= Get-Control "lblSoftwareProgressPercent"
+$lblSoftwareSubText        = Get-Control "lblSoftwareSubText"
+$chkSoftwareAutoLaunch     = Get-Control "chkSoftwareAutoLaunch"
+$btnClearSoftwareLog       = Get-Control "btnClearSoftwareLog"
 
-$btnInstallAllFonts     = Get-Control "btnInstallAllFonts"
-$btnInstallTcvn3        = Get-Control "btnInstallTcvn3"
-$btnInstallVni          = Get-Control "btnInstallVni"
+$txtCustomAppInput         = Get-Control "txtCustomAppInput"
+$btnInstallCustomApp       = Get-Control "btnInstallCustomApp"
+$txtCustomAppLog           = Get-Control "txtCustomAppLog"
+$prgCustomApp              = Get-Control "prgCustomApp"
+$lblCustomAppStatus        = Get-Control "lblCustomAppStatus"
+$chkCustomAutoLaunch       = Get-Control "chkCustomAutoLaunch"
+$txtLocalInstallerPath     = Get-Control "txtLocalInstallerPath"
+$btnBrowseInstaller        = Get-Control "btnBrowseInstaller"
+$btnRunSilentInstall       = Get-Control "btnRunSilentInstall"
 
-$btnInstallAccountingOnly = Get-Control "btnInstallAccountingOnly"
-$btnUpdateAccounting      = Get-Control "btnUpdateAccounting"
-$btnOpenTaxPortal         = Get-Control "btnOpenTaxPortal"
+$btnInstallAllFonts        = Get-Control "btnInstallAllFonts"
+$btnInstallTcvn3           = Get-Control "btnInstallTcvn3"
+$btnInstallVni             = Get-Control "btnInstallVni"
+
+$btnInstallAccountingOnly  = Get-Control "btnInstallAccountingOnly"
+$btnUpdateAccounting       = Get-Control "btnUpdateAccounting"
+$btnOpenTaxPortal          = Get-Control "btnOpenTaxPortal"
 
 $appControls = @(
     "app_office365", "app_foxitpdf", "app_acrobat", "app_unikey", "app_evkey",
@@ -1641,6 +1776,16 @@ $btnUnselectAllApps.Add_Click({
     }
 })
 
+if ($btnClearSoftwareLog) {
+    $btnClearSoftwareLog.Add_Click({
+        if ($txtSoftwareLog) { $txtSoftwareLog.Text = "Sẵn sàng tải và cài đặt phần mềm." }
+        if ($prgSoftware) { $prgSoftware.Value = 0 }
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Sẵn sàng tải và cài đặt" }
+        if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "0%" }
+        if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Hiển thị luồng log chi tiết thời gian thực khi cài đặt" }
+    })
+}
+
 $btnInstallSelectedApps.Add_Click({
     $selected = @()
     foreach ($name in $appControls) {
@@ -1652,23 +1797,80 @@ $btnInstallSelectedApps.Add_Click({
     }
 
     if ($selected.Count -eq 0) {
-        $txtSoftwareLog.Text = "Vui lòng tích chọn ít nhất 1 ứng dụng!"
+        if ($txtSoftwareLog) { $txtSoftwareLog.Text = "[CẢNH BÁO] Vui lòng tích chọn ít nhất 1 ứng dụng để cài đặt!" }
+        [System.Windows.MessageBox]::Show("Vui lòng tích chọn ít nhất 1 ứng dụng!", "Tải Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
         return
     }
 
-    $txtSoftwareLog.Text = "Bắt đầu cài đặt $($selected.Count) ứng dụng..."
-    foreach ($appId in $selected) {
-        $res = Install-VUONGTTApp -AppId $appId -OnProgress { param($m) $txtSoftwareLog.Text = "$m`n$($txtSoftwareLog.Text)" }
-        $txtSoftwareLog.Text = "$res`n$($txtSoftwareLog.Text)"
+    $autoLaunch = if ($chkSoftwareAutoLaunch) { [bool]$chkSoftwareAutoLaunch.IsChecked } else { $true }
+    if ($prgSoftware) { $prgSoftware.Value = 0 }
+    if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "0%" }
+    if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Bắt đầu cài đặt $($selected.Count) ứng dụng..." }
+
+    $logPrefix = "=== [KHỞI ĐỘNG TIẾN TRÌNH CÀI ĐẶT $($selected.Count) ỨNG DỤNG - $(Get-Date -Format 'HH:mm:ss')] ==="
+    if ($txtSoftwareLog) { 
+        $txtSoftwareLog.Text = "$logPrefix`r`n"
+        $txtSoftwareLog.ScrollToEnd()
     }
-    [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt toàn bộ ứng dụng đã chọn!", "Tải Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+
+    $streamLog = {
+        param($msg)
+        if ($txtSoftwareLog) {
+            $txtSoftwareLog.AppendText("$msg`r`n")
+            $txtSoftwareLog.ScrollToEnd()
+        }
+        if ([System.Windows.Forms.Application]::MessageLoop) {
+            [System.Windows.Forms.Application]::DoEvents()
+        }
+    }
+
+    $i = 0
+    foreach ($appId in $selected) {
+        $i++
+        $pct = [int](($i / $selected.Count) * 100)
+        $appObj = $script:VUONGTT_APPS | Where-Object { $_.Id -eq $appId }
+        $appName = if ($appObj) { $appObj.Name } else { $appId }
+
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "[$i/$($selected.Count)] Đang xử lý: $appName..." }
+        if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Đang cài đặt $appName ($i/$($selected.Count))..." }
+        & $streamLog "`r`n>>> BẮT ĐẦU CÀI ĐẶT [$i/$($selected.Count)]: $appName"
+
+        $res = Install-VUONGTTApp -AppId $appId -OnProgress $streamLog -AutoLaunch:$autoLaunch
+        & $streamLog "-> Kết quả: $res"
+
+        if ($prgSoftware) { $prgSoftware.Value = $pct }
+        if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "$pct%" }
+        if ([System.Windows.Forms.Application]::MessageLoop) {
+            [System.Windows.Forms.Application]::DoEvents()
+        }
+    }
+
+    if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng!" }
+    if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Quá trình cài đặt kết thúc thành công." }
+    if ($prgSoftware) { $prgSoftware.Value = 100 }
+    if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
+    & $streamLog "`r`n=== [HOÀN TẤT TOÀN BỘ CÀI ĐẶT] ==="
+
+    [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng đã chọn!`nCác ứng dụng đã được tự động mở sẵn sàng sử dụng.", "Tải Ứng Dụng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
 })
 
 $btnUpdateAllApps.Add_Click({
-    $txtSoftwareLog.Text = "Đang chạy Winget upgrade --all..."
-    Start-Process powershell.exe -ArgumentList "-NoProfile -Command winget upgrade --all --silent" -Wait -NoNewWindow
-    $txtSoftwareLog.Text = "Đã hoàn tất kiểm tra và nâng cấp toàn bộ ứng dụng trên hệ thống!"
-    [System.Windows.MessageBox]::Show("Đã cập nhật toàn bộ ứng dụng qua Winget!", "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    if ($txtSoftwareLog) { $txtSoftwareLog.Text = "Đang chạy Winget upgrade --all (Cập nhật toàn bộ phần mềm)...`r`n" }
+    if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đang cập nhật toàn bộ ứng dụng..." }
+    if ($prgSoftware) { $prgSoftware.Value = 30 }
+
+    $res = Invoke-VUONGTTProcessWithLiveLog -FilePath "powershell.exe" -ArgumentList "-NoProfile -Command winget upgrade --all --silent" -OnOutputLine {
+        param($m)
+        if ($txtSoftwareLog) { 
+            $txtSoftwareLog.AppendText("$m`r`n")
+            $txtSoftwareLog.ScrollToEnd()
+        }
+    }
+
+    if ($prgSoftware) { $prgSoftware.Value = 100 }
+    if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
+    if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã cập nhật xong toàn bộ ứng dụng!" }
+    [System.Windows.MessageBox]::Show("Đã hoàn tất kiểm tra và nâng cấp toàn bộ ứng dụng qua Winget!", "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
 })
 
 if ($btnInstallAccountingOnly) {
@@ -1682,24 +1884,49 @@ if ($btnInstallAccountingOnly) {
             }
         }
         if ($selectedAcct.Count -eq 0) {
-            $txtSoftwareLog.Text = "[CẢNH BÁO] Vui lòng tích chọn ít nhất 1 ứng dụng kế toán (HTKK, iTaxViewer, MISA, KBHXH, Java...) để cài đặt!`n$($txtSoftwareLog.Text)"
+            if ($txtSoftwareLog) { $txtSoftwareLog.Text = "[CẢNH BÁO] Vui lòng tích chọn ít nhất 1 ứng dụng kế toán (HTKK, iTaxViewer, MISA, KBHXH, Java...) để cài đặt!`n$($txtSoftwareLog.Text)" }
             [System.Windows.MessageBox]::Show("Vui lòng tích chọn ít nhất 1 ứng dụng kế toán!", "Ứng Dụng Kế Toán", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
             return
         }
 
-        $txtSoftwareLog.Text = "=== [BẮT ĐẦU CÀI ĐẶT $($selectedAcct.Count) ỨNG DỤNG KẾ TOÁN MỚI NHẤT] ===`n$($txtSoftwareLog.Text)"
-        foreach ($appId in $selectedAcct) {
-            $res = Install-VUONGTTAccountingApp -AppId $appId -OnProgress {
-                param($m)
-                $txtSoftwareLog.Text = "$m`n$($txtSoftwareLog.Text)"
-                if ([System.Windows.Forms.Application]::MessageLoop) {
-                    [System.Windows.Forms.Application]::DoEvents()
-                }
-            }
-            $txtSoftwareLog.Text = "$res`n$($txtSoftwareLog.Text)"
+        $autoLaunch = if ($chkSoftwareAutoLaunch) { [bool]$chkSoftwareAutoLaunch.IsChecked } else { $true }
+        if ($prgSoftware) { $prgSoftware.Value = 0 }
+        if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "0%" }
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Bắt đầu cài đặt $($selectedAcct.Count) ứng dụng kế toán..." }
+
+        if ($txtSoftwareLog) {
+            $txtSoftwareLog.Text = "=== [BẮT ĐẦU CÀI ĐẶT $($selectedAcct.Count) ỨNG DỤNG KẾ TOÁN MỚI NHẤT] ===`r`n"
+            $txtSoftwareLog.ScrollToEnd()
         }
-        $txtSoftwareLog.Text = "=== [HOÀN TẤT CÀI ĐẶT GÓI KẾ TOÁN] ===`n$($txtSoftwareLog.Text)"
-        [System.Windows.MessageBox]::Show("Đã hoàn tất quá trình tải và cài đặt các ứng dụng kế toán!", "Kế Toán & Thuế", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+
+        $acctStream = {
+            param($m)
+            if ($txtSoftwareLog) {
+                $txtSoftwareLog.AppendText("$m`r`n")
+                $txtSoftwareLog.ScrollToEnd()
+            }
+            if ([System.Windows.Forms.Application]::MessageLoop) {
+                [System.Windows.Forms.Application]::DoEvents()
+            }
+        }
+
+        $k = 0
+        foreach ($appId in $selectedAcct) {
+            $k++
+            $pct = [int](($k / $selectedAcct.Count) * 100)
+            if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "[$k/$($selectedAcct.Count)] Đang cài gói kế toán: $appId..." }
+            
+            $res = Install-VUONGTTAccountingApp -AppId $appId -OnProgress $acctStream -AutoLaunch:$autoLaunch
+            & $acctStream "-> Kết quả: $res"
+            if ($prgSoftware) { $prgSoftware.Value = $pct }
+            if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "$pct%" }
+        }
+
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Hoàn tất cài đặt gói ứng dụng kế toán!" }
+        if ($prgSoftware) { $prgSoftware.Value = 100 }
+        if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
+        & $acctStream "`r`n=== [HOÀN TẤT CÀI ĐẶT GÓI KẾ TOÁN] ==="
+        [System.Windows.MessageBox]::Show("Đã hoàn tất quá trình tải và cài đặt các ứng dụng kế toán!`nCác ứng dụng đã sẵn sàng sử dụng.", "Kế Toán & Thuế", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
     })
 }
 
@@ -1713,22 +1940,28 @@ if ($btnUpdateAccounting) {
                 $selectedAcct += $id
             }
         }
-        $txtSoftwareLog.Text = "=== [BẮT ĐẦU KIỂM TRA & CẬP NHẬT ỨNG DỤNG KẾ TOÁN] ===`n$($txtSoftwareLog.Text)"
+        if ($txtSoftwareLog) {
+            $txtSoftwareLog.Text = "=== [BẮT ĐẦU KIỂM TRA & CẬP NHẬT ỨNG DỤNG KẾ TOÁN] ===`r`n"
+            $txtSoftwareLog.ScrollToEnd()
+        }
         $res = Update-VUONGTTAccountingApps -AppsToUpdate $selectedAcct -OnProgress {
             param($m)
-            $txtSoftwareLog.Text = "$m`n$($txtSoftwareLog.Text)"
+            if ($txtSoftwareLog) {
+                $txtSoftwareLog.AppendText("$m`r`n")
+                $txtSoftwareLog.ScrollToEnd()
+            }
             if ([System.Windows.Forms.Application]::MessageLoop) {
                 [System.Windows.Forms.Application]::DoEvents()
             }
         }
-        $txtSoftwareLog.Text = "=== [HOÀN TẤT TIẾN TRÌNH CẬP NHẬT KẾ TOÁN] ===`n$($txtSoftwareLog.Text)"
+        if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("=== [HOÀN TẤT TIẾN TRÌNH CẬP NHẬT KẾ TOÁN] ===`r`n") }
         [System.Windows.MessageBox]::Show("Tiến trình cập nhật các phần mềm kế toán đã hoàn tất!`nXem log chi tiết tại khung nhật ký.", "Cập Nhật Kế Toán", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
     })
 }
 
 if ($btnOpenTaxPortal) {
     $btnOpenTaxPortal.Add_Click({
-        $txtSoftwareLog.Text = "[PORTAL] Đang mở Cổng Thuế Điện Tử Tổng cục Thuế (https://thuedientu.gdt.gov.vn)...`n$($txtSoftwareLog.Text)"
+        if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("[PORTAL] Đang mở Cổng Thuế Điện Tử Tổng cục Thuế (https://thuedientu.gdt.gov.vn)...`r`n") }
         try {
             [System.Diagnostics.Process]::Start("https://thuedientu.gdt.gov.vn") | Out-Null
         } catch {
@@ -1739,11 +1972,84 @@ if ($btnOpenTaxPortal) {
 
 $btnInstallCustomApp.Add_Click({
     $target = $txtCustomAppInput.Text.Trim()
-    $txtCustomAppLog.Text = "Đang xử lý cài đặt: $target..."
-    $res = Install-VUONGTTCustomApp -TargetInput $target -OnProgress { param($m) $txtCustomAppLog.Text = $m }
-    $txtCustomAppLog.Text = $res
+    if ([string]::IsNullOrWhiteSpace($target)) {
+        [System.Windows.MessageBox]::Show("Vui lòng nhập ID Winget hoặc liên kết URL tệp cài đặt!", "Cài App Tùy Chỉnh", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        return
+    }
+
+    $autoLaunch = if ($chkCustomAutoLaunch) { [bool]$chkCustomAutoLaunch.IsChecked } else { $true }
+    if ($prgCustomApp) { $prgCustomApp.Value = 20 }
+    if ($lblCustomAppStatus) { $lblCustomAppStatus.Text = "Đang kết nối & tải gói: $target..." }
+    if ($txtCustomAppLog) { 
+        $txtCustomAppLog.Text = "=== [BẮT ĐẦU CÀI ĐẶT TÙY CHỈNH: $target] ===`r`n"
+        $txtCustomAppLog.ScrollToEnd()
+    }
+
+    $customStream = {
+        param($m)
+        if ($txtCustomAppLog) {
+            $txtCustomAppLog.AppendText("$m`r`n")
+            $txtCustomAppLog.ScrollToEnd()
+        }
+        if ([System.Windows.Forms.Application]::MessageLoop) {
+            [System.Windows.Forms.Application]::DoEvents()
+        }
+    }
+
+    $res = Install-VUONGTTCustomApp -TargetInput $target -OnProgress $customStream -AutoLaunch:$autoLaunch
+    if ($prgCustomApp) { $prgCustomApp.Value = 100 }
+    if ($lblCustomAppStatus) { $lblCustomAppStatus.Text = "Hoàn tất cài đặt $target" }
+    & $customStream "=== [KẾT QUẢ] $res ==="
     [System.Windows.MessageBox]::Show($res, "Cài App Tùy Chỉnh", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
 })
+
+if ($btnBrowseInstaller) {
+    $btnBrowseInstaller.Add_Click({
+        $ofd = New-Object Microsoft.Win32.OpenFileDialog
+        $ofd.Filter = "Tệp cài đặt (*.exe;*.msi)|*.exe;*.msi|Mọi tệp (*.*)|*.*"
+        $ofd.Title = "Chọn tệp cài đặt phần mềm (.exe hoặc .msi)"
+        if ($ofd.ShowDialog() -eq $true) {
+            $txtLocalInstallerPath.Text = $ofd.FileName
+        }
+    })
+}
+
+if ($btnRunSilentInstall) {
+    $btnRunSilentInstall.Add_Click({
+        $path = $txtLocalInstallerPath.Text.Trim()
+        if (-not (Test-Path $path)) {
+            [System.Windows.MessageBox]::Show("Tệp cài đặt không tồn tại tại: $path", "Cài Đặt Cục Bộ", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+
+        $autoLaunch = if ($chkCustomAutoLaunch) { [bool]$chkCustomAutoLaunch.IsChecked } else { $true }
+        if ($prgCustomApp) { $prgCustomApp.Value = 25 }
+        if ($lblCustomAppStatus) { $lblCustomAppStatus.Text = "Đang cài đặt ngầm: $([System.IO.Path]::GetFileName($path))..." }
+        
+        $silentArg = if ($path -like "*.msi") { "/qn /norestart" } else { "/silent /verysilent /qn /s" }
+        $customStream = {
+            param($m)
+            if ($txtCustomAppLog) {
+                $txtCustomAppLog.AppendText("$m`r`n")
+                $txtCustomAppLog.ScrollToEnd()
+            }
+            if ([System.Windows.Forms.Application]::MessageLoop) {
+                [System.Windows.Forms.Application]::DoEvents()
+            }
+        }
+
+        & $customStream "=== [BẮT ĐẦU CÀI ĐẶT CỤC BỘ: $path] ==="
+        $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $path -ArgumentList $silentArg -OnOutputLine $customStream
+        if ($autoLaunch) {
+            $appName = [System.IO.Path]::GetFileNameWithoutExtension($path)
+            Start-VUONGTTInstalledApp -AppId $appName -HintName $appName -OnLog $customStream
+        }
+        if ($prgCustomApp) { $prgCustomApp.Value = 100 }
+        if ($lblCustomAppStatus) { $lblCustomAppStatus.Text = "Cài đặt cục bộ hoàn tất" }
+        & $customStream "-> Hoàn tất cài đặt với mã thoát: $exitCode"
+        [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt $path (Mã thoát: $exitCode)!", "Cài Đặt Cục Bộ", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
 
 $btnInstallAllFonts.Add_Click({
     $txtCustomAppLog.Text = "Đang cài đặt trọn bộ Font Tiếng Việt..."
@@ -2469,22 +2775,7 @@ if ($btnRestoreDrivers) {
 
 if ($btnCheckMissingDrivers) {
     $btnCheckMissingDrivers.Add_Click({
-        if ($txtDriverLog) { $txtDriverLog.Text = "Đang quét các thiết bị có trạng thái lỗi (chấm than vàng !)..." }
-        try {
-            $missing = Get-CimInstance Win32_PnPEntity | Where-Object { $_.ConfigManagerErrorCode -ne 0 -and $_.ConfigManagerErrorCode -ne $null }
-            if ($missing -and $missing.Count -gt 0) {
-                $lines = @("Tìm thấy $($missing.Count) thiết bị phần cứng đang gặp sự cố hoặc thiếu Driver:")
-                foreach ($m in $missing) {
-                    $lines += "- Thiết bị: $($m.Name) | Mã lỗi: $($m.ConfigManagerErrorCode)"
-                }
-                if ($txtDriverLog) { $txtDriverLog.Text = ($lines -join "`n") }
-            } else {
-                if ($txtDriverLog) { $txtDriverLog.Text = "[TUYỆT VỜI] Toàn bộ thiết bị phần cứng đều hoạt động bình thường, không có thiết bị nào bị thiếu Driver hoặc báo lỗi chấm than vàng!" }
-            }
-            $txtFooterStatus.Text = "• [OK] Quét trạng thái driver hoàn tất"
-        } catch {
-            if ($txtDriverLog) { $txtDriverLog.Text = "[LỖI] $($_.Exception.Message)" }
-        }
+        Show-VUONGTTDriverDoctorModal
     })
 }
 

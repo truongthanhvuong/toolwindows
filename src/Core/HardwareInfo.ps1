@@ -457,3 +457,299 @@ function Export-HardwareInfoToCsv {
         }
     }
 }
+
+# =========================================================================
+# BÁC SĨ DRIVER & TRUNG TÂM CÀI ĐẶT DRIVER THIẾU (DRIVER DOCTOR PRO)
+# =========================================================================
+
+function Get-VUONGTTDeepDriverDiagnostic {
+    [CmdletBinding()]
+    param()
+
+    try {
+        # 1. Quet toan bo PnP Entity
+        $allPnp = Get-CimInstance Win32_PnPEntity -ErrorAction SilentlyContinue
+        $totalCount = if ($allPnp) { $allPnp.Count } else { 0 }
+
+        # 2. Loc thiet bi bao loi (Error Code != 0)
+        $problemEntities = $allPnp | Where-Object { 
+            $_.ConfigManagerErrorCode -ne 0 -and $null -ne $_.ConfigManagerErrorCode 
+        }
+
+        $items = @()
+        if ($problemEntities) {
+            foreach ($dev in $problemEntities) {
+                $code = $dev.ConfigManagerErrorCode
+                $codeDesc = switch ($code) {
+                    1  { "Thiết bị chưa được cấu hình đúng cách (Code 1)" }
+                    10 { "Thiết bị không thể khởi động (Code 10: This device cannot start)" }
+                    14 { "Cần khởi động lại máy để hoàn tất driver (Code 14: Reboot required)" }
+                    18 { "Cần cài đặt lại trình điều khiển driver (Code 18: Reinstall drivers)" }
+                    22 { "Thiết bị đang bị vô hiệu hóa trong Device Manager (Code 22: Disabled)" }
+                    28 { "Chưa cài đặt trình điều khiển Driver (Code 28: Drivers not installed)" }
+                    31 { "Windows không thể tải driver phù hợp (Code 31: Driver load failure)" }
+                    43 { "Thiết bị đã bị Windows dừng do báo cáo sự cố (Code 43: Device reported problem)" }
+                    default { "Sự cố phần cứng hoặc lỗi Driver (Mã lỗi: $code)" }
+                }
+
+                $hwId = if ($dev.DeviceID) { $dev.DeviceID } else { "" }
+                $ven = ""
+                $devCode = ""
+                $vendorName = "Thiết bị hệ thống"
+
+                if ($hwId -match "VEN_([0-9A-Fa-f]{4})") {
+                    $ven = $matches[1].ToUpper()
+                    if ($hwId -match "DEV_([0-9A-Fa-f]{4})") { $devCode = $matches[1].ToUpper() }
+                    $vendorName = switch ($ven) {
+                        "10DE" { "Card Đồ Họa NVIDIA" }
+                        "1002" { "Card Đồ Họa AMD / Radeon" }
+                        "8086" { "Chipset / Đồ Họa / Mạng Intel" }
+                        "10EC" { "Card Âm Thanh / Mạng Realtek" }
+                        "14E4" { "Card Mạng Broadcom" }
+                        "168C" { "Card Wi-Fi Qualcomm Atheros" }
+                        "14C3" { "Card Wi-Fi MediaTek" }
+                        "0BDA" { "Realtek USB Audio / Wi-Fi" }
+                        default { "Nhà SX PCI (VEN_$ven)" }
+                    }
+                } elseif ($hwId -match "VID_([0-9A-Fa-f]{4})") {
+                    $ven = $matches[1].ToUpper()
+                    $vendorName = "Thiết Bị USB (VID_$ven)"
+                }
+
+                $name = if ($dev.Name) { $dev.Name } elseif ($dev.Description) { $dev.Description } else { "Thiết bị không xác định (Unknown Device)" }
+
+                $suggestion = if ($code -eq 28) {
+                    "Cần tải và cài đặt driver từ Windows Update, Snappy Driver Installer (SDIO) hoặc Driver Hãng."
+                } elseif ($code -eq 10 -or $code -eq 43) {
+                    "Driver hiện tại bị xung đột hoặc lỗi phần cứng. Hãy gỡ driver cũ trong Device Manager và cài lại bản mới."
+                } elseif ($code -eq 14) {
+                    "Khởi động lại máy tính để hoàn tất áp dụng Driver."
+                } else {
+                    "Quét lại driver qua Windows Update hoặc sử dụng phần mềm SDIO / 3DP Chip."
+                }
+
+                $items += [PSCustomObject]@{
+                    Name        = $name
+                    Vendor      = $vendorName
+                    ErrorCode   = $code
+                    Description = $codeDesc
+                    HardwareID  = $hwId
+                    Class       = $dev.PNPClass
+                    Suggestion  = $suggestion
+                    IsWarning   = $true
+                }
+            }
+        }
+
+        # 3. Kiem tra card man hinh co chay Microsoft Basic Display Adapter khong
+        $gpus = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue
+        $gpuStatus = "Tối ưu [OK]"
+        $gpuWarning = $false
+        if ($gpus) {
+            foreach ($g in $gpus) {
+                if ($g.Name -like "*Microsoft Basic Display*" -or $g.Name -like "*Standard VGA*") {
+                    $gpuStatus = "CẢNH BÁO: Đang chạy Basic Display Adapter (Chưa có Driver Card Màn Hình)!"
+                    $gpuWarning = $true
+                    $items += [PSCustomObject]@{
+                        Name        = $g.Name
+                        Vendor      = "Microsoft Generic / Chưa cài Driver GPU"
+                        ErrorCode   = 28
+                        Description = "Màn hình đang chạy độ phân giải cơ bản, thiếu tăng tốc đồ họa 3D và gây lag giật."
+                        HardwareID  = $g.PNPDeviceID
+                        Class       = "Display"
+                        Suggestion  = "Bấm nút 'Driver Hãng' hoặc chạy 'Snappy Driver' để cài driver VGA chuẩn ngay."
+                        IsWarning   = $true
+                    }
+                }
+            }
+        }
+
+        # 4. Thong tin Hang may tinh va Service Tag
+        $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+        $bios = Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue
+        $manufacturer = if ($cs.Manufacturer) { $cs.Manufacturer.Trim() } else { "Chưa rõ" }
+        $model = if ($cs.Model) { $cs.Model.Trim() } else { "PC Desktop / Laptop" }
+        $serial = if ($bios.SerialNumber) { $bios.SerialNumber.Trim() } else { "" }
+
+        return [PSCustomObject]@{
+            TotalDevices      = $totalCount
+            IssueCount        = $items.Count
+            Manufacturer      = $manufacturer
+            Model             = $model
+            SerialNumber      = $serial
+            GpuStatus         = $gpuStatus
+            HasGpuWarning     = $gpuWarning
+            IssueList         = $items
+        }
+    } catch {
+        return [PSCustomObject]@{
+            TotalDevices      = 0
+            IssueCount        = 0
+            Manufacturer      = "Không rõ"
+            Model             = "Không rõ"
+            SerialNumber      = ""
+            GpuStatus         = "Lỗi: $($_.Exception.Message)"
+            HasGpuWarning     = $false
+            IssueList         = @()
+        }
+    }
+}
+
+function Invoke-VUONGTTWindowsUpdateDriverScan {
+    param([scriptblock]$OnProgress = $null)
+
+    if ($OnProgress) { & $OnProgress "Bắt đầu quét phần cứng PnP và kết nối tìm Driver từ Microsoft Update..." }
+
+    # 1. Quet lai Bus PnP
+    try {
+        if ($OnProgress) { & $OnProgress "-> Đang thực thi pnputil /scan-devices để nạp phần cứng mới..." }
+        $resPnp = & pnputil.exe /scan-devices 2>&1
+        if ($OnProgress) { & $OnProgress "-> [OK] Quét lại bus phần cứng hoàn tất." }
+    } catch {}
+
+    # 2. Goi Windows Update COM Searcher tim Driver
+    try {
+        if ($OnProgress) { & $OnProgress "-> Đang truy vấn Microsoft Update Catalog tìm bản cập nhật Driver còn thiếu..." }
+        $updateSession = New-Object -ComObject Microsoft.Update.Session
+        $updateSearcher = $updateSession.CreateUpdateSearcher()
+        $updateSearcher.ServerSelection = 2 # Windows Update Catalog
+        $searchResult = $updateSearcher.Search("IsInstalled=0 and Type='Driver'")
+
+        $foundCount = $searchResult.Updates.Count
+        if ($foundCount -gt 0) {
+            if ($OnProgress) { & $OnProgress "-> [TÌM THẤY] Phát hiện $foundCount bản cập nhật Driver từ Microsoft:" }
+            for ($i = 0; $i -lt $foundCount; $i++) {
+                $upd = $searchResult.Updates.Item($i)
+                if ($OnProgress) { & $OnProgress "   • $($upd.Title)" }
+            }
+            if ($OnProgress) { & $OnProgress "-> Đang mở giao diện Windows Update Settings để bạn nhấn 'Install all'..." }
+            Start-Process "ms-settings:windowsupdate"
+            return "Đã tìm thấy $foundCount driver trên Windows Update. Vui lòng kiểm tra cửa sổ Cài đặt vừa mở để tải về."
+        } else {
+            if ($OnProgress) { & $OnProgress "-> [KẾT QUẢ] Không có driver nào đang chờ cài trên Windows Update." }
+            return "Không tìm thấy driver nào từ Windows Update. Khuyến nghị sử dụng SDIO hoặc tải trực tiếp từ Hãng máy."
+        }
+    } catch {
+        if ($OnProgress) { & $OnProgress "-> Không thể kết nối dịch vụ Windows Update ($($_.Exception.Message)). Đang mở Windows Update thủ công..." }
+        Start-Process "ms-settings:windowsupdate"
+        return "Đã mở Windows Update Settings."
+    }
+}
+
+function Invoke-VUONGTTLaunchDriverTool {
+    param(
+        [string]$ToolName,
+        [scriptblock]$OnProgress = $null
+    )
+
+    $clean = $ToolName.ToLower().Trim()
+    switch ($clean) {
+        "sdio" {
+            # Snappy Driver Installer Origin
+            if ($OnProgress) { & $OnProgress "Đang kiểm tra phần mềm Snappy Driver Installer Origin (SDIO)..." }
+            $sdioDir = "C:\Tools\SDIO"
+            $localExe = Get-ChildItem -Path $sdioDir -Filter "SDIO*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($localExe) {
+                if ($OnProgress) { & $OnProgress "Khởi chạy SDIO từ: $($localExe.FullName)..." }
+                Start-Process $localExe.FullName
+                return "Đã khởi chạy Snappy Driver Installer Origin!"
+            } else {
+                if ($OnProgress) { & $OnProgress "Chưa có SDIO trên máy. Đang mở trang tải chính thức của Snappy Driver Installer Origin..." }
+                Start-Process "https://www.glenn.delahoy.com/snappy-driver-installer-origin/"
+                return "Đã mở trang tải Snappy Driver Installer Origin (Phần mềm cài driver offline/online tốt nhất thế giới)."
+            }
+        }
+        "3dpchip" {
+            # 3DP Chip (3MB cực nhẹ, chuyên trị Driver CPU, Main, GPU, Sound)
+            if ($OnProgress) { & $OnProgress "Đang chuẩn bị khởi chạy công cụ 3DP Chip..." }
+            $dest = "$env:TEMP\3DP_Chip.exe"
+            if (-not (Test-Path $dest)) {
+                if ($OnProgress) { & $OnProgress "Đang tải 3DP Chip phiên bản siêu nhẹ từ máy chủ chính thức..." }
+                try {
+                    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+                    Invoke-WebRequest -Uri "https://www.3dpchip.com/3dpchip/3dp/chip.php" -OutFile $dest -UseBasicParsing -UserAgent "Mozilla/5.0"
+                } catch {}
+            }
+            if (Test-Path $dest) {
+                if ($OnProgress) { & $OnProgress "Khởi chạy 3DP Chip thành công!" }
+                Start-Process $dest
+                return "Đã khởi chạy 3DP Chip!"
+            } else {
+                Start-Process "https://www.3dpchip.com/3dpchip/sub/chip_eng.html"
+                return "Đã mở trang chủ tải 3DP Chip."
+            }
+        }
+        "3dpnet" {
+            # 3DP Net (Tích hợp toàn bộ driver Card Mạng LAN & Wi-Fi)
+            if ($OnProgress) { & $OnProgress "Đang mở trang tải 3DP Net (Bộ Driver Mạng Toàn Năng)..." }
+            Start-Process "https://www.3dpchip.com/3dpchip/sub/net_eng.html"
+            return "Đã mở trang tải 3DP Net (Chuyên trị máy mất mạng / thiếu driver Wi-Fi, LAN)."
+        }
+        "devmgmt" {
+            Start-Process "devmgmt.msc"
+            return "Đã mở Trình Quản Lý Thiết Bị (Device Manager)."
+        }
+        default {
+            return "Không tìm thấy công cụ driver: $ToolName"
+        }
+    }
+}
+
+function Open-VUONGTTOfficialDriverPortal {
+    try {
+        $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+        $bios = Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue
+        $mb = Get-CimInstance Win32_BaseBoard -ErrorAction SilentlyContinue
+
+        $mfg = if ($cs.Manufacturer) { $cs.Manufacturer.Trim().ToUpper() } else { "" }
+        $model = if ($cs.Model) { $cs.Model.Trim() } else { "" }
+        $serial = if ($bios.SerialNumber) { $bios.SerialNumber.Trim() } else { "" }
+        $boardMfg = if ($mb.Manufacturer) { $mb.Manufacturer.Trim().ToUpper() } else { "" }
+
+        $url = "https://www.google.com/search?q=" + [System.Uri]::EscapeDataString("Driver support $model $serial")
+
+        if ($mfg -like "*DELL*") {
+            $url = if ($serial -and $serial -ne "To be filled by O.E.M.") {
+                "https://www.dell.com/support/home/vi-vn/product-support/servicetag/$serial/drivers"
+            } else {
+                "https://www.dell.com/support/home/vi-vn/quicktest"
+            }
+        } elseif ($mfg -like "*HP*" -or $mfg -like "*HEWLETT*") {
+            $url = "https://support.hp.com/vn-en/drivers"
+        } elseif ($mfg -like "*LENOVO*") {
+            $url = "https://pcsupport.lenovo.com/vn/vi/products?linkTrack=SubNav:Product:Search"
+        } elseif ($mfg -like "*ASUS*") {
+            $url = "https://www.asus.com/vn/support/Download-Center/"
+        } elseif ($mfg -like "*ACER*") {
+            $url = "https://www.acer.com/vn-vi/support/drivers-and-manuals"
+        } elseif ($boardMfg -like "*GIGABYTE*" -or $mfg -like "*GIGABYTE*") {
+            $url = "https://www.gigabyte.com/Support/Motherboard"
+        } elseif ($boardMfg -like "*MSI*" -or $mfg -like "*MICRO-STAR*") {
+            $url = "https://www.msi.com/support/download"
+        } elseif ($boardMfg -like "*ASROCK*") {
+            $url = "https://www.asrock.com/support/index.asp"
+        } else {
+            # Kiem tra GPU neu la may lap rap Desktop
+            $gpu = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($gpu.Name -like "*NVIDIA*") {
+                $url = "https://www.nvidia.com/Download/index.aspx"
+            } elseif ($gpu.Name -like "*AMD*" -or $gpu.Name -like "*Radeon*") {
+                $url = "https://www.amd.com/en/support"
+            } else {
+                $url = "https://www.intel.com/content/www/us/en/support/detect.html"
+            }
+        }
+
+        Start-Process $url
+        return [PSCustomObject]@{
+            Success      = $true
+            Manufacturer = if ($mfg) { $mfg } else { $boardMfg }
+            Model        = $model
+            Serial       = $serial
+            Url          = $url
+        }
+    } catch {
+        Start-Process "https://www.google.com"
+        return [PSCustomObject]@{ Success = $false; Url = "https://www.google.com" }
+    }
+}

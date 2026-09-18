@@ -56,6 +56,46 @@ $script:VUONGTT_APPS = @(
     [PSCustomObject]@{ Id="javatax";     Name="Java Token JRE (Ký Số Thuế Điện Tử)"; Category="Kế toán"; WingetId="Oracle.JavaRuntimeEnvironment"; Url="https://javadl.oracle.com/webapps/download/AutoDL?BundleId=249553_4d245f9418eb4ec4978736adb133d549"; Silent="/s" }
 )
 
+$script:APP_EXEC_MAP = @{
+    "office365"       = @{ Exe = "WINWORD.EXE"; ProcessName = "WINWORD"; CommonPaths = @("$env:ProgramFiles\Microsoft Office\root\Office16\WINWORD.EXE", "${env:ProgramFiles(x86)}\Microsoft Office\root\Office16\WINWORD.EXE") }
+    "foxitpdf"        = @{ Exe = "FoxitPDFReader.exe"; ProcessName = "FoxitPDFReader"; CommonPaths = @("$env:ProgramFiles\Foxit Software\Foxit PDF Reader\FoxitPDFReader.exe", "${env:ProgramFiles(x86)}\Foxit Software\Foxit PDF Reader\FoxitPDFReader.exe") }
+    "acrobat"         = @{ Exe = "AcroRd32.exe"; ProcessName = "AcroRd32"; CommonPaths = @("$env:ProgramFiles\Adobe\Acrobat DC\Acrobat\Acrobat.exe", "${env:ProgramFiles(x86)}\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe", "$env:ProgramFiles\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe") }
+    "unikey"          = @{ Exe = "UniKeyNT.exe"; ProcessName = "UniKeyNT"; CommonPaths = @("$env:SystemDrive\Tools\unikey\UniKeyNT.exe", "$env:ProgramFiles\UniKey\UniKeyNT.exe", "${env:ProgramFiles(x86)}\UniKey\UniKeyNT.exe") }
+    "evkey"           = @{ Exe = "EVKey64.exe"; ProcessName = "EVKey64"; CommonPaths = @("$env:SystemDrive\Tools\evkey\EVKey64.exe", "$env:SystemDrive\Tools\evkey\EVKey32.exe") }
+    "chrome"          = @{ Exe = "chrome.exe"; ProcessName = "chrome"; CommonPaths = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe") }
+    "coccoc"          = @{ Exe = "browser.exe"; ProcessName = "browser"; CommonPaths = @("$env:LOCALAPPDATA\CocCoc\Browser\Application\browser.exe", "$env:ProgramFiles\CocCoc\Browser\Application\browser.exe") }
+    "firefox"         = @{ Exe = "firefox.exe"; ProcessName = "firefox"; CommonPaths = @("$env:ProgramFiles\Mozilla Firefox\firefox.exe", "${env:ProgramFiles(x86)}\Mozilla Firefox\firefox.exe") }
+    "brave"           = @{ Exe = "brave.exe"; ProcessName = "brave"; CommonPaths = @("$env:ProgramFiles\BraveSoftware\Brave-Browser\Application\brave.exe", "${env:ProgramFiles(x86)}\BraveSoftware\Brave-Browser\Application\brave.exe") }
+    "7zip"            = @{ Exe = "7zFM.exe"; ProcessName = "7zFM"; CommonPaths = @("$env:ProgramFiles\7-Zip\7zFM.exe", "${env:ProgramFiles(x86)}\7-Zip\7zFM.exe") }
+    "winrar"          = @{ Exe = "WinRAR.exe"; ProcessName = "WinRAR"; CommonPaths = @("$env:ProgramFiles\WinRAR\WinRAR.exe", "${env:ProgramFiles(x86)}\WinRAR\WinRAR.exe") }
+    "ultraviewer"     = @{ Exe = "UltraViewer_Desktop.exe"; ProcessName = "UltraViewer_Desktop"; CommonPaths = @("$env:ProgramFiles\UltraViewer\UltraViewer_Desktop.exe", "${env:ProgramFiles(x86)}\UltraViewer\UltraViewer_Desktop.exe") }
+    "anydesk"         = @{ Exe = "AnyDesk.exe"; ProcessName = "AnyDesk"; CommonPaths = @("$env:ProgramFiles\AnyDesk\AnyDesk.exe", "${env:ProgramFiles(x86)}\AnyDesk\AnyDesk.exe") }
+    "rustdesk"        = @{ Exe = "rustdesk.exe"; ProcessName = "rustdesk"; CommonPaths = @("$env:ProgramFiles\RustDesk\rustdesk.exe", "${env:ProgramFiles(x86)}\RustDesk\rustdesk.exe") }
+    "teamviewer"      = @{ Exe = "TeamViewer.exe"; ProcessName = "TeamViewer"; CommonPaths = @("$env:ProgramFiles\TeamViewer\TeamViewer.exe", "${env:ProgramFiles(x86)}\TeamViewer\TeamViewer.exe") }
+    "zalo"            = @{ Exe = "Zalo.exe"; ProcessName = "Zalo"; CommonPaths = @("$env:LOCALAPPDATA\Programs\Zalo\Zalo.exe", "$env:ProgramFiles\Zalo\Zalo.exe") }
+    "telegram"        = @{ Exe = "Telegram.exe"; ProcessName = "Telegram"; CommonPaths = @("$env:APPDATA\Telegram Desktop\Telegram.exe", "$env:ProgramFiles\Telegram Desktop\Telegram.exe") }
+    "discord"         = @{ Exe = "Discord.exe"; ProcessName = "Discord"; CommonPaths = @("$env:LOCALAPPDATA\Discord\Update.exe", "$env:LOCALAPPDATA\Discord\app-*\Discord.exe") }
+    "capcut"          = @{ Exe = "CapCut.exe"; ProcessName = "CapCut"; CommonPaths = @("$env:LOCALAPPDATA\CapCut\Apps\CapCut.exe") }
+    "obs"             = @{ Exe = "obs64.exe"; ProcessName = "obs64"; CommonPaths = @("$env:ProgramFiles\obs-studio\bin\64bit\obs64.exe") }
+    "vlc"             = @{ Exe = "vlc.exe"; ProcessName = "vlc"; CommonPaths = @("$env:ProgramFiles\VideoLAN\VLC\vlc.exe", "${env:ProgramFiles(x86)}\VideoLAN\VLC\vlc.exe") }
+    "klite"           = @{ Exe = "mpc-hc64.exe"; ProcessName = "mpc-hc64"; CommonPaths = @("$env:ProgramFiles\K-Lite Codec Pack\MPC-HC64\mpc-hc64.exe", "${env:ProgramFiles(x86)}\K-Lite Codec Pack\MPC-HC\mpc-hc.exe") }
+    "potplayer"       = @{ Exe = "PotPlayer64.exe"; ProcessName = "PotPlayer64"; CommonPaths = @("$env:ProgramFiles\DAUM\PotPlayer\PotPlayer64.exe", "${env:ProgramFiles(x86)}\DAUM\PotPlayer\PotPlayer.exe") }
+    "everything"      = @{ Exe = "Everything.exe"; ProcessName = "Everything"; CommonPaths = @("$env:ProgramFiles\Everything\Everything.exe", "${env:ProgramFiles(x86)}\Everything\Everything.exe") }
+    "fdm"             = @{ Exe = "fdm.exe"; ProcessName = "fdm"; CommonPaths = @("$env:ProgramFiles\FreeDownloadManager.ORG\Free Download Manager\fdm.exe") }
+    "crystaldiskmark" = @{ Exe = "DiskMark64.exe"; ProcessName = "DiskMark64"; CommonPaths = @("$env:SystemDrive\Tools\crystaldiskmark\DiskMark64.exe") }
+    "notepadplus"     = @{ Exe = "notepad++.exe"; ProcessName = "notepad++"; CommonPaths = @("$env:ProgramFiles\Notepad++\notepad++.exe", "${env:ProgramFiles(x86)}\Notepad++\notepad++.exe") }
+    "vscode"          = @{ Exe = "Code.exe"; ProcessName = "Code"; CommonPaths = @("$env:LOCALAPPDATA\Programs\Microsoft VS Code\Code.exe", "$env:ProgramFiles\Microsoft VS Code\Code.exe") }
+    "git"             = @{ Exe = "git-bash.exe"; ProcessName = "git-bash"; CommonPaths = @("$env:ProgramFiles\Git\git-bash.exe", "${env:ProgramFiles(x86)}\Git\git-bash.exe") }
+    "crystaldisk"     = @{ Exe = "DiskInfo64.exe"; ProcessName = "DiskInfo64"; CommonPaths = @("$env:SystemDrive\Tools\crystaldisk\DiskInfo64.exe") }
+    "cpuz"            = @{ Exe = "cpuz.exe"; ProcessName = "cpuz"; CommonPaths = @("$env:ProgramFiles\CPUID\CPU-Z\cpuz.exe", "${env:ProgramFiles(x86)}\CPUID\CPU-Z\cpuz.exe") }
+    "revo"            = @{ Exe = "RevoUninPro.exe"; ProcessName = "RevoUninPro"; CommonPaths = @("$env:ProgramFiles\VS Revo Group\Revo Uninstaller Pro\RevoUninPro.exe", "${env:ProgramFiles(x86)}\VS Revo Group\Revo Uninstaller\Revouninstaller.exe") }
+    "htkk"            = @{ Exe = "HTKK.exe"; ProcessName = "HTKK"; CommonPaths = @("$env:ProgramFiles\HTKK\HTKK.exe", "${env:ProgramFiles(x86)}\HTKK\HTKK.exe") }
+    "itaxviewer"      = @{ Exe = "iTaxViewer.exe"; ProcessName = "iTaxViewer"; CommonPaths = @("$env:ProgramFiles\iTaxViewer\iTaxViewer.exe", "${env:ProgramFiles(x86)}\iTaxViewer\iTaxViewer.exe") }
+    "misasme"         = @{ Exe = "MISA.SME.Client.exe"; ProcessName = "MISA.SME.Client"; CommonPaths = @("$env:ProgramFiles\MISA JSC\MISA SME\Bin\MISA.SME.Client.exe", "${env:ProgramFiles(x86)}\MISA JSC\MISA SME\Bin\MISA.SME.Client.exe") }
+    "meinvoice"       = @{ Exe = "meInvoice.exe"; ProcessName = "meInvoice"; CommonPaths = @("$env:ProgramFiles\MISA JSC\meInvoice\meInvoice.exe", "${env:ProgramFiles(x86)}\MISA JSC\meInvoice\meInvoice.exe") }
+    "kbhxh"           = @{ Exe = "KBHXH.exe"; ProcessName = "KBHXH"; CommonPaths = @("$env:ProgramFiles\KBHXH\KBHXH.exe", "${env:ProgramFiles(x86)}\KBHXH\KBHXH.exe") }
+}
+
 function Get-VUONGTTAppList {
     return $script:VUONGTT_APPS
 }
@@ -69,11 +109,167 @@ function Test-VUONGTTWinget {
     }
 }
 
+function Invoke-VUONGTTProcessWithLiveLog {
+    param(
+        [string]$FilePath,
+        [string]$ArgumentList,
+        [scriptblock]$OnOutputLine,
+        [int]$TimeoutSeconds = 600
+    )
+
+    try {
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $FilePath
+        $psi.Arguments = $ArgumentList
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+
+        $proc = New-Object System.Diagnostics.Process
+        $proc.StartInfo = $psi
+        $started = $proc.Start()
+        if (-not $started) {
+            if ($OnOutputLine) { & $OnOutputLine "[LỖI] Không thể khởi chạy tiến trình: $FilePath" }
+            return -1
+        }
+
+        $timeoutAt = (Get-Date).AddSeconds($TimeoutSeconds)
+        while (-not $proc.HasExited) {
+            while (-not $proc.StandardOutput.EndOfStream) {
+                $line = $proc.StandardOutput.ReadLine()
+                if ($line -and $OnOutputLine) { & $OnOutputLine $line }
+            }
+            while (-not $proc.StandardError.EndOfStream) {
+                $errLine = $proc.StandardError.ReadLine()
+                if ($errLine -and $OnOutputLine) { & $OnOutputLine $errLine }
+            }
+            Start-Sleep -Milliseconds 60
+            if ([System.Windows.Forms.Application]::MessageLoop) {
+                [System.Windows.Forms.Application]::DoEvents()
+            }
+            if ((Get-Date) -gt $timeoutAt) {
+                if ($OnOutputLine) { & $OnOutputLine "[CẢNH BÁO] Quá thời gian chờ ($TimeoutSeconds giây), tự động đóng tiến trình..." }
+                $proc.Kill()
+                break
+            }
+        }
+
+        # Doc not cac dong cuoi cung
+        $tailOut = $proc.StandardOutput.ReadToEnd()
+        if ($tailOut -and $OnOutputLine) {
+            foreach ($l in ($tailOut -split "`r?`n")) {
+                if ($l.Trim()) { & $OnOutputLine $l }
+            }
+        }
+        $tailErr = $proc.StandardError.ReadToEnd()
+        if ($tailErr -and $OnOutputLine) {
+            foreach ($l in ($tailErr -split "`r?`n")) {
+                if ($l.Trim()) { & $OnOutputLine $l }
+            }
+        }
+
+        return $proc.ExitCode
+    } catch {
+        if ($OnOutputLine) { & $OnOutputLine "[LỖI TIẾN TRÌNH] $($_.Exception.Message)" }
+        return -999
+    }
+}
+
+function Start-VUONGTTInstalledApp {
+    param(
+        [string]$AppId,
+        [string]$HintName = "",
+        [scriptblock]$OnLog = $null
+    )
+
+    try {
+        $cleanId = $AppId.Trim().ToLower()
+        $map = $script:APP_EXEC_MAP[$cleanId]
+
+        # 1. Thu tim theo danh sach duong dan chuan
+        if ($map -and $map.CommonPaths) {
+            foreach ($path in $map.CommonPaths) {
+                if ($path -like "*\app-*\*") {
+                    $expanded = Resolve-Path $path -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path -First 1
+                    if ($expanded -and (Test-Path $expanded)) {
+                        if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Đang khởi chạy: $expanded" }
+                        Start-Process -FilePath $expanded
+                        return $true
+                    }
+                } elseif (Test-Path $path) {
+                    if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Đang khởi chạy: $path" }
+                    Start-Process -FilePath $path
+                    return $true
+                }
+            }
+        }
+
+        # 2. Thu tra cuu Registry App Paths
+        $targetExe = if ($map -and $map.Exe) { $map.Exe } else { "$cleanId.exe" }
+        $regKeys = @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$targetExe",
+            "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$targetExe"
+        )
+        foreach ($rk in $regKeys) {
+            if (Test-Path $rk) {
+                $val = (Get-ItemProperty -Path $rk -ErrorAction SilentlyContinue).'(default)'
+                if ($val -and (Test-Path $val)) {
+                    if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy từ App Paths: $val" }
+                    Start-Process -FilePath $val
+                    return $true
+                }
+            }
+        }
+
+        # 3. Thu tim qua System PATH
+        $cmd = Get-Command $targetExe -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source -and (Test-Path $cmd.Source)) {
+            if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy từ System PATH: $($cmd.Source)" }
+            Start-Process -FilePath $cmd.Source
+            return $true
+        }
+
+        # 4. Quet Shortcut (.lnk) trong Start Menu va Desktop
+        $searchTerms = @($cleanId)
+        if ($map -and $map.ProcessName) { $searchTerms += $map.ProcessName }
+        if ($HintName) { $searchTerms += ($HintName -replace "[^\w\s]", "").Split(' ')[0] }
+
+        $shortcutFolders = @(
+            "$env:ProgramData\Microsoft\Windows\Start Menu\Programs",
+            "$env:APPDATA\Microsoft\Windows\Start Menu\Programs",
+            [Environment]::GetFolderPath("Desktop"),
+            [Environment]::GetFolderPath("CommonDesktopDirectory")
+        )
+
+        foreach ($folder in $shortcutFolders) {
+            if (Test-Path $folder) {
+                foreach ($term in $searchTerms) {
+                    if (-not $term -or $term.Length -lt 2) { continue }
+                    $lnk = Get-ChildItem -Path $folder -Filter "*$term*.lnk" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                    if ($lnk) {
+                        if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy từ Shortcut: $($lnk.Name)" }
+                        Start-Process -FilePath $lnk.FullName
+                        return $true
+                    }
+                }
+            }
+        }
+
+        if ($OnLog) { & $OnLog "  -> [THÔNG TIN] Đã cài xong, không tìm thấy file thực thi tự chạy cho '$cleanId'." }
+        return $false
+    } catch {
+        if ($OnLog) { & $OnLog "  -> [CẢNH BÁO MỞ APP] $($_.Exception.Message)" }
+        return $false
+    }
+}
+
 function Install-VUONGTTCustomApp {
     param(
-        [string]$TargetInput, # Can be a Winget ID (e.g. Git.Git) or a direct download URL (e.g. https://...)
+        [string]$TargetInput,
         [string]$SilentArgs = "",
-        [scriptblock]$OnProgress = $null
+        [scriptblock]$OnProgress = $null,
+        [switch]$AutoLaunch = $true
     )
 
     if ([string]::IsNullOrWhiteSpace($TargetInput)) {
@@ -99,23 +295,31 @@ function Install-VUONGTTCustomApp {
             return "Lỗi khi tải file: $($_.Exception.Message)"
         }
 
-        if ($OnProgress) { & $OnProgress "Đang thực thi tệp cài đặt $fileName..." }
+        if ($OnProgress) { & $OnProgress "Đang thực thi tệp cài đặt $fileName (Real-time log)..." }
         try {
-            $p = Start-Process -FilePath $destFile -ArgumentList $SilentArgs -PassThru -Wait
-            return "[OK] Đã hoàn tất thực thi tệp cài đặt $fileName!"
+            $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $SilentArgs -OnOutputLine $OnProgress
+            if ($AutoLaunch) {
+                $baseApp = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+                Start-VUONGTTInstalledApp -AppId $baseApp -HintName $baseApp -OnLog $OnProgress
+            }
+            return "[OK] Đã hoàn tất thực thi tệp cài đặt $fileName (Mã thoát: $exitCode)!"
         } catch {
             return "Lỗi khi khởi chạy: $($_.Exception.Message)"
         }
     } else {
         # Winget ID
-        if ($OnProgress) { & $OnProgress "Đang tìm và cài đặt gói Winget '$inputClean'..." }
+        if ($OnProgress) { & $OnProgress "Đang cài đặt gói Winget '$inputClean' với luồng log chi tiết..." }
         try {
             $arg = "install --id `"$inputClean`" -e --silent --accept-package-agreements --accept-source-agreements --force"
-            $p = Start-Process -FilePath "winget.exe" -ArgumentList $arg -Wait -PassThru -NoNewWindow
-            if ($p.ExitCode -eq 0 -or $p.ExitCode -eq -1978335189) {
+            $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $arg -OnOutputLine $OnProgress
+            if ($exitCode -eq 0 -or $exitCode -eq -1978335189) {
+                if ($AutoLaunch) {
+                    $pkgLeaf = $inputClean.Split('.')[-1]
+                    Start-VUONGTTInstalledApp -AppId $pkgLeaf -HintName $pkgLeaf -OnLog $OnProgress
+                }
                 return "[OK] Đã cài đặt thành công ứng dụng '$inputClean' qua Winget!"
             } else {
-                return "Quá trình cài đặt Winget trả về mã: $($p.ExitCode)"
+                return "Quá trình cài đặt Winget trả về mã: $exitCode"
             }
         } catch {
             return "Lỗi khi chạy Winget: $($_.Exception.Message)"
@@ -126,12 +330,17 @@ function Install-VUONGTTCustomApp {
 function Install-VUONGTTApp {
     param(
         [string]$AppId,
-        [scriptblock]$OnProgress = $null
+        [scriptblock]$OnProgress = $null,
+        [switch]$AutoLaunch = $true
     )
 
     if ($AppId -in @("htkk", "itaxviewer", "misasme", "meinvoice", "kbhxh", "javatax")) {
         if ([bool](Get-Command "Install-VUONGTTAccountingApp" -ErrorAction SilentlyContinue)) {
-            return Install-VUONGTTAccountingApp -AppId $AppId -OnProgress $OnProgress
+            $res = Install-VUONGTTAccountingApp -AppId $AppId -OnProgress $OnProgress
+            if ($AutoLaunch) {
+                Start-VUONGTTInstalledApp -AppId $AppId -OnLog $OnProgress
+            }
+            return $res
         }
     }
 
@@ -142,20 +351,30 @@ function Install-VUONGTTApp {
         if ($OnProgress) { & $OnProgress "Đang chuẩn bị gói cài đặt Microsoft 365 mới nhất từ máy chủ Microsoft..." }
         $cfg = New-VUONGTTOfficeConfig -Version "O365ProPlusRetail" -Arch "64" -Channel "Current" -PrimaryLang "vi-vn"
         $p = Start-VUONGTTOfficeInstall -ConfigFile $cfg -OnProgress $OnProgress
+        if ($AutoLaunch) {
+            Start-VUONGTTInstalledApp -AppId "office365" -HintName "Word" -OnLog $OnProgress
+        }
         return "Gói cài đặt Microsoft 365 đã được khởi động ngầm từ CDN Microsoft!"
     }
 
     $hasWinget = Test-VUONGTTWinget
+    $installSuccess = $false
 
     if ($hasWinget -and -not [string]::IsNullOrEmpty($app.WingetId)) {
         if ($OnProgress) { & $OnProgress "Đang cài đặt $($app.Name) qua Winget (Phiên bản mới nhất)..." }
         try {
             $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --force"
-            $p = Start-Process -FilePath "winget.exe" -ArgumentList $arg -Wait -PassThru -NoNewWindow
-            if ($p.ExitCode -eq 0 -or $p.ExitCode -eq -1978335189) {
+            $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $arg -OnOutputLine $OnProgress
+            if ($exitCode -eq 0 -or $exitCode -eq -1978335189) {
+                $installSuccess = $true
+                if ($AutoLaunch) {
+                    Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
+                }
                 return "Đã cài đặt thành công $($app.Name) (phiên bản mới nhất qua Winget)!"
             }
-        } catch {}
+        } catch {
+            if ($OnProgress) { & $OnProgress "  -> Winget gặp lỗi, chuyển sang tải trực tiếp từ máy chủ..." }
+        }
     }
 
     # Fallback direct download
@@ -166,7 +385,7 @@ function Install-VUONGTTApp {
     $ext = if ($isZip) { ".zip" } else { ".exe" }
     $destFile = Join-Path $destFolder "$($app.Id)$ext"
 
-    if ($OnProgress) { & $OnProgress "Đang tải $($app.Name) từ máy chủ chính thức..." }
+    if ($OnProgress) { & $OnProgress "Đang tải $($app.Name) từ máy chủ chính thức: $($app.Url)..." }
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     try {
         Invoke-WebRequest -Uri $app.Url -OutFile $destFile -UseBasicParsing
@@ -178,11 +397,17 @@ function Install-VUONGTTApp {
         if ($OnProgress) { & $OnProgress "Đang giải nén $($app.Name)..." }
         $extractDir = "$env:SystemDrive\Tools\$($app.Id)"
         Expand-Archive -Path $destFile -DestinationPath $extractDir -Force
+        if ($AutoLaunch) {
+            Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
+        }
         return "Đã tải và giải nén thành công vào: $extractDir"
     } else {
-        if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name)..." }
-        $proc = Start-Process -FilePath $destFile -ArgumentList $app.Silent -PassThru -Wait
-        return "Đã hoàn tất cài đặt $($app.Name)!"
+        if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
+        $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
+        if ($AutoLaunch) {
+            Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
+        }
+        return "Đã hoàn tất cài đặt $($app.Name) (Mã trả về: $exitCode)!"
     }
 }
 

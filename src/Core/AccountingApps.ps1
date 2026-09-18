@@ -175,7 +175,8 @@ function Invoke-VUONGTTDownloadWithLog {
 function Install-VUONGTTAccountingApp {
     param(
         [string]$AppId,
-        [scriptblock]$OnProgress = $null
+        [scriptblock]$OnProgress = $null,
+        [switch]$AutoLaunch = $true
     )
 
     $app = $script:VUONGTT_ACCOUNTING_APPS | Where-Object { $_.Id -eq $AppId }
@@ -196,6 +197,9 @@ function Install-VUONGTTAccountingApp {
                 $p = Start-Process -FilePath "winget.exe" -ArgumentList $arg -Wait -PassThru -NoNewWindow
                 if ($p.ExitCode -eq 0 -or $p.ExitCode -eq -1978335189) {
                     if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Đã cài đặt/cập nhật $($app.Name) qua Winget!" }
+                    if ($AutoLaunch -and (Get-Command Start-VUONGTTInstalledApp -ErrorAction SilentlyContinue)) {
+                        Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
+                    }
                     return "[OK] Cài đặt $($app.Name) hoàn tất 100%!"
                 }
             } catch {}
@@ -231,6 +235,9 @@ function Install-VUONGTTAccountingApp {
                 if ($OnProgress) { & $OnProgress "  -> Đang khởi chạy trình cài đặt tự động: $($setupExe.FullName)..." }
                 $p = Start-Process -FilePath $setupExe.FullName -ArgumentList $app.SilentArgs -Wait -PassThru -NoNewWindow
                 if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Quá trình cài đặt $($app.Name) đã hoàn tất!" }
+                if ($AutoLaunch -and (Get-Command Start-VUONGTTInstalledApp -ErrorAction SilentlyContinue)) {
+                    Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
+                }
                 return "[OK] Đã hoàn tất cài đặt $($app.Name) phiên bản mới nhất!"
             } else {
                 Start-Process "explorer.exe" -ArgumentList "`"$extractDir`""
@@ -244,6 +251,9 @@ function Install-VUONGTTAccountingApp {
         try {
             $p = Start-Process -FilePath $destFile -ArgumentList $app.SilentArgs -Wait -PassThru
             if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Cài đặt $($app.Name) hoàn tất với mã trả về: $($p.ExitCode)!" }
+            if ($AutoLaunch -and (Get-Command Start-VUONGTTInstalledApp -ErrorAction SilentlyContinue)) {
+                Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
+            }
             return "[OK] Đã hoàn tất cài đặt $($app.Name) phiên bản mới nhất từ trang chủ!"
         } catch {
             return "[LỖI KHỞI CHẠY BỘ CÀI] $($_.Exception.Message)"

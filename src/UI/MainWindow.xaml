@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.40"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.41"
         Height="780" Width="1280"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
@@ -219,7 +219,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="v20.5.908.40 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="v20.5.908.41 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -1468,8 +1468,34 @@
                                     </StackPanel>
                                 </GroupBox>
 
-                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="8" Margin="0,6,0,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <TextBox x:Name="txtSoftwareLog" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="150" Text="Sẵn sàng tải và cài đặt phần mềm."/>
+                                <!-- Installation Status & Progress Panel -->
+                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="12,10,12,10" Margin="0,6,0,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="⚡ TIẾN TRÌNH:" FontWeight="Bold" FontSize="12.5" Foreground="#047857" Margin="0,0,8,0"/>
+                                                <TextBlock x:Name="lblSoftwareProgressText" Text="Sẵn sàng tải và cài đặt" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </StackPanel>
+                                            <CheckBox x:Name="chkSoftwareAutoLaunch" Grid.Column="1" Content="🚀 Tự động mở ứng dụng sau khi cài xong" IsChecked="True" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,12,0" Cursor="Hand"/>
+                                            <Button x:Name="btnClearSoftwareLog" Grid.Column="2" Content="🧹 Xóa Log" Background="#475569" Style="{StaticResource ActionBtn}" Padding="10,2,10,2" FontSize="11.5" Height="26"/>
+                                        </Grid>
+                                        <Grid Margin="0,2,0,4">
+                                            <ProgressBar x:Name="prgSoftware" Height="10" Minimum="0" Maximum="100" Value="0" Foreground="#047857" Background="#E2E8F0" BorderThickness="0"/>
+                                        </Grid>
+                                        <Grid>
+                                            <TextBlock x:Name="lblSoftwareSubText" Text="Hiển thị luồng log chi tiết thời gian thực khi cài đặt" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock x:Name="lblSoftwareProgressPercent" Text="0%" FontWeight="Bold" FontSize="11.5" Foreground="#047857" HorizontalAlignment="Right"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="8" Margin="0,0,0,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <TextBox x:Name="txtSoftwareLog" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" FontSize="13" Height="160" Text="Sẵn sàng tải và cài đặt phần mềm."/>
                                 </Border>
                             </StackPanel>
                         </Border>
@@ -1510,8 +1536,21 @@
                                     <Button x:Name="btnBrowseInstaller" Grid.Column="1" Content="📂 Chọn File..." Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="125" Padding="12,0,12,0" Margin="8,0,0,0"/>
                                     <Button x:Name="btnRunSilentInstall" Grid.Column="2" Content="⚡ Cài Đặt Silent" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="145" Padding="14,0,14,0" Margin="8,0,0,0"/>
                                 </Grid>
+                                <Grid Margin="0,4,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="⚡ Tiến trình:" FontWeight="Bold" FontSize="12" Foreground="#047857" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="lblCustomAppStatus" Text="Sẵn sàng thực thi" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="chkCustomAutoLaunch" Grid.Column="1" Content="🚀 Tự động mở ứng dụng sau khi cài xong" IsChecked="True" FontWeight="SemiBold" FontSize="12" Cursor="Hand"/>
+                                </Grid>
+                                <ProgressBar x:Name="prgCustomApp" Height="8" Minimum="0" Maximum="100" Value="0" Foreground="#047857" Background="#E2E8F0" BorderThickness="0" Margin="0,0,0,8"/>
+
                                 <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <TextBox x:Name="txtCustomAppLog" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="120" Text="Sẵn sàng cài đặt ứng dụng tùy chỉnh."/>
+                                    <TextBox x:Name="txtCustomAppLog" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" FontSize="13" Height="130" Text="Sẵn sàng cài đặt ứng dụng tùy chỉnh."/>
                                 </Border>
                             </StackPanel>
                         </Border>
@@ -2359,7 +2398,7 @@
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock Text="v20.5.908.40" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="v20.5.908.41" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -2452,6 +2491,129 @@
                         <Button x:Name="btnModalActivateSubmit" IsDefault="True" Grid.Column="2" Content="🚀 Kích Hoạt Ngay" Height="34" Background="#047857" Style="{StaticResource ActionBtn}"/>
                     </Grid>
                 </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ================= MODAL: BÁC SĨ DRIVER & TRUNG TÂM CÀI DRIVER THIẾU ================= -->
+        <Grid x:Name="modalDriverDoctor" Grid.ColumnSpan="2" Background="#90000000" Visibility="Collapsed">
+            <Border Width="780" MaxHeight="720" Background="{DynamicResource CardBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="30" ShadowDepth="6" Direction="270" Color="#000000" Opacity="0.5"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="40" Height="40" CornerRadius="10" Background="#BE123C" Margin="0,0,12,0">
+                                <TextBlock Text="🩺" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel>
+                                <TextBlock Text="Bác Sĩ Driver &amp; Cài Đặt Driver Thiếu (Driver Doctor)" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Kiểm tra sâu lỗi driver (Code 28, 10, 43), driver cơ bản và tích hợp các bộ cài Driver thông minh 1-Click." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <Button x:Name="btnModalDriverDoctorClose" Grid.Column="1" Content="✕" Width="32" Height="32" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="16" Cursor="Hand"/>
+                    </Grid>
+
+                    <!-- Stats Cards Row -->
+                    <Grid Grid.Row="1" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Total Devices -->
+                        <Border Grid.Column="0" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="TỔNG THIẾT BỊ" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock x:Name="lblDriverDoctorTotal" Text="216" FontSize="18" FontWeight="Bold" Foreground="#2563EB" Margin="0,2,0,0"/>
+                                <TextBlock Text="Đã quét bus PnP" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Missing/Error Devices -->
+                        <Border Grid.Column="2" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="DRIVER THIẾU / LỖI" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock x:Name="lblDriverDoctorIssues" Text="0 Lỗi" FontSize="18" FontWeight="Bold" Foreground="#047857" Margin="0,2,0,0"/>
+                                <TextBlock Text="Chấm than vàng (!)" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- GPU Status -->
+                        <Border Grid.Column="4" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="DRIVER ĐỒ HỌA (GPU)" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock x:Name="lblDriverDoctorGpu" Text="Tối ưu [OK]" FontSize="13" FontWeight="Bold" Foreground="#047857" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="Tăng tốc phần cứng 3D" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Machine / Vendor -->
+                        <Border Grid.Column="6" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="HÃNG &amp; SERVICE TAG" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock x:Name="lblDriverDoctorMachine" Text="VMware / PC" FontSize="13" FontWeight="Bold" Foreground="#B45309" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="Tự dò cổng chính hãng" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Issue List and Details -->
+                    <Border Grid.Row="2" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" MinHeight="160" MaxHeight="220" Margin="0,0,0,12">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBox x:Name="txtDriverDoctorDetails" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" TextWrapping="Wrap" IsReadOnly="True" FontSize="12.5" Text="Đang sẵn sàng phân tích cấu trúc Driver máy tính..."/>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Integrated Driver Installers (1-Click Actions) -->
+                    <Border Grid.Row="3" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="12,10,12,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="⚡ BỘ CÔNG CỤ CÀI ĐẶT DRIVER THIẾU TÍCH HỢP (1-CLICK):" FontWeight="Bold" FontSize="12" Foreground="#047857" Margin="0,0,0,8"/>
+                            <WrapPanel>
+                                <Button x:Name="btnDriverAutoWinUpdate" Content="⚡ Tự Động Cài Qua Windows Update" Background="#047857" Style="{StaticResource ActionBtn}" Margin="0,0,8,6" Padding="12,0,12,0"/>
+                                <Button x:Name="btnDriverSDIO" Content="🚀 Snappy Driver Installer (SDIO)" Background="#2563EB" Style="{StaticResource ActionBtn}" Margin="0,0,8,6" Padding="12,0,12,0"/>
+                                <Button x:Name="btnDriver3DPChip" Content="🌐 3DP Chip (CPU/Main/GPU/Sound)" Background="#D97706" Style="{StaticResource ActionBtn}" Margin="0,0,8,6" Padding="12,0,12,0"/>
+                                <Button x:Name="btnDriver3DPNet" Content="📶 3DP Net (Driver Mạng LAN/Wi-Fi)" Background="#0284C7" Style="{StaticResource ActionBtn}" Margin="0,0,8,6" Padding="12,0,12,0"/>
+                                <Button x:Name="btnDriverOEMSupport" Content="🏢 Driver Chính Hãng" Background="#475569" Style="{StaticResource ActionBtn}" Margin="0,0,8,6" Padding="12,0,12,0"/>
+                                <Button x:Name="btnDriverOpenDevMgmt" Content="🛠 Device Manager" Background="#334155" Style="{StaticResource ActionBtn}" Margin="0,0,8,6" Padding="12,0,12,0"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Modal Footer & Progress Bar -->
+                    <Grid Grid.Row="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="lblDriverDoctorStatus" Text="• Sẵn sàng chẩn đoán và cài đặt driver." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <ProgressBar x:Name="prgDriverDoctor" Height="6" Minimum="0" Maximum="100" Value="0" Foreground="#047857" Background="#E2E8F0" BorderThickness="0" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="btnDriverDoctorRescan" Content="🔄 Quét Lại" Background="#475569" Style="{StaticResource ActionBtn}" Width="100" Margin="0,0,8,0"/>
+                            <Button x:Name="btnModalDriverDoctorDone" Content="Đóng" Background="#64748B" Style="{StaticResource ActionBtn}" Width="80"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
             </Border>
         </Grid>
     </Grid>
