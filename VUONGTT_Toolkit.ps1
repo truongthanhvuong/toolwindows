@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.30
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.31
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -104,7 +104,7 @@ $btnLangEN          = Get-Control "btnLangEN"
 # Menu Buttons
 $menuButtons = @(
     "btnMenuSysInfo", "btnMenuCustomize", "btnMenuUsers", "btnMenuBenchmark",
-    "btnMenuLaptopCheck", "btnMenuCpuMain", "btnMenuTestHardware",
+    "btnMenuLaptopCheck", "btnMenuCpuMain",
     "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuUninstaller", "btnMenuFonts",
     "btnMenuCleaner", "btnMenuTweaks", "btnMenuPrinterLAN", "btnMenuBackupDriver",
     "btnMenuDevMgmt", "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition"
@@ -118,7 +118,6 @@ $pages = @{
     "Benchmark"    = Get-Control "pageBenchmark"
     "LaptopCheck"  = Get-Control "pageLaptopCheck"
     "CpuMain"      = Get-Control "pageCpuMain"
-    "TestHardware" = Get-Control "pageTestHardware"
     "Office"       = Get-Control "pageOffice"
     "Software"     = Get-Control "pageSoftware"
     "CustomApp"    = Get-Control "pageCustomApp"
@@ -135,14 +134,13 @@ $pages = @{
     "Partition"    = Get-Control "pagePartition"
 }
 
-$pageTitles = @{
+$pageTitlesVI = @{
     "SysInfo"      = @{ Title = "Xem Cấu Hình Máy Tính"; Icon = "💻" }
     "Customize"    = @{ Title = "Tùy Chỉnh Thông Tin Máy"; Icon = "🖥️" }
     "Users"        = @{ Title = "Quản Lý User & PC"; Icon = "👤" }
     "Benchmark"    = @{ Title = "Tốc Độ Ổ Đĩa (Benchmark)"; Icon = "⚡" }
-    "LaptopCheck"  = @{ Title = "Kiểm Tra Laptop (Đã Sửa?)"; Icon = "🔍" }
+    "LaptopCheck"  = @{ Title = "Kiểm Tra Laptop & Ngoại Vi"; Icon = "🔬" }
     "CpuMain"      = @{ Title = "Tra Cứu CPU + Main"; Icon = "💡" }
-    "TestHardware" = @{ Title = "Test Bàn Phím, Loa, Mic, Camera"; Icon = "⌨️" }
     "Office"       = @{ Title = "Cài Đặt Office (Tự Động)"; Icon = "📑" }
     "Software"     = @{ Title = "Tải Ứng Dụng Thiết Yếu"; Icon = "📥" }
     "CustomApp"    = @{ Title = "Cài App Tùy Chỉnh & Silent"; Icon = "📦" }
@@ -158,6 +156,33 @@ $pageTitles = @{
     "AutoWin"      = @{ Title = "Bộ Công Cụ Cài Win & Bypass"; Icon = "🚀" }
     "Partition"    = @{ Title = "Quản Lý Phân Vùng Ổ Đĩa (Partition Pro)"; Icon = "💽" }
 }
+
+$pageTitlesEN = @{
+    "SysInfo"      = @{ Title = "System Specifications"; Icon = "💻" }
+    "Customize"    = @{ Title = "Customize OEM Info"; Icon = "🖥️" }
+    "Users"        = @{ Title = "User & PC Accounts"; Icon = "👤" }
+    "Benchmark"    = @{ Title = "Disk Speed Benchmark"; Icon = "⚡" }
+    "LaptopCheck"  = @{ Title = "Laptop & Hardware Diagnostics"; Icon = "🔬" }
+    "CpuMain"      = @{ Title = "Lookup CPU & Mainboard"; Icon = "💡" }
+    "Office"       = @{ Title = "Install Office (Auto)"; Icon = "📑" }
+    "Software"     = @{ Title = "Essential Apps Download"; Icon = "📥" }
+    "CustomApp"    = @{ Title = "Custom Silent Install"; Icon = "📦" }
+    "Uninstaller"  = @{ Title = "Clean Uninstaller Pro"; Icon = "🗑️" }
+    "Fonts"        = @{ Title = "Install Vietnamese Fonts"; Icon = "🔤" }
+    "Cleaner"      = @{ Title = "System Cleaner & Junk"; Icon = "🚀" }
+    "Tweaks"       = @{ Title = "Deep Windows Tweaks"; Icon = "⚙️" }
+    "PrinterLAN"   = @{ Title = "Printer Repair (87 Tools)"; Icon = "🖨️" }
+    "BackupDriver" = @{ Title = "Backup & Restore Drivers"; Icon = "💾" }
+    "DevMgmt"      = @{ Title = "Open Device Manager"; Icon = "🛠️" }
+    "Activation"   = @{ Title = "Activate Windows & Office"; Icon = "🔑" }
+    "BitLocker"    = @{ Title = "Manage BitLocker - EFS"; Icon = "🔒" }
+    "AutoWin"      = @{ Title = "Auto Windows Deploy"; Icon = "🚀" }
+    "Partition"    = @{ Title = "Disk Partition Pro"; Icon = "💽" }
+}
+
+$pageTitles = $pageTitlesVI
+$script:CurrentLanguage = "VI"
+$script:CurrentTheme    = "Default"
 
 $script:currentTab = "SysInfo"
 
@@ -188,9 +213,10 @@ function Switch-Tab {
         }
     }
 
-    if ($pageTitles.ContainsKey($TargetTag)) {
-        $txtPageTitle.Text = $pageTitles[$TargetTag].Title
-        $txtPageIcon.Text  = $pageTitles[$TargetTag].Icon
+    $dict = if ($script:CurrentLanguage -eq "EN") { $pageTitlesEN } else { $pageTitlesVI }
+    if ($dict.ContainsKey($TargetTag)) {
+        $txtPageTitle.Text = $dict[$TargetTag].Title
+        $txtPageIcon.Text  = $dict[$TargetTag].Icon
     }
 
     if ($SkipRefresh) { return }
@@ -208,8 +234,10 @@ function Switch-Tab {
         "Customize"    { Refresh-CustomizeDisplay }
         "Users"        { Refresh-UsersList }
         "CpuMain"      { Search-CpuInfo }
-        "LaptopCheck"  { Refresh-BatteryDisplay }
-        "TestHardware" { $txtFooterStatus.Text = "• [OK] Đang ở trang Kiểm Tra Phần Cứng & Thiết Bị Ngoại Vi." }
+        "LaptopCheck"  { 
+            Refresh-BatteryDisplay
+            $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Laptop, hardware & peripheral test ready." } else { "• [OK] Bộ chẩn đoán Laptop, phần cứng & ngoại vi sẵn sàng." }
+        }
         "Office"       { Refresh-OfficeStatusBadge }
         "Software"     { $txtFooterStatus.Text = "• [OK] Kho 26 phần mềm thiết yếu sẵn sàng." }
         "CustomApp"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt ứng dụng tùy chỉnh hoặc file cài đặt silent." }
@@ -250,12 +278,133 @@ foreach ($btnName in $menuButtons) {
 }
 
 # =========================================================================
-# THEMES MANAGEMENT (Mặc Định / Tối / Sáng)
+# THEMES & LANGUAGE MANAGEMENT
 # =========================================================================
+function Set-ToolkitLanguage {
+    param([ValidateSet("VI", "EN")][string]$Lang)
+    $script:CurrentLanguage = $Lang
+    $conv = [System.Windows.Media.BrushConverter]::new()
+
+    if ($Lang -eq "VI") {
+        $btnLangVI.Background  = $conv.ConvertFromString("#FEE2E2")
+        $btnLangVI.BorderBrush = $conv.ConvertFromString("#BE123C")
+        $btnLangEN.Background  = $window.Resources["CardBgBrush"]
+        $btnLangEN.BorderBrush = $window.Resources["CardBorderBrush"]
+
+        # Theme buttons
+        $btnThemeDefault.Content = "Mặc Định"
+        $btnThemeDark.Content    = "Tối"
+        $btnThemeLight.Content   = "Sáng"
+
+        # Header buttons
+        $btnCheckAppUpdate.Content = "🔄 Cập Nhật Tool"
+        $btnExitApp.Content        = "🚪 Thoát Ứng Dụng"
+
+        # Sidebar Headers
+        $h1 = Get-Control "txtMenuHeaderGroup1"; if ($h1) { $h1.Text = "▾ THÔNG TIN HỆ THỐNG" }
+        $h2 = Get-Control "txtMenuHeaderGroup2"; if ($h2) { $h2.Text = "▾ CÀI ĐẶT & TẢI VỀ" }
+        $h3 = Get-Control "txtMenuHeaderGroup3"; if ($h3) { $h3.Text = "▾ TỐI ƯU HỆ THỐNG" }
+        $h4 = Get-Control "txtMenuHeaderGroup4"; if ($h4) { $h4.Text = "▾ DRIVER & MÁY IN" }
+        $h5 = Get-Control "txtMenuHeaderGroup5"; if ($h5) { $h5.Text = "▾ TIỆN ÍCH KỸ THUẬT" }
+
+        # Sidebar Menu Items
+        $menuTextsVI = @{
+            "btnMenuSysInfo"      = "Xem Cấu Hình Máy Tính"
+            "btnMenuCustomize"    = "Tùy chỉnh thông tin máy"
+            "btnMenuUsers"        = "Quản lý User & PC"
+            "btnMenuBenchmark"    = "Tốc Độ Ổ Đĩa (Benchmark)"
+            "btnMenuLaptopCheck"  = "Kiểm Tra Laptop & Ngoại Vi"
+            "btnMenuCpuMain"      = "Tra Cứu CPU + Main"
+            "btnMenuOffice"       = "Cài Đặt Office (Tự Động)"
+            "btnMenuSoftware"     = "Tải ứng dụng"
+            "btnMenuCustomApp"    = "Cài app tùy chỉnh"
+            "btnMenuUninstaller"  = "Gỡ Bỏ Phần Mềm (Clean)"
+            "btnMenuFonts"        = "Cài font tiếng Việt"
+            "btnMenuCleaner"      = "Tối Ưu & Dọn Dẹp"
+            "btnMenuTweaks"       = "Tinh chỉnh Windows"
+            "btnMenuPrinterLAN"   = "Sửa Lỗi Máy In (87 Chức Năng)"
+            "btnMenuBackupDriver" = "Backup Driver Thiết Bị"
+            "btnMenuDevMgmt"      = "Mở Device Manager"
+            "btnMenuActivation"   = "Kích Hoạt (MAS HWID)"
+            "btnMenuBitLocker"    = "Tắt BitLocker - EFS"
+            "btnMenuAutoWin"      = "Cài Win & Tự Động Hóa"
+            "btnMenuPartition"    = "Quản Lý Phân Vùng Ổ Đĩa"
+        }
+        foreach ($btnName in $menuTextsVI.Keys) {
+            $b = Get-Control $btnName
+            if ($b -and $b.Content -and $b.Content.Children.Count -ge 2) {
+                $b.Content.Children.Item(1).Text = $menuTextsVI[$btnName]
+            }
+        }
+
+        $txtFooterStatus.Text = "• [OK] Đã chọn ngôn ngữ Tiếng Việt"
+    }
+    else {
+        # EN
+        $btnLangEN.Background  = $conv.ConvertFromString("#DBEAFE")
+        $btnLangEN.BorderBrush = $conv.ConvertFromString("#2563EB")
+        $btnLangVI.Background  = $window.Resources["CardBgBrush"]
+        $btnLangVI.BorderBrush = $window.Resources["CardBorderBrush"]
+
+        # Theme buttons
+        $btnThemeDefault.Content = "Default"
+        $btnThemeDark.Content    = "Dark"
+        $btnThemeLight.Content   = "Light"
+
+        # Header buttons
+        $btnCheckAppUpdate.Content = "🔄 Update Tool"
+        $btnExitApp.Content        = "🚪 Exit Application"
+
+        # Sidebar Headers
+        $h1 = Get-Control "txtMenuHeaderGroup1"; if ($h1) { $h1.Text = "▾ SYSTEM INFORMATION" }
+        $h2 = Get-Control "txtMenuHeaderGroup2"; if ($h2) { $h2.Text = "▾ INSTALL & DOWNLOAD" }
+        $h3 = Get-Control "txtMenuHeaderGroup3"; if ($h3) { $h3.Text = "▾ SYSTEM OPTIMIZATION" }
+        $h4 = Get-Control "txtMenuHeaderGroup4"; if ($h4) { $h4.Text = "▾ DRIVERS & PRINTER" }
+        $h5 = Get-Control "txtMenuHeaderGroup5"; if ($h5) { $h5.Text = "▾ TECHNICAL UTILITIES" }
+
+        # Sidebar Menu Items
+        $menuTextsEN = @{
+            "btnMenuSysInfo"      = "System Specifications"
+            "btnMenuCustomize"    = "Customize OEM Info"
+            "btnMenuUsers"        = "User & PC Accounts"
+            "btnMenuBenchmark"    = "Disk Speed Benchmark"
+            "btnMenuLaptopCheck"  = "Laptop & Hardware Diagnostics"
+            "btnMenuCpuMain"      = "Lookup CPU & Mainboard"
+            "btnMenuOffice"       = "Install Office (Auto)"
+            "btnMenuSoftware"     = "Essential Apps Download"
+            "btnMenuCustomApp"    = "Custom Silent Install"
+            "btnMenuUninstaller"  = "Clean Uninstaller Pro"
+            "btnMenuFonts"        = "Install Vietnamese Fonts"
+            "btnMenuCleaner"      = "System Cleaner & Junk"
+            "btnMenuTweaks"       = "Deep Windows Tweaks"
+            "btnMenuPrinterLAN"   = "Printer Repair (87 Tools)"
+            "btnMenuBackupDriver" = "Backup & Restore Drivers"
+            "btnMenuDevMgmt"      = "Open Device Manager"
+            "btnMenuActivation"   = "Activate Windows & Office"
+            "btnMenuBitLocker"    = "Manage BitLocker - EFS"
+            "btnMenuAutoWin"      = "Auto Windows Deploy"
+            "btnMenuPartition"    = "Disk Partition Pro"
+        }
+        foreach ($btnName in $menuTextsEN.Keys) {
+            $b = Get-Control $btnName
+            if ($b -and $b.Content -and $b.Content.Children.Count -ge 2) {
+                $b.Content.Children.Item(1).Text = $menuTextsEN[$btnName]
+            }
+        }
+
+        $txtFooterStatus.Text = "• [OK] Language switched to English"
+    }
+
+    if ($script:currentTab) {
+        Switch-Tab -TargetTag $script:currentTab -SkipRefresh
+    }
+}
+
 function Set-ToolkitTheme {
     param([ValidateSet("Default", "Dark", "Light")][string]$Theme)
 
     $conv = [System.Windows.Media.BrushConverter]::new()
+    $script:CurrentTheme = $Theme
 
     switch ($Theme) {
         "Default" {
@@ -276,35 +425,61 @@ function Set-ToolkitTheme {
             $window.Resources["MenuBtnHoverBg"]      = $conv.ConvertFromString("#EADBCA")
             $window.Resources["MenuBtnActiveBg"]     = $conv.ConvertFromString("#EADBCA")
             $window.Resources["MenuBtnText"]         = $conv.ConvertFromString("#292524")
+            $window.Resources["LogBgBrush"]          = $conv.ConvertFromString("#FFFFFF")
+            $window.Resources["LogTextBrush"]        = $conv.ConvertFromString("#44403C")
+            $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#EADBCA")
+            $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#78350F")
+            $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#D6C7B2")
             
-            $btnThemeDefault.Background = $conv.ConvertFromString("#EADBCA")
-            $btnThemeDefault.Foreground = $conv.ConvertFromString("#78350F")
-            $btnThemeDark.Background    = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeLight.Background   = $conv.ConvertFromString("#FFFFFF")
+            # Button States
+            $btnThemeDefault.Background  = $conv.ConvertFromString("#EADBCA")
+            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#78350F")
+            $btnThemeDefault.BorderBrush = $conv.ConvertFromString("#C4B5A0")
+
+            $btnThemeDark.Background     = $conv.ConvertFromString("#FFFFFF")
+            $btnThemeDark.Foreground     = $conv.ConvertFromString("#292524")
+            $btnThemeDark.BorderBrush    = $conv.ConvertFromString("#D6C7B2")
+
+            $btnThemeLight.Background    = $conv.ConvertFromString("#FFFFFF")
+            $btnThemeLight.Foreground    = $conv.ConvertFromString("#292524")
+            $btnThemeLight.BorderBrush   = $conv.ConvertFromString("#D6C7B2")
         }
         "Dark" {
-            # Sleek Dark
-            $window.Resources["AppBgBrush"]          = $conv.ConvertFromString("#0F172A")
-            $window.Resources["SidebarBgBrush"]      = $conv.ConvertFromString("#1E293B")
-            $window.Resources["SidebarBorderBrush"]  = $conv.ConvertFromString("#334155")
-            $window.Resources["HeaderBgBrush"]       = $conv.ConvertFromString("#0F172A")
-            $window.Resources["HeaderBorderBrush"]   = $conv.ConvertFromString("#334155")
-            $window.Resources["CardBgBrush"]         = $conv.ConvertFromString("#1E293B")
+            # Sleek Apple Dark (High Contrast, Crisp Clarity)
+            $window.Resources["AppBgBrush"]          = $conv.ConvertFromString("#0B1120")
+            $window.Resources["SidebarBgBrush"]      = $conv.ConvertFromString("#131C31")
+            $window.Resources["SidebarBorderBrush"]  = $conv.ConvertFromString("#26354D")
+            $window.Resources["HeaderBgBrush"]       = $conv.ConvertFromString("#131C31")
+            $window.Resources["HeaderBorderBrush"]   = $conv.ConvertFromString("#26354D")
+            $window.Resources["CardBgBrush"]         = $conv.ConvertFromString("#1A243B")
             $window.Resources["CardInnerBgBrush"]    = $conv.ConvertFromString("#0F172A")
-            $window.Resources["CardBorderBrush"]     = $conv.ConvertFromString("#334155")
-            $window.Resources["TextPrimaryBrush"]    = $conv.ConvertFromString("#F8FAFC")
-            $window.Resources["TextSecondaryBrush"]  = $conv.ConvertFromString("#94A3B8")
+            $window.Resources["CardBorderBrush"]     = $conv.ConvertFromString("#334460")
+            $window.Resources["TextPrimaryBrush"]    = $conv.ConvertFromString("#FFFFFF")
+            $window.Resources["TextSecondaryBrush"]  = $conv.ConvertFromString("#CBD5E1")
             $window.Resources["InputBgBrush"]        = $conv.ConvertFromString("#0F172A")
             $window.Resources["InputBorderBrush"]    = $conv.ConvertFromString("#475569")
-            $window.Resources["InputTextBrush"]      = $conv.ConvertFromString("#F8FAFC")
-            $window.Resources["MenuBtnHoverBg"]      = $conv.ConvertFromString("#334155")
-            $window.Resources["MenuBtnActiveBg"]     = $conv.ConvertFromString("#334155")
+            $window.Resources["InputTextBrush"]      = $conv.ConvertFromString("#FFFFFF")
+            $window.Resources["MenuBtnHoverBg"]      = $conv.ConvertFromString("#26354D")
+            $window.Resources["MenuBtnActiveBg"]     = $conv.ConvertFromString("#1E3A8A")
             $window.Resources["MenuBtnText"]         = $conv.ConvertFromString("#F8FAFC")
+            $window.Resources["LogBgBrush"]          = $conv.ConvertFromString("#070D19")
+            $window.Resources["LogTextBrush"]        = $conv.ConvertFromString("#F1F5F9")
+            $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#1E3A8A")
+            $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#93C5FD")
+            $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#334460")
 
-            $btnThemeDark.Background    = $conv.ConvertFromString("#334155")
-            $btnThemeDark.Foreground    = $conv.ConvertFromString("#F8FAFC")
-            $btnThemeDefault.Background = $conv.ConvertFromString("#1E293B")
-            $btnThemeLight.Background   = $conv.ConvertFromString("#1E293B")
+            # Button States
+            $btnThemeDark.Background     = $conv.ConvertFromString("#2563EB")
+            $btnThemeDark.Foreground     = $conv.ConvertFromString("#FFFFFF")
+            $btnThemeDark.BorderBrush    = $conv.ConvertFromString("#60A5FA")
+
+            $btnThemeDefault.Background  = $conv.ConvertFromString("#1A243B")
+            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#CBD5E1")
+            $btnThemeDefault.BorderBrush = $conv.ConvertFromString("#334460")
+
+            $btnThemeLight.Background    = $conv.ConvertFromString("#1A243B")
+            $btnThemeLight.Foreground    = $conv.ConvertFromString("#CBD5E1")
+            $btnThemeLight.BorderBrush   = $conv.ConvertFromString("#334460")
         }
         "Light" {
             # Clean Light
@@ -324,16 +499,33 @@ function Set-ToolkitTheme {
             $window.Resources["MenuBtnHoverBg"]      = $conv.ConvertFromString("#EFF6FF")
             $window.Resources["MenuBtnActiveBg"]     = $conv.ConvertFromString("#EFF6FF")
             $window.Resources["MenuBtnText"]         = $conv.ConvertFromString("#0F172A")
+            $window.Resources["LogBgBrush"]          = $conv.ConvertFromString("#FFFFFF")
+            $window.Resources["LogTextBrush"]        = $conv.ConvertFromString("#0F172A")
+            $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#EFF6FF")
+            $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#2563EB")
+            $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#E2E8F0")
 
-            $btnThemeLight.Background   = $conv.ConvertFromString("#EFF6FF")
-            $btnThemeLight.Foreground   = $conv.ConvertFromString("#2563EB")
-            $btnThemeDefault.Background = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeDark.Background    = $conv.ConvertFromString("#FFFFFF")
+            # Button States
+            $btnThemeLight.Background    = $conv.ConvertFromString("#EFF6FF")
+            $btnThemeLight.Foreground    = $conv.ConvertFromString("#2563EB")
+            $btnThemeLight.BorderBrush   = $conv.ConvertFromString("#93C5FD")
+
+            $btnThemeDefault.Background  = $conv.ConvertFromString("#FFFFFF")
+            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#0F172A")
+            $btnThemeDefault.BorderBrush = $conv.ConvertFromString("#CBD5E1")
+
+            $btnThemeDark.Background     = $conv.ConvertFromString("#FFFFFF")
+            $btnThemeDark.Foreground     = $conv.ConvertFromString("#0F172A")
+            $btnThemeDark.BorderBrush    = $conv.ConvertFromString("#CBD5E1")
         }
     }
 
+    if ($script:CurrentLanguage) {
+        Set-ToolkitLanguage -Lang $script:CurrentLanguage
+    }
+
     if ($script:currentTab) {
-        Switch-Tab -TargetTag $script:currentTab
+        Switch-Tab -TargetTag $script:currentTab -SkipRefresh
     }
 }
 
@@ -342,8 +534,8 @@ $btnThemeDark.Add_Click({ Set-ToolkitTheme -Theme "Dark" })
 $btnThemeLight.Add_Click({ Set-ToolkitTheme -Theme "Light" })
 
 # Language buttons
-$btnLangVI.Add_Click({ $txtFooterStatus.Text = "• [OK] Đã chọn ngôn ngữ Tiếng Việt" })
-$btnLangEN.Add_Click({ $txtFooterStatus.Text = "• [OK] Language switched to English" })
+$btnLangVI.Add_Click({ Set-ToolkitLanguage -Lang "VI" })
+$btnLangEN.Add_Click({ Set-ToolkitLanguage -Lang "EN" })
 
 # Exit Button
 $btnExitApp.Add_Click({ $window.Close() })
@@ -1628,163 +1820,144 @@ $btnTestAudioRight.Add_Click({
     Test-AudioChannels -Channel "Right"
 })
 
-# Hardware test handlers (Keyboard, Mic, Cam, CPU Stress, Network Ping, Audio)
+# Hardware & Peripheral Diagnostic Controls (Merged Single Tab)
 $btnTestKeyboard       = Get-Control "btnTestKeyboard"
 $btnTestMic            = Get-Control "btnTestMic"
 $btnTestCam            = Get-Control "btnTestCam"
-$btnTestKeyboard2      = Get-Control "btnTestKeyboard2"
-$btnTestMic2           = Get-Control "btnTestMic2"
-$btnTestCam2           = Get-Control "btnTestCam2"
 $btnTestKeyboardVisual = Get-Control "btnTestKeyboardVisual"
-$btnTestKeyboardVisual2 = Get-Control "btnTestKeyboardVisual2"
 $btnTestCpuStress      = Get-Control "btnTestCpuStress"
-$btnTestCpuStress2     = Get-Control "btnTestCpuStress2"
 $btnTestNetworkPing    = Get-Control "btnTestNetworkPing"
-$btnTestNetworkPing2   = Get-Control "btnTestNetworkPing2"
 $btnTestAudioBass      = Get-Control "btnTestAudioBass"
-$btnTestAudioBass2     = Get-Control "btnTestAudioBass2"
 $btnTestAudioTreble    = Get-Control "btnTestAudioTreble"
-$btnTestAudioTreble2   = Get-Control "btnTestAudioTreble2"
-$txtHardwareTestLog    = Get-Control "txtHardwareTestLog"
+$btnTestSpeakerLeft    = Get-Control "btnTestSpeakerLeft"
+$btnTestSpeakerRight   = Get-Control "btnTestSpeakerRight"
+$btnTestSpeakerStereo  = Get-Control "btnTestSpeakerStereo"
 
 # 1. Visual Keyboard Test (Offline WPF GUI)
-$visualKbAction = {
-    $txtFooterStatus.Text = "• [OK] Đang chạy bộ test bàn phím trực quan Offline..."
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "[OK] Đang mở trình kiểm tra bàn phím trực quan Offline (không cần Internet)..." }
-    Start-VisualKeyboardTest
+if ($btnTestKeyboardVisual) {
+    $btnTestKeyboardVisual.Add_Click({
+        $txtFooterStatus.Text = "• [OK] Đang chạy bộ test bàn phím trực quan Offline..."
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đang mở trình kiểm tra bàn phím trực quan Offline (không cần Internet)..." }
+        Start-VisualKeyboardTest
+    })
 }
-if ($btnTestKeyboardVisual)  { $btnTestKeyboardVisual.Add_Click($visualKbAction) }
-if ($btnTestKeyboardVisual2) { $btnTestKeyboardVisual2.Add_Click($visualKbAction) }
 
 # 2. Key Test Online
-$kbAction = {
-    Start-Process "https://en.key-test.com/"
-    $txtFooterStatus.Text = "• [OK] Đã mở trình kiểm tra bàn phím trực tuyến (Key Test)."
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "[OK] Đang mở trình kiểm tra bàn phím trực quan trên trình duyệt..." }
+if ($btnTestKeyboard) {
+    $btnTestKeyboard.Add_Click({
+        Start-Process "https://en.key-test.com/"
+        $txtFooterStatus.Text = "• [OK] Đã mở trình kiểm tra bàn phím trực tuyến (Key Test)."
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đang mở trình kiểm tra bàn phím trực quan trên trình duyệt..." }
+    })
 }
-if ($btnTestKeyboard)  { $btnTestKeyboard.Add_Click($kbAction) }
-if ($btnTestKeyboard2) { $btnTestKeyboard2.Add_Click($kbAction) }
 
 # 3. CPU Burn-in / Stress Test (15s)
-$cpuStressAction = {
-    $confirm = [System.Windows.MessageBox]::Show(
-        "Bạn có muốn bắt đầu Stress Test CPU 100% trong 15 giây?`n`nQuá trình này sẽ đẩy tải toàn bộ các luồng CPU lên 100% để kiểm tra độ ổn định nguồn, tản nhiệt và quạt làm mát.",
-        "CPU Burn-In Stress Test",
-        [System.Windows.MessageBoxButton]::YesNo,
-        [System.Windows.MessageBoxImage]::Warning
-    )
-    if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
-        if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "🔥 Đang kích hoạt Stress Test 100% CPU trên tất cả các luồng trong 15 giây... Đang theo dõi nhiệt độ & quạt..." }
-        $txtFooterStatus.Text = "• [TEST] Đang kích hoạt 100% tải CPU..."
-        $stressRes = Start-CpuBurnInTest -DurationSeconds 15
-        if ($stressRes.Success) {
-            if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "🔥 [ĐANG CHẠY] $($stressRes.Message)`nQuá trình sẽ tự ngắt an toàn sau 15 giây..." }
-            # Wait asynchronously / monitor
-            Start-Sleep -Seconds 1
-            if ($txtHardwareTestLog) { $txtHardwareTestLog.Text += "`n[OK] Tiến trình tính toán tải nặng đang chạy trên $($stressRes.Cores) luồng." }
-        } else {
-            if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "❌ $($stressRes.Message)" }
+if ($btnTestCpuStress) {
+    $btnTestCpuStress.Add_Click({
+        $confirm = [System.Windows.MessageBox]::Show(
+            "Bạn có muốn bắt đầu Stress Test CPU 100% trong 15 giây?`n`nQuá trình này sẽ đẩy tải toàn bộ các luồng CPU lên 100% để kiểm tra độ ổn định nguồn, tản nhiệt và quạt làm mát.",
+            "CPU Burn-In Stress Test",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Warning
+        )
+        if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
+            if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🔥 Đang kích hoạt Stress Test 100% CPU trên tất cả các luồng trong 15 giây... Đang theo dõi nhiệt độ & quạt..." }
+            $txtFooterStatus.Text = "• [TEST] Đang kích hoạt 100% tải CPU..."
+            $stressRes = Start-CpuBurnInTest -DurationSeconds 15
+            if ($stressRes.Success) {
+                if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🔥 [ĐANG CHẠY] $($stressRes.Message)`nQuá trình sẽ tự ngắt an toàn sau 15 giây..." }
+                Start-Sleep -Seconds 1
+                if ($txtRepairAuditLog) { $txtRepairAuditLog.Text += "`n[OK] Tiến trình tính toán tải nặng đang chạy trên $($stressRes.Cores) luồng." }
+            } else {
+                if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "❌ $($stressRes.Message)" }
+            }
         }
-    }
+    })
 }
-if ($btnTestCpuStress)  { $btnTestCpuStress.Add_Click($cpuStressAction) }
-if ($btnTestCpuStress2) { $btnTestCpuStress2.Add_Click($cpuStressAction) }
 
 # 4. Network Ping & Wi-Fi Stability Tester
-$pingAction = {
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "🌐 Đang kiểm tra độ trễ mạng (Ping) tới Gateway, Google DNS và Cloudflare..." }
-    $txtFooterStatus.Text = "• [TEST] Đang đo độ trễ và kiểm tra card mạng..."
-    $res = Start-NetworkPingTest
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "================ KẾT QUẢ ĐO ĐỘ TRỄ MẠNG (PING) ================`n$res`n==============================================================" }
-    $txtFooterStatus.Text = "• [OK] Đã hoàn thành kiểm tra độ trễ mạng"
+if ($btnTestNetworkPing) {
+    $btnTestNetworkPing.Add_Click({
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🌐 Đang kiểm tra độ trễ mạng (Ping) tới Gateway, Google DNS và Cloudflare..." }
+        $txtFooterStatus.Text = "• [TEST] Đang đo độ trễ và kiểm tra card mạng..."
+        $res = Start-NetworkPingTest
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "================ KẾT QUẢ ĐO ĐỘ TRỄ MẠNG (PING) ================`n$res`n==============================================================" }
+        $txtFooterStatus.Text = "• [OK] Đã hoàn thành kiểm tra độ trễ mạng"
+    })
 }
-if ($btnTestNetworkPing)  { $btnTestNetworkPing.Add_Click($pingAction) }
-if ($btnTestNetworkPing2) { $btnTestNetworkPing2.Add_Click($pingAction) }
 
 # 5. Audio Frequency (Bass / Treble)
-$bassAction = {
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "🎵 Đang phát chuỗi tần số Siêu Trầm (Bass 120-200Hz) qua loa..." }
-    $res = Test-AudioFrequency -Type "Bass"
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = $res }
-    $txtFooterStatus.Text = "• [OK] Đã phát tần số Bass"
+if ($btnTestAudioBass) {
+    $btnTestAudioBass.Add_Click({
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🎵 Đang phát chuỗi tần số Siêu Trầm (Bass 120-200Hz) qua loa..." }
+        $res = Test-AudioFrequency -Type "Bass"
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Đã phát tần số Bass"
+    })
 }
-if ($btnTestAudioBass)  { $btnTestAudioBass.Add_Click($bassAction) }
-if ($btnTestAudioBass2) { $btnTestAudioBass2.Add_Click($bassAction) }
 
-$trebleAction = {
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "🎵 Đang phát chuỗi tần số Cao (Treble 2500-4500Hz) qua loa..." }
-    $res = Test-AudioFrequency -Type "Treble"
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = $res }
-    $txtFooterStatus.Text = "• [OK] Đã phát tần số Treble"
+if ($btnTestAudioTreble) {
+    $btnTestAudioTreble.Add_Click({
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🎵 Đang phát chuỗi tần số Cao (Treble 2500-4500Hz) qua loa..." }
+        $res = Test-AudioFrequency -Type "Treble"
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Đã phát tần số Treble"
+    })
 }
-if ($btnTestAudioTreble)  { $btnTestAudioTreble.Add_Click($trebleAction) }
-if ($btnTestAudioTreble2) { $btnTestAudioTreble2.Add_Click($trebleAction) }
 
 # 6. Mic & Camera Handlers
-$micAction = {
-    try {
-        Start-Process "explorer.exe" -ArgumentList "ms-windows-soundrecorder:"
-    } catch {
-        Start-Process "mmsys.cpl"
-    }
-    $txtFooterStatus.Text = "• [OK] Đã mở trình kiểm tra Microphone."
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "[OK] Đã kích hoạt công cụ ghi âm và kiểm tra tín hiệu Microphone." }
+if ($btnTestMic) {
+    $btnTestMic.Add_Click({
+        try {
+            Start-Process "explorer.exe" -ArgumentList "ms-windows-soundrecorder:"
+        } catch {
+            Start-Process "mmsys.cpl"
+        }
+        $txtFooterStatus.Text = "• [OK] Đã mở trình kiểm tra Microphone."
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đã kích hoạt công cụ ghi âm và kiểm tra tín hiệu Microphone." }
+    })
 }
-if ($btnTestMic)  { $btnTestMic.Add_Click($micAction) }
-if ($btnTestMic2) { $btnTestMic2.Add_Click($micAction) }
 
-$camAction = {
-    try {
-        Start-Process "explorer.exe" -ArgumentList "microsoft.windows.camera:"
-    } catch {
-        Start-Process "https://webcamtests.com/"
-    }
-    $txtFooterStatus.Text = "• [OK] Đã mở ứng dụng Camera / Webcam."
-    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "[OK] Đã khởi động ứng dụng Camera để kiểm tra hình ảnh và cảm biến." }
+if ($btnTestCam) {
+    $btnTestCam.Add_Click({
+        try {
+            Start-Process "explorer.exe" -ArgumentList "microsoft.windows.camera:"
+        } catch {
+            Start-Process "https://webcamtests.com/"
+        }
+        $txtFooterStatus.Text = "• [OK] Đã mở ứng dụng Camera / Webcam."
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đã khởi động ứng dụng Camera để kiểm tra hình ảnh và cảm biến." }
+    })
 }
-if ($btnTestCam)  { $btnTestCam.Add_Click($camAction) }
-if ($btnTestCam2) { $btnTestCam2.Add_Click($camAction) }
 
 # 7. Audio Stereo & Screen Dead Pixel Handlers
-$btnTestSpeakerLeft   = Get-Control "btnTestSpeakerLeft"
-$btnTestSpeakerRight  = Get-Control "btnTestSpeakerRight"
-$btnTestSpeakerStereo = Get-Control "btnTestSpeakerStereo"
-$btnTestScreenWhite   = Get-Control "btnTestScreenWhite"
-
 if ($btnTestSpeakerLeft) {
     $btnTestSpeakerLeft.Add_Click({
-        if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "Đang phát tín hiệu âm thanh kiểm tra Loa Trái (Left Channel 800Hz)..." }
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "Đang phát tín hiệu âm thanh kiểm tra Loa Trái (Left Channel 800Hz)..." }
         [System.Console]::Beep(800, 600)
-        if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "[OK] Đã phát xong tín hiệu tần số 800Hz trên Loa Trái." }
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đã phát xong tín hiệu tần số 800Hz trên Loa Trái." }
         $txtFooterStatus.Text = "• [OK] Đã test Loa Trái"
     })
 }
 
 if ($btnTestSpeakerRight) {
     $btnTestSpeakerRight.Add_Click({
-        if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "Đang phát tín hiệu âm thanh kiểm tra Loa Phải (Right Channel 1200Hz)..." }
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "Đang phát tín hiệu âm thanh kiểm tra Loa Phải (Right Channel 1200Hz)..." }
         [System.Console]::Beep(1200, 600)
-        if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "[OK] Đã phát xong tín hiệu tần số 1200Hz trên Loa Phải." }
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đã phát xong tín hiệu tần số 1200Hz trên Loa Phải." }
         $txtFooterStatus.Text = "• [OK] Đã test Loa Phải"
     })
 }
 
 if ($btnTestSpeakerStereo) {
     $btnTestSpeakerStereo.Add_Click({
-        if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "Đang phát chuỗi âm thanh Stereo đa tần số qua 2 loa..." }
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "Đang phát chuỗi âm thanh Stereo đa tần số qua 2 loa..." }
         [System.Console]::Beep(523, 200)
         [System.Console]::Beep(659, 200)
         [System.Console]::Beep(784, 200)
         [System.Console]::Beep(1046, 350)
-        if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "[OK] Cả 2 kênh Loa Stereo đã phát chuỗi âm thanh rõ ràng, không rè." }
+        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Cả 2 kênh Loa Stereo đã phát chuỗi âm thanh rõ ràng, không rè." }
         $txtFooterStatus.Text = "• [OK] Đã test Loa Stereo hoàn tất"
-    })
-}
-
-if ($btnTestScreenWhite) {
-    $btnTestScreenWhite.Add_Click({
-        Start-ScreenDeadPixelTest
-        if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = "[OK] Đã hoàn tất phiên kiểm tra điểm chết màn hình." }
     })
 }
 

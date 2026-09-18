@@ -1,12 +1,11 @@
 {
-  "version": "20.5.908.30",
+  "version": "20.5.908.31",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Thêm tính năng Quản lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro): Tự động phát hiện 100% phần mềm đã cài đặt trên máy tính (64-bit, 32-bit và CurrentUser).",
-    "Hỗ trợ Gỡ Sạch Triệt Để (Deep Clean): Chạy uninstaller gốc kết hợp quét dọn sạch toàn bộ rác thừa trong AppData, LocalAppData, ProgramData, Registry Keys và Shortcuts Start Menu/Desktop.",
-    "Bảo vệ dữ liệu hệ thống an toàn cao cấp: Tự động loại trừ các thành phần cốt lõi của Windows, Drivers và Hotfix cập nhật.",
-    "Tìm kiếm lọc phần mềm theo thời gian thực (Real-time Filter) kèm hiển thị ngày cài đặt, phiên bản, dung lượng và nhà phát hành chi tiết.",
-    "Nâng cấp toàn bộ hệ thống Typography chuẩn Apple Font Retina hiển thị sắc nét, tối ưu hiệu năng và độ ổn định."
+    "Gộp 2 tab trùng lặp 'Kiểm Tra Laptop (Đã Sửa?)' và 'Test Bàn Phím, Loa, Mic, Cam' thành 1 tab duy nhất: 'Kiểm Tra Laptop & Ngoại Vi' (Laptop & Hardware Diagnostics) toàn diện.",
+    "Khắc phục triệt để chế độ Tối (Dark Mode) chuẩn phong cách Apple Dark: Độ tương phản cao, làm rõ nét toàn bộ chữ (#FFFFFF, #CBD5E1), sửa lỗi nút 'Tối' bị mờ chữ trên nền sáng.",
+    "Kích hoạt hệ thống chuyển đổi ngôn ngữ song ngữ Tiếng Việt (VN VI) & Tiếng Anh (US EN) thời gian thực cho toàn bộ thanh Menu Sidebar, Tiêu đề trang và Nhóm chức năng.",
+    "Sửa lỗi hiển thị lặp nhãn 'Tải hệ thống' trên màn hình chính và tối ưu màu sắc các đồng hồ đo hiệu năng RAM, Mạng, Ổ đĩa."
   ]
 }
