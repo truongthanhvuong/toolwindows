@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.33
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.34
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -93,6 +93,10 @@ $txtRealtimeClock   = Get-Control "txtRealtimeClock"
 $btnCheckAppUpdate  = Get-Control "btnCheckAppUpdate"
 $txtFooterStatus    = Get-Control "txtFooterStatus"
 $btnExitApp         = Get-Control "btnExitApp"
+$btnCopyMoMo        = Get-Control "btnCopyMoMo"
+$btnFooterMoMo      = Get-Control "btnFooterMoMo"
+$btnCopyMoMoSysInfo = Get-Control "btnCopyMoMoSysInfo"
+$btnShowDisclaimer  = Get-Control "btnShowDisclaimer"
 
 # Theme Buttons
 $btnThemeDefault    = Get-Control "btnThemeDefault"
@@ -3131,6 +3135,44 @@ Bạn có muốn tải và tự động cập nhật ngay bây giờ không?
             $msg = "BẠN ĐANG SỬ DỤNG PHIÊN BẢN MỚI NHẤT!`n`n- Phiên bản: v$($info.CurrentVersion)`n- Hệ thống không tìm thấy bản cập nhật nào mới hơn."
             [System.Windows.MessageBox]::Show($msg, "Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
         }
+    })
+}
+
+# ================= XỬ LÝ SỰ KIỆN MOMO, BẢN QUYỀN & MIỄN TRỪ TRÁCH NHIỆM =================
+$copyMoMoAction = {
+    try {
+        [System.Windows.Clipboard]::SetText("0328808425")
+        $txtFooterStatus.Text = "• [COPIED] Đã sao chép số MoMo: 0328808425 vào Clipboard. Cảm ơn bạn đã ủng hộ!"
+        [System.Windows.MessageBox]::Show("ĐÃ SAO CHÉP SỐ MOMO THÀNH CÔNG!`n`n• Số điện thoại MoMo: 0328808425`n• Chủ tài khoản: Trương Thanh Vương`n`nChân thành cảm ơn bạn đã đồng hành và ủng hộ tác giả phát triển VUONGTT Tool Pro 2026!", "Ủng Hộ Tác Giả (MoMo)", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    } catch {
+        [System.Windows.MessageBox]::Show("Số MoMo ủng hộ tác giả: 0328808425 (Trương Thanh Vương)", "Ủng Hộ MoMo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    }
+}
+
+if ($btnCopyMoMo) { $btnCopyMoMo.Add_Click($copyMoMoAction) }
+if ($btnFooterMoMo) { $btnFooterMoMo.Add_Click($copyMoMoAction) }
+if ($btnCopyMoMoSysInfo) { $btnCopyMoMoSysInfo.Add_Click($copyMoMoAction) }
+
+if ($btnShowDisclaimer) {
+    $btnShowDisclaimer.Add_Click({
+        $disclaimerMsg = @"
+THÔNG TIN BẢN QUYỀN & MIỄN TRỪ TRÁCH NHIỆM
+=====================================================
+© 2026 VUONGTT. Bảo lưu mọi quyền.
+Ủng hộ MoMo: 0328808425 (Trương Thanh Vương)
+
+Miễn trừ trách nhiệm:
+Phần mềm được cung cấp nguyên trạng, không bảo hành. 
+Tác giả không chịu trách nhiệm về bất kỳ thiệt hại hoặc mất dữ liệu nào khi sử dụng tool.
+=====================================================
+"@
+        [System.Windows.MessageBox]::Show($disclaimerMsg, "Bản Quyền & Miễn Trừ Trách Nhiệm", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($btnExitApp) {
+    $btnExitApp.Add_Click({
+        $window.Close()
     })
 }
 

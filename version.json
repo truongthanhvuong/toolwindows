@@ -1,8 +1,9 @@
 {
-  "version": "20.5.908.33",
+  "version": "20.5.908.34",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
+    "Tích hợp thông tin Bản quyền © 2026 VUONGTT, khối Ủng hộ MoMo: 0328808425 (Trương Thanh Vương) hỗ trợ 1-Click Copy vào Clipboard và Điều khoản Miễn trừ trách nhiệm pháp lý chuẩn mực tại Sidebar, Footer và Trang Thông Tin Hệ Thống.",
     "Sửa lỗi Test Màn Hình Full Màu (Dead Pixel): Khắc phục triệt để lỗi bấm chuột/bàn phím không đổi màu (fix scope index biến, thêm Tunneling Preview Events, hỗ trợ Click trái/phải, phím Space/Mũi tên và Cuộn chuột siêu nhạy).",
     "Nâng cấp kho Font Chữ Tiếng Việt & Bổ sung Trọn Bộ Font AutoCAD (.SHX & TTF): Tự động phát hiện tất cả các phiên bản AutoCAD trên máy để nạp font bản vẽ kỹ thuật chống lỗi ???, hỗ trợ nạp tùy chọn từ file ZIP/thư mục và đăng ký GDI Windows realtime.",
     "Nâng cấp động cơ kiểm tra cập nhật Realtime Dual-Engine cho AppUpdater loại bỏ 100% độ trễ CDN Fastly cache 5 phút.",
