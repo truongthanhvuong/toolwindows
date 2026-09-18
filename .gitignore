@@ -1,0 +1,10 @@
+# Ignore temporary and cache files
+*.log
+*.tmp
+*.bak
+test_*.ps1
+VUONGTT_Toolkit.clean.ps1
+bin/
+obj/
+.vs/
+.idea/

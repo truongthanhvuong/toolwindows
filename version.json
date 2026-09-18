@@ -1,0 +1,13 @@
+{
+  "version": "20.5.908.27",
+  "releaseDate": "18/09/2026",
+  "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
+  "changelog": [
+    "Khắc phục triệt để lỗi XAML Test Màn Hình (Dead Pixel Tester 9 dải màu chuyên nghiệp).",
+    "Thêm trình Test Bàn Phím Trực Quan Offline (Visual Keyboard Tester - không cần mạng).",
+    "Thêm tính năng CPU Burn-In Stress Test 100% (15s) kiểm tra ổn định nguồn & tản nhiệt.",
+    "Thêm kiểm tra độ trễ mạng (Ping) Router, Google DNS 8.8.8.8, Cloudflare 1.1.1.1.",
+    "Thêm kiểm tra tần số âm thanh Bass (120-200Hz) và Treble (2500-4500Hz) phát hiện rè màng loa.",
+    "Tối ưu hóa giao diện trang Laptop Check và Test Hardware."
+  ]
+}
