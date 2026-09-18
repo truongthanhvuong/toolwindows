@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.34
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.35
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -59,6 +59,7 @@ $corePath = Join-Path $ScriptDir "src\Core"
 . (Join-Path $corePath "PartitionManager.ps1")
 . (Join-Path $corePath "AccountingApps.ps1")
 . (Join-Path $corePath "AppUpdater.ps1")
+. (Join-Path $corePath "LicenseManager.ps1")
 
 # Load Main UI XAML
 $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
@@ -98,6 +99,48 @@ $btnFooterMoMo      = Get-Control "btnFooterMoMo"
 $btnCopyMoMoSysInfo = Get-Control "btnCopyMoMoSysInfo"
 $btnShowDisclaimer  = Get-Control "btnShowDisclaimer"
 
+# Admin & License Controls
+$borderLicenseBadge         = Get-Control "borderLicenseBadge"
+$txtLicenseBadge            = Get-Control "txtLicenseBadge"
+$btnActivateLicense         = Get-Control "btnActivateLicense"
+$btnHeaderAdmin             = Get-Control "btnHeaderAdmin"
+$btnMenuAdmin               = Get-Control "btnMenuAdmin"
+
+$pageAdminPortal            = Get-Control "pageAdminPortal"
+$btnAdminLogout             = Get-Control "btnAdminLogout"
+$btnSavePolicies            = Get-Control "btnSavePolicies"
+$btnResetPolicies           = Get-Control "btnResetPolicies"
+$panelFeaturePoliciesList   = Get-Control "panelFeaturePoliciesList"
+$txtNewKeyCustomer          = Get-Control "txtNewKeyCustomer"
+$cmbNewKeyDuration          = Get-Control "cmbNewKeyDuration"
+$txtNewKeyCount             = Get-Control "txtNewKeyCount"
+$btnGenerateKeys            = Get-Control "btnGenerateKeys"
+$lblKeyVaultStats           = Get-Control "lblKeyVaultStats"
+$panelKeysContainer         = Get-Control "panelKeysContainer"
+$pwdAdminChangeNew          = Get-Control "pwdAdminChangeNew"
+$pwdAdminChangeConfirm      = Get-Control "pwdAdminChangeConfirm"
+$btnAdminChangePassSubmit   = Get-Control "btnAdminChangePassSubmit"
+
+$modalAdminLogin            = Get-Control "modalAdminLogin"
+$lblAdminLoginNotice        = Get-Control "lblAdminLoginNotice"
+$pnlFirstLoginBanner        = Get-Control "pnlFirstLoginBanner"
+$pnlAdminNormalLogin        = Get-Control "pnlAdminNormalLogin"
+$pwdAdminLogin              = Get-Control "pwdAdminLogin"
+$pnlAdminFirstChangePass    = Get-Control "pnlAdminFirstChangePass"
+$pwdAdminNewPass            = Get-Control "pwdAdminNewPass"
+$pwdAdminConfirmPass        = Get-Control "pwdAdminConfirmPass"
+$lblAdminLoginError         = Get-Control "lblAdminLoginError"
+$btnModalLoginCancel        = Get-Control "btnModalLoginCancel"
+$btnModalLoginSubmit        = Get-Control "btnModalLoginSubmit"
+
+$modalActivatePro           = Get-Control "modalActivatePro"
+$lblActivateNotice          = Get-Control "lblActivateNotice"
+$lblCurrentHWID             = Get-Control "lblCurrentHWID"
+$txtModalLicenseKey         = Get-Control "txtModalLicenseKey"
+$lblActivateError           = Get-Control "lblActivateError"
+$btnModalActivateCancel     = Get-Control "btnModalActivateCancel"
+$btnModalActivateSubmit     = Get-Control "btnModalActivateSubmit"
+
 # Theme Buttons
 $btnThemeDefault    = Get-Control "btnThemeDefault"
 $btnThemeDark       = Get-Control "btnThemeDark"
@@ -111,7 +154,8 @@ $menuButtons = @(
     "btnMenuLaptopCheck", "btnMenuCpuMain",
     "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuUninstaller", "btnMenuFonts",
     "btnMenuCleaner", "btnMenuTweaks", "btnMenuPrinterLAN", "btnMenuBackupDriver",
-    "btnMenuDevMgmt", "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition"
+    "btnMenuDevMgmt", "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition",
+    "btnMenuAdmin"
 )
 
 # Pages Dictionary
@@ -136,6 +180,7 @@ $pages = @{
     "BitLocker"    = Get-Control "pageBitLocker"
     "AutoWin"      = Get-Control "pageAutoWin"
     "Partition"    = Get-Control "pagePartition"
+    "AdminPortal"  = Get-Control "pageAdminPortal"
 }
 
 $pageTitlesVI = @{
@@ -159,6 +204,7 @@ $pageTitlesVI = @{
     "BitLocker"    = @{ Title = "Quản Lý & Tắt BitLocker - EFS"; Icon = "🔒" }
     "AutoWin"      = @{ Title = "Bộ Công Cụ Cài Win & Bypass"; Icon = "🚀" }
     "Partition"    = @{ Title = "Quản Lý Phân Vùng Ổ Đĩa (Partition Pro)"; Icon = "💽" }
+    "AdminPortal"  = @{ Title = "Quản Trị Viên (Admin Portal)"; Icon = "👑" }
 }
 
 $pageTitlesEN = @{
@@ -182,6 +228,7 @@ $pageTitlesEN = @{
     "BitLocker"    = @{ Title = "Manage BitLocker - EFS"; Icon = "🔒" }
     "AutoWin"      = @{ Title = "Auto Windows Deploy"; Icon = "🚀" }
     "Partition"    = @{ Title = "Disk Partition Pro"; Icon = "💽" }
+    "AdminPortal"  = @{ Title = "Administrator Portal"; Icon = "👑" }
 }
 
 $pageTitles = $pageTitlesVI
@@ -193,6 +240,33 @@ $script:currentTab = "SysInfo"
 # Switch Tab Function
 function Switch-Tab {
     param([string]$TargetTag, [switch]$SkipRefresh = $false)
+
+    # -------------------------------------------------------------
+    # GATEKEEPER 1: ADMIN PORTAL ACCESS
+    # -------------------------------------------------------------
+    if ($TargetTag -eq "AdminPortal") {
+        if (-not $global:isAdminAuthenticated) {
+            Show-VUONGTTAdminLoginModal -TargetNextTab "AdminPortal"
+            return
+        }
+    }
+
+    # -------------------------------------------------------------
+    # GATEKEEPER 2: PRO FEATURE ACCESS CONTROL
+    # -------------------------------------------------------------
+    if ($TargetTag -ne "AdminPortal") {
+        $policies = Get-VUONGTTFeaturePolicies
+        $policy = $policies | Where-Object { $_.Id -eq $TargetTag }
+        if ($policy -and $policy.Tier -eq "PRO") {
+            $isPro = (Test-VUONGTTProLicense).IsPro
+            if (-not $isPro) {
+                $featureName = if ($pageTitlesVI.ContainsKey($TargetTag)) { $pageTitlesVI[$TargetTag].Title } else { $TargetTag }
+                Show-VUONGTTLicenseActivationModal -PromptNotice "Chức năng '$featureName' thuộc phiên bản PRO! Vui lòng nhập License Key để kích hoạt." -TargetNextTab $TargetTag
+                return
+            }
+        }
+    }
+
     $script:currentTab = $TargetTag
 
     # Hide all pages
@@ -227,6 +301,11 @@ function Switch-Tab {
 
     # Module specific lazy refresh
     switch ($TargetTag) {
+        "AdminPortal"  {
+            $txtFooterStatus.Text = "• [ADMIN] Đang trong Trang Quản Trị Viên (Admin Portal)."
+            Render-VUONGTTAdminPolicies
+            Render-VUONGTTAdminKeys
+        }
         "SysInfo"      { Refresh-SysInfoDisplay }
         "Benchmark"    {
             $txtBenchmarkResult2 = Get-Control "txtBenchmarkResult2"
@@ -3176,6 +3255,489 @@ if ($btnExitApp) {
     })
 }
 
+# =========================================================================
+#   HỆ THỐNG QUẢN TRỊ ADMIN PORTAL, PHÂN QUYỀN & LICENSE KEY HWID
+# =========================================================================
+$global:isAdminAuthenticated = $false
+$script:adminPolicyCombos    = @{}
+$script:adminPendingTab      = $null
+$script:licensePendingTab    = $null
+
+function Update-VUONGTTLicenseUI {
+    $pro = Test-VUONGTTProLicense
+    $conv = [System.Windows.Media.BrushConverter]::new()
+    if ($pro.IsPro) {
+        if ($borderLicenseBadge) {
+            $borderLicenseBadge.Background  = $conv.ConvertFromString("#ECFDF5")
+            $borderLicenseBadge.BorderBrush = $conv.ConvertFromString("#A7F3D0")
+        }
+        if ($txtLicenseBadge) {
+            $txtLicenseBadge.Text       = "🟢 PRO • $($pro.Duration)"
+            $txtLicenseBadge.Foreground = $conv.ConvertFromString("#047857")
+        }
+        if ($btnActivateLicense) {
+            $btnActivateLicense.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    } else {
+        if ($borderLicenseBadge) {
+            $borderLicenseBadge.Background  = $conv.ConvertFromString("#FEF3C7")
+            $borderLicenseBadge.BorderBrush = $conv.ConvertFromString("#FCD34D")
+        }
+        if ($txtLicenseBadge) {
+            $txtLicenseBadge.Text       = "⚪ FREE VERSION"
+            $txtLicenseBadge.Foreground = $conv.ConvertFromString("#B45309")
+        }
+        if ($btnActivateLicense) {
+            $btnActivateLicense.Visibility = [System.Windows.Visibility]::Visible
+        }
+    }
+}
+
+function Show-VUONGTTAdminLoginModal {
+    param([string]$TargetNextTab = "AdminPortal")
+    $script:adminPendingTab = $TargetNextTab
+    if (-not $modalAdminLogin) { return }
+
+    $authCheck = Test-VUONGTTAdminAuth -Password ""
+    if ($authCheck.IsFirstLogin) {
+        $pnlFirstLoginBanner.Visibility     = [System.Windows.Visibility]::Visible
+        $lblAdminLoginNotice.Text          = "LẦN ĐẦU ĐĂNG NHẬP: Mật khẩu mặc định là 'admin'. Vui lòng nhập mật khẩu mặc định và thiết lập mật khẩu mới ngay bên dưới để bảo mật!"
+        $pnlAdminFirstChangePass.Visibility = [System.Windows.Visibility]::Visible
+        $btnModalLoginSubmit.Content       = "Đổi Pass & Vào Admin"
+    } else {
+        $pnlFirstLoginBanner.Visibility     = [System.Windows.Visibility]::Collapsed
+        $lblAdminLoginNotice.Text          = "Nhập mật khẩu quản trị viên để truy cập Admin Portal"
+        $pnlAdminFirstChangePass.Visibility = [System.Windows.Visibility]::Collapsed
+        $btnModalLoginSubmit.Content       = "Đăng Nhập"
+    }
+
+    $pwdAdminLogin.Password        = ""
+    $pwdAdminNewPass.Password      = ""
+    $pwdAdminConfirmPass.Password  = ""
+    $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Collapsed
+    $lblAdminLoginError.Text       = ""
+
+    $modalAdminLogin.Visibility    = [System.Windows.Visibility]::Visible
+    $pwdAdminLogin.Focus() | Out-Null
+}
+
+function Show-VUONGTTLicenseActivationModal {
+    param([string]$PromptNotice = "", [string]$TargetNextTab = $null)
+    $script:licensePendingTab = $TargetNextTab
+    if (-not $modalActivatePro) { return }
+
+    if ($PromptNotice) {
+        $lblActivateNotice.Text = $PromptNotice
+    } else {
+        $lblActivateNotice.Text = "Nhập License Key để mở khóa toàn bộ tính năng cao cấp cho máy tính này."
+    }
+
+    $currentHwid = Get-VUONGTTHardwareId
+    if ($lblCurrentHWID) { $lblCurrentHWID.Text = $currentHwid }
+    if ($txtModalLicenseKey) { $txtModalLicenseKey.Text = "" }
+    if ($lblActivateError) { $lblActivateError.Visibility = [System.Windows.Visibility]::Collapsed }
+
+    $modalActivatePro.Visibility = [System.Windows.Visibility]::Visible
+    if ($txtModalLicenseKey) { $txtModalLicenseKey.Focus() | Out-Null }
+}
+
+# Render danh sách 20 chức năng để phân quyền FREE vs PRO
+function Render-VUONGTTAdminPolicies {
+    if (-not $panelFeaturePoliciesList) { return }
+    $panelFeaturePoliciesList.Children.Clear()
+    $script:adminPolicyCombos = @{}
+
+    $policies = Get-VUONGTTFeaturePolicies
+    $conv = [System.Windows.Media.BrushConverter]::new()
+
+    foreach ($f in $policies) {
+        $row = New-Object System.Windows.Controls.Border
+        $row.Background = $window.Resources["CardInnerBgBrush"]
+        $row.BorderBrush = $window.Resources["CardBorderBrush"]
+        $row.BorderThickness = New-Object System.Windows.Thickness(1)
+        $row.CornerRadius = New-Object System.Windows.CornerRadius(6)
+        $row.Padding = New-Object System.Windows.Thickness(10, 8, 10, 8)
+        $row.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
+
+        $grid = New-Object System.Windows.Controls.Grid
+        $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = [System.Windows.GridLength]::Auto
+        $grid.ColumnDefinitions.Add($c1)
+        $grid.ColumnDefinitions.Add($c2)
+
+        $spLeft = New-Object System.Windows.Controls.StackPanel
+        $titleBlock = New-Object System.Windows.Controls.TextBlock
+        $titleBlock.Text = "$($f.Icon) $($f.Name)"
+        $titleBlock.FontWeight = [System.Windows.FontWeights]::Bold
+        $titleBlock.FontSize = 13
+        $titleBlock.Foreground = $window.Resources["TextPrimaryBrush"]
+
+        $descBlock = New-Object System.Windows.Controls.TextBlock
+        $descBlock.Text = $f.Description
+        $descBlock.FontSize = 11
+        $descBlock.Foreground = $window.Resources["TextSecondaryBrush"]
+        $descBlock.TextWrapping = [System.Windows.TextWrapping]::Wrap
+        $descBlock.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
+
+        $spLeft.Children.Add($titleBlock) | Out-Null
+        $spLeft.Children.Add($descBlock) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($spLeft, 0)
+        $grid.Children.Add($spLeft) | Out-Null
+
+        $cmb = New-Object System.Windows.Controls.ComboBox
+        $cmb.Width = 95
+        $cmb.Height = 28
+        $cmb.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+        
+        $itemFree = New-Object System.Windows.Controls.ComboBoxItem
+        $itemFree.Content = "⚪ FREE"
+        $itemFree.FontWeight = [System.Windows.FontWeights]::Bold
+        $itemFree.Foreground = $conv.ConvertFromString("#047857")
+
+        $itemPro = New-Object System.Windows.Controls.ComboBoxItem
+        $itemPro.Content = "⭐ PRO"
+        $itemPro.FontWeight = [System.Windows.FontWeights]::Bold
+        $itemPro.Foreground = $conv.ConvertFromString("#B45309")
+
+        $cmb.Items.Add($itemFree) | Out-Null
+        $cmb.Items.Add($itemPro) | Out-Null
+        $cmb.SelectedIndex = if ($f.Tier -eq "PRO") { 1 } else { 0 }
+
+        $script:adminPolicyCombos[$f.Id] = $cmb
+        [System.Windows.Controls.Grid]::SetColumn($cmb, 1)
+        $grid.Children.Add($cmb) | Out-Null
+
+        $row.Child = $grid
+        $panelFeaturePoliciesList.Children.Add($row) | Out-Null
+    }
+}
+
+# Render danh sách License Keys trong Vault
+function Render-VUONGTTAdminKeys {
+    if (-not $panelKeysContainer) { return }
+    $panelKeysContainer.Children.Clear()
+
+    $keys = Get-VUONGTTAllLicenses
+    $totalCount = $keys.Count
+    $usedCount  = ($keys | Where-Object { $_.IsUsed }).Count
+    $freeCount  = $totalCount - $usedCount
+
+    if ($lblKeyVaultStats) {
+        $lblKeyVaultStats.Text = "Tổng: $totalCount | Đã kích hoạt: $usedCount | Còn trống: $freeCount"
+    }
+
+    if ($totalCount -eq 0) {
+        $emptyBlock = New-Object System.Windows.Controls.TextBlock
+        $emptyBlock.Text = "Kho khóa hiện đang trống. Hãy nhập thông tin ở trên và bấm 'Tạo License Key' để sinh key mới."
+        $emptyBlock.Foreground = $window.Resources["TextSecondaryBrush"]
+        $emptyBlock.Margin = New-Object System.Windows.Thickness(10)
+        $emptyBlock.TextWrapping = [System.Windows.TextWrapping]::Wrap
+        $panelKeysContainer.Children.Add($emptyBlock) | Out-Null
+        return
+    }
+
+    $conv = [System.Windows.Media.BrushConverter]::new()
+    foreach ($k in $keys) {
+        $card = New-Object System.Windows.Controls.Border
+        $card.Background = $window.Resources["CardInnerBgBrush"]
+        $card.BorderBrush = if ($k.IsUsed) { $conv.ConvertFromString("#FCA5A5") } else { $conv.ConvertFromString("#A7F3D0") }
+        $card.BorderThickness = New-Object System.Windows.Thickness(1)
+        $card.CornerRadius = New-Object System.Windows.CornerRadius(6)
+        $card.Padding = New-Object System.Windows.Thickness(12, 8, 12, 8)
+        $card.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+
+        $grid = New-Object System.Windows.Controls.Grid
+        $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = [System.Windows.GridLength]::Auto
+        $grid.ColumnDefinitions.Add($c1)
+        $grid.ColumnDefinitions.Add($c2)
+
+        $spInfo = New-Object System.Windows.Controls.StackPanel
+        
+        $spKeyRow = New-Object System.Windows.Controls.StackPanel
+        $spKeyRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+
+        $txtKeyVal = New-Object System.Windows.Controls.TextBlock
+        $txtKeyVal.Text = $k.Key
+        $txtKeyVal.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas, Courier New, monospace")
+        $txtKeyVal.FontWeight = [System.Windows.FontWeights]::Bold
+        $txtKeyVal.FontSize = 13.5
+        $txtKeyVal.Foreground = $conv.ConvertFromString("#1E40AF")
+        $txtKeyVal.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+        $spKeyRow.Children.Add($txtKeyVal) | Out-Null
+
+        $durBadge = New-Object System.Windows.Controls.Border
+        $durBadge.Background = $conv.ConvertFromString("#FEF3C7")
+        $durBadge.CornerRadius = New-Object System.Windows.CornerRadius(3)
+        $durBadge.Padding = New-Object System.Windows.Thickness(6, 1, 6, 1)
+        $durTxt = New-Object System.Windows.Controls.TextBlock
+        $durTxt.Text = $k.Duration
+        $durTxt.FontSize = 10.5
+        $durTxt.FontWeight = [System.Windows.FontWeights]::Bold
+        $durTxt.Foreground = $conv.ConvertFromString("#B45309")
+        $durBadge.Child = $durTxt
+        $spKeyRow.Children.Add($durBadge) | Out-Null
+
+        $spInfo.Children.Add($spKeyRow) | Out-Null
+
+        $txtCust = New-Object System.Windows.Controls.TextBlock
+        $txtCust.Text = "Khách hàng: $($k.Customer) • Ngày tạo: $($k.CreatedDate)"
+        $txtCust.FontSize = 11.5
+        $txtCust.Foreground = $window.Resources["TextSecondaryBrush"]
+        $txtCust.Margin = New-Object System.Windows.Thickness(0, 2, 0, 2)
+        $spInfo.Children.Add($txtCust) | Out-Null
+
+        $txtStatus = New-Object System.Windows.Controls.TextBlock
+        if ($k.IsUsed) {
+            $txtStatus.Text = "🔴 ĐÃ KÍCH HOẠT: Máy '$($k.UsedPCName)' [$($k.UsedHWID)] vào $($k.ActivatedDate)"
+            $txtStatus.Foreground = $conv.ConvertFromString("#BE123C")
+            $txtStatus.FontWeight = [System.Windows.FontWeights]::SemiBold
+        } else {
+            $txtStatus.Text = "🟢 CHƯA SỬ DỤNG (Sẵn sàng gửi cho khách hàng kích hoạt trên 1 PC)"
+            $txtStatus.Foreground = $conv.ConvertFromString("#047857")
+            $txtStatus.FontWeight = [System.Windows.FontWeights]::SemiBold
+        }
+        $txtStatus.FontSize = 11
+        $spInfo.Children.Add($txtStatus) | Out-Null
+
+        [System.Windows.Controls.Grid]::SetColumn($spInfo, 0)
+        $grid.Children.Add($spInfo) | Out-Null
+
+        # Action Buttons (Copy Key, Delete Key)
+        $spBtns = New-Object System.Windows.Controls.StackPanel
+        $spBtns.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+        $spBtns.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $btnCopyKey = New-Object System.Windows.Controls.Button
+        $btnCopyKey.Content = "📋 Copy"
+        $btnCopyKey.Height = 28
+        $btnCopyKey.Padding = New-Object System.Windows.Thickness(8, 0, 8, 0)
+        $btnCopyKey.Margin = New-Object System.Windows.Thickness(0, 0, 6, 0)
+        $btnCopyKey.Background = $conv.ConvertFromString("#334155")
+        $btnCopyKey.Foreground = [System.Windows.Media.Brushes]::White
+        $btnCopyKey.FontWeight = [System.Windows.FontWeights]::Bold
+        $btnCopyKey.FontSize = 11
+        $btnCopyKey.Cursor = [System.Windows.Input.Cursors]::Hand
+        $keyVal = $k.Key
+        $btnCopyKey.Add_Click({
+            [System.Windows.Clipboard]::SetText($keyVal)
+            $txtFooterStatus.Text = "• [COPIED] Đã sao chép License Key $keyVal vào Clipboard!"
+        }.GetNewClosure())
+
+        $btnDelKey = New-Object System.Windows.Controls.Button
+        $btnDelKey.Content = "🗑️ Xóa"
+        $btnDelKey.Height = 28
+        $btnDelKey.Padding = New-Object System.Windows.Thickness(8, 0, 8, 0)
+        $btnDelKey.Background = $conv.ConvertFromString("#FEE2E2")
+        $btnDelKey.Foreground = $conv.ConvertFromString("#BE123C")
+        $btnDelKey.FontWeight = [System.Windows.FontWeights]::Bold
+        $btnDelKey.FontSize = 11
+        $btnDelKey.Cursor = [System.Windows.Input.Cursors]::Hand
+        $btnDelKey.Add_Click({
+            $confirm = [System.Windows.MessageBox]::Show("Bạn có chắc chắn muốn xóa License Key này khỏi kho không?`n`nKey: $keyVal", "Xác Nhận Xóa Key", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+            if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
+                Remove-VUONGTTLicenseKey -Key $keyVal | Out-Null
+                Render-VUONGTTAdminKeys
+                $txtFooterStatus.Text = "• [DELETE] Đã xóa thành công License Key $keyVal khỏi kho."
+            }
+        }.GetNewClosure())
+
+        $spBtns.Children.Add($btnCopyKey) | Out-Null
+        $spBtns.Children.Add($btnDelKey) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($spBtns, 1)
+        $grid.Children.Add($spBtns) | Out-Null
+
+        $card.Child = $grid
+        $panelKeysContainer.Children.Add($card) | Out-Null
+    }
+}
+
+# ================= KẾT NỐI SỰ KIỆN ADMIN & LICENSE =================
+if ($btnHeaderAdmin) {
+    $btnHeaderAdmin.Add_Click({
+        Switch-Tab -TargetTag "AdminPortal"
+    })
+}
+
+if ($btnActivateLicense) {
+    $btnActivateLicense.Add_Click({
+        Show-VUONGTTLicenseActivationModal -PromptNotice "Nhập License Key để mở khóa toàn bộ tính năng cao cấp cho máy tính này."
+    })
+}
+
+if ($btnAdminLogout) {
+    $btnAdminLogout.Add_Click({
+        $global:isAdminAuthenticated = $false
+        Switch-Tab -TargetTag "SysInfo"
+        $txtFooterStatus.Text = "• [LOGOUT] Đã đăng xuất khỏi Trang Quản Trị Viên."
+        [System.Windows.MessageBox]::Show("Bạn đã đăng xuất khỏi Admin Portal an toàn.", "Đăng Xuất Admin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($btnSavePolicies) {
+    $btnSavePolicies.Add_Click({
+        foreach ($fid in $script:adminPolicyCombos.Keys) {
+            $cmb = $script:adminPolicyCombos[$fid]
+            $tier = if ($cmb.SelectedIndex -eq 1) { "PRO" } else { "FREE" }
+            Set-VUONGTTFeaturePolicy -FeatureId $fid -Tier $tier | Out-Null
+        }
+        $txtFooterStatus.Text = "• [SAVED] Đã lưu cấu hình phân quyền tính năng Free/PRO thành công!"
+        [System.Windows.MessageBox]::Show("ĐÃ LƯU CẤU HÌNH PHÂN QUYỀN THÀNH CÔNG!`n`nCác tính năng cấu hình là PRO sẽ yêu cầu License Key khi người dùng Free sử dụng.", "Phân Quyền Tính Năng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($btnResetPolicies) {
+    $btnResetPolicies.Add_Click({
+        $c = [System.Windows.MessageBox]::Show("Bạn có muốn khôi phục phân quyền tính năng về mặc định của nhà sản xuất không?", "Khôi Phục Mặc Định", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+        if ($c -eq [System.Windows.MessageBoxResult]::Yes) {
+            Reset-VUONGTTFeaturePoliciesToDefault | Out-Null
+            Render-VUONGTTAdminPolicies
+            $txtFooterStatus.Text = "• [RESET] Đã khôi phục phân quyền tính năng về mặc định ban đầu."
+        }
+    })
+}
+
+if ($btnGenerateKeys) {
+    $btnGenerateKeys.Add_Click({
+        $cust = if ($txtNewKeyCustomer.Text.Trim()) { $txtNewKeyCustomer.Text.Trim() } else { "Khách Hàng" }
+        $durItem = $cmbNewKeyDuration.SelectedItem
+        $duration = if ($durItem) { $durItem.Content.ToString() } else { "Lifetime" }
+        $count = 1
+        [int]::TryParse($txtNewKeyCount.Text.Trim(), [ref]$count) | Out-Null
+        if ($count -lt 1) { $count = 1 }
+        if ($count -gt 50) { $count = 50 }
+
+        $newCreated = New-VUONGTTLicenseKey -Customer $cust -Duration $duration -Count $count
+        Render-VUONGTTAdminKeys
+
+        if ($newCreated.Count -gt 0) {
+            [System.Windows.Clipboard]::SetText($newCreated[0].Key)
+            $txtFooterStatus.Text = "• [KEY CREATED] Đã tạo thành công $($newCreated.Count) License Key! Đã copy key đầu tiên vào Clipboard."
+            [System.Windows.MessageBox]::Show("TẠO LICENSE KEY THÀNH CÔNG!`n`n- Mã Key: $($newCreated[0].Key)`n- Thời hạn: $duration`n- Khách hàng: $cust`n`n(Đã tự động sao chép mã Key vào Clipboard để bạn gửi cho khách hàng)", "Tạo License Key Mới", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+}
+
+if ($btnAdminChangePassSubmit) {
+    $btnAdminChangePassSubmit.Add_Click({
+        $newP = $pwdAdminChangeNew.Password
+        $cfmP = $pwdAdminChangeConfirm.Password
+        if (-not $newP -or $newP.Length -lt 4) {
+            [System.Windows.MessageBox]::Show("Mật khẩu mới phải có ít nhất 4 ký tự!", "Đổi Mật Khẩu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+        if ($newP -ne $cfmP) {
+            [System.Windows.MessageBox]::Show("Xác nhận mật khẩu mới không khớp! Vui lòng kiểm tra lại.", "Đổi Mật Khẩu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+
+        $res = Set-VUONGTTAdminPassword -NewPassword $newP
+        if ($res) {
+            $pwdAdminChangeNew.Password = ""
+            $pwdAdminChangeConfirm.Password = ""
+            $txtFooterStatus.Text = "• [ADMIN] Đã đổi mật khẩu quản trị viên thành công!"
+            [System.Windows.MessageBox]::Show("ĐÃ ĐỔI MẬT KHẨU ADMIN THÀNH CÔNG!`n`nVui lòng ghi nhớ mật khẩu mới cho các lần đăng nhập tiếp theo.", "Đổi Mật Khẩu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+}
+
+# Modal Login Event Handlers
+if ($btnModalLoginSubmit) {
+    $btnModalLoginSubmit.Add_Click({
+        $authCheck = Test-VUONGTTAdminAuth -Password ""
+        $inputPass = $pwdAdminLogin.Password
+
+        if ($authCheck.IsFirstLogin) {
+            $chkDefault = Test-VUONGTTAdminAuth -Password $inputPass
+            if (-not $chkDefault.IsValid) {
+                $lblAdminLoginError.Text = "Mật khẩu khởi tạo không đúng! Mật khẩu mặc định là 'admin'."
+                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
+                return
+            }
+
+            $newP = $pwdAdminNewPass.Password
+            $cfmP = $pwdAdminConfirmPass.Password
+            if (-not $newP -or $newP.Length -lt 4) {
+                $lblAdminLoginError.Text = "Mật khẩu mới phải có ít nhất 4 ký tự!"
+                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
+                return
+            }
+            if ($newP -ne $cfmP) {
+                $lblAdminLoginError.Text = "Xác nhận mật khẩu mới không khớp!"
+                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
+                return
+            }
+
+            $setRes = Set-VUONGTTAdminPassword -NewPassword $newP
+            if ($setRes) {
+                $global:isAdminAuthenticated = $true
+                $modalAdminLogin.Visibility = [System.Windows.Visibility]::Collapsed
+                [System.Windows.MessageBox]::Show("ĐÃ ĐỔI MẬT KHẨU ADMIN THÀNH CÔNG!`n`nVui lòng ghi nhớ mật khẩu mới để đăng nhập sau này.", "Đổi Mật Khẩu Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                $next = if ($script:adminPendingTab) { $script:adminPendingTab } else { "AdminPortal" }
+                Switch-Tab -TargetTag $next
+            } else {
+                $lblAdminLoginError.Text = "Lỗi khi lưu mật khẩu mới. Vui lòng thử lại!"
+                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
+            }
+        } else {
+            $chk = Test-VUONGTTAdminAuth -Password $inputPass
+            if ($chk.IsValid) {
+                $global:isAdminAuthenticated = $true
+                $modalAdminLogin.Visibility = [System.Windows.Visibility]::Collapsed
+                $next = if ($script:adminPendingTab) { $script:adminPendingTab } else { "AdminPortal" }
+                Switch-Tab -TargetTag $next
+            } else {
+                $lblAdminLoginError.Text = "Mật khẩu Admin không chính xác! Vui lòng thử lại."
+                $lblAdminLoginError.Visibility = [System.Windows.Visibility]::Visible
+            }
+        }
+    })
+}
+
+if ($btnModalLoginCancel) {
+    $btnModalLoginCancel.Add_Click({
+        $modalAdminLogin.Visibility = [System.Windows.Visibility]::Collapsed
+    })
+}
+
+# Modal Activate Pro Event Handlers
+if ($btnModalActivateSubmit) {
+    $btnModalActivateSubmit.Add_Click({
+        $keyInput = $txtModalLicenseKey.Text.Trim()
+        if (-not $keyInput) {
+            $lblActivateError.Text = "Vui lòng nhập mã License Key!"
+            $lblActivateError.Visibility = [System.Windows.Visibility]::Visible
+            return
+        }
+
+        $res = Invoke-VUONGTTKeyActivation -InputKey $keyInput
+        if ($res.Success) {
+            $modalActivatePro.Visibility = [System.Windows.Visibility]::Collapsed
+            Update-VUONGTTLicenseUI
+            $txtFooterStatus.Text = "• [PRO] $($res.Message)"
+            [System.Windows.MessageBox]::Show($res.Message, "Kích Hoạt Bản Quyền PRO Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+
+            if ($script:licensePendingTab) {
+                $target = $script:licensePendingTab
+                $script:licensePendingTab = $null
+                Switch-Tab -TargetTag $target
+            }
+        } else {
+            $lblActivateError.Text = $res.Message
+            $lblActivateError.Visibility = [System.Windows.Visibility]::Visible
+        }
+    })
+}
+
+if ($btnModalActivateCancel) {
+    $btnModalActivateCancel.Add_Click({
+        $modalActivatePro.Visibility = [System.Windows.Visibility]::Collapsed
+    })
+}
+
+# Khởi tạo trạng thái bản quyền ban đầu
+Update-VUONGTTLicenseUI
+
 # Khởi tạo giao diện trang đầu tiên ngay lập tức mà không chặn WMI
 Switch-Tab -TargetTag "SysInfo" -SkipRefresh
 $txtFooterStatus.Text = "• [OK] Đang khởi động hệ thống và nạp thông số phần cứng..."
@@ -3186,6 +3748,7 @@ $window.Add_ContentRendered({
         [System.Windows.Forms.Application]::DoEvents()
     }
     Refresh-SysInfoDisplay
+    Update-VUONGTTLicenseUI
     $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng phục vụ!"
 
     # Kiểm tra bản cập nhật ngầm sau 3.5 giây không làm chậm người dùng

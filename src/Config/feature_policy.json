@@ -1,0 +1,142 @@
+﻿[
+    {
+        "Id":  "SysInfo",
+        "Name":  "Xem Cấu Hình Máy Tính",
+        "Icon":  "💻",
+        "Tier":  "FREE",
+        "Description":  "Xem thông số CPU, RAM, GPU, Mainboard, ổ cứng thời gian thực"
+    },
+    {
+        "Id":  "Customize",
+        "Name":  "Tùy Chỉnh Thông Tin Máy",
+        "Icon":  "🖥️",
+        "Tier":  "FREE",
+        "Description":  "Đổi tên máy tính, Workgroup, chủ sở hữu OEM"
+    },
+    {
+        "Id":  "Users",
+        "Name":  "Quản Lý User \u0026 PC",
+        "Icon":  "👤",
+        "Tier":  "FREE",
+        "Description":  "Quản trị người dùng Windows, reset mật khẩu, kích hoạt Administrator"
+    },
+    {
+        "Id":  "Benchmark",
+        "Name":  "Tốc Độ Ổ Đĩa (Benchmark)",
+        "Icon":  "⚡",
+        "Tier":  "PRO",
+        "Description":  "Đo tốc độ đọc/ghi tuần tự và ngẫu nhiên SSD/HDD chuyên sâu"
+    },
+    {
+        "Id":  "LaptopCheck",
+        "Name":  "Kiểm Tra Laptop \u0026 Ngoại Vi",
+        "Icon":  "🔬",
+        "Tier":  "FREE",
+        "Description":  "Test bàn phím offline, pin chai, loa đa tần, dead pixel, mic, webcam"
+    },
+    {
+        "Id":  "CpuMain",
+        "Name":  "Tra Cứu CPU + Main",
+        "Icon":  "💡",
+        "Tier":  "FREE",
+        "Description":  "Tra cứu độ tương thích socket, chipset mainboard và CPU"
+    },
+    {
+        "Id":  "Office",
+        "Name":  "Cài Đặt Office (Tự Động)",
+        "Icon":  "📑",
+        "Tier":  "FREE",
+        "Description":  "Cài đặt Office 2016-2024 / 365 tự động trọn gói"
+    },
+    {
+        "Id":  "Software",
+        "Name":  "Tải Ứng Dụng Thiết Yếu",
+        "Icon":  "📥",
+        "Tier":  "FREE",
+        "Description":  "Kho phần mềm văn phòng, đồ họa, tiện ích cần thiết"
+    },
+    {
+        "Id":  "CustomApp",
+        "Name":  "Phần Mềm Kế Toán \u0026 Khác",
+        "Icon":  "📊",
+        "Tier":  "FREE",
+        "Description":  "Cài đặt MISA, HTKK, iTaxViewer và ứng dụng doanh nghiệp"
+    },
+    {
+        "Id":  "Uninstaller",
+        "Name":  "Gỡ Phần Mềm \u0026 Dọn Sạch Sâu",
+        "Icon":  "🗑️",
+        "Tier":  "PRO",
+        "Description":  "Gỡ cài đặt hàng loạt và dọn sạch sâu tận gốc Registry/AppData"
+    },
+    {
+        "Id":  "Fonts",
+        "Name":  "Kho Font Tiếng Việt \u0026 AutoCAD",
+        "Icon":  "🔤",
+        "Tier":  "FREE",
+        "Description":  "Cài đặt trọn bộ Font VNI, TCVN3, Unicode và Font AutoCAD .shx"
+    },
+    {
+        "Id":  "Cleaner",
+        "Name":  "Dọn Rác \u0026 Tăng Tốc Win",
+        "Icon":  "🧹",
+        "Tier":  "FREE",
+        "Description":  "Xóa cache tạm, dọn dẹp hệ điều hành và tối ưu hóa"
+    },
+    {
+        "Id":  "Tweaks",
+        "Name":  "Tinh Chỉnh Hệ Thống",
+        "Icon":  "⚙️",
+        "Tier":  "PRO",
+        "Description":  "Tối ưu hóa Windows sâu, tắt telemetry, tăng tốc đồ họa \u0026 game"
+    },
+    {
+        "Id":  "PrinterLAN",
+        "Name":  "Sửa Lỗi Máy In \u0026 Mạng LAN",
+        "Icon":  "🖨️",
+        "Tier":  "PRO",
+        "Description":  "Khắc phục lỗi chia sẻ máy in 0x0000011b, 0x00000709 và thông mạng LAN"
+    },
+    {
+        "Id":  "BackupDriver",
+        "Name":  "Sao Lưu / Phục Hồi Driver",
+        "Icon":  "💾",
+        "Tier":  "PRO",
+        "Description":  "Backup toàn bộ driver thiết bị và phục hồi tự động khi cài lại máy"
+    },
+    {
+        "Id":  "DevMgmt",
+        "Name":  "Quản Lý Thiết Bị Phần Cứng",
+        "Icon":  "🔌",
+        "Tier":  "FREE",
+        "Description":  "Quản lý Device Manager, kiểm tra driver thiếu hoặc lỗi"
+    },
+    {
+        "Id":  "Activation",
+        "Name":  "Kích Hoạt Bản Quyền Số",
+        "Icon":  "🔑",
+        "Tier":  "PRO",
+        "Description":  "Kích hoạt bản quyền kỹ thuật số vĩnh viễn cho Windows \u0026 Office"
+    },
+    {
+        "Id":  "BitLocker",
+        "Name":  "Tắt BitLocker \u0026 EFS",
+        "Icon":  "🔒",
+        "Tier":  "PRO",
+        "Description":  "Mở khóa và giải mã phân vùng ổ đĩa an toàn"
+    },
+    {
+        "Id":  "AutoWin",
+        "Name":  "Cài Win \u0026 Bypass TPM 2.0",
+        "Icon":  "🚀",
+        "Tier":  "PRO",
+        "Description":  "Cài đặt Windows tự động, vượt rào TPM 2.0 / SecureBoot / RAM"
+    },
+    {
+        "Id":  "Partition",
+        "Name":  "Quản Lý Phân Vùng (Partition)",
+        "Icon":  "💽",
+        "Tier":  "PRO",
+        "Description":  "Sơ đồ đĩa live, TRIM SSD, chuyển MBR sang GPT không mất dữ liệu"
+    }
+]

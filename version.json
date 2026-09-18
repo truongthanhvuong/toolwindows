@@ -1,12 +1,11 @@
 {
-  "version": "20.5.908.34",
+  "version": "20.5.908.35",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Tích hợp thông tin Bản quyền © 2026 VUONGTT, khối Ủng hộ MoMo: 0328808425 (Trương Thanh Vương) hỗ trợ 1-Click Copy vào Clipboard và Điều khoản Miễn trừ trách nhiệm pháp lý chuẩn mực tại Sidebar, Footer và Trang Thông Tin Hệ Thống.",
-    "Sửa lỗi Test Màn Hình Full Màu (Dead Pixel): Khắc phục triệt để lỗi bấm chuột/bàn phím không đổi màu (fix scope index biến, thêm Tunneling Preview Events, hỗ trợ Click trái/phải, phím Space/Mũi tên và Cuộn chuột siêu nhạy).",
-    "Nâng cấp kho Font Chữ Tiếng Việt & Bổ sung Trọn Bộ Font AutoCAD (.SHX & TTF): Tự động phát hiện tất cả các phiên bản AutoCAD trên máy để nạp font bản vẽ kỹ thuật chống lỗi ???, hỗ trợ nạp tùy chọn từ file ZIP/thư mục và đăng ký GDI Windows realtime.",
-    "Nâng cấp động cơ kiểm tra cập nhật Realtime Dual-Engine cho AppUpdater loại bỏ 100% độ trễ CDN Fastly cache 5 phút.",
-    "Tích hợp tính năng Tick chọn và Gỡ bỏ hàng loạt phần mềm (Batch Multi-Select Uninstaller & Batch Deep Clean)."
+    "Tích hợp Trang Quản Trị Viên (Admin Portal): Bảo mật bằng mật khẩu băm SHA-256, bắt buộc đổi mật khẩu mới trong lần đầu đăng nhập để kiểm soát toàn diện công cụ.",
+    "Hệ thống Phân Quyền Tính Năng Động (Dynamic Free vs PRO Tiers): Cho phép Quản trị viên chuyển đổi tự do 20 tính năng giữa FREE và PRO; tự động khóa và chặn người dùng Free khi truy cập tính năng PRO.",
+    "Động cơ Tạo & Quản Lý License Key Khóa Phần Cứng (Single-Use HWID Lock): Tự động mã hóa gắn chặt License Key với mã phần cứng duy nhất (BIOS + Mainboard + CPU ID) của 1 máy tính, ngăn chặn tuyệt đối việc sao chép hoặc kích hoạt trên máy khác, hỗ trợ tạo, sao chép và xóa key trực tiếp trong Admin Portal.",
+    "Tích hợp giao diện Badge bản quyền động (FREE VERSION / PRO • LIFETIME) và Modal Kích hoạt License Key một chạm siêu mượt."
   ]
 }

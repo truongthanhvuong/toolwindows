@@ -1,4 +1,4 @@
-﻿# =========================================================================
+# =========================================================================
 #   VUONGTT TOOLKIT 2026 - EXE COMPILER SCRIPT
 #   Bien dich toan bo ma nguon thanh 1 file VUONGTT_Toolkit.exe duy nhat
 # =========================================================================
@@ -42,7 +42,8 @@ $resources = @(
     "/resource:`"$RootDir\src\Core\FontInstaller.ps1`",VUONGTT.FontInstaller.ps1",
     "/resource:`"$RootDir\src\Core\PartitionManager.ps1`",VUONGTT.PartitionManager.ps1",
     "/resource:`"$RootDir\src\Core\AccountingApps.ps1`",VUONGTT.AccountingApps.ps1",
-    "/resource:`"$RootDir\src\Core\AppUpdater.ps1`",VUONGTT.AppUpdater.ps1"
+    "/resource:`"$RootDir\src\Core\AppUpdater.ps1`",VUONGTT.AppUpdater.ps1",
+    "/resource:`"$RootDir\src\Core\LicenseManager.ps1`",VUONGTT.LicenseManager.ps1"
 )
 
 $references = @(
