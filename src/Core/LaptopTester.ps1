@@ -99,8 +99,10 @@ function Start-ScreenDeadPixelTest {
 </Window>
 "@
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
-        $win = [System.Windows.Markup.XamlReader]::Load($reader)
+        $win = [System.Windows.Markup.XamlReader]::Parse($xaml)
+        if ($null -eq $win) {
+            throw "Không thể tạo cửa sổ kiểm tra màn hình (XamlReader trả về null)."
+        }
 
         $colorList = @(
             @{ Name = "[1/9] MÀU ĐỎ (PURE RED) - Kiểm tra điểm chết sub-pixel đỏ"; Brush = [System.Windows.Media.Brushes]::Red; IsDark = $false },
@@ -163,7 +165,9 @@ function Start-VisualKeyboardTest {
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="VUONGTT Keyboard Tester Pro 2026 - Kiểm Tra Bàn Phím Trực Quan Offline"
         Width="980" Height="450" WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        Background="#0F172A" Topmost="True">
+        Background="#0F172A" Topmost="True"
+        FontFamily="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI, sans-serif"
+        TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
     <Window.Resources>
         <Style x:Key="KeyStyle" TargetType="Border">
             <Setter Property="Background" Value="#1E293B"/>
@@ -209,17 +213,17 @@ function Start-VisualKeyboardTest {
                 <!-- Function Row: Esc, F1-F12 -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                     <Border x:Name="k_Escape" Style="{StaticResource KeyStyle}" Width="48"><TextBlock Text="Esc" Style="{StaticResource KeyText}"/></Border>
-                    <Canvas Width="20"/>
+                    <Border Width="20"/>
                     <Border x:Name="k_F1" Style="{StaticResource KeyStyle}"><TextBlock Text="F1" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_F2" Style="{StaticResource KeyStyle}"><TextBlock Text="F2" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_F3" Style="{StaticResource KeyStyle}"><TextBlock Text="F3" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_F4" Style="{StaticResource KeyStyle}"><TextBlock Text="F4" Style="{StaticResource KeyText}"/></Border>
-                    <Canvas Width="15"/>
+                    <Border Width="15"/>
                     <Border x:Name="k_F5" Style="{StaticResource KeyStyle}"><TextBlock Text="F5" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_F6" Style="{StaticResource KeyStyle}"><TextBlock Text="F6" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_F7" Style="{StaticResource KeyStyle}"><TextBlock Text="F7" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_F8" Style="{StaticResource KeyStyle}"><TextBlock Text="F8" Style="{StaticResource KeyText}"/></Border>
-                    <Canvas Width="15"/>
+                    <Border Width="15"/>
                     <Border x:Name="k_F9" Style="{StaticResource KeyStyle}"><TextBlock Text="F9" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_F10" Style="{StaticResource KeyStyle}"><TextBlock Text="F10" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_F11" Style="{StaticResource KeyStyle}"><TextBlock Text="F11" Style="{StaticResource KeyText}"/></Border>
@@ -259,12 +263,12 @@ function Start-VisualKeyboardTest {
                     <Border x:Name="k_P" Style="{StaticResource KeyStyle}"><TextBlock Text="P" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_OemOpenBrackets" Style="{StaticResource KeyStyle}"><TextBlock Text="[" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_Oem6" Style="{StaticResource KeyStyle}"><TextBlock Text="]" Style="{StaticResource KeyText}"/></Border>
-                    <Border x:Name="k_Oem5" Style="{StaticResource KeyStyle}" Width="55"><TextBlock Text="\" Style="{StaticResource KeyText}"/></Border>
+                    <Border x:Name="k_Oem5" Style="{StaticResource KeyStyle}" Width="52"><TextBlock Text="\" Style="{StaticResource KeyText}"/></Border>
                 </StackPanel>
 
                 <!-- ASDF Row -->
                 <StackPanel Orientation="Horizontal">
-                    <Border x:Name="k_Capital" Style="{StaticResource KeyStyle}" Width="75"><TextBlock Text="Caps Lock" Style="{StaticResource KeyText}"/></Border>
+                    <Border x:Name="k_Capital" Style="{StaticResource KeyStyle}" Width="78"><TextBlock Text="Caps Lock" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_A" Style="{StaticResource KeyStyle}"><TextBlock Text="A" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_S" Style="{StaticResource KeyStyle}"><TextBlock Text="S" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_D" Style="{StaticResource KeyStyle}"><TextBlock Text="D" Style="{StaticResource KeyText}"/></Border>
@@ -276,12 +280,12 @@ function Start-VisualKeyboardTest {
                     <Border x:Name="k_L" Style="{StaticResource KeyStyle}"><TextBlock Text="L" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_Oem1" Style="{StaticResource KeyStyle}"><TextBlock Text=";" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_OemQuotes" Style="{StaticResource KeyStyle}"><TextBlock Text="'" Style="{StaticResource KeyText}"/></Border>
-                    <Border x:Name="k_Return" Style="{StaticResource KeyStyle}" Width="85"><TextBlock Text="Enter" Style="{StaticResource KeyText}"/></Border>
+                    <Border x:Name="k_Return" Style="{StaticResource KeyStyle}" Width="92"><TextBlock Text="Enter ↵" Style="{StaticResource KeyText}"/></Border>
                 </StackPanel>
 
                 <!-- ZXCV Row -->
                 <StackPanel Orientation="Horizontal">
-                    <Border x:Name="k_LeftShift" Style="{StaticResource KeyStyle}" Width="95"><TextBlock Text="Shift" Style="{StaticResource KeyText}"/></Border>
+                    <Border x:Name="k_LeftShift" Style="{StaticResource KeyStyle}" Width="98"><TextBlock Text="Shift ⇧" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_Z" Style="{StaticResource KeyStyle}"><TextBlock Text="Z" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_X" Style="{StaticResource KeyStyle}"><TextBlock Text="X" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_C" Style="{StaticResource KeyStyle}"><TextBlock Text="C" Style="{StaticResource KeyText}"/></Border>
@@ -292,10 +296,10 @@ function Start-VisualKeyboardTest {
                     <Border x:Name="k_OemComma" Style="{StaticResource KeyStyle}"><TextBlock Text="," Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_OemPeriod" Style="{StaticResource KeyStyle}"><TextBlock Text="." Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_OemQuestion" Style="{StaticResource KeyStyle}"><TextBlock Text="/" Style="{StaticResource KeyText}"/></Border>
-                    <Border x:Name="k_RightShift" Style="{StaticResource KeyStyle}" Width="110"><TextBlock Text="Right Shift" Style="{StaticResource KeyText}"/></Border>
+                    <Border x:Name="k_RightShift" Style="{StaticResource KeyStyle}" Width="118"><TextBlock Text="Shift ⇧" Style="{StaticResource KeyText}"/></Border>
                 </StackPanel>
 
-                <!-- Bottom Row: Ctrl, Win, Alt, Space, Arrows -->
+                <!-- Bottom Row: Ctrl, Win, Alt, Space, Alt, Ctrl, Arrows -->
                 <StackPanel Orientation="Horizontal">
                     <Border x:Name="k_LeftCtrl" Style="{StaticResource KeyStyle}" Width="65"><TextBlock Text="Ctrl" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_LWin" Style="{StaticResource KeyStyle}" Width="55"><TextBlock Text="Win" Style="{StaticResource KeyText}"/></Border>
@@ -303,11 +307,11 @@ function Start-VisualKeyboardTest {
                     <Border x:Name="k_Space" Style="{StaticResource KeyStyle}" Width="240"><TextBlock Text="Spacebar" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_RightAlt" Style="{StaticResource KeyStyle}" Width="55"><TextBlock Text="Alt" Style="{StaticResource KeyText}"/></Border>
                     <Border x:Name="k_RightCtrl" Style="{StaticResource KeyStyle}" Width="65"><TextBlock Text="Ctrl" Style="{StaticResource KeyText}"/></Border>
-                    <Canvas Width="20"/>
+                    <Border Width="20"/>
                     <Border x:Name="k_Left" Style="{StaticResource KeyStyle}"><TextBlock Text="◄" Style="{StaticResource KeyText}"/></Border>
                     <StackPanel>
-                        <Border x:Name="k_Up" Style="{StaticResource KeyStyle}" Height="19.5"><TextBlock Text="▲" Style="{StaticResource KeyText}" FontSize="9"/></Border>
-                        <Border x:Name="k_Down" Style="{StaticResource KeyStyle}" Height="19.5"><TextBlock Text="▼" Style="{StaticResource KeyText}" FontSize="9"/></Border>
+                        <Border x:Name="k_Up" Style="{StaticResource KeyStyle}" Height="20"><TextBlock Text="▲" Style="{StaticResource KeyText}" FontSize="9"/></Border>
+                        <Border x:Name="k_Down" Style="{StaticResource KeyStyle}" Height="20"><TextBlock Text="▼" Style="{StaticResource KeyText}" FontSize="9"/></Border>
                     </StackPanel>
                     <Border x:Name="k_Right" Style="{StaticResource KeyStyle}"><TextBlock Text="►" Style="{StaticResource KeyText}"/></Border>
                 </StackPanel>
@@ -321,8 +325,10 @@ function Start-VisualKeyboardTest {
 </Window>
 "@
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
-        $win = [System.Windows.Markup.XamlReader]::Load($reader)
+        $win = [System.Windows.Markup.XamlReader]::Parse($xaml)
+        if ($null -eq $win) {
+            throw "Không thể tạo cửa sổ kiểm tra bàn phím (XamlReader trả về null)."
+        }
 
         $txtKeyStatus = $win.FindName("txtKeyStatus")
         $txtKeyCount  = $win.FindName("txtKeyCount")

@@ -1,12 +1,12 @@
 {
-  "version": "20.5.908.28",
+  "version": "20.5.908.29",
   "releaseDate": "18/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Sửa lỗi xuất file Excel/CSV: Tích hợp SaveFileDialog chuẩn, tự động nhận diện OneDrive Desktop.",
-    "Khắc phục hiển thị Driver thiếu bị rỗng tên (Mã lỗi 28): Nhận diện Vendor PCI NVIDIA, AMD, Realtek, Intel.",
-    "Bổ sung hệ thống phát hiện Card Màn Hình Rời Multi-GPU: Hiển thị song song GPU 0 (iGPU) và GPU 1 (dGPU Card Rời).",
-    "Phát hiện Card rời NVIDIA/AMD ngay cả khi chưa cài Driver (kèm cảnh báo và hướng dẫn cài đặt).",
-    "Gán Hardware ID thực tế cho GPU (thay vì cố định VEN_10DE DEV_PCI)."
+    "Sửa triệt để bug mở Trình Test Bàn Phím (Offline) - Chuyển sang XamlReader::Parse và loại bỏ hoàn toàn lỗi Exception calling ShowDialog on null.",
+    "Nâng cấp toàn bộ hệ thống Typography sang hệ Font Apple cao cấp (SF Pro Display, SF Pro Text, -apple-system, Segoe UI Variable Display).",
+    "Bật chế độ hiển thị ClearType Subpixel Rendering & Display Formatting Mode siêu nét chuẩn Retina.",
+    "Đồng bộ hóa giao diện Apple Font cho cửa sổ chính, modal Office và các công cụ chẩn đoán phần cứng.",
+    "Đảm bảo toàn bộ mã nguồn lưu chuẩn UTF-8 with BOM tương thích 100% với Windows PowerShell 5.1 và compiled EXE."
   ]
 }

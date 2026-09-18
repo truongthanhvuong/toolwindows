@@ -4,42 +4,45 @@
         Height="550" Width="840"
         WindowStartupLocation="CenterScreen"
         Background="#F4F6F9"
-        FontFamily="Times New Roman"
+        FontFamily="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI Variable Text, Segoe UI, sans-serif"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        RenderOptions.ClearTypeHint="Enabled"
         ResizeMode="CanMinimize">
 
     <Window.Resources>
         <Style TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Times New Roman"/>
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI Variable Text, Segoe UI, sans-serif"/>
             <Setter Property="Foreground" Value="#0F172A"/>
         </Style>
 
         <Style TargetType="CheckBox">
-            <Setter Property="FontFamily" Value="Times New Roman"/>
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI Variable Text, Segoe UI, sans-serif"/>
             <Setter Property="Foreground" Value="#0F172A"/>
             <Setter Property="FontSize" Value="13.5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <Style TargetType="RadioButton">
-            <Setter Property="FontFamily" Value="Times New Roman"/>
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI Variable Text, Segoe UI, sans-serif"/>
             <Setter Property="Foreground" Value="#0F172A"/>
             <Setter Property="FontSize" Value="13.5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <Style TargetType="GroupBox">
-            <Setter Property="FontFamily" Value="Times New Roman"/>
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI Variable Text, Segoe UI, sans-serif"/>
             <Setter Property="Foreground" Value="#0F172A"/>
             <Setter Property="BorderBrush" Value="#CBD5E1"/>
         </Style>
 
         <Style TargetType="ComboBox">
-            <Setter Property="FontFamily" Value="Times New Roman"/>
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI Variable Text, Segoe UI, sans-serif"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
 
         <Style x:Key="DlgBtn" TargetType="Button">
-            <Setter Property="FontFamily" Value="Times New Roman"/>
+            <Setter Property="FontFamily" Value="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI Variable Text, Segoe UI, sans-serif"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Bold"/>
