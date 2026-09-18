@@ -3111,23 +3111,49 @@ if ($btnClearPartitionLog) {
     })
 }
 
-$btnLaunchMAS    = Get-Control "btnLaunchMAS"
-$btnCheckStatus  = Get-Control "btnCheckStatus"
-$btnCleanCrack   = Get-Control "btnCleanCrack"
-$txtActivationLog = Get-Control "txtActivationLog"
+$btnLaunchMAS         = Get-Control "btnLaunchMAS"
+$btnCheckStatus       = Get-Control "btnCheckStatus"
+$btnCleanCrack        = Get-Control "btnCleanCrack"
+$btnCopyActivationKey = Get-Control "btnCopyActivationKey"
+$txtActivationLog     = Get-Control "txtActivationLog"
 
 $btnLaunchMAS.Add_Click({
     $txtActivationLog.Text = "Đang khởi chạy Massgrave MAS bản quyền số chính thức..."
     Invoke-VUONGTTMAS
 })
 $btnCheckStatus.Add_Click({
+    $txtActivationLog.Text = "Đang tiến hành kiểm tra sâu bản quyền Windows, Office và trích xuất Product Key..."
+    [System.Windows.Forms.Application]::DoEvents()
     $st = Get-VUONGTTActivationStatus
-    $txtActivationLog.Text = "KẾT QUẢ KIỂM TRA BẢN QUYỀN:`n- Windows: $($st.Windows)`n- Office:  $($st.Office)"
+    $txtActivationLog.Text = $st.DetailedReport
+    if ($txtFooterStatus) {
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tất kiểm tra sâu bản quyền hệ thống & Product Key!"
+    }
 })
 $btnCleanCrack.Add_Click({
     $log = Invoke-VUONGTTCleanCrack
     $txtActivationLog.Text = $log
 })
+if ($btnCopyActivationKey) {
+    $btnCopyActivationKey.Add_Click({
+        $contentToCopy = $txtActivationLog.Text
+        if (-not $contentToCopy -or $contentToCopy.Length -lt 20 -or $contentToCopy -like "*Sẵn sàng*") {
+            $st = Get-VUONGTTActivationStatus
+            $contentToCopy = $st.DetailedReport
+            $txtActivationLog.Text = $contentToCopy
+        }
+        try {
+            [System.Windows.Clipboard]::SetText($contentToCopy)
+            if ($txtFooterStatus) {
+                $txtFooterStatus.Text = "• [OK] Đã sao chép toàn bộ thông tin Key & Bản quyền vào Clipboard!"
+            }
+        } catch {
+            if ($txtFooterStatus) {
+                $txtFooterStatus.Text = "• [LỖI] Không thể sao chép vào Clipboard: $($_.Exception.Message)"
+            }
+        }
+    })
+}
 
 $btnCheckBitLocker   = Get-Control "btnCheckBitLocker"
 $btnSuspendBitLocker = Get-Control "btnSuspendBitLocker"
