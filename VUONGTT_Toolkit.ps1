@@ -4305,8 +4305,22 @@ Bạn có muốn tải và tự động cập nhật ngay bây giờ không?
             [System.Windows.MessageBox]::Show("KHÔNG THỂ KẾT NỐI MÁY CHỦ CẬP NHẬT!`n`n$($info.Message)", "Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
         } else {
             $txtFooterStatus.Text = "• [OK] Bạn đang dùng phiên bản mới nhất (v$($info.CurrentVersion))!"
-            $msg = "BẠN ĐANG SỬ DỤNG PHIÊN BẢN MỚI NHẤT!`n`n- Phiên bản: v$($info.CurrentVersion)`n- Hệ thống không tìm thấy bản cập nhật nào mới hơn."
-            [System.Windows.MessageBox]::Show($msg, "Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            $changeText = if ($info.Changelog) { ($info.Changelog -join "`n• ") } else { "Đã cập nhật toàn bộ tính năng và sửa lỗi mới nhất." }
+            $msg = @"
+BẠN ĐANG SỬ DỤNG PHIÊN BẢN MỚI NHẤT!
+=====================================================
+• Phiên bản hiện tại:  v$($info.CurrentVersion) (Mới nhất)
+• Ngày phát hành:      $($info.ReleaseDate)
+• Trạng thái kết nối:  Trực tuyến (GitHub Verified)
+
+BẢNG NÂNG CẤP & ĐIỂM MỚI TRONG BẢN NÀY:
+• $changeText
+
+=====================================================
+Hệ thống không tìm thấy bản cập nhật nào mới hơn.
+Toàn bộ tính năng mới đã sẵn sàng phục vụ!
+"@
+            [System.Windows.MessageBox]::Show($msg, "Bảng Nâng Cấp & Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
         }
     })
 }
