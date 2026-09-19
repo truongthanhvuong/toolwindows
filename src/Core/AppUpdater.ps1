@@ -61,7 +61,7 @@ function Get-VUONGTTAppUpdateInfo {
             # - Khi máy khách chạy ngầm định kỳ: Dùng Fastly Raw CDN không giới hạn rate limit.
             if ($ForceApi) {
                 try {
-                    $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main&ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+                    $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main"
                     $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
                     $apiReq.Proxy = $null
                     $apiReq.Timeout = $TimeoutSec * 1000
@@ -80,7 +80,10 @@ function Get-VUONGTTAppUpdateInfo {
                     if ($apiObj -and $apiObj.content) {
                         $cleanBase64 = $apiObj.content -replace '\s+', ''
                         $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                        $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+                            $bytes = $bytes[3..($bytes.Length - 1)]
+                        }
+                        $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes).Trim()
                     }
                 } catch {}
             }
@@ -114,7 +117,7 @@ function Get-VUONGTTAppUpdateInfo {
             # Fallback sang REST API nếu Raw CDN tạm thời chưa sẵn sàng
             if (-not $jsonText -and -not $ForceApi) {
                 try {
-                    $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main&ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+                    $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main"
                     $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
                     $apiReq.Proxy = $null
                     $apiReq.Timeout = $TimeoutSec * 1000
@@ -131,7 +134,10 @@ function Get-VUONGTTAppUpdateInfo {
                     if ($apiObj -and $apiObj.content) {
                         $cleanBase64 = $apiObj.content -replace '\s+', ''
                         $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                        $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+                            $bytes = $bytes[3..($bytes.Length - 1)]
+                        }
+                        $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes).Trim()
                     }
                 } catch {}
             }

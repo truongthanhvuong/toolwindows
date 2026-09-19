@@ -1,4 +1,4 @@
-﻿# =========================================================================
+# =========================================================================
 #   VUONGTT TOOLKIT 2026 - EXE COMPILER SCRIPT
 #   Bien dich toan bo ma nguon thanh 1 file VUONGTT_Toolkit.exe duy nhat
 # =========================================================================
@@ -47,6 +47,7 @@ $resources = @(
     "/resource:`"$RootDir\src\Core\IpScanner.ps1`",VUONGTT.IpScanner.ps1",
     "/resource:`"$RootDir\src\Core\ConfigManager.ps1`",VUONGTT.ConfigManager.ps1",
     "/resource:`"$RootDir\src\Core\DiskHealthManager.ps1`",VUONGTT.DiskHealthManager.ps1",
+    "/resource:`"$RootDir\src\Config\licenses_vault.json`",VUONGTT.licenses_vault.json",
     "/resource:`"$RootDir\src\Data\SoftwareDatabase.json`",VUONGTT.SoftwareDatabase.json",
     "/resource:`"$RootDir\version.json`",VUONGTT.version.json"
 )

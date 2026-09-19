@@ -344,9 +344,9 @@ function Save-VUONGTTLicenseVault {
     param([array]$KeyList, [switch]$SkipCloudPush)
     $cleanList = @()
     foreach ($k in $KeyList) {
-        if ($k -and $k.Key -and ($k.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
+        if ($k -and $k.Key -and ($k.Key.Trim().Length -eq 25) -and ($k.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
             $cleanList += [PSCustomObject]@{
-                Key           = [string]$k.Key
+                Key           = [string]$k.Key.Trim()
                 Customer      = [string]$k.Customer
                 Duration      = [string]$k.Duration
                 CreatedDate   = [string]$k.CreatedDate
@@ -377,6 +377,13 @@ function Save-VUONGTTLicenseVault {
 
 function Init-VUONGTTLicenseVault {
     if (-not (Test-Path $script:VAULT_FILE)) {
+        $localVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
+        if (Test-Path $localVault) {
+            try {
+                Copy-Item -Path $localVault -Destination $script:VAULT_FILE -Force
+                return
+            } catch {}
+        }
         # Tự động nạp sẵn các key pre-approved để Admin luôn nhìn thấy trong kho
         $initList = @()
         foreach ($k in $script:PREAPPROVED_MASTER_KEYS) {
@@ -478,11 +485,11 @@ function Get-VUONGTTAllLicenses {
 
                 $validList = @()
                 foreach ($item in $rawItems) {
-                    if ($item -and $item.Key -and ($item.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
+                    if ($item -and $item.Key -and ($item.Key.Trim().Length -eq 25) -and ($item.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
                         $validList += $item
                     } elseif ($item -and ($item.PSObject.Properties.Name -contains "value")) {
                         foreach ($sub in $item.value) {
-                            if ($sub -and $sub.Key -and ($sub.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
+                            if ($sub -and $sub.Key -and ($sub.Key.Trim().Length -eq 25) -and ($sub.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
                                 $validList += $sub
                             }
                         }
@@ -653,7 +660,10 @@ function Sync-VUONGTTCloudAdminData {
                 if ($apiObj -and $apiObj.content) {
                     $cleanBase64 = $apiObj.content -replace '\s+', ''
                     $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                    $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+                        $bytes = $bytes[3..($bytes.Length - 1)]
+                    }
+                    $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes).Trim()
                 }
             } catch {}
         }
@@ -671,17 +681,18 @@ function Sync-VUONGTTCloudAdminData {
         $localKeysMissingOnCloud = $false
 
         foreach ($k in $localVault) {
-            if ($k -and $k.Key -and ($k.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
+            if ($k -and $k.Key -and ($k.Key.Trim().Length -eq 25) -and ($k.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
                 $mergedMap[$k.Key.Trim()] = $k
             }
         }
 
+        $cloudItems = @()
         if ($cloudVaultJson) {
             $cleanVaultText = $cloudVaultJson.TrimStart([char]0xFEFF).Trim()
             $cloudItems = @(ConvertFrom-Json $cleanVaultText)
             $cloudKeySet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
             foreach ($ck in $cloudItems) {
-                if ($ck -and $ck.Key -and ($ck.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
+                if ($ck -and $ck.Key -and ($ck.Key.Trim().Length -eq 25) -and ($ck.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
                     $cKeyClean = $ck.Key.Trim()
                     $cloudKeySet.Add($cKeyClean) | Out-Null
                     if ($mergedMap.ContainsKey($cKeyClean)) {
@@ -717,7 +728,8 @@ function Sync-VUONGTTCloudAdminData {
         }
 
         $allKeysList = @($mergedMap.Values)
-        if ($localKeysMissingOnCloud) {
+        $cloudHasDirtyItems = ($cloudItems.Count -ne $allKeysList.Count)
+        if ($localKeysMissingOnCloud -or $cloudHasDirtyItems -or $syncResult.VaultUpdated) {
             Save-VUONGTTLicenseVault -KeyList $allKeysList
         } else {
             Save-VUONGTTLicenseVault -KeyList $allKeysList -SkipCloudPush
@@ -744,7 +756,10 @@ function Sync-VUONGTTCloudAdminData {
                 if ($pObj -and $pObj.content) {
                     $cleanBase64 = $pObj.content -replace '\s+', ''
                     $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                    $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+                        $bytes = $bytes[3..($bytes.Length - 1)]
+                    }
+                    $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes).Trim()
                 }
             } catch {}
         }

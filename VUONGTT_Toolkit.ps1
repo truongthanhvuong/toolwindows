@@ -4830,7 +4830,7 @@ function Render-VUONGTTAdminKeys {
     $panelKeysContainer.Children.Clear()
 
     $rawKeys = Get-VUONGTTAllLicenses
-    $keys = @($rawKeys | Where-Object { $_ -and $_.Key -and ($_.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$') })
+    $keys = @($rawKeys | Where-Object { $_ -and $_.Key -and ($_.Key.Trim().Length -eq 25) -and ($_.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$') })
     $totalCount = $keys.Count
     $usedCount  = @($keys | Where-Object { $_.IsUsed -eq $true -or [string]$_.IsUsed -eq "True" }).Count
     $freeCount  = $totalCount - $usedCount
@@ -4859,7 +4859,7 @@ function Render-VUONGTTAdminKeys {
 
     $conv = [System.Windows.Media.BrushConverter]::new()
     foreach ($k in $displayKeys) {
-        if (-not $k -or -not $k.Key -or ($k.Key.Trim() -notmatch '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) { continue }
+        if (-not $k -or -not $k.Key -or ($k.Key.Trim().Length -ne 25) -or ($k.Key.Trim() -notmatch '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) { continue }
         $card = New-Object System.Windows.Controls.Border
         $card.Background = $window.Resources["CardInnerBgBrush"]
         $card.BorderBrush = if ($k.IsUsed) { $conv.ConvertFromString("#FCA5A5") } else { $conv.ConvertFromString("#A7F3D0") }
