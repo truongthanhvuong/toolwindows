@@ -1,4 +1,4 @@
-﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
+# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
 $script:APP_CURRENT_VERSION = "20.5.908.46"
@@ -99,7 +99,8 @@ function Get-VUONGTTAppUpdateInfo {
         }
 
         if ($jsonText) {
-            $data = ConvertFrom-Json $jsonText
+            $cleanJson = $jsonText.Trim().Trim([char]0xFEFF)
+            $data = ConvertFrom-Json $cleanJson
             $result.IsOnline = $true
             if ($data.version) {
                 $result.LatestVersion = $data.version
