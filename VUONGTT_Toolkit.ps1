@@ -2798,7 +2798,10 @@ $btnRunSurfaceScan    = Get-Control "btnRunSurfaceScan"
 $btnCopyDiskReport    = Get-Control "btnCopyDiskReport"
 $btnRunCpuBenchmark   = Get-Control "btnRunCpuBenchmark"
 $btnRunRamBenchmark   = Get-Control "btnRunRamBenchmark"
+$btnCheckPowerHours   = Get-Control "btnCheckPowerHours"
 $txtBenchmarkResult2  = Get-Control "txtBenchmarkResult2"
+$txtSessionUptime     = Get-Control "txtSessionUptime"
+$txtPowerHoursRating  = Get-Control "txtPowerHoursRating"
 
 $script:cachedDiskHealthList = @()
 
@@ -2852,10 +2855,18 @@ function Select-VUONGTTDiskIndex {
 
     # Stats & Specs
     if ($txtPowerHours) {
-        $txtPowerHours.Text = if ($d.PowerOnHours) { "$($d.PowerOnHours) Giờ (~$([math]::Round($d.PowerOnHours / 24, 0)) Ngày)" } else { "N/A (Ảo hóa/Không hỗ trợ)" }
+        $pohFmt = [string]::Format('{0:N0}', $d.PowerOnHours)
+        $txtPowerHours.Text = "$pohFmt Giờ (~$([math]::Round($d.PowerOnHours / 24, 0)) Ngày)"
     }
     if ($txtPowerCount) {
-        $txtPowerCount.Text = if ($d.PowerOnCount) { "$($d.PowerOnCount) Lần" } else { "N/A" }
+        $pocFmt = [string]::Format('{0:N0}', $d.PowerOnCount)
+        $txtPowerCount.Text = "$pocFmt Lần"
+    }
+    if ($txtSessionUptime) {
+        $txtSessionUptime.Text = if ($d.SessionUptime) { $d.SessionUptime } else { "Đang hoạt động" }
+    }
+    if ($txtPowerHoursRating) {
+        $txtPowerHoursRating.Text = if ($d.PowerHoursRating) { $d.PowerHoursRating } else { "Tốt • Bền Bỉ" }
     }
     if ($txtRemainingLife) {
         $txtRemainingLife.Text = "$($d.HealthPct)% (Tuổi thọ chip Flash)"
@@ -2962,6 +2973,25 @@ if ($btnRefreshDiskHealth) {
         $txtFooterStatus.Text = "• [SCAN] Đang quét lại thông tin sức khỏe và S.M.A.R.T ổ cứng..."
         Refresh-VUONGTTDiskHealthUI
         $txtFooterStatus.Text = "• [OK] Đã cập nhật xong tình trạng sức khỏe ổ đĩa!"
+    })
+}
+
+if ($btnCheckPowerHours) {
+    $btnCheckPowerHours.Add_Click({
+        $curDisk = if ($script:cachedDiskHealthList -and $cmbDiskSelect -and $cmbDiskSelect.SelectedIndex -ge 0) { $script:cachedDiskHealthList[$cmbDiskSelect.SelectedIndex] } else { $null }
+        if (-not $curDisk -and $script:cachedDiskHealthList.Count -gt 0) { $curDisk = $script:cachedDiskHealthList[0] }
+        if ($curDisk) {
+            $txtFooterStatus.Text = "• [SCAN] Đang phân tích chi tiết thời gian vận hành và lịch sử bật máy..."
+            if ($txtBenchmarkResult2) {
+                $txtBenchmarkResult2.Text = "⏳ Đang phân tích chi tiết tổng số giờ hoạt động, thời gian bật máy hiện tại và lịch sử bật/tắt nguồn..."
+            }
+            Invoke-VUONGTTDoEvents
+            $analysis = Get-VUONGTTDiskPowerAnalysis -DiskHealthObj $curDisk
+            if ($txtBenchmarkResult2) {
+                $txtBenchmarkResult2.Text = $analysis
+            }
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất phân tích chi tiết số giờ chạy của ổ đĩa ($($curDisk.Model))!"
+        }
     })
 }
 

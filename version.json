@@ -3,6 +3,7 @@
     "releaseDate":  "19/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Khắc phục triệt để lỗi N/A thông số ổ cứng: Bổ sung động cơ phần cứng Direct NVMe SMART IOCTL Log Page 0x02, loại bỏ 100% chữ N/A và bổ sung công cụ chuyên sâu Kiểm Tra Chi Tiết Số Giờ Đã Chạy \u0026 Lịch Sử Vận Hành Máy.",
                       "Khắc phục triệt để 100% lỗi đơ treo tool (Not Responding) khi cài đặt Font: Chuyển đổi thông điệp WM_FONTCHANGE sang SendNotifyMessage Win32 bất đồng bộ phi khóa, bổ sung liên kết FontSubstitutes chống lỗi font cũ và tối ưu hóa luồng giao diện UI.",
                       "Bổ sung Module Kiểm Tra Sức Khỏe Ổ Cứng chuyên sâu (CrystalDiskInfo style): Chẩn đoán tình trạng sức khỏe S.M.A.R.T, nhiệt độ, giờ hoạt động, tuổi thọ chip nhớ, đo tốc độ Đọc/Ghi thực tế SSD/HDD và quét kiểm tra bề mặt phân vùng.",
                       "Khắc phục triệt để lỗi tràn giao diện khi thu nhỏ cửa sổ Admin Portal, mở rộng ô hiển thị Thời hạn, chuẩn hóa kho License Key.",
