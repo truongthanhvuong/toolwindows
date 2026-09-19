@@ -71,6 +71,24 @@ $script:VUONGTT_APPS = @(
     [PSCustomObject]@{ Id="javatax";     Name="Java Token JRE (Ký Số Thuế Điện Tử)"; Category="Kế toán"; WingetId="Oracle.JavaRuntimeEnvironment"; Url="https://javadl.oracle.com/webapps/download/AutoDL?BundleId=249553_4d245f9418eb4ec4978736adb133d549"; Silent="/s" }
 )
 
+# Load Complete 240+ Software Database from JSON if available
+$dbCandidatePaths = @(
+    (Join-Path (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)) "src\Data\SoftwareDatabase.json"),
+    "E:\toolwindows\src\Data\SoftwareDatabase.json",
+    "$env:TEMP\VUONGTT_Toolkit_Runtime\src\Data\SoftwareDatabase.json"
+)
+foreach ($dbp in $dbCandidatePaths) {
+    if ($dbp -and (Test-Path $dbp)) {
+        try {
+            $jsonApps = Get-Content $dbp -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($jsonApps -and $jsonApps.Count -gt 0) {
+                $script:VUONGTT_APPS = @($jsonApps)
+                break
+            }
+        } catch {}
+    }
+}
+
 $script:APP_EXEC_MAP = @{
     "office365"       = @{ Exe = "WINWORD.EXE"; ProcessName = "WINWORD"; CommonPaths = @("$env:ProgramFiles\Microsoft Office\root\Office16\WINWORD.EXE", "${env:ProgramFiles(x86)}\Microsoft Office\root\Office16\WINWORD.EXE") }
     "foxitpdf"        = @{ Exe = "FoxitPDFReader.exe"; ProcessName = "FoxitPDFReader"; CommonPaths = @("$env:ProgramFiles\Foxit Software\Foxit PDF Reader\FoxitPDFReader.exe", "${env:ProgramFiles(x86)}\Foxit Software\Foxit PDF Reader\FoxitPDFReader.exe") }

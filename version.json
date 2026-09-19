@@ -1,9 +1,10 @@
 {
-  "version": "20.5.908.44",
+  "version": "20.5.908.45",
   "releaseDate": "19/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Làm lại toàn bộ Icon của ứng dụng theo Icon thương hiệu chính gốc có màu sắc sống động (Colorful Brand Icons) cho tất cả 34 ứng dụng trong Kho Phần Mềm theo chuẩn thiết kế Chris Titus WinUtil hiện đại.",
+    "Tích hợp trọn bộ hơn 240 ứng dụng chuẩn Chris Titus WinUtil (Browsers, Communications, Development, Document, Games, Microsoft Tools, Multimedia Tools, Pro Tools, Selfhosted, Utilities, Kế toán & Thuế Việt Nam) với Icon màu sắc chính hãng và thanh Tìm kiếm nhanh tức thời (Instant Search).",
+    "Làm lại toàn bộ Icon của ứng dụng theo Icon thương hiệu chính gốc có màu sắc sống động (Colorful Brand Icons) theo chuẩn thiết kế Chris Titus WinUtil hiện đại.",
     "Sửa triệt để hiện tượng đơ/treo ứng dụng khi Chạy Tweaks (Run Tweaks/Undo Tweaks): Thay thế kiến trúc điều phối thông điệp WPF Dispatcher Frame (Zero Freezing), chuyển Disk Cleanup và dọn tệp tạm chạy ngầm mượt mà, gộp làm mới Explorer an toàn sau khi hoàn tất.",
     "Khắc phục 100% lỗi cài đặt và cập nhật phần mềm: Bổ sung Revo Uninstaller, fix WinGet ID cho Zalo PC, EVKey, UniKey, UltraViewer, CapCut, CrystalDiskInfo, OBS Studio; tự động kiểm tra và nâng cấp lên phiên bản mới nhất.",
     "Cải tiến cơ chế tải trực tiếp: Thêm User-Agent Chrome chính thống và liên kết cổng chính hãng tránh bị CDN / nhà cung cấp chặn kết nối.",

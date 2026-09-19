@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.44
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.45
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -1770,20 +1770,28 @@ $btnInstallAccountingOnly  = Get-Control "btnInstallAccountingOnly"
 $btnUpdateAccounting       = Get-Control "btnUpdateAccounting"
 $btnOpenTaxPortal          = Get-Control "btnOpenTaxPortal"
 
-$appControls = @(
-    "app_office365", "app_foxitpdf", "app_acrobat", "app_unikey", "app_evkey",
-    "app_7zip", "app_winrar", "app_chrome", "app_coccoc", "app_firefox",
-    "app_brave", "app_zalo", "app_telegram", "app_discord",
-    "app_ultraviewer", "app_anydesk", "app_rustdesk", "app_teamviewer",
-    "app_vlc", "app_notepadplus", "app_crystaldisk", "app_cpuz", "app_revo",
-    "app_capcut", "app_obs", "app_everything", "app_fdm", "app_crystaldiskmark", "app_vscode", "app_git",
-    "app_htkk", "app_itaxviewer", "app_misasme", "app_meinvoice", "app_kbhxh", "app_javatax"
-)
+$appControls = @()
+$dbPathLocal = Join-Path $ScriptDir "src\Data\SoftwareDatabase.json"
+if (-not (Test-Path $dbPathLocal)) {
+    $dbPathLocal = "E:\toolwindows\src\Data\SoftwareDatabase.json"
+}
+if (Test-Path $dbPathLocal) {
+    try {
+        $dbData = Get-Content $dbPathLocal -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($item in $dbData) {
+            $cleanName = "app_" + ($item.Id -replace '[^a-zA-Z0-9_]', '_').Trim('_')
+            $appControls += $cleanName
+        }
+    } catch {}
+}
+if ($appControls.Count -eq 0) {
+    $appControls = @("app_chrome", "app_coccoc", "app_firefox", "app_brave", "app_zalo", "app_telegram", "app_discord", "app_office365", "app_unikey", "app_7zip", "app_ultraviewer", "app_everything", "app_htkk", "app_itaxviewer")
+}
 
 $btnSelectAllApps.Add_Click({
     foreach ($name in $appControls) {
         $c = Get-Control $name
-        if ($c) { $c.IsChecked = $true }
+        if ($c -and $c.Visibility -eq [System.Windows.Visibility]::Visible) { $c.IsChecked = $true }
     }
     Update-VUONGTTAppSelectionCount
 })
@@ -1801,7 +1809,11 @@ $btnTabBrowsers   = Get-Control "btnTabBrowsers"
 $btnTabComms      = Get-Control "btnTabComms"
 $btnTabDev        = Get-Control "btnTabDev"
 $btnTabDocs       = Get-Control "btnTabDocs"
+$btnTabGames      = Get-Control "btnTabGames"
+$btnTabMicrosoft  = Get-Control "btnTabMicrosoft"
 $btnTabMedia      = Get-Control "btnTabMedia"
+$btnTabPro        = Get-Control "btnTabPro"
+$btnTabSelfhosted = Get-Control "btnTabSelfhosted"
 $btnTabUtils      = Get-Control "btnTabUtils"
 $btnTabAccounting = Get-Control "btnTabAccounting"
 
@@ -1809,7 +1821,11 @@ $secBrowsers   = Get-Control "secBrowsers"
 $secComms      = Get-Control "secComms"
 $secDev        = Get-Control "secDev"
 $secDocs       = Get-Control "secDocs"
+$secGames      = Get-Control "secGames"
+$secMicrosoft  = Get-Control "secMicrosoft"
 $secMedia      = Get-Control "secMedia"
+$secPro        = Get-Control "secPro"
+$secSelfhosted = Get-Control "secSelfhosted"
 $secUtils      = Get-Control "secUtils"
 $secAccounting = Get-Control "secAccounting"
 
@@ -1844,6 +1860,25 @@ foreach ($name in $appControls) {
 }
 Update-VUONGTTAppSelectionCount
 
+# Instant Real-Time Search Handler
+$txtAppSearch = Get-Control "txtAppSearch"
+if ($txtAppSearch) {
+    $txtAppSearch.Add_TextChanged({
+        $q = $txtAppSearch.Text.Trim().ToLower()
+        foreach ($name in $appControls) {
+            $c = Get-Control $name
+            if ($c) {
+                if ([string]::IsNullOrWhiteSpace($q)) {
+                    $c.Visibility = [System.Windows.Visibility]::Visible
+                } else {
+                    $isMatch = ($c.Content -and $c.Content.ToString().ToLower().Contains($q)) -or ($name.ToLower().Contains($q))
+                    $c.Visibility = if ($isMatch) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+                }
+            }
+        }
+    })
+}
+
 function Set-VUONGTTAppFilterTab {
     param([string]$Category)
     
@@ -1852,7 +1887,11 @@ function Set-VUONGTTAppFilterTab {
         "Comms"      = $secComms
         "Dev"        = $secDev
         "Docs"       = $secDocs
+        "Games"      = $secGames
+        "Microsoft"  = $secMicrosoft
         "Media"      = $secMedia
+        "Pro"        = $secPro
+        "Selfhosted" = $secSelfhosted
         "Utils"      = $secUtils
         "Accounting" = $secAccounting
     }
@@ -1863,7 +1902,11 @@ function Set-VUONGTTAppFilterTab {
         "Comms"      = $btnTabComms
         "Dev"        = $btnTabDev
         "Docs"       = $btnTabDocs
+        "Games"      = $btnTabGames
+        "Microsoft"  = $btnTabMicrosoft
         "Media"      = $btnTabMedia
+        "Pro"        = $btnTabPro
+        "Selfhosted" = $btnTabSelfhosted
         "Utils"      = $btnTabUtils
         "Accounting" = $btnTabAccounting
     }
@@ -1901,7 +1944,11 @@ if ($btnTabBrowsers)   { $btnTabBrowsers.Add_Click({ Set-VUONGTTAppFilterTab "Br
 if ($btnTabComms)      { $btnTabComms.Add_Click({ Set-VUONGTTAppFilterTab "Comms" }) }
 if ($btnTabDev)        { $btnTabDev.Add_Click({ Set-VUONGTTAppFilterTab "Dev" }) }
 if ($btnTabDocs)       { $btnTabDocs.Add_Click({ Set-VUONGTTAppFilterTab "Docs" }) }
+if ($btnTabGames)      { $btnTabGames.Add_Click({ Set-VUONGTTAppFilterTab "Games" }) }
+if ($btnTabMicrosoft)  { $btnTabMicrosoft.Add_Click({ Set-VUONGTTAppFilterTab "Microsoft" }) }
 if ($btnTabMedia)      { $btnTabMedia.Add_Click({ Set-VUONGTTAppFilterTab "Media" }) }
+if ($btnTabPro)        { $btnTabPro.Add_Click({ Set-VUONGTTAppFilterTab "Pro" }) }
+if ($btnTabSelfhosted) { $btnTabSelfhosted.Add_Click({ Set-VUONGTTAppFilterTab "Selfhosted" }) }
 if ($btnTabUtils)      { $btnTabUtils.Add_Click({ Set-VUONGTTAppFilterTab "Utils" }) }
 if ($btnTabAccounting) { $btnTabAccounting.Add_Click({ Set-VUONGTTAppFilterTab "Accounting" }) }
 
