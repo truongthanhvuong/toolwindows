@@ -73,6 +73,7 @@ $corePath = Join-Path $ScriptDir "src\Core"
 . (Join-Path $corePath "LicenseManager.ps1")
 . (Join-Path $corePath "IpScanner.ps1")
 . (Join-Path $corePath "ConfigManager.ps1")
+. (Join-Path $corePath "DiskHealthManager.ps1")
 
 # Load Main UI XAML
 $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
@@ -369,11 +370,8 @@ function Switch-Tab {
         }
         "SysInfo"      { Refresh-SysInfoDisplay }
         "Benchmark"    {
-            $txtBenchmarkResult2 = Get-Control "txtBenchmarkResult2"
-            if ($txtBenchmarkResult2 -and $txtBenchmarkResult2.Text -like "*Bấm nút*") {
-                $txtBenchmarkResult2.Text = "Sẵn sàng đo tốc độ SSD/HDD. Bấm nút 'Bắt Đầu Đo Tốc Độ SSD/HDD' ở trên để bắt đầu."
-            }
-            $txtFooterStatus.Text = "• [OK] Đang ở trang Đo Tốc Độ Ổ Đĩa & Benchmark Hệ Thống."
+            Refresh-VUONGTTDiskHealthUI
+            $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & S.M.A.R.T diagnostic ready." } else { "• [OK] Sẵn sàng chẩn đoán sức khỏe ổ cứng S.M.A.R.T & đo hiệu năng." }
         }
         "Customize"    { Refresh-CustomizeDisplay }
         "Users"        { Refresh-UsersList }
@@ -2772,35 +2770,263 @@ $btnRunRepairAudit.Add_Click({
 })
 
 # =========================================================================
-# MODULE 9: BENCHMARK HỆ THỐNG & Ổ ĐĨA
+# MODULE 9: SỨC KHỎE Ổ CỨNG & BENCHMARK HỆ THỐNG (CRYSTAL DISK INFO)
 # =========================================================================
+$cmbDiskSelect        = Get-Control "cmbDiskSelect"
+$btnRefreshDiskHealth = Get-Control "btnRefreshDiskHealth"
+$borderHealthBadge    = Get-Control "borderHealthBadge"
+$badgeHealthColor     = Get-Control "badgeHealthColor"
+$txtHealthPct         = Get-Control "txtHealthPct"
+$txtHealthRating      = Get-Control "txtHealthRating"
+$txtHealthGrade       = Get-Control "txtHealthGrade"
+$txtHealthDesc        = Get-Control "txtHealthDesc"
+$txtDiskTemp          = Get-Control "txtDiskTemp"
+$txtDiskTempStatus    = Get-Control "txtDiskTempStatus"
+$txtPowerHours        = Get-Control "txtPowerHours"
+$txtPowerCount        = Get-Control "txtPowerCount"
+$txtRemainingLife     = Get-Control "txtRemainingLife"
+$txtBusInterface      = Get-Control "txtBusInterface"
+$txtDiskModel         = Get-Control "txtDiskModel"
+$txtDiskMediaType     = Get-Control "txtDiskMediaType"
+$txtDiskCapacity      = Get-Control "txtDiskCapacity"
+$txtDiskSerial        = Get-Control "txtDiskSerial"
+$txtDiskFirmware      = Get-Control "txtDiskFirmware"
+$panelDiskVolumes     = Get-Control "panelDiskVolumes"
+$lstSmartAttributes   = Get-Control "lstSmartAttributes"
 $btnRunDiskBenchmark2 = Get-Control "btnRunDiskBenchmark2"
+$btnRunSurfaceScan    = Get-Control "btnRunSurfaceScan"
+$btnCopyDiskReport    = Get-Control "btnCopyDiskReport"
 $btnRunCpuBenchmark   = Get-Control "btnRunCpuBenchmark"
 $btnRunRamBenchmark   = Get-Control "btnRunRamBenchmark"
 $txtBenchmarkResult2  = Get-Control "txtBenchmarkResult2"
 
+$script:cachedDiskHealthList = @()
+
+function Select-VUONGTTDiskIndex {
+    param([int]$Index = 0)
+    if (-not $script:cachedDiskHealthList -or $script:cachedDiskHealthList.Count -eq 0) { return }
+    if ($Index -lt 0 -or $Index -ge $script:cachedDiskHealthList.Count) { $Index = 0 }
+
+    $d = $script:cachedDiskHealthList[$Index]
+    if (-not $d) { return }
+
+    $conv = [System.Windows.Media.BrushConverter]::new()
+
+    # Health Badge
+    if ($txtHealthPct) { $txtHealthPct.Text = "$($d.HealthPct)%" }
+    if ($txtHealthRating) {
+        $txtHealthRating.Text = $d.HealthText
+        $txtHealthRating.Foreground = $conv.ConvertFromString($d.HealthColor)
+    }
+    if ($badgeHealthColor) {
+        $badgeHealthColor.Background = $conv.ConvertFromString($d.HealthColor)
+    }
+    if ($borderHealthBadge) {
+        $borderHealthBadge.BorderBrush = $conv.ConvertFromString($d.HealthColor)
+    }
+    if ($txtHealthDesc) { $txtHealthDesc.Text = $d.HealthDescription }
+
+    # Temperature
+    if ($txtDiskTemp) {
+        if ($d.TemperatureC) {
+            $txtDiskTemp.Text = "$($d.TemperatureC)°C"
+            if ($d.TemperatureC -ge 65) {
+                $txtDiskTemp.Foreground = $conv.ConvertFromString("#BE123C")
+                $txtDiskTempStatus.Text = "CẢNH BÁO • Nhiệt độ quá cao"
+                $txtDiskTempStatus.Foreground = $conv.ConvertFromString("#BE123C")
+            } elseif ($d.TemperatureC -ge 50) {
+                $txtDiskTemp.Foreground = $conv.ConvertFromString("#B45309")
+                $txtDiskTempStatus.Text = "Ấm • Hoạt động bình thường"
+                $txtDiskTempStatus.Foreground = $conv.ConvertFromString("#B45309")
+            } else {
+                $txtDiskTemp.Foreground = $conv.ConvertFromString("#0284C7")
+                $txtDiskTempStatus.Text = "Mát Mẻ • Hoạt động an toàn"
+                $txtDiskTempStatus.Foreground = $conv.ConvertFromString("#047857")
+            }
+        } else {
+            $txtDiskTemp.Text = "N/A"
+            $txtDiskTempStatus.Text = "Môi trường ảo hóa / Tiêu chuẩn mở"
+            $txtDiskTempStatus.Foreground = $conv.ConvertFromString("#64748B")
+        }
+    }
+
+    # Stats & Specs
+    if ($txtPowerHours) {
+        $txtPowerHours.Text = if ($d.PowerOnHours) { "$($d.PowerOnHours) Giờ (~$([math]::Round($d.PowerOnHours / 24, 0)) Ngày)" } else { "N/A (Ảo hóa/Không hỗ trợ)" }
+    }
+    if ($txtPowerCount) {
+        $txtPowerCount.Text = if ($d.PowerOnCount) { "$($d.PowerOnCount) Lần" } else { "N/A" }
+    }
+    if ($txtRemainingLife) {
+        $txtRemainingLife.Text = "$($d.HealthPct)% (Tuổi thọ chip Flash)"
+        $txtRemainingLife.Foreground = $conv.ConvertFromString($d.HealthColor)
+    }
+    if ($txtBusInterface) {
+        $txtBusInterface.Text = "$($d.BusType) • $($d.MediaType)"
+    }
+    if ($txtDiskModel) { $txtDiskModel.Text = $d.Model }
+    if ($txtDiskMediaType) { $txtDiskMediaType.Text = $d.MediaType }
+    if ($txtDiskCapacity) { $txtDiskCapacity.Text = "$($d.SizeGB) GB" }
+    if ($txtDiskSerial) { $txtDiskSerial.Text = $d.Serial }
+    if ($txtDiskFirmware) { $txtDiskFirmware.Text = $d.Firmware }
+
+    # Volumes & Usage ProgressBars
+    if ($panelDiskVolumes) {
+        $panelDiskVolumes.Children.Clear()
+        if ($d.Volumes -and $d.Volumes.Count -gt 0) {
+            foreach ($v in $d.Volumes) {
+                $vCard = New-Object System.Windows.Controls.Border
+                $vCard.Background = $window.Resources["CardInnerBgBrush"]
+                $vCard.BorderBrush = $window.Resources["CardBorderBrush"]
+                $vCard.BorderThickness = New-Object System.Windows.Thickness(1)
+                $vCard.CornerRadius = New-Object System.Windows.CornerRadius(6)
+                $vCard.Padding = New-Object System.Windows.Thickness(10, 8, 10, 8)
+                $vCard.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
+
+                $vSp = New-Object System.Windows.Controls.StackPanel
+
+                $vHeader = New-Object System.Windows.Controls.Grid
+                $vHeader.Margin = New-Object System.Windows.Thickness(0, 0, 0, 4)
+
+                $lblVName = New-Object System.Windows.Controls.TextBlock
+                $lblVName.Text = "Phân vùng $($v.DriveLetter) [$($v.Label)] - $($v.FileSystem)"
+                $lblVName.FontWeight = [System.Windows.FontWeights]::Bold
+                $lblVName.FontSize = 11.5
+
+                $lblVUsage = New-Object System.Windows.Controls.TextBlock
+                $lblVUsage.Text = "Trống $($v.FreeGB) GB / $($v.TotalGB) GB"
+                $lblVUsage.FontSize = 11
+                $lblVUsage.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+                $lblVUsage.Foreground = $window.Resources["TextSecondaryBrush"]
+
+                $vHeader.Children.Add($lblVName) | Out-Null
+                $vHeader.Children.Add($lblVUsage) | Out-Null
+                $vSp.Children.Add($vHeader) | Out-Null
+
+                $pb = New-Object System.Windows.Controls.ProgressBar
+                $pb.Height = 8
+                $pb.Minimum = 0
+                $pb.Maximum = 100
+                $pb.Value = $v.UsedPercent
+                $pb.Foreground = if ($v.UsedPercent -ge 90) { $conv.ConvertFromString("#BE123C") } elseif ($v.UsedPercent -ge 75) { $conv.ConvertFromString("#B45309") } else { $conv.ConvertFromString("#0284C7") }
+                $pb.Background = $conv.ConvertFromString("#E2E8F0")
+
+                $vSp.Children.Add($pb) | Out-Null
+
+                $vCard.Child = $vSp
+                $panelDiskVolumes.Children.Add($vCard) | Out-Null
+            }
+        } else {
+            $txtNoVol = New-Object System.Windows.Controls.TextBlock
+            $txtNoVol.Text = "Không có phân vùng hệ thống nào được gán trên ổ đĩa này."
+            $txtNoVol.Foreground = $window.Resources["TextSecondaryBrush"]
+            $panelDiskVolumes.Children.Add($txtNoVol) | Out-Null
+        }
+    }
+
+    # SMART Attributes
+    if ($lstSmartAttributes) {
+        $lstSmartAttributes.Items.Clear()
+        if ($d.SmartAttributes) {
+            foreach ($attr in $d.SmartAttributes) {
+                $lstSmartAttributes.Items.Add($attr) | Out-Null
+            }
+        }
+    }
+}
+
+function Refresh-VUONGTTDiskHealthUI {
+    $script:cachedDiskHealthList = Get-VUONGTTDiskHealthList
+    if ($cmbDiskSelect) {
+        $cmbDiskSelect.Items.Clear()
+        foreach ($d in $script:cachedDiskHealthList) {
+            $cmbDiskSelect.Items.Add("[Disk $($d.DeviceId)] $($d.Model) ($($d.SizeGB) GB) - $($d.HealthText)") | Out-Null
+        }
+        if ($cmbDiskSelect.Items.Count -gt 0) {
+            $cmbDiskSelect.SelectedIndex = 0
+        }
+    }
+    Select-VUONGTTDiskIndex -Index 0
+}
+
+if ($cmbDiskSelect) {
+    $cmbDiskSelect.Add_SelectionChanged({
+        if ($cmbDiskSelect.SelectedIndex -ge 0) {
+            Select-VUONGTTDiskIndex -Index $cmbDiskSelect.SelectedIndex
+        }
+    })
+}
+
+if ($btnRefreshDiskHealth) {
+    $btnRefreshDiskHealth.Add_Click({
+        $txtFooterStatus.Text = "• [SCAN] Đang quét lại thông tin sức khỏe và S.M.A.R.T ổ cứng..."
+        Refresh-VUONGTTDiskHealthUI
+        $txtFooterStatus.Text = "• [OK] Đã cập nhật xong tình trạng sức khỏe ổ đĩa!"
+    })
+}
+
 if ($btnRunDiskBenchmark2) {
     $btnRunDiskBenchmark2.Add_Click({
-        if ($txtBenchmarkResult2) {
-            $txtBenchmarkResult2.Text = "Đang tiến hành đo tốc độ Đọc/Ghi tuần tự trên ổ đĩa hệ thống (C:)..."
-            $res = Measure-VUONGTTDiskBenchmark
-            $txtBenchmarkResult2.Text = $res
+        $targetDrive = "C"
+        $curDisk = if ($script:cachedDiskHealthList -and $cmbDiskSelect -and $cmbDiskSelect.SelectedIndex -ge 0) { $script:cachedDiskHealthList[$cmbDiskSelect.SelectedIndex] } else { $null }
+        if ($curDisk -and $curDisk.Volumes -and $curDisk.Volumes.Count -gt 0) {
+            $targetDrive = $curDisk.Volumes[0].DriveLetter.Replace(":","")
         }
-        if ($txtBenchmarkResult) { $txtBenchmarkResult.Text = $res }
-        $txtFooterStatus.Text = "• [OK] Hoàn tất đo tốc độ đọc ghi ổ đĩa!"
+
+        if ($txtBenchmarkResult2) {
+            $txtBenchmarkResult2.Text = "⏳ Đang tiến hành đo tốc độ Đọc/Ghi tuần tự trên phân vùng $($targetDrive): (Kích thước mẫu 128 MB)... Vui lòng đợi trong giây lát!"
+        }
+        Invoke-VUONGTTDoEvents
+
+        $res = Measure-VUONGTTDiskBenchmark -TargetDrive $targetDrive
+        if ($txtBenchmarkResult2) { $txtBenchmarkResult2.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Hoàn tất đo tốc độ Đọc/Ghi thực tế của ổ đĩa ($($targetDrive):)!"
+    })
+}
+
+if ($btnRunSurfaceScan) {
+    $btnRunSurfaceScan.Add_Click({
+        $targetDrive = "C"
+        $curDisk = if ($script:cachedDiskHealthList -and $cmbDiskSelect -and $cmbDiskSelect.SelectedIndex -ge 0) { $script:cachedDiskHealthList[$cmbDiskSelect.SelectedIndex] } else { $null }
+        if ($curDisk -and $curDisk.Volumes -and $curDisk.Volumes.Count -gt 0) {
+            $targetDrive = $curDisk.Volumes[0].DriveLetter.Replace(":","")
+        }
+
+        if ($txtBenchmarkResult2) {
+            $txtBenchmarkResult2.Text = "⏳ Đang bắt đầu quét kiểm tra bề mặt & hệ thống tệp trên phân vùng $($targetDrive): (Chkdsk Scan-Only an toàn)... Vui lòng đợi!"
+        }
+        Invoke-VUONGTTDoEvents
+
+        $res = Invoke-VUONGTTDiskSurfaceScan -TargetDrive $targetDrive
+        if ($txtBenchmarkResult2) { $txtBenchmarkResult2.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét kiểm tra bề mặt phân vùng $($targetDrive):!"
+    })
+}
+
+if ($btnCopyDiskReport) {
+    $btnCopyDiskReport.Add_Click({
+        $curDisk = if ($script:cachedDiskHealthList -and $cmbDiskSelect -and $cmbDiskSelect.SelectedIndex -ge 0) { $script:cachedDiskHealthList[$cmbDiskSelect.SelectedIndex] } else { $null }
+        if (-not $curDisk -and $script:cachedDiskHealthList.Count -gt 0) { $curDisk = $script:cachedDiskHealthList[0] }
+        if ($curDisk) {
+            $rep = Export-VUONGTTDiskHealthReport -DiskHealthObj $curDisk
+            [System.Windows.Clipboard]::SetText($rep)
+            if ($txtBenchmarkResult2) { $txtBenchmarkResult2.Text = $rep }
+            $txtFooterStatus.Text = "• [COPIED] Đã sao chép toàn bộ Báo Cáo Sức Khỏe Ổ Cứng (CrystalDisk Report) vào Clipboard!"
+        }
     })
 }
 
 if ($btnRunCpuBenchmark) {
     $btnRunCpuBenchmark.Add_Click({
         if ($txtBenchmarkResult2) {
-            $txtBenchmarkResult2.Text = "Đang kiểm tra hiệu năng tính toán CPU (Stress & Math Benchmark)..."
+            $txtBenchmarkResult2.Text = "⏳ Đang kiểm tra hiệu năng tính toán CPU (Stress & Math Benchmark)..."
+            Invoke-VUONGTTDoEvents
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
             $sum = 0
             for ($i = 1; $i -le 2000000; $i++) { $sum += [math]::Sqrt($i) }
             $sw.Stop()
             $score = [math]::Round(2000000 / ($sw.ElapsedMilliseconds + 1) * 10)
-            $txtBenchmarkResult2.Text = "=== KẾT QUẢ BENCHMARK CPU ===`n- Thời gian xử lý: $($sw.ElapsedMilliseconds) ms`n- Điểm hiệu năng ước tính: $score điểm`n- Tình trạng: Hoạt động ổn định, không throttling.`n- Thời gian đo: $(Get-Date -Format 'HH:mm:ss dd/MM/yyyy')"
+            $txtBenchmarkResult2.Text = "=== KẾT QUẢ BENCHMARK CPU ===`r`n- Thời gian xử lý: $($sw.ElapsedMilliseconds) ms`r`n- Điểm hiệu năng ước tính: $score điểm`r`n- Tình trạng: Hoạt động ổn định, không throttling.`r`n- Thời gian đo: $(Get-Date -Format 'HH:mm:ss dd/MM/yyyy')"
         }
         $txtFooterStatus.Text = "• [OK] Đã hoàn tất benchmark CPU!"
     })
@@ -2809,13 +3035,14 @@ if ($btnRunCpuBenchmark) {
 if ($btnRunRamBenchmark) {
     $btnRunRamBenchmark.Add_Click({
         if ($txtBenchmarkResult2) {
-            $txtBenchmarkResult2.Text = "Đang kiểm tra tốc độ cấp phát và băng thông bộ nhớ RAM..."
+            $txtBenchmarkResult2.Text = "⏳ Đang kiểm tra tốc độ cấp phát và băng thông bộ nhớ RAM..."
+            Invoke-VUONGTTDoEvents
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
             $bytes = New-Object byte[] (64 * 1024 * 1024)
             for ($i = 0; $i -lt $bytes.Length; $i += 4096) { $bytes[$i] = 255 }
             $sw.Stop()
             $speedMBs = [math]::Round(64 / (($sw.ElapsedMilliseconds + 1) / 1000.0), 2)
-            $txtBenchmarkResult2.Text = "=== KẾT QUẢ BENCHMARK BỘ NHỚ RAM ===`n- Kích thước mẫu: 64 MB`n- Thời gian cấp phát & ghi: $($sw.ElapsedMilliseconds) ms`n- Tốc độ xử lý RAM ước tính: $speedMBs MB/s`n- Bộ đệm RAM phản hồi tuyệt vời.`n- Thời gian đo: $(Get-Date -Format 'HH:mm:ss dd/MM/yyyy')"
+            $txtBenchmarkResult2.Text = "=== KẾT QUẢ BENCHMARK BỘ NHỚ RAM ===`r`n- Kích thước mẫu: 64 MB`r`n- Thời gian cấp phát & ghi: $($sw.ElapsedMilliseconds) ms`r`n- Tốc độ xử lý RAM ước tính: $speedMBs MB/s`r`n- Bộ đệm RAM phản hồi tuyệt vời.`r`n- Thời gian đo: $(Get-Date -Format 'HH:mm:ss dd/MM/yyyy')"
         }
         $txtFooterStatus.Text = "• [OK] Đã hoàn tất đo băng thông RAM!"
     })

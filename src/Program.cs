@@ -58,7 +58,7 @@ namespace VUONGTT
                     pb.Location = new Point(22, 78);
 
                     Label lblVer = new Label();
-                    lblVer.Text = "v20.5.908.61 • Professional Standalone (All-in-One)";
+                    lblVer.Text = "v20.5.908.62 • Professional Standalone (All-in-One)";
                     lblVer.ForeColor = Color.FromArgb(148, 163, 184);
                     lblVer.Font = new Font("Segoe UI", 7.5f, FontStyle.Regular);
                     lblVer.Location = new Point(22, 98);
@@ -176,6 +176,7 @@ namespace VUONGTT
                         else if (name.Contains("LicenseManager.ps1")) relPath = Path.Combine("src", "Core", "LicenseManager.ps1");
                         else if (name.Contains("IpScanner.ps1")) relPath = Path.Combine("src", "Core", "IpScanner.ps1");
                         else if (name.Contains("ConfigManager.ps1")) relPath = Path.Combine("src", "Core", "ConfigManager.ps1");
+                        else if (name.Contains("DiskHealthManager.ps1")) relPath = Path.Combine("src", "Core", "DiskHealthManager.ps1");
                         else if (name.Contains("SoftwareDatabase.json")) relPath = Path.Combine("src", "Data", "SoftwareDatabase.json");
                         else if (name.Contains("version.json")) relPath = "version.json";
                         else if (name.StartsWith("VUONGTT.AppIcons."))

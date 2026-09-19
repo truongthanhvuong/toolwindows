@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.908.61",
+    "version":  "20.5.908.62",
     "releaseDate":  "19/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Bổ sung Module Kiểm Tra Sức Khỏe Ổ Cứng chuyên sâu (CrystalDiskInfo style): Chẩn đoán tình trạng sức khỏe S.M.A.R.T, nhiệt độ, giờ hoạt động, tuổi thọ chip nhớ, đo tốc độ Đọc/Ghi thực tế SSD/HDD và quét kiểm tra bề mặt phân vùng.",
                       "Khắc phục triệt để lỗi tràn giao diện khi thu nhỏ cửa sổ Admin Portal, mở rộng ô hiển thị Thời hạn, chuẩn hóa kho License Key.",
                       "He thong 1000 may dong bo 1 ban duy nhat: Tu dong Hot-Update khong can bam nut, toi uu hoa CDN Fastly khong bi rate limit va tu dong dong bo moi khi Admin cap nhat cau hinh",
                       "He thong Realtime 2-Way Cloud Auto-Sync: Tu dong day len GitHub khi Admin doi cau hinh va tu dong cap nhat toan bo cac may dang mo tool",
