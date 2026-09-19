@@ -1,102 +1,32 @@
 [
     {
-        "Key":  "VUONG-LFGQ-TVDM-36KJ-E8ST",
-        "Customer":  "Khách Hàng VIP",
+        "Key":  "VUONG-LS3W-MF5D-N42M-ANBR",
+        "Customer":  "KhÃ¡ch HÃ ng VIP",
         "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 12:23:04",
+        "CreatedDate":  "19/09/2026 14:24:51",
         "IsUsed":  false,
         "UsedHWID":  "",
         "UsedPCName":  "",
         "ActivatedDate":  ""
     },
     {
-        "Key":  "VUONG-LCG4-4AMB-YAPH-E6A8",
-        "Customer":  "Khách Hàng VIP",
+        "Key":  "VUONG-LVDT-5BR8-2N5J-W6UQ",
+        "Customer":  "KhÃ¡ch HÃ ng VIP",
         "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 12:22:45",
-        "IsUsed":  false,
-        "UsedHWID":  "",
-        "UsedPCName":  "",
-        "ActivatedDate":  ""
-    },
-    {
-        "Key":  "VUONG-LXCA-TDXE-WDSH-AU62",
-        "Customer":  "Khach Hang Doanh Nghiep",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 11:51:26",
-        "IsUsed":  false,
-        "UsedHWID":  "",
-        "UsedPCName":  "",
-        "ActivatedDate":  ""
-    },
-    {
-        "Key":  "VUONG-LEFF-KV34-ZKWQ-7QZF",
-        "Customer":  "Khach Hang Doanh Nghiep",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 11:51:26",
-        "IsUsed":  false,
-        "UsedHWID":  "",
-        "UsedPCName":  "",
-        "ActivatedDate":  ""
+        "CreatedDate":  "19/09/2026 13:44:14",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-A7C5-5014-F6D9-1E08",
+        "UsedPCName":  "DESKTOP-8P5CKNF",
+        "ActivatedDate":  "19/09/2026 13:45:09"
     },
     {
         "Key":  "VUONG-4P34-HE36-5B74-FHCV",
-        "Customer":  "Khách Hàng VIP",
+        "Customer":  "KhÃ¡ch HÃ ng VIP",
         "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 11:51:28",
+        "CreatedDate":  "19/09/2026 08:56:12",
         "IsUsed":  true,
-        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
-        "UsedPCName":  "DESKTOP-BJ38TQN",
-        "ActivatedDate":  "19/09/2026 11:51:28"
-    },
-    {
-        "Key":  "VUONG-LNQ6-N88X-V7G4-8VDH",
-        "Customer":  "Test Customer",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 14:03:16",
-        "IsUsed":  true,
-        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
-        "UsedPCName":  "DESKTOP-BJ38TQN",
-        "ActivatedDate":  "19/09/2026 14:03:19"
-    },
-    {
-        "Key":  "VUONG-LBX3-LMRB-WHLX-XSVA",
-        "Customer":  "Khách Hàng VIP Test",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 14:11:43",
-        "IsUsed":  true,
-        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
-        "UsedPCName":  "DESKTOP-BJ38TQN",
-        "ActivatedDate":  "19/09/2026 14:11:44"
-    },
-    {
-        "Key":  "VUONG-L93R-S54Z-5HQE-RCAB",
-        "Customer":  "Khách Hàng VIP Test",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 14:12:12",
-        "IsUsed":  true,
-        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
-        "UsedPCName":  "DESKTOP-BJ38TQN",
-        "ActivatedDate":  "19/09/2026 14:12:13"
-    },
-    {
-        "Key":  "VUONG-LJPJ-PB22-KCEN-GLY4",
-        "Customer":  "Khách Hàng VIP Test",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 14:15:19",
-        "IsUsed":  true,
-        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
-        "UsedPCName":  "DESKTOP-BJ38TQN",
-        "ActivatedDate":  "19/09/2026 14:15:21"
-    },
-    {
-        "Key":  "VUONG-LFGQ-TVDM-36KJ-E8ST VUONG-LCG4-4AMB-YAPH-E6A8 VUONG-LXCA-TDXE-WDSH-AU62 VUONG-LEFF-KV34-ZKWQ-7QZF VUONG-4P34-HE36-5B74-FHCV VUONG-LNQ6-N88X-V7G4-8VDH VUONG-LBX3-LMRB-WHLX-XSVA VUONG-L93R-S54Z-5HQE-RCAB VUONG-LJPJ-PB22-KCEN-GLY4",
-        "Customer":  "Khách Hàng VIP Khách Hàng VIP Khach Hang Doanh Nghiep Khach Hang Doanh Nghiep Khách Hàng VIP Test Customer Khách Hàng VIP Test Khách Hàng VIP Test Khách Hàng VIP Test",
-        "Duration":  "Lifetime Lifetime Lifetime Lifetime Lifetime Lifetime Lifetime Lifetime Lifetime",
-        "CreatedDate":  "19/09/2026 12:23:04 19/09/2026 12:22:45 19/09/2026 11:51:26 19/09/2026 11:51:26 19/09/2026 11:51:28 19/09/2026 14:03:16 19/09/2026 14:11:43 19/09/2026 14:12:12 19/09/2026 14:15:19",
-        "IsUsed":  true,
-        "UsedHWID":  "    HWID-5941-0247-F735-CB0F HWID-5941-0247-F735-CB0F HWID-5941-0247-F735-CB0F HWID-5941-0247-F735-CB0F HWID-5941-0247-F735-CB0F",
-        "UsedPCName":  "    DESKTOP-BJ38TQN DESKTOP-BJ38TQN DESKTOP-BJ38TQN DESKTOP-BJ38TQN DESKTOP-BJ38TQN",
-        "ActivatedDate":  "    19/09/2026 11:51:28 19/09/2026 14:03:19 19/09/2026 14:11:44 19/09/2026 14:12:13 19/09/2026 14:15:21"
+        "UsedHWID":  "HWID-4475-C9AC-57FC-0FFF",
+        "UsedPCName":  "VUONGTT",
+        "ActivatedDate":  "19/09/2026 11:36:46"
     }
 ]
