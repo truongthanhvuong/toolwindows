@@ -78,5 +78,15 @@
         "UsedHWID":  "HWID-5941-0247-F735-CB0F",
         "UsedPCName":  "DESKTOP-BJ38TQN",
         "ActivatedDate":  "19/09/2026 14:12:13"
+    },
+    {
+        "Key":  "VUONG-LJPJ-PB22-KCEN-GLY4",
+        "Customer":  "Khách Hàng VIP Test",
+        "Duration":  "Lifetime",
+        "CreatedDate":  "19/09/2026 14:15:19",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
     }
 ]
