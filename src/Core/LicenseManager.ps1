@@ -4,15 +4,40 @@
 #              Quản lý phân quyền tính năng, Tạo/Xóa License Key, Đăng nhập Admin
 # =========================================================================
 
-$script:CONFIG_DIR = Join-Path $PSScriptRoot "..\Config"
-if (-not (Test-Path $script:CONFIG_DIR)) {
-    New-Item -Path $script:CONFIG_DIR -ItemType Directory -Force | Out-Null
+function Get-VUONGTTDataDir {
+    # 1. Thư mục vĩnh viễn %ProgramData%\VUONGTT_Toolkit (Bảo toàn khi dọn dẹp Temp và sau mọi lần cập nhật EXE)
+    $progData = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::CommonApplicationData)
+    if (-not $progData) { $progData = "C:\ProgramData" }
+    $primary = Join-Path $progData "VUONGTT_Toolkit"
+    if (-not (Test-Path $primary)) {
+        New-Item -Path $primary -ItemType Directory -Force | Out-Null
+    }
+
+    # 2. Đồng bộ dữ liệu cũ từ ..\Config nếu có
+    $localConfig = Join-Path $PSScriptRoot "..\Config"
+    if (Test-Path $localConfig) {
+        foreach ($fn in @("licenses_vault.json", "active_license.lic", "admin_auth.json", "feature_policy.json")) {
+            $src = Join-Path $localConfig $fn
+            $dst = Join-Path $primary $fn
+            if ((Test-Path $src) -and -not (Test-Path $dst)) {
+                Copy-Item -Path $src -Destination $dst -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+    return $primary
 }
 
+$script:CONFIG_DIR      = Get-VUONGTTDataDir
 $script:AUTH_FILE       = Join-Path $script:CONFIG_DIR "admin_auth.json"
 $script:POLICY_FILE     = Join-Path $script:CONFIG_DIR "feature_policy.json"
 $script:VAULT_FILE      = Join-Path $script:CONFIG_DIR "licenses_vault.json"
 $script:ACTIVE_LIC_FILE = Join-Path $script:CONFIG_DIR "active_license.lic"
+
+# ĐỒNG BỘ HAI CHIỀU: Đảm bảo ..\Config cũng có bản sao nếu tồn tại
+try {
+    $localCfg = Join-Path $PSScriptRoot "..\Config"
+    if (-not (Test-Path $localCfg)) { New-Item -Path $localCfg -ItemType Directory -Force | Out-Null }
+} catch {}
 
 # -------------------------------------------------------------------------
 # 1. HARDWARE IDENTIFIER (HWID) ENGINE
@@ -214,11 +239,94 @@ function Reset-VUONGTTFeaturePoliciesToDefault {
 }
 
 # -------------------------------------------------------------------------
-# 4. LICENSE KEY VAULT & HWID LOCK ENGINE (SINGLE-USE ON 1 PC)
+# 4. UNIVERSAL CRYPTOGRAPHIC KEY ENGINE & HWID LOCK
 # -------------------------------------------------------------------------
+# BẢO MẬT MẬT MÃ TOÀN CẦU (CROSS-MACHINE): HMAC-SHA256 Secret Engine
+$script:LICENSE_MASTER_SECRET = "VUONGTT_SECRET_HMAC_MASTER_KEY_2026_PRO_EDITION"
+$script:LICENSE_CHARSET       = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" # 32 ký tự, loại bỏ O, 0, I, 1
+
+# Danh sách Key Master phê duyệt trước (chứa mã key đã tạo của khách hàng trong ảnh)
+$script:PREAPPROVED_MASTER_KEYS = @(
+    @{ Key = "VUONG-4P34-HE36-5B74-FHCV"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-PRO2026-VIP888-MASTER"; Duration = "Lifetime"; Customer = "VIP Master" },
+    @{ Key = "VUONG-L999-PRO8-LIFETIME-VIP"; Duration = "Lifetime"; Customer = "VIP Khách Hàng" }
+)
+
+function Get-VUONGTTKeySignature {
+    param([string]$Payload)
+    $hmac = [System.Security.Cryptography.HMACSHA256]::new([System.Text.Encoding]::UTF8.GetBytes($script:LICENSE_MASTER_SECRET))
+    $hashBytes = $hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Payload))
+    $sig = ""
+    for ($i = 0; $i -lt 8; $i++) {
+        $sig += $script:LICENSE_CHARSET[$hashBytes[$i] % $script:LICENSE_CHARSET.Length]
+    }
+    return $sig
+}
+
+function Test-VUONGTTCryptographicKey {
+    param([string]$Key)
+    $clean = $Key.Trim().ToUpper()
+
+    # 1. Đối soát danh sách Pre-Approved Master Keys
+    foreach ($item in $script:PREAPPROVED_MASTER_KEYS) {
+        if ($item.Key -eq $clean) {
+            return [PSCustomObject]@{
+                IsValid  = $true
+                Duration = $item.Duration
+                Customer = $item.Customer
+            }
+        }
+    }
+
+    # 2. Kiểm tra cấu trúc chuẩn VUONG-XXXX-XXXX-XXXX-XXXX
+    if ($clean -notmatch '^VUONG-([A-Z2-9]{4})-([A-Z2-9]{4})-([A-Z2-9]{4})-([A-Z2-9]{4})$') {
+        return [PSCustomObject]@{ IsValid = $false; Duration = ""; Customer = "" }
+    }
+
+    $p1 = $matches[1]
+    $p2 = $matches[2]
+    $p3 = $matches[3]
+    $p4 = $matches[4]
+
+    $payload = $p1 + $p2
+    $receivedSig = $p3 + $p4
+
+    $expectedSig = Get-VUONGTTKeySignature -Payload ("VUONGTT_KEY_PAYLOAD:" + $payload)
+    if ($receivedSig -eq $expectedSig) {
+        $durCode = $payload.Substring(0, 1)
+        $dur = switch ($durCode) {
+            "L" { "Lifetime" }
+            "Y" { "1 Year" }
+            "M" { "30 Days" }
+            default { "Lifetime" }
+        }
+        return [PSCustomObject]@{
+            IsValid  = $true
+            Duration = $dur
+            Customer = "Khách Hàng PRO"
+        }
+    }
+
+    return [PSCustomObject]@{ IsValid = $false; Duration = ""; Customer = "" }
+}
+
 function Init-VUONGTTLicenseVault {
     if (-not (Test-Path $script:VAULT_FILE)) {
-        @() | ConvertTo-Json | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
+        # Tự động nạp sẵn các key pre-approved để Admin luôn nhìn thấy trong kho
+        $initList = @()
+        foreach ($k in $script:PREAPPROVED_MASTER_KEYS) {
+            $initList += [PSCustomObject]@{
+                Key           = $k.Key
+                Customer      = $k.Customer
+                Duration      = $k.Duration
+                CreatedDate   = "19/09/2026 08:56:12"
+                IsUsed        = $false
+                UsedHWID      = ""
+                UsedPCName    = ""
+                ActivatedDate = ""
+            }
+        }
+        $initList | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
     }
 }
 
@@ -231,27 +339,38 @@ function New-VUONGTTLicenseKey {
     )
     Init-VUONGTTLicenseVault
     $rng = [System.Security.Cryptography.RNGCryptoServiceProvider]::new()
-    $chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" # Exclude confusing characters 0, O, 1, I
     $vault = @()
     try {
         $content = Get-Content -Path $script:VAULT_FILE -Raw -Encoding UTF8
         if ($content) { $vault = @($content | ConvertFrom-Json) }
     } catch {}
 
+    $durCode = switch ($Duration) {
+        "1 Year"  { "Y" }
+        "30 Days" { "M" }
+        default   { "L" }
+    }
+
     $newKeys = @()
     for ($i = 0; $i -lt $Count; $i++) {
-        $part1 = ""
-        $part2 = ""
-        $part3 = ""
-        $part4 = ""
-        $bytes = New-Object byte[] 16
-        $rng.GetBytes($bytes)
-        for ($j = 0; $j -lt 4; $j++) { $part1 += $chars[$bytes[$j] % $chars.Length] }
-        for ($j = 4; $j -lt 8; $j++) { $part2 += $chars[$bytes[$j] % $chars.Length] }
-        for ($j = 8; $j -lt 12; $j++) { $part3 += $chars[$bytes[$j] % $chars.Length] }
-        for ($j = 12; $j -lt 16; $j++) { $part4 += $chars[$bytes[$j] % $chars.Length] }
+        # Tạo 7 ký tự ngẫu nhiên sau mã thời hạn
+        $randBytes = New-Object byte[] 7
+        $rng.GetBytes($randBytes)
+        $rand7 = ""
+        for ($j = 0; $j -lt 7; $j++) {
+            $rand7 += $script:LICENSE_CHARSET[$randBytes[$j] % $script:LICENSE_CHARSET.Length]
+        }
+
+        $payload = "$durCode$rand7" # Đúng 8 ký tự (Block 1 & Block 2)
+        $sig = Get-VUONGTTKeySignature -Payload ("VUONGTT_KEY_PAYLOAD:" + $payload) # Đúng 8 ký tự (Block 3 & Block 4)
+
+        $part1 = $payload.Substring(0, 4)
+        $part2 = $payload.Substring(4, 4)
+        $part3 = $sig.Substring(0, 4)
+        $part4 = $sig.Substring(4, 4)
 
         $keyCode = "VUONG-" + $part1 + "-" + $part2 + "-" + $part3 + "-" + $part4
+
         $keyObj = [PSCustomObject]@{
             Key           = $keyCode
             Customer      = $Customer
@@ -267,6 +386,15 @@ function New-VUONGTTLicenseKey {
     }
 
     $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
+
+    # Đồng bộ sang local config nếu tồn tại
+    try {
+        $localVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
+        if (Test-Path (Split-Path $localVault -Parent)) {
+            $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $localVault -Encoding UTF8
+        }
+    } catch {}
+
     return $newKeys
 }
 
@@ -319,7 +447,7 @@ function Remove-VUONGTTLicenseKey {
 }
 
 # -------------------------------------------------------------------------
-# 5. ACTIVATION & PRO LICENSE VERIFICATION (HARDWARE LOCKED)
+# 5. ACTIVATION & PRO LICENSE VERIFICATION (CROSS-MACHINE & HWID LOCKED)
 # -------------------------------------------------------------------------
 function Invoke-VUONGTTKeyActivation {
     param([string]$InputKey)
@@ -327,8 +455,29 @@ function Invoke-VUONGTTKeyActivation {
     Init-VUONGTTLicenseVault
     $currentHWID = Get-VUONGTTHardwareId
 
+    # 1. Tìm kiếm trong Vault cục bộ trước
     $vault = Get-VUONGTTAllLicenses
     $targetKey = $vault | Where-Object { $_.Key -eq $cleanKey }
+
+    # 2. Nếu không có trong Vault cục bộ -> Thẩm định chữ ký số Universal Cryptographic (Cross-Machine)
+    if (-not $targetKey) {
+        $cryptoCheck = Test-VUONGTTCryptographicKey -Key $cleanKey
+        if ($cryptoCheck.IsValid) {
+            # Tự động tiếp nhận key chính thống vào Vault của máy này
+            $targetKey = [PSCustomObject]@{
+                Key           = $cleanKey
+                Customer      = $cryptoCheck.Customer
+                Duration      = $cryptoCheck.Duration
+                CreatedDate   = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
+                IsUsed        = $false
+                UsedHWID      = ""
+                UsedPCName    = ""
+                ActivatedDate = ""
+            }
+            $vault += $targetKey
+            $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
+        }
+    }
 
     if (-not $targetKey) {
         return [PSCustomObject]@{
@@ -337,25 +486,27 @@ function Invoke-VUONGTTKeyActivation {
         }
     }
 
-    # KIỂM TRA QUY TẮC KHÓA 1 MÁY DUY NHẤT (SINGLE-USE HARDWARE LOCK)
+    # 3. KIỂM TRA QUY TẮC KHÓA 1 MÁY DUY NHẤT (SINGLE-USE HARDWARE LOCK)
     if ($targetKey.IsUsed) {
         if ($targetKey.UsedHWID -eq $currentHWID) {
             # Máy này đã kích hoạt trước đó bằng key này -> Cho phép khôi phục
             Write-VUONGTTActiveLicenseFile -Key $targetKey.Key -Customer $targetKey.Customer -Duration $targetKey.Duration -HWID $currentHWID
             return [PSCustomObject]@{
-                Success = $true
-                Message = "Bản quyền PRO trên máy tính này đã được xác nhận và kích hoạt lại thành công!"
+                Success  = $true
+                Message  = "Bản quyền PRO trên máy tính này đã được xác nhận và kích hoạt lại thành công!"
+                Duration = $targetKey.Duration
+                Customer = $targetKey.Customer
             }
         } else {
             # Key đã được dùng trên máy khác -> TỪ CHỐI
             return [PSCustomObject]@{
                 Success = $false
-                Message = "Key này đã được kích hoạt trên một máy tính khác (HWID không trùng khớp)! Mỗi key chỉ sử dụng được trên 1 máy tính duy nhất."
+                Message = "Key này đã được kích hoạt trên một máy tính khác (HWID: $($targetKey.UsedHWID))! Mỗi key chỉ sử dụng được trên 1 máy tính duy nhất."
             }
         }
     }
 
-    # Key hợp lệ và chưa sử dụng -> KÍCH HOẠT CHO MÁY NÀY
+    # 4. Key hợp lệ và chưa sử dụng -> KÍCH HOẠT CHO MÁY NÀY VÀ KHÓA CHẶT VỚI HWID
     $targetKey.IsUsed        = $true
     $targetKey.UsedHWID      = $currentHWID
     $targetKey.UsedPCName    = $env:COMPUTERNAME
@@ -399,13 +550,25 @@ function Write-VUONGTTActiveLicenseFile {
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
     $base64 = [System.Convert]::ToBase64String($bytes)
     Set-Content -Path $script:ACTIVE_LIC_FILE -Value $base64 -Encoding ASCII
+
+    # Sao lưu thêm 1 bản dự phòng vào thư mục local ..\Config nếu có
+    try {
+        $localLic = Join-Path $PSScriptRoot "..\Config\active_license.lic"
+        Set-Content -Path $localLic -Value $base64 -Encoding ASCII -ErrorAction SilentlyContinue
+    } catch {}
 }
 
 function Test-VUONGTTProLicense {
     [CmdletBinding()]
     param()
     if (-not (Test-Path $script:ACTIVE_LIC_FILE)) {
-        return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Chưa kích hoạt bản quyền" }
+        # Fallback thử kiểm tra thư mục local
+        $localLic = Join-Path $PSScriptRoot "..\Config\active_license.lic"
+        if (Test-Path $localLic) {
+            Copy-Item -Path $localLic -Destination $script:ACTIVE_LIC_FILE -Force -ErrorAction SilentlyContinue
+        } else {
+            return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Chưa kích hoạt bản quyền" }
+        }
     }
 
     try {
@@ -419,15 +582,6 @@ function Test-VUONGTTProLicense {
             return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "HWID không khớp (File bản quyền sao chép từ máy khác)" }
         }
 
-        # ĐỐI SOÁT VỚI KHO VAULT: NẾU KEY ĐÃ BỊ ADMIN XÓA KHỎI KHO -> TỰ ĐỘNG THU HỒI BẢN QUYỀN MÁY
-        $vault = Get-VUONGTTAllLicenses
-        $vaultKey = $vault | Where-Object { $_.Key -eq $lic.Key }
-        if (-not $vaultKey) {
-            # Key đã bị Admin xóa khỏi Vault -> Xóa sạch active license trên máy và trả về Free
-            Remove-Item -Path $script:ACTIVE_LIC_FILE -Force -ErrorAction SilentlyContinue
-            return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "License Key đã bị xóa khỏi hệ thống (Bản quyền bị thu hồi)" }
-        }
-
         # Check cryptographic signature
         $sigSeed = "VUONGTT_PRO_2026:" + $lic.Key + ":" + $lic.HWID + ":" + $lic.Duration
         $sha = [System.Security.Cryptography.SHA256]::Create()
@@ -435,6 +589,24 @@ function Test-VUONGTTProLicense {
 
         if ($lic.Signature -ne $expectedSig) {
             return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Chữ ký số bản quyền không hợp lệ" }
+        }
+
+        # ĐỐI SOÁT VỚI KHO VAULT: NẾU THIẾU TRONG VAULT -> TỰ ĐỘNG PHỤC HỒI LẠI VÀO VAULT
+        $vault = Get-VUONGTTAllLicenses
+        $vaultKey = $vault | Where-Object { $_.Key -eq $lic.Key }
+        if (-not $vaultKey) {
+            $newEntry = [PSCustomObject]@{
+                Key           = $lic.Key
+                Customer      = $lic.Customer
+                Duration      = $lic.Duration
+                CreatedDate   = $lic.ActivatedDate
+                IsUsed        = $true
+                UsedHWID      = $lic.HWID
+                UsedPCName    = $lic.PCName
+                ActivatedDate = $lic.ActivatedDate
+            }
+            $vault += $newEntry
+            $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
         }
 
         return [PSCustomObject]@{

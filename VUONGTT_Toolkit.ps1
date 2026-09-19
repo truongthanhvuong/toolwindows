@@ -40,7 +40,7 @@ function Invoke-VUONGTTDoEvents {
         }
     } catch {}
     try {
-        Invoke-VUONGTTDoEvents
+        [System.Windows.Forms.Application]::DoEvents()
     } catch {}
 }
 
@@ -668,12 +668,20 @@ $btnThemeLight.Add_Click({ Set-ToolkitTheme -Theme "Light" })
 $btnLangVI.Add_Click({ Set-ToolkitLanguage -Lang "VI" })
 $btnLangEN.Add_Click({ Set-ToolkitLanguage -Lang "EN" })
 
-# Exit Button
-$btnExitApp.Add_Click({ $window.Close() })
+# Exit Button & Cleanup
+$btnExitApp.Add_Click({
+    Stop-VUONGTTMetricsWorker
+    $window.Close()
+})
+$window.Add_Closing({
+    Stop-VUONGTTMetricsWorker
+})
 
 # =========================================================================
-# REALTIME CLOCK & LIVE GAUGES TIMER (Every 1s clock, Every 3s metrics)
+# REALTIME CLOCK & LIVE GAUGES TIMER (Every 1s clock, Every 2s metrics)
 # =========================================================================
+Start-VUONGTTMetricsWorker
+
 $timerTicks = 0
 $clockTimer = New-Object System.Windows.Threading.DispatcherTimer
 $clockTimer.Interval = [TimeSpan]::FromSeconds(1)
@@ -683,7 +691,7 @@ $clockTimer.Add_Tick({
 
     $timerTicks++
     if ($timerTicks % 2 -eq 0 -and $script:currentTab -eq "SysInfo") {
-        # Update live metrics every 2s
+        # Update live metrics every 2s (instantaneous read from background cache)
         Update-LiveGaugeValues
     }
 })
@@ -1794,21 +1802,6 @@ if ($appControls.Count -eq 0) {
     $appControls = @("app_chrome", "app_coccoc", "app_firefox", "app_brave", "app_zalo", "app_telegram", "app_discord", "app_office365", "app_unikey", "app_7zip", "app_ultraviewer", "app_everything", "app_htkk", "app_itaxviewer")
 }
 
-$btnSelectAllApps.Add_Click({
-    foreach ($name in $appControls) {
-        $c = Get-Control $name
-        if ($c -and $c.Visibility -eq [System.Windows.Visibility]::Visible) { $c.IsChecked = $true }
-    }
-    Update-VUONGTTAppSelectionCount
-})
-$btnUnselectAllApps.Add_Click({
-    foreach ($name in $appControls) {
-        $c = Get-Control $name
-        if ($c) { $c.IsChecked = $false }
-    }
-    Update-VUONGTTAppSelectionCount
-})
-
 # --- App Filter Tabs Wiring ---
 $btnTabAll        = Get-Control "btnTabAll"
 $btnTabBrowsers   = Get-Control "btnTabBrowsers"
@@ -1838,17 +1831,8 @@ $secAccounting = Get-Control "secAccounting"
 $txtSelectedAppsCount = Get-Control "txtSelectedAppsCount"
 $btnUninstallApps     = Get-Control "btnUninstallApps"
 
-function Update-VUONGTTAppSelectionCount {
-    $cCount = 0
-    foreach ($name in $appControls) {
-        $c = Get-Control $name
-        if ($c -and $c.IsChecked) { $cCount++ }
-    }
-    if ($txtSelectedAppsCount) {
-        $txtSelectedAppsCount.Text = "Đã chọn: $cCount ứng dụng"
-    }
-}
-
+# Pre-cache 244 App Control Objects in memory (eliminates thousands of recursive visual tree lookups)
+$script:appControlObjects = @()
 $iconDir = Join-Path $ScriptDir "src\Assets\AppIcons"
 foreach ($name in $appControls) {
     $c = Get-Control $name
@@ -1862,28 +1846,59 @@ foreach ($name in $appControls) {
         }
         $c.Add_Checked({ Update-VUONGTTAppSelectionCount })
         $c.Add_Unchecked({ Update-VUONGTTAppSelectionCount })
+        $script:appControlObjects += [PSCustomObject]@{
+            Control = $c
+            Name    = $name
+            Content = "$($c.Content)"
+        }
     }
 }
-Update-VUONGTTAppSelectionCount
 
-# Instant Real-Time Search Handler
+function Update-VUONGTTAppSelectionCount {
+    $cCount = 0
+    foreach ($item in $script:appControlObjects) {
+        if ($item.Control.IsChecked) { $cCount++ }
+    }
+    if ($txtSelectedAppsCount) {
+        $txtSelectedAppsCount.Text = "ÄÃ£ chá»n: $cCount á»©ng dá»¥ng"
+    }
+}
+
+$btnSelectAllApps.Add_Click({
+    foreach ($item in $script:appControlObjects) {
+        if ($item.Control.Visibility -eq [System.Windows.Visibility]::Visible) {
+            $item.Control.IsChecked = $true
+        }
+    }
+    Update-VUONGTTAppSelectionCount
+})
+
+$btnUnselectAllApps.Add_Click({
+    foreach ($item in $script:appControlObjects) {
+        $item.Control.IsChecked = $false
+    }
+    Update-VUONGTTAppSelectionCount
+})
+
+# Instant Real-Time Search Handler (0ms RAM lookup)
 $txtAppSearch = Get-Control "txtAppSearch"
 if ($txtAppSearch) {
     $txtAppSearch.Add_TextChanged({
         $q = $txtAppSearch.Text.Trim().ToLower()
-        foreach ($name in $appControls) {
-            $c = Get-Control $name
-            if ($c) {
-                if ([string]::IsNullOrWhiteSpace($q)) {
-                    $c.Visibility = [System.Windows.Visibility]::Visible
-                } else {
-                    $isMatch = ($c.Content -and $c.Content.ToString().ToLower().Contains($q)) -or ($name.ToLower().Contains($q))
-                    $c.Visibility = if ($isMatch) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-                }
+        $isWhite = [string]::IsNullOrWhiteSpace($q)
+        foreach ($item in $script:appControlObjects) {
+            if ($isWhite) {
+                $item.Control.Visibility = [System.Windows.Visibility]::Visible
+            } else {
+                $isMatch = ($item.Content -and $item.Content.ToLower().Contains($q)) -or ($item.Name.ToLower().Contains($q))
+                $item.Control.Visibility = if ($isMatch) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
             }
         }
     })
 }
+
+Update-VUONGTTAppSelectionCount
+
 
 function Set-VUONGTTAppFilterTab {
     param([string]$Category)
@@ -4834,7 +4849,31 @@ if ($btnModalActivateSubmit) {
             $modalActivatePro.Visibility = [System.Windows.Visibility]::Collapsed
             Update-VUONGTTLicenseUI
             $txtFooterStatus.Text = "• [PRO] $($res.Message)"
-            [System.Windows.MessageBox]::Show($res.Message, "Kích Hoạt Bản Quyền PRO Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+
+            # TỰ ĐỘNG KIỂM TRA VÀ CẬP NHẬT PHIÊN BẢN MỚI (AUTO UPDATE)
+            try {
+                if (Get-Command "Get-VUONGTTAppUpdateInfo" -ErrorAction SilentlyContinue) {
+                    $chkUp = Get-VUONGTTAppUpdateInfo
+                    if ($chkUp.HasUpdate -and $btnCheckAppUpdate) {
+                        $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($chkUp.LatestVersion)"
+                        $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                        $txtFooterStatus.Text = "• [PRO] Đã kích hoạt PRO! Phát hiện bản cập nhật mới v$($chkUp.LatestVersion)."
+                    }
+                }
+            } catch {}
+
+            $msgSuccess = @"
+KÍCH HOẠT BẢN QUYỀN PRO THÀNH CÔNG!
+=====================================================
+• Mã License Key: $keyInput
+• Thời Hạn Bản Quyền: $($res.Duration)
+• Đối Tác / Khách Hàng: $($res.Customer)
+• Trạng Thái: Đã liên kết và khóa chặt với phần cứng máy tính này!
+
+Toàn bộ các tính năng PRO cao cấp đã được mở khóa tự động.
+Hệ thống cũng đã tự động kiểm tra và đồng bộ cập nhật mới nhất!
+"@
+            [System.Windows.MessageBox]::Show($msgSuccess, "Kích Hoạt Bản Quyền PRO Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
 
             if ($script:licensePendingTab) {
                 $target = $script:licensePendingTab

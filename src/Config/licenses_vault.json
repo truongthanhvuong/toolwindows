@@ -1,1 +1,28 @@
-[]
+﻿[
+    {
+        "value":  [
+
+                  ],
+        "Count":  0
+    },
+    {
+        "Key":  "VUONG-LEFF-KV34-ZKWQ-7QZF",
+        "Customer":  "Khach Hang Doanh Nghiep",
+        "Duration":  "Lifetime",
+        "CreatedDate":  "19/09/2026 11:51:26",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
+    },
+    {
+        "Key":  "VUONG-LXCA-TDXE-WDSH-AU62",
+        "Customer":  "Khach Hang Doanh Nghiep",
+        "Duration":  "Lifetime",
+        "CreatedDate":  "19/09/2026 11:51:26",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
+    }
+]

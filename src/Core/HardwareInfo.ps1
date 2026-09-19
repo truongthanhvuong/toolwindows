@@ -8,6 +8,31 @@ $script:cachedCs      = $null
 $script:cachedRam     = $null
 $script:cachedBoard   = $null
 $script:cachedPnpGpu  = $null
+$script:cachedAllGpus = $null
+$script:cachedDetailedHardwareInfo = $null
+
+$global:VUONGTT_LiveMetricsShared = [hashtable]::Synchronized(@{
+    SystemLoadPercent = 15
+    CpuClockGHz       = 2.90
+    CpuMaxClockGHz    = 4.10
+    CpuTempC          = 36
+    CpuName           = "Intel / AMD Processor"
+    CpuLoadPercent    = 15
+    RamUsedGB         = 8.0
+    RamTotalGB        = 16.0
+    RamPercent        = 50
+    GpuName           = "Graphics Adapter"
+    GpuVramGB         = 4.0
+    GpuLoadPercent    = 2
+    NetName           = "Ethernet"
+    NetSpeed          = "12.5 KB/s"
+    DiskSummary       = "C: Kháº£ dá»¥ng"
+    DiskLoadPercent   = 0
+    IsRunning         = $false
+})
+
+$script:metricsRunspace = $null
+$script:metricsPowerShell = $null
 
 function Get-VUONGTTSafeDesktopPath {
     $candidates = @(
@@ -60,17 +85,26 @@ function Get-VUONGTTHardwareSnapshot {
 }
 
 function Clear-VUONGTTHardwareCache {
-    $script:cachedCpu    = $null
-    $script:cachedGpu    = $null
-    $script:cachedOs     = $null
-    $script:cachedCs     = $null
-    $script:cachedRam    = $null
-    $script:cachedBoard  = $null
-    $script:cachedPnpGpu = $null
+    $script:cachedCpu     = $null
+    $script:cachedGpu     = $null
+    $script:cachedOs      = $null
+    $script:cachedCs      = $null
+    $script:cachedRam     = $null
+    $script:cachedBoard   = $null
+    $script:cachedPnpGpu  = $null
+    $script:cachedAllGpus = $null
+    $script:cachedDetailedHardwareInfo = $null
 }
 
 # Ham phan tich danh sach tat ca cac GPU tren may (Ho tro Multi-GPU: iGPU + dGPU)
 function Get-VUONGTTAllGpus {
+    [CmdletBinding()]
+    param([switch]$ForceRefresh = $false)
+
+    if ($script:cachedAllGpus -and -not $ForceRefresh) {
+        return $script:cachedAllGpus
+    }
+
     Get-VUONGTTHardwareSnapshot
 
     $allGpuList = @()
@@ -200,15 +234,146 @@ function Get-VUONGTTAllGpus {
         }
     }
 
+    $script:cachedAllGpus = $allGpuList
     return $allGpuList
+}
+
+function Start-VUONGTTMetricsWorker {
+    if ($global:VUONGTT_LiveMetricsShared.IsRunning) { return }
+    $global:VUONGTT_LiveMetricsShared.IsRunning = $true
+
+    try {
+        $rs = [runspacefactory]::CreateRunspace()
+        $rs.ApartmentState = [System.Threading.ApartmentState]::MTA
+        $rs.Open()
+        $rs.SessionStateProxy.SetVariable("sharedMetrics", $global:VUONGTT_LiveMetricsShared)
+
+        $ps = [powershell]::Create()
+        $ps.Runspace = $rs
+        $null = $ps.AddScript({
+            Add-Type -AssemblyName 'Microsoft.VisualBasic' -ErrorAction SilentlyContinue
+            $ci = $null
+            try { $ci = New-Object Microsoft.VisualBasic.Devices.ComputerInfo } catch {}
+
+            $counterTicks = 0
+            while ($sharedMetrics.IsRunning) {
+                try {
+                    # 1. CPU Load
+                    $perfCpu = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+                    if ($perfCpu -and ($perfCpu.PercentProcessorTime -ne $null)) {
+                        $cpuL = [int]$perfCpu.PercentProcessorTime
+                        if ($cpuL -gt 100) { $cpuL = 100 }
+                        $sharedMetrics.CpuLoadPercent = $cpuL
+                    }
+
+                    # 2. RAM Usage
+                    if ($ci) {
+                        $tot = [math]::Round($ci.TotalPhysicalMemory / 1GB, 1)
+                        $free = [math]::Round($ci.AvailablePhysicalMemory / 1GB, 1)
+                        if ($tot -gt 0) {
+                            $sharedMetrics.RamTotalGB = $tot
+                            $sharedMetrics.RamUsedGB  = [math]::Round($tot - $free, 1)
+                            $sharedMetrics.RamPercent = [math]::Round(($sharedMetrics.RamUsedGB / $tot) * 100)
+                        }
+                    }
+
+                    # 3. Disk Load
+                    $perfDisk = Get-CimInstance Win32_PerfFormattedData_PerfDisk_PhysicalDisk -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+                    if ($perfDisk -and ($perfDisk.PercentDiskTime -ne $null)) {
+                        $dL = [int]$perfDisk.PercentDiskTime
+                        if ($dL -gt 100) { $dL = 100 }
+                        $sharedMetrics.DiskLoadPercent = $dL
+                    }
+
+                    # 4. Disk Free Space summary (check every 10s = 5 ticks)
+                    $counterTicks++
+                    if ($counterTicks % 5 -eq 1) {
+                        $diskFreeArr = @()
+                        try {
+                            $drives = [System.IO.DriveInfo]::GetDrives() | Where-Object { $_.IsReady -and ($_.DriveType -eq [System.IO.DriveType]::Fixed) }
+                            foreach ($d in $drives) {
+                                $freeG = [math]::Round($d.AvailableFreeSpace / 1GB)
+                                $letter = $d.Name.TrimEnd('\')
+                                $diskFreeArr += "$($letter): $freeG GB"
+                            }
+                        } catch {}
+                        if ($diskFreeArr.Count -gt 0) {
+                            $sharedMetrics.DiskSummary = ($diskFreeArr -join ", ")
+                        }
+                    }
+
+                    $sharedMetrics.SystemLoadPercent = [math]::Round(($sharedMetrics.CpuLoadPercent + $sharedMetrics.RamPercent) / 2)
+                } catch {}
+
+                [System.Threading.Thread]::Sleep(2000)
+            }
+        })
+
+        $script:metricsRunspace = $rs
+        $script:metricsPowerShell = $ps
+        $null = $ps.BeginInvoke()
+    } catch {
+        $global:VUONGTT_LiveMetricsShared.IsRunning = $false
+    }
+}
+
+function Stop-VUONGTTMetricsWorker {
+    try {
+        if ($global:VUONGTT_LiveMetricsShared) {
+            $global:VUONGTT_LiveMetricsShared.IsRunning = $false
+        }
+        if ($script:metricsPowerShell) {
+            $script:metricsPowerShell.Dispose()
+            $script:metricsPowerShell = $null
+        }
+        if ($script:metricsRunspace) {
+            $script:metricsRunspace.Close()
+            $script:metricsRunspace.Dispose()
+            $script:metricsRunspace = $null
+        }
+    } catch {}
 }
 
 function Get-VUONGTTLiveMetrics {
     [CmdletBinding()]
     param()
 
-    Get-VUONGTTHardwareSnapshot
+    if ($global:VUONGTT_LiveMetricsShared -and $global:VUONGTT_LiveMetricsShared.IsRunning) {
+        if (-not $script:cachedCpu) {
+            Get-VUONGTTHardwareSnapshot
+            $cpuPerf = $script:cachedCpu
+            $global:VUONGTT_LiveMetricsShared.CpuClockGHz    = if ($cpuPerf -and $cpuPerf.CurrentClockSpeed) { [math]::Round($cpuPerf.CurrentClockSpeed / 1000, 2) } else { 2.90 }
+            $global:VUONGTT_LiveMetricsShared.CpuMaxClockGHz = if ($cpuPerf -and $cpuPerf.MaxClockSpeed) { [math]::Round($cpuPerf.MaxClockSpeed / 1000, 2) } else { 4.10 }
+            $global:VUONGTT_LiveMetricsShared.CpuName        = if ($cpuPerf) { $cpuPerf.Name } else { "Intel / AMD Processor" }
 
+            $allGpus = Get-VUONGTTAllGpus
+            $displayGpu = $allGpus | Where-Object { $_.IsDedicated } | Select-Object -First 1
+            if (-not $displayGpu) { $displayGpu = $allGpus | Select-Object -First 1 }
+            $global:VUONGTT_LiveMetricsShared.GpuVramGB      = if ($displayGpu) { $displayGpu.VramGB } else { 4.0 }
+            $global:VUONGTT_LiveMetricsShared.GpuName        = if ($displayGpu) { $displayGpu.Name } else { "Graphics Adapter" }
+        }
+
+        return [PSCustomObject]@{
+            SystemLoadPercent = $global:VUONGTT_LiveMetricsShared.SystemLoadPercent
+            CpuClockGHz       = $global:VUONGTT_LiveMetricsShared.CpuClockGHz
+            CpuMaxClockGHz    = $global:VUONGTT_LiveMetricsShared.CpuMaxClockGHz
+            CpuTempC          = $global:VUONGTT_LiveMetricsShared.CpuTempC
+            CpuName           = $global:VUONGTT_LiveMetricsShared.CpuName
+            CpuLoadPercent    = $global:VUONGTT_LiveMetricsShared.CpuLoadPercent
+            RamUsedGB         = $global:VUONGTT_LiveMetricsShared.RamUsedGB
+            RamTotalGB        = $global:VUONGTT_LiveMetricsShared.RamTotalGB
+            RamPercent        = $global:VUONGTT_LiveMetricsShared.RamPercent
+            GpuName           = $global:VUONGTT_LiveMetricsShared.GpuName
+            GpuVramGB         = $global:VUONGTT_LiveMetricsShared.GpuVramGB
+            GpuLoadPercent    = $global:VUONGTT_LiveMetricsShared.GpuLoadPercent
+            NetName           = $global:VUONGTT_LiveMetricsShared.NetName
+            NetSpeed          = $global:VUONGTT_LiveMetricsShared.NetSpeed
+            DiskSummary       = $global:VUONGTT_LiveMetricsShared.DiskSummary
+            DiskLoadPercent   = $global:VUONGTT_LiveMetricsShared.DiskLoadPercent
+        }
+    }
+
+    # Fallback if worker not running
     # 1. Dynamic CPU Load & Frequency
     $cpuPerf = $script:cachedCpu
     $cpuLoad = 15
@@ -317,7 +482,11 @@ function Get-VUONGTTLiveMetrics {
 
 function Get-VUONGTTDetailedHardwareInfo {
     [CmdletBinding()]
-    param()
+    param([switch]$ForceRefresh = $false)
+
+    if ($script:cachedDetailedHardwareInfo -and -not $ForceRefresh) {
+        return $script:cachedDetailedHardwareInfo
+    }
 
     Get-VUONGTTHardwareSnapshot
 
@@ -382,7 +551,7 @@ function Get-VUONGTTDetailedHardwareInfo {
         }
     }
 
-    return [PSCustomObject]@{
+    $resultHardware = [PSCustomObject]@{
         # System
         ComputerName    = $cs.Name
         Username        = $cs.UserName
@@ -432,6 +601,8 @@ function Get-VUONGTTDetailedHardwareInfo {
         DramFreq        = "$dramFreq MHz"
         DimmList        = $dimmDetails
     }
+    $script:cachedDetailedHardwareInfo = $resultHardware
+    return $resultHardware
 }
 
 function Export-HardwareInfoToCsv {

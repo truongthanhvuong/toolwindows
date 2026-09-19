@@ -9,3 +9,4 @@ obj/
 .vs/
 .idea/
 launcher_info.txt
+*.lic
