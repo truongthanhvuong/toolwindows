@@ -359,7 +359,7 @@ function Switch-Tab {
             Render-VUONGTTAdminKeys
             try {
                 [System.Windows.Threading.Dispatcher]::CurrentDispatcher.BeginInvoke([action]{
-                    $cRes = Sync-VUONGTTCloudAdminData
+                    $cRes = Sync-VUONGTTCloudAdminData -ForceApi
                     if ($cRes -and $cRes.Success) {
                         Render-VUONGTTAdminPolicies
                         Render-VUONGTTAdminKeys
