@@ -15,8 +15,8 @@ using System.Drawing;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.908.43")]
-[assembly: AssemblyFileVersion("20.5.908.43")]
+[assembly: AssemblyVersion("20.5.908.44")]
+[assembly: AssemblyFileVersion("20.5.908.44")]
 
 namespace VUONGTT
 {
@@ -58,7 +58,7 @@ namespace VUONGTT
                     pb.Location = new Point(22, 78);
 
                     Label lblVer = new Label();
-                    lblVer.Text = "v20.5.908.42 • Professional Standalone (All-in-One)";
+                    lblVer.Text = "v20.5.908.44 • Professional Standalone (All-in-One)";
                     lblVer.ForeColor = Color.FromArgb(148, 163, 184);
                     lblVer.Font = new Font("Segoe UI", 7.5f, FontStyle.Regular);
                     lblVer.Location = new Point(22, 98);
@@ -176,6 +176,11 @@ namespace VUONGTT
                         else if (name.Contains("LicenseManager.ps1")) relPath = Path.Combine("src", "Core", "LicenseManager.ps1");
                         else if (name.Contains("IpScanner.ps1")) relPath = Path.Combine("src", "Core", "IpScanner.ps1");
                         else if (name.Contains("ConfigManager.ps1")) relPath = Path.Combine("src", "Core", "ConfigManager.ps1");
+                        else if (name.StartsWith("VUONGTT.AppIcons."))
+                        {
+                            string iconFileName = name.Substring("VUONGTT.AppIcons.".Length);
+                            relPath = Path.Combine("src", "Assets", "AppIcons", iconFileName);
+                        }
 
                         if (!string.IsNullOrEmpty(relPath))
                         {

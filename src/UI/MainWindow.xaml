@@ -265,8 +265,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <Border x:Name="IconBadge" Width="30" Height="30" CornerRadius="5" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,7,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Path=Tag, RelativeSource={RelativeSource TemplatedParent}}" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border x:Name="IconBadge" Width="30" Height="30" CornerRadius="6" Background="Transparent" Margin="0,0,7,0" VerticalAlignment="Center">
+                                    <Image Source="{Binding Path=Tag, RelativeSource={RelativeSource TemplatedParent}}" Width="24" Height="24" RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <TextBlock Grid.Column="1" Text="{TemplateBinding Content}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <Border x:Name="CheckBadge" Grid.Column="2" Width="18" Height="18" CornerRadius="9" Background="#E2E8F0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,0,0">
@@ -325,7 +325,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="v20.5.908.43 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="v20.5.908.44 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -1537,10 +1537,10 @@
                                     <StackPanel x:Name="secBrowsers" Margin="0,0,0,8">
                                         <TextBlock Text="🌐 Trình Duyệt Web (Browsers)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_chrome" Style="{StaticResource AppStoreCard}" Tag="🌐" Content="Google Chrome" IsChecked="True"/>
-                                            <CheckBox x:Name="app_coccoc" Style="{StaticResource AppStoreCard}" Tag="🌐" Content="Cốc Cốc Browser"/>
-                                            <CheckBox x:Name="app_firefox" Style="{StaticResource AppStoreCard}" Tag="🦊" Content="Mozilla Firefox"/>
-                                            <CheckBox x:Name="app_brave" Style="{StaticResource AppStoreCard}" Tag="🦁" Content="Brave Browser"/>
+                                            <CheckBox x:Name="app_chrome" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\chrome.png" Content="Google Chrome" IsChecked="True"/>
+                                            <CheckBox x:Name="app_coccoc" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\coccoc.png" Content="Cốc Cốc Browser"/>
+                                            <CheckBox x:Name="app_firefox" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\firefox.png" Content="Mozilla Firefox"/>
+                                            <CheckBox x:Name="app_brave" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\brave.png" Content="Brave Browser"/>
                                         </WrapPanel>
                                     </StackPanel>
 
@@ -1548,9 +1548,9 @@
                                     <StackPanel x:Name="secComms" Margin="0,4,0,8">
                                         <TextBlock Text="💬 Liên Lạc &amp; Chat (Communications)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_zalo" Style="{StaticResource AppStoreCard}" Tag="💬" Content="Zalo PC" IsChecked="True"/>
-                                            <CheckBox x:Name="app_telegram" Style="{StaticResource AppStoreCard}" Tag="✈️" Content="Telegram Desktop"/>
-                                            <CheckBox x:Name="app_discord" Style="{StaticResource AppStoreCard}" Tag="🎧" Content="Discord PC"/>
+                                            <CheckBox x:Name="app_zalo" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\zalo.png" Content="Zalo PC" IsChecked="True"/>
+                                            <CheckBox x:Name="app_telegram" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\telegram.png" Content="Telegram Desktop"/>
+                                            <CheckBox x:Name="app_discord" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\discord.png" Content="Discord PC"/>
                                         </WrapPanel>
                                     </StackPanel>
 
@@ -1558,9 +1558,9 @@
                                     <StackPanel x:Name="secDev" Margin="0,4,0,8">
                                         <TextBlock Text="💻 Lập Trình &amp; Phát Triển (Development)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_vscode" Style="{StaticResource AppStoreCard}" Tag="💻" Content="Visual Studio Code"/>
-                                            <CheckBox x:Name="app_git" Style="{StaticResource AppStoreCard}" Tag="🌿" Content="Git for Windows"/>
-                                            <CheckBox x:Name="app_notepadplus" Style="{StaticResource AppStoreCard}" Tag="📝" Content="Notepad++ 64-bit"/>
+                                            <CheckBox x:Name="app_vscode" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\vscode.png" Content="Visual Studio Code"/>
+                                            <CheckBox x:Name="app_git" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\git.png" Content="Git for Windows"/>
+                                            <CheckBox x:Name="app_notepadplus" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\notepadplus.png" Content="Notepad++ 64-bit"/>
                                         </WrapPanel>
                                     </StackPanel>
 
@@ -1568,13 +1568,13 @@
                                     <StackPanel x:Name="secDocs" Margin="0,4,0,8">
                                         <TextBlock Text="📄 Văn Phòng, Gõ Tiếng Việt &amp; PDF (Document)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_office365" Style="{StaticResource AppStoreCard}" Tag="🏢" Content="Microsoft 365" IsChecked="True"/>
-                                            <CheckBox x:Name="app_unikey" Style="{StaticResource AppStoreCard}" Tag="⌨️" Content="UniKey 4.3 RC5" IsChecked="True"/>
-                                            <CheckBox x:Name="app_evkey" Style="{StaticResource AppStoreCard}" Tag="⌨️" Content="EVKey Tiếng Việt"/>
-                                            <CheckBox x:Name="app_foxitpdf" Style="{StaticResource AppStoreCard}" Tag="📄" Content="Foxit PDF Reader"/>
-                                            <CheckBox x:Name="app_acrobat" Style="{StaticResource AppStoreCard}" Tag="📄" Content="Adobe Acrobat Reader"/>
-                                            <CheckBox x:Name="app_7zip" Style="{StaticResource AppStoreCard}" Tag="🗜️" Content="7-Zip 64-bit" IsChecked="True"/>
-                                            <CheckBox x:Name="app_winrar" Style="{StaticResource AppStoreCard}" Tag="🗜️" Content="WinRAR 64-bit"/>
+                                            <CheckBox x:Name="app_office365" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\office365.png" Content="Microsoft 365" IsChecked="True"/>
+                                            <CheckBox x:Name="app_unikey" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\unikey.png" Content="UniKey 4.3 RC5" IsChecked="True"/>
+                                            <CheckBox x:Name="app_evkey" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\evkey.png" Content="EVKey Tiếng Việt"/>
+                                            <CheckBox x:Name="app_foxitpdf" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\foxitpdf.png" Content="Foxit PDF Reader"/>
+                                            <CheckBox x:Name="app_acrobat" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\acrobat.png" Content="Adobe Acrobat Reader"/>
+                                            <CheckBox x:Name="app_7zip" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\7zip.png" Content="7-Zip 64-bit" IsChecked="True"/>
+                                            <CheckBox x:Name="app_winrar" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\winrar.png" Content="WinRAR 64-bit"/>
                                         </WrapPanel>
                                     </StackPanel>
 
@@ -1582,9 +1582,9 @@
                                     <StackPanel x:Name="secMedia" Margin="0,4,0,8">
                                         <TextBlock Text="🎬 Đa Phương Tiện, Video &amp; Livestream (Multimedia)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_vlc" Style="{StaticResource AppStoreCard}" Tag="🎬" Content="VLC Media Player"/>
-                                            <CheckBox x:Name="app_capcut" Style="{StaticResource AppStoreCard}" Tag="🎬" Content="CapCut Video Editor"/>
-                                            <CheckBox x:Name="app_obs" Style="{StaticResource AppStoreCard}" Tag="📹" Content="OBS Studio"/>
+                                            <CheckBox x:Name="app_vlc" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\vlc.png" Content="VLC Media Player"/>
+                                            <CheckBox x:Name="app_capcut" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\capcut.png" Content="CapCut Video Editor"/>
+                                            <CheckBox x:Name="app_obs" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\obs.png" Content="OBS Studio"/>
                                         </WrapPanel>
                                     </StackPanel>
 
@@ -1592,14 +1592,14 @@
                                     <StackPanel x:Name="secUtils" Margin="0,4,0,8">
                                         <TextBlock Text="🛠️ Tiện Ích Kỹ Thuật &amp; Điều Khiển Từ Xa (Utilities)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_ultraviewer" Style="{StaticResource AppStoreCard}" Tag="🖥️" Content="UltraViewer 6.6" IsChecked="True"/>
-                                            <CheckBox x:Name="app_anydesk" Style="{StaticResource AppStoreCard}" Tag="🖥️" Content="AnyDesk Remote"/>
-                                            <CheckBox x:Name="app_rustdesk" Style="{StaticResource AppStoreCard}" Tag="🛡️" Content="RustDesk OpenSource"/>
-                                            <CheckBox x:Name="app_teamviewer" Style="{StaticResource AppStoreCard}" Tag="🌐" Content="TeamViewer"/>
-                                            <CheckBox x:Name="app_everything" Style="{StaticResource AppStoreCard}" Tag="🔍" Content="Everything Search" IsChecked="True"/>
-                                            <CheckBox x:Name="app_crystaldisk" Style="{StaticResource AppStoreCard}" Tag="💾" Content="CrystalDiskInfo"/>
-                                            <CheckBox x:Name="app_cpuz" Style="{StaticResource AppStoreCard}" Tag="⚡" Content="CPU-Z Hardware"/>
-                                            <CheckBox x:Name="app_revo" Style="{StaticResource AppStoreCard}" Tag="🧹" Content="Revo Uninstaller"/>
+                                            <CheckBox x:Name="app_ultraviewer" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\ultraviewer.png" Content="UltraViewer 6.6" IsChecked="True"/>
+                                            <CheckBox x:Name="app_anydesk" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\anydesk.png" Content="AnyDesk Remote"/>
+                                            <CheckBox x:Name="app_rustdesk" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\rustdesk.png" Content="RustDesk OpenSource"/>
+                                            <CheckBox x:Name="app_teamviewer" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\teamviewer.png" Content="TeamViewer"/>
+                                            <CheckBox x:Name="app_everything" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\everything.png" Content="Everything Search" IsChecked="True"/>
+                                            <CheckBox x:Name="app_crystaldisk" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\crystaldisk.png" Content="CrystalDiskInfo"/>
+                                            <CheckBox x:Name="app_cpuz" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\cpuz.png" Content="CPU-Z Hardware"/>
+                                            <CheckBox x:Name="app_revo" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\revo.png" Content="Revo Uninstaller"/>
                                         </WrapPanel>
                                     </StackPanel>
 
@@ -1607,12 +1607,12 @@
                                     <StackPanel x:Name="secAccounting" Margin="0,4,0,4">
                                         <TextBlock Text="📊 Kế Toán, Hóa Đơn Điện Tử &amp; Kê Khai Thuế (Accounting)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_htkk" Style="{StaticResource AppStoreCard}" Tag="📑" Content="HTKK Thuế Mới Nhất" IsChecked="True"/>
-                                            <CheckBox x:Name="app_itaxviewer" Style="{StaticResource AppStoreCard}" Tag="📄" Content="iTaxViewer Đọc XML" IsChecked="True"/>
-                                            <CheckBox x:Name="app_misasme" Style="{StaticResource AppStoreCard}" Tag="📊" Content="MISA SME Doanh Nghiệp"/>
-                                            <CheckBox x:Name="app_meinvoice" Style="{StaticResource AppStoreCard}" Tag="🧾" Content="MISA meInvoice Hóa Đơn"/>
-                                            <CheckBox x:Name="app_kbhxh" Style="{StaticResource AppStoreCard}" Tag="🏢" Content="KBHXH Bảo Hiểm"/>
-                                            <CheckBox x:Name="app_javatax" Style="{StaticResource AppStoreCard}" Tag="☕" Content="Java Token Ký Số"/>
+                                            <CheckBox x:Name="app_htkk" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\htkk.png" Content="HTKK Thuế Mới Nhất" IsChecked="True"/>
+                                            <CheckBox x:Name="app_itaxviewer" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\itaxviewer.png" Content="iTaxViewer Đọc XML" IsChecked="True"/>
+                                            <CheckBox x:Name="app_misasme" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\misasme.png" Content="MISA SME Doanh Nghiệp"/>
+                                            <CheckBox x:Name="app_meinvoice" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\meinvoice.png" Content="MISA meInvoice Hóa Đơn"/>
+                                            <CheckBox x:Name="app_kbhxh" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\kbhxh.png" Content="KBHXH Bảo Hiểm"/>
+                                            <CheckBox x:Name="app_javatax" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\javatax.png" Content="Java Token Ký Số"/>
                                         </WrapPanel>
                                     </StackPanel>
                                 </StackPanel>

@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.43
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.44
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -1827,9 +1827,17 @@ function Update-VUONGTTAppSelectionCount {
     }
 }
 
+$iconDir = Join-Path $ScriptDir "src\Assets\AppIcons"
 foreach ($name in $appControls) {
     $c = Get-Control $name
     if ($c) {
+        if ($c.Tag) {
+            $iconLeaf = Split-Path $c.Tag -Leaf
+            $fullIconPath = Join-Path $iconDir $iconLeaf
+            if (Test-Path $fullIconPath) {
+                $c.Tag = $fullIconPath
+            }
+        }
         $c.Add_Checked({ Update-VUONGTTAppSelectionCount })
         $c.Add_Unchecked({ Update-VUONGTTAppSelectionCount })
     }

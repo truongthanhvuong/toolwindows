@@ -48,6 +48,12 @@ $resources = @(
     "/resource:`"$RootDir\src\Core\ConfigManager.ps1`",VUONGTT.ConfigManager.ps1"
 )
 
+# Auto embed all colorful brand icons from src\Assets\AppIcons
+$appIconFiles = Get-ChildItem -Path (Join-Path $RootDir "src\Assets\AppIcons") -Filter "*.png"
+foreach ($icon in $appIconFiles) {
+    $resources += "/resource:`"$($icon.FullName)`",VUONGTT.AppIcons.$($icon.Name)"
+}
+
 $references = @(
     "/r:System.dll",
     "/r:System.Core.dll",
