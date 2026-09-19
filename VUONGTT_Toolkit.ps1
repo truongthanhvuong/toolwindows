@@ -2276,21 +2276,6 @@ if ($btnRunSilentInstall) {
     })
 }
 
-$btnInstallAllFonts.Add_Click({
-    $txtCustomAppLog.Text = "Đang cài đặt trọn bộ Font Tiếng Việt..."
-    $res = Install-VietnameseFonts -FontType "ALL"
-    $txtCustomAppLog.Text = $res
-    [System.Windows.MessageBox]::Show($res, "Cài Font Tiếng Việt", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
-})
-$btnInstallTcvn3.Add_Click({
-    $res = Install-VietnameseFonts -FontType "TCVN3"
-    $txtCustomAppLog.Text = $res
-})
-$btnInstallVni.Add_Click({
-    $res = Install-VietnameseFonts -FontType "VNI"
-    $txtCustomAppLog.Text = $res
-})
-
 # =========================================================================
 # MODULE: GỠ BỎ PHẦN MỀM (CLEAN UNINSTALLER PRO)
 # =========================================================================
