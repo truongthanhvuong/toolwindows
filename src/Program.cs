@@ -177,6 +177,7 @@ namespace VUONGTT
                         else if (name.Contains("IpScanner.ps1")) relPath = Path.Combine("src", "Core", "IpScanner.ps1");
                         else if (name.Contains("ConfigManager.ps1")) relPath = Path.Combine("src", "Core", "ConfigManager.ps1");
                         else if (name.Contains("SoftwareDatabase.json")) relPath = Path.Combine("src", "Data", "SoftwareDatabase.json");
+                        else if (name.Contains("version.json")) relPath = "version.json";
                         else if (name.StartsWith("VUONGTT.AppIcons."))
                         {
                             string iconFileName = name.Substring("VUONGTT.AppIcons.".Length);

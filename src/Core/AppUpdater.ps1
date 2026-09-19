@@ -1,7 +1,30 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.908.43"
+$script:APP_CURRENT_VERSION = "20.5.908.45"
+
+# Tu dong dong bo phien ban tu version.json neu ton tai cuc bo
+try {
+    $verJsonCandidates = @(
+        (Join-Path $PSScriptRoot "..\..\version.json"),
+        (Join-Path $PSScriptRoot "version.json"),
+        "$env:TEMP\VUONGTT_Toolkit_Runtime\version.json",
+        "E:\toolwindows\version.json"
+    )
+    if ($global:ScriptDir) {
+        $verJsonCandidates += (Join-Path $global:ScriptDir "version.json")
+    }
+    foreach ($vf in $verJsonCandidates) {
+        if ($vf -and (Test-Path $vf -ErrorAction SilentlyContinue)) {
+            $parsedVer = Get-Content $vf -Raw -Encoding UTF8 -ErrorAction SilentlyContinue | ConvertFrom-Json -ErrorAction SilentlyContinue
+            if ($parsedVer -and $parsedVer.version) {
+                $script:APP_CURRENT_VERSION = $parsedVer.version.Trim()
+                break
+            }
+        }
+    }
+} catch {}
+
 $script:UPDATE_CHECK_URL    = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json"
 
 function Get-VUONGTTCurrentVersion {

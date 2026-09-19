@@ -46,7 +46,8 @@ $resources = @(
     "/resource:`"$RootDir\src\Core\LicenseManager.ps1`",VUONGTT.LicenseManager.ps1",
     "/resource:`"$RootDir\src\Core\IpScanner.ps1`",VUONGTT.IpScanner.ps1",
     "/resource:`"$RootDir\src\Core\ConfigManager.ps1`",VUONGTT.ConfigManager.ps1",
-    "/resource:`"$RootDir\src\Data\SoftwareDatabase.json`",VUONGTT.SoftwareDatabase.json"
+    "/resource:`"$RootDir\src\Data\SoftwareDatabase.json`",VUONGTT.SoftwareDatabase.json",
+    "/resource:`"$RootDir\version.json`",VUONGTT.version.json"
 )
 
 # Auto embed all colorful brand icons from src\Assets\AppIcons

@@ -111,6 +111,8 @@ $btnCopyMoMo        = Get-Control "btnCopyMoMo"
 $btnFooterMoMo      = Get-Control "btnFooterMoMo"
 $btnCopyMoMoSysInfo = Get-Control "btnCopyMoMoSysInfo"
 $btnShowDisclaimer  = Get-Control "btnShowDisclaimer"
+$txtFooterVersionDisplay = Get-Control "txtFooterVersionDisplay"
+if ($txtFooterVersionDisplay) { $txtFooterVersionDisplay.Text = "v" + (Get-VUONGTTCurrentVersion) }
 
 # Admin & License Controls
 $borderLicenseBadge         = Get-Control "borderLicenseBadge"
