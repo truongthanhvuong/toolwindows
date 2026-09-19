@@ -1,7 +1,7 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.908.66"
+$script:APP_CURRENT_VERSION = "20.5.908.67"
 
 # Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {

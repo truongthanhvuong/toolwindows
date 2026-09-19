@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.908.66",
+    "version":  "20.5.908.67",
     "releaseDate":  "19/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Khac phuc triet de loi kich hoat Key PRO khong nhan ban quyen va trang Admin khong nhan dien key da dung: Luu ban quyen da tang RAM/Registry/File, day tu dong trang thai kich hoat len Cloud GitHub va dong bo 2 chieu tuc thi giua cac may.",
                       "BẢN FINAL CHÍNH THỨC 2026: Tối ưu hóa toàn diện 16 phân hệ, loại bỏ triệt để lỗi gán phím Font, nâng cấp động cơ Direct NVMe SMART IOCTL siêu tốc, xóa bỏ 100% lỗi N/A thông số ổ cứng, bổ sung công cụ kiểm tra chi tiết số giờ chạy và tối ưu hóa bộ nhớ siêu nhẹ mượt.",
                       "Khắc phục triệt để lỗi N/A thông số ổ cứng: Bổ sung động cơ phần cứng Direct NVMe SMART IOCTL Log Page 0x02, loại bỏ 100% chữ N/A và bổ sung công cụ chuyên sâu Kiểm Tra Chi Tiết Số Giờ Đã Chạy \u0026 Lịch Sử Vận Hành Máy.",
                       "Khắc phục triệt để 100% lỗi đơ treo tool (Not Responding) khi cài đặt Font: Chuyển đổi thông điệp WM_FONTCHANGE sang SendNotifyMessage Win32 bất đồng bộ phi khóa, bổ sung liên kết FontSubstitutes chống lỗi font cũ và tối ưu hóa luồng giao diện UI.",

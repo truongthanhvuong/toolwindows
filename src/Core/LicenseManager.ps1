@@ -42,9 +42,13 @@ try {
 # -------------------------------------------------------------------------
 # 1. HARDWARE IDENTIFIER (HWID) ENGINE
 # -------------------------------------------------------------------------
+$script:CACHED_HWID = ""
+
 function Get-VUONGTTHardwareId {
     [CmdletBinding()]
     param()
+    if ($script:CACHED_HWID) { return $script:CACHED_HWID }
+
     try {
         $biosSerial = (Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue).SerialNumber
         if (-not $biosSerial) { $biosSerial = "BIOS-GENERIC-DEFAULT" }
@@ -63,9 +67,12 @@ function Get-VUONGTTHardwareId {
         
         # Format HWID: HWID-XXXX-XXXX-XXXX-XXXX
         $hwid = "HWID-" + $hex.Substring(0, 4) + "-" + $hex.Substring(4, 4) + "-" + $hex.Substring(8, 4) + "-" + $hex.Substring(12, 4)
+        $script:CACHED_HWID = $hwid
         return $hwid
     } catch {
-        return "HWID-FALLBACK-" + $env:COMPUTERNAME
+        $fallback = "HWID-FALLBACK-" + $env:COMPUTERNAME
+        $script:CACHED_HWID = $fallback
+        return $fallback
     }
 }
 
@@ -352,12 +359,13 @@ function Save-VUONGTTLicenseVault {
     }
 
     $json = if ($cleanList.Count -eq 0) { "[]" } else { [object[]]$cleanList | ConvertTo-Json -Depth 4 }
-    [System.IO.File]::WriteAllText($script:VAULT_FILE, $json, [System.Text.Encoding]::UTF8)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($script:VAULT_FILE, $json, $utf8NoBom)
 
     try {
         $localVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
         if (Test-Path (Split-Path $localVault -Parent)) {
-            [System.IO.File]::WriteAllText($localVault, $json, [System.Text.Encoding]::UTF8)
+            [System.IO.File]::WriteAllText($localVault, $json, $utf8NoBom)
         }
     } catch {}
     if (-not $SkipCloudPush) {
@@ -457,7 +465,8 @@ function Get-VUONGTTAllLicenses {
         if (Test-Path $script:VAULT_FILE) {
             $content = [System.IO.File]::ReadAllText($script:VAULT_FILE, [System.Text.Encoding]::UTF8)
             if ($content) {
-                $parsed = $content | ConvertFrom-Json
+                $cleanText = $content.TrimStart([char]0xFEFF).Trim()
+                $parsed = $cleanText | ConvertFrom-Json
                 $rawItems = @()
                 if ($parsed -is [System.Collections.IEnumerable] -and -not ($parsed -is [string])) {
                     $rawItems = @($parsed)
@@ -568,14 +577,16 @@ function Push-VUONGTTCloudFile {
             "Accept"        = "application/vnd.github.v3+json"
         }
 
-        $metaUrl = "https://api.github.com/repos/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME/contents/$RelativePath?ref=main&ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+        $metaUrl = "https://api.github.com/repos/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME/contents/$RelativePath"
         $sha = ""
         try {
             $meta = Invoke-RestMethod -Uri $metaUrl -Headers $headers -TimeoutSec 6
             if ($meta -and $meta.sha) { $sha = $meta.sha }
         } catch {}
 
-        $b64 = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($FileContent))
+        $cleanContent = $FileContent.Trim().TrimStart([char]0xFEFF)
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        $b64 = [System.Convert]::ToBase64String($utf8NoBom.GetBytes($cleanContent))
         $bodyObj = @{
             message = $CommitMessage
             content = $b64
@@ -605,6 +616,7 @@ function Sync-VUONGTTCloudAdminData {
         KeysMerged     = 0
         TotalKeys      = 0
         PoliciesSynced = $false
+        VaultUpdated   = $false
         Message        = ""
     }
 
@@ -688,7 +700,8 @@ function Sync-VUONGTTCloudAdminData {
         }
 
         if ($cloudVaultJson) {
-            $cloudItems = @(ConvertFrom-Json $cloudVaultJson)
+            $cleanVaultText = $cloudVaultJson.TrimStart([char]0xFEFF).Trim()
+            $cloudItems = @(ConvertFrom-Json $cleanVaultText)
             $cloudKeySet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
             foreach ($ck in $cloudItems) {
                 if ($ck -and $ck.Key -and ($ck.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
@@ -701,17 +714,27 @@ function Sync-VUONGTTCloudAdminData {
                             $ex.UsedHWID = $ck.UsedHWID
                             $ex.UsedPCName = $ck.UsedPCName
                             $ex.ActivatedDate = $ck.ActivatedDate
+                            $syncResult.VaultUpdated = $true
                         }
                     } else {
                         $mergedMap[$cKeyClean] = $ck
                         $syncResult.KeysMerged++
+                        $syncResult.VaultUpdated = $true
                     }
                 }
             }
             foreach ($lk in $mergedMap.Keys) {
+                $localItem = $mergedMap[$lk]
                 if (-not $cloudKeySet.Contains($lk)) {
                     $localKeysMissingOnCloud = $true
                     break
+                } elseif ($localItem.IsUsed) {
+                    $cMatch = $cloudItems | Where-Object { $_.Key -and ($_.Key.Trim() -eq $lk) }
+                    if ($cMatch -and -not $cMatch.IsUsed) {
+                        # Local máy đã kích hoạt nhưng Cloud chưa ghi nhận -> Tự động đẩy trạng thái kích hoạt lên Cloud
+                        $localKeysMissingOnCloud = $true
+                        break
+                    }
                 }
             }
         }
@@ -780,7 +803,8 @@ function Sync-VUONGTTCloudAdminData {
         }
 
         if ($cloudPolicyJson) {
-            $cloudPolicies = ConvertFrom-Json $cloudPolicyJson
+            $cleanPolicyText = $cloudPolicyJson.TrimStart([char]0xFEFF).Trim()
+            $cloudPolicies = ConvertFrom-Json $cleanPolicyText
             if ($cloudPolicies -and $cloudPolicies.Count -gt 0) {
                 $currentLocalJson = ""
                 if (Test-Path $script:POLICY_FILE) {
@@ -788,11 +812,12 @@ function Sync-VUONGTTCloudAdminData {
                 }
                 $newFormattedJson = $cloudPolicies | ConvertTo-Json -Depth 4
                 if ($newFormattedJson.Trim() -ne $currentLocalJson.Trim()) {
-                    [System.IO.File]::WriteAllText($script:POLICY_FILE, $newFormattedJson, [System.Text.Encoding]::UTF8)
+                    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+                    [System.IO.File]::WriteAllText($script:POLICY_FILE, $newFormattedJson, $utf8NoBom)
                     try {
                         $localPolicy = Join-Path $PSScriptRoot "..\Config\feature_policy.json"
                         if (Test-Path (Split-Path $localPolicy -Parent)) {
-                            [System.IO.File]::WriteAllText($localPolicy, $newFormattedJson, [System.Text.Encoding]::UTF8)
+                            [System.IO.File]::WriteAllText($localPolicy, $newFormattedJson, $utf8NoBom)
                         }
                     } catch {}
                     $syncResult.PoliciesSynced = $true
@@ -820,7 +845,7 @@ function Invoke-VUONGTTKeyActivation {
     $currentHWID = Get-VUONGTTHardwareId
 
     # 1. Tìm kiếm trong Vault cục bộ trước
-    $vault = Get-VUONGTTAllLicenses
+    $vault = @(Get-VUONGTTAllLicenses)
     $targetKey = $vault | Where-Object { $_.Key -eq $cleanKey }
 
     # 2. Nếu không có trong Vault cục bộ -> Thẩm định chữ ký số Universal Cryptographic (Cross-Machine)
@@ -839,7 +864,6 @@ function Invoke-VUONGTTKeyActivation {
                 ActivatedDate = ""
             }
             $vault += $targetKey
-            $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
         }
     }
 
@@ -852,7 +876,7 @@ function Invoke-VUONGTTKeyActivation {
 
     # 3. KIỂM TRA QUY TẮC KHÓA 1 MÁY DUY NHẤT (SINGLE-USE HARDWARE LOCK)
     if ($targetKey.IsUsed) {
-        if ($targetKey.UsedHWID -eq $currentHWID) {
+        if ($targetKey.UsedHWID -eq $currentHWID -or $targetKey.UsedPCName -eq $env:COMPUTERNAME) {
             # Máy này đã kích hoạt trước đó bằng key này -> Cho phép khôi phục
             Write-VUONGTTActiveLicenseFile -Key $targetKey.Key -Customer $targetKey.Customer -Duration $targetKey.Duration -HWID $currentHWID
             return [PSCustomObject]@{
@@ -876,8 +900,10 @@ function Invoke-VUONGTTKeyActivation {
     $targetKey.UsedPCName    = $env:COMPUTERNAME
     $targetKey.ActivatedDate = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
 
-    $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
+    # ĐỒNG BỘ TỨC THÌ LÊN CLOUD GITHUB VÀ KHO CỤC BỘ
+    Save-VUONGTTLicenseVault -KeyList $vault
 
+    # LƯU BẢN QUYỀN PRO ĐA TẦNG (IN-MEMORY + REGISTRY + FILE .LIC)
     Write-VUONGTTActiveLicenseFile -Key $targetKey.Key -Customer $targetKey.Customer -Duration $targetKey.Duration -HWID $currentHWID
 
     return [PSCustomObject]@{
@@ -910,39 +936,123 @@ function Write-VUONGTTActiveLicenseFile {
         Signature     = $signature
     }
 
+    # 1. CẬP NHẬT CACHE TOÀN CỤC TRONG RAM (0ms, không bao giờ bị delay hay file lock)
+    $global:cachedProLicense = [PSCustomObject]@{
+        IsPro    = $true
+        License  = $licData
+        Duration = $Duration
+        Customer = $Customer
+        Reason   = "Bản quyền PRO hợp lệ"
+    }
+
+    # 2. LƯU VÀO REGISTRY WINDOWS USER (HKCU:\SOFTWARE\VUONGTT_Toolkit\License)
+    # Khong bao gio bi xoa boi Disk Cleanup, Temp Cleaner hay xung dot quyen thu muc
+    try {
+        $regPath = "HKCU:\SOFTWARE\VUONGTT_Toolkit\License"
+        if (-not (Test-Path $regPath)) {
+            New-Item -Path $regPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $regPath -Name "Key" -Value $Key -Force
+        Set-ItemProperty -Path $regPath -Name "Customer" -Value $Customer -Force
+        Set-ItemProperty -Path $regPath -Name "Duration" -Value $Duration -Force
+        Set-ItemProperty -Path $regPath -Name "HWID" -Value $HWID -Force
+        Set-ItemProperty -Path $regPath -Name "PCName" -Value $env:COMPUTERNAME -Force
+        Set-ItemProperty -Path $regPath -Name "ActivatedDate" -Value $licData.ActivatedDate -Force
+        Set-ItemProperty -Path $regPath -Name "Signature" -Value $signature -Force
+        Set-ItemProperty -Path $regPath -Name "IsPro" -Value 1 -Force
+    } catch {}
+
+    # 3. LƯU RA TỆP TIN .LIC VỚI UTF-8 KHÔNG BOM
     $json = $licData | ConvertTo-Json -Depth 4
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
     $base64 = [System.Convert]::ToBase64String($bytes)
-    Set-Content -Path $script:ACTIVE_LIC_FILE -Value $base64 -Encoding ASCII
+    
+    try {
+        $dir = Split-Path $script:ACTIVE_LIC_FILE -Parent
+        if (-not (Test-Path $dir)) { New-Item -Path $dir -ItemType Directory -Force | Out-Null }
+        [System.IO.File]::WriteAllText($script:ACTIVE_LIC_FILE, $base64, [System.Text.Encoding]::ASCII)
+    } catch {}
 
-    # Sao lưu thêm 1 bản dự phòng vào thư mục local ..\Config nếu có
     try {
         $localLic = Join-Path $PSScriptRoot "..\Config\active_license.lic"
-        Set-Content -Path $localLic -Value $base64 -Encoding ASCII -ErrorAction SilentlyContinue
+        if (Test-Path (Split-Path $localLic -Parent)) {
+            [System.IO.File]::WriteAllText($localLic, $base64, [System.Text.Encoding]::ASCII)
+        }
     } catch {}
 }
 
 function Test-VUONGTTProLicense {
     [CmdletBinding()]
     param()
-    if (-not (Test-Path $script:ACTIVE_LIC_FILE)) {
-        # Fallback thử kiểm tra thư mục local
+
+    # 1. KIỂM TRA BỘ NHỚ RAM CACHE TRƯỚC (SIÊU TỐC, ĐÁP ỨNG TỨC THÌ TRONG CÙNG PHIÊN)
+    if ($global:cachedProLicense -and $global:cachedProLicense.IsPro) {
+        return $global:cachedProLicense
+    }
+
+    $currentHWID = Get-VUONGTTHardwareId
+
+    # 2. KIỂM TRA REGISTRY HKCU (AN TOÀN TUYỆT ĐỐI, BẢO TOÀN QUA MỌI LẦN CẬP NHẬT EXE)
+    try {
+        $regPath = "HKCU:\SOFTWARE\VUONGTT_Toolkit\License"
+        if (Test-Path $regPath) {
+            $regKey       = (Get-ItemProperty -Path $regPath -Name "Key" -ErrorAction SilentlyContinue).Key
+            $regCustomer  = (Get-ItemProperty -Path $regPath -Name "Customer" -ErrorAction SilentlyContinue).Customer
+            $regDuration  = (Get-ItemProperty -Path $regPath -Name "Duration" -ErrorAction SilentlyContinue).Duration
+            $regHWID      = (Get-ItemProperty -Path $regPath -Name "HWID" -ErrorAction SilentlyContinue).HWID
+            $regSignature = (Get-ItemProperty -Path $regPath -Name "Signature" -ErrorAction SilentlyContinue).Signature
+            $regPCName    = (Get-ItemProperty -Path $regPath -Name "PCName" -ErrorAction SilentlyContinue).PCName
+            $regDate      = (Get-ItemProperty -Path $regPath -Name "ActivatedDate" -ErrorAction SilentlyContinue).ActivatedDate
+
+            if ($regKey -and $regSignature -and ($regHWID -eq $currentHWID -or $regPCName -eq $env:COMPUTERNAME)) {
+                $sigSeed = "VUONGTT_PRO_2026:" + $regKey + ":" + $regHWID + ":" + $regDuration
+                $sha = [System.Security.Cryptography.SHA256]::Create()
+                $expectedSig = ($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($sigSeed)) | ForEach-Object { $_.ToString("X2") }) -join ""
+
+                if ($regSignature -eq $expectedSig) {
+                    $licObj = [PSCustomObject]@{
+                        Key           = $regKey
+                        Customer      = $regCustomer
+                        Duration      = $regDuration
+                        HWID          = $regHWID
+                        PCName        = $regPCName
+                        ActivatedDate = $regDate
+                        Signature     = $regSignature
+                    }
+                    $resObj = [PSCustomObject]@{
+                        IsPro    = $true
+                        License  = $licObj
+                        Duration = $regDuration
+                        Customer = $regCustomer
+                        Reason   = "Bản quyền PRO hợp lệ (Registry)"
+                    }
+                    $global:cachedProLicense = $resObj
+                    return $resObj
+                }
+            }
+        }
+    } catch {}
+
+    # 3. KIỂM TRA FILE BẢN QUYỀN TRÊN Ổ ĐĨA
+    $licFilePath = $script:ACTIVE_LIC_FILE
+    if (-not (Test-Path $licFilePath)) {
         $localLic = Join-Path $PSScriptRoot "..\Config\active_license.lic"
         if (Test-Path $localLic) {
-            Copy-Item -Path $localLic -Destination $script:ACTIVE_LIC_FILE -Force -ErrorAction SilentlyContinue
+            $licFilePath = $localLic
         } else {
             return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Chưa kích hoạt bản quyền" }
         }
     }
 
     try {
-        $base64 = Get-Content -Path $script:ACTIVE_LIC_FILE -Raw -ErrorAction Stop
-        $bytes = [System.Convert]::FromBase64String($base64.Trim())
+        $base64 = [System.IO.File]::ReadAllText($licFilePath, [System.Text.Encoding]::ASCII).Trim()
+        if (-not $base64) { return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Tệp bản quyền rỗng" } }
+        $bytes = [System.Convert]::FromBase64String($base64)
         $json = [System.Text.Encoding]::UTF8.GetString($bytes)
-        $lic = ConvertFrom-Json $json
+        $cleanJson = $json.TrimStart([char]0xFEFF).Trim()
+        $lic = ConvertFrom-Json $cleanJson
 
-        $currentHWID = Get-VUONGTTHardwareId
-        if ($lic.HWID -ne $currentHWID) {
+        if ($lic.HWID -ne $currentHWID -and $lic.PCName -ne $env:COMPUTERNAME) {
             return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "HWID không khớp (File bản quyền sao chép từ máy khác)" }
         }
 
@@ -956,31 +1066,35 @@ function Test-VUONGTTProLicense {
         }
 
         # ĐỐI SOÁT VỚI KHO VAULT: NẾU THIẾU TRONG VAULT -> TỰ ĐỘNG PHỤC HỒI LẠI VÀO VAULT
-        $vault = Get-VUONGTTAllLicenses
-        $vaultKey = $vault | Where-Object { $_.Key -eq $lic.Key }
-        if (-not $vaultKey) {
-            $newEntry = [PSCustomObject]@{
-                Key           = $lic.Key
-                Customer      = $lic.Customer
-                Duration      = $lic.Duration
-                CreatedDate   = $lic.ActivatedDate
-                IsUsed        = $true
-                UsedHWID      = $lic.HWID
-                UsedPCName    = $lic.PCName
-                ActivatedDate = $lic.ActivatedDate
+        try {
+            $vault = @(Get-VUONGTTAllLicenses)
+            $vaultKey = $vault | Where-Object { $_.Key -eq $lic.Key }
+            if (-not $vaultKey) {
+                $newEntry = [PSCustomObject]@{
+                    Key           = $lic.Key
+                    Customer      = $lic.Customer
+                    Duration      = $lic.Duration
+                    CreatedDate   = $lic.ActivatedDate
+                    IsUsed        = $true
+                    UsedHWID      = $lic.HWID
+                    UsedPCName    = $lic.PCName
+                    ActivatedDate = $lic.ActivatedDate
+                }
+                $vault += $newEntry
+                Save-VUONGTTLicenseVault -KeyList $vault -SkipCloudPush
             }
-            $vault += $newEntry
-            $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
-        }
+        } catch {}
 
-        return [PSCustomObject]@{
+        $resObj = [PSCustomObject]@{
             IsPro    = $true
             License  = $lic
             Duration = $lic.Duration
             Customer = $lic.Customer
             Reason   = "Bản quyền PRO hợp lệ"
         }
+        $global:cachedProLicense = $resObj
+        return $resObj
     } catch {
-        return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Lỗi đọc file bản quyền" }
+        return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Lỗi đọc file bản quyền: $($_.Exception.Message)" }
     }
 }

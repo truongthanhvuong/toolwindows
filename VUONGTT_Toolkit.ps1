@@ -4832,7 +4832,7 @@ function Render-VUONGTTAdminKeys {
     $rawKeys = Get-VUONGTTAllLicenses
     $keys = @($rawKeys | Where-Object { $_ -and $_.Key -and ($_.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$') })
     $totalCount = $keys.Count
-    $usedCount  = ($keys | Where-Object { $_.IsUsed }).Count
+    $usedCount  = @($keys | Where-Object { $_.IsUsed -eq $true -or [string]$_.IsUsed -eq "True" }).Count
     $freeCount  = $totalCount - $usedCount
 
     if ($lblKeyVaultStats) {
@@ -5229,7 +5229,30 @@ if ($btnModalActivateSubmit) {
         $res = Invoke-VUONGTTKeyActivation -InputKey $keyInput
         if ($res.Success) {
             $modalActivatePro.Visibility = [System.Windows.Visibility]::Collapsed
+            
+            # CẬP NHẬT TRỰC TIẾP BADGE VÀ NÚT BẢN QUYỀN SANG 🟢 PRO NGAY TỨC THÌ
+            try {
+                $conv = [System.Windows.Media.BrushConverter]::new()
+                if ($borderLicenseBadge) {
+                    $borderLicenseBadge.Background  = $conv.ConvertFromString("#ECFDF5")
+                    $borderLicenseBadge.BorderBrush = $conv.ConvertFromString("#A7F3D0")
+                }
+                if ($txtLicenseBadge) {
+                    $txtLicenseBadge.Text       = "🟢 PRO • $($res.Duration)"
+                    $txtLicenseBadge.Foreground = $conv.ConvertFromString("#047857")
+                }
+                if ($btnActivateLicense) {
+                    $btnActivateLicense.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            } catch {}
+
             Update-VUONGTTLicenseUI
+
+            # NẾU TRANG QUẢN TRỊ ĐANG MỞ, CẬP NHẬT LẠI DANH SÁCH KEY ĐỂ THẤY NGAY KEY ĐÃ DÙNG
+            if ($pageAdminPortal -and $pageAdminPortal.Visibility -eq [System.Windows.Visibility]::Visible) {
+                Render-VUONGTTAdminKeys
+            }
+
             $txtFooterStatus.Text = "• [PRO] $($res.Message)"
 
             # TỰ ĐỘNG KIỂM TRA VÀ CẬP NHẬT PHIÊN BẢN MỚI (AUTO UPDATE)
@@ -5598,11 +5621,11 @@ $window.Add_ContentRendered({
                         }
 
                         # Tự động cập nhật kho key nếu có key mới hoặc thay đổi trạng thái kích hoạt từ xa
-                        if ($cRes -and $cRes.KeysMerged -gt 0) {
+                        if ($cRes -and ($cRes.KeysMerged -gt 0 -or $cRes.VaultUpdated)) {
                             if ($pageAdminPortal -and $pageAdminPortal.Visibility -eq [System.Windows.Visibility]::Visible) {
                                 Render-VUONGTTAdminKeys
                             }
-                            $txtFooterStatus.Text = "• [AUTO-SYNC] Đã tự động đồng bộ thêm $($cRes.KeysMerged) License Key mới từ Cloud!"
+                            $txtFooterStatus.Text = "• [AUTO-SYNC] Đã tự động đồng bộ kho License Key từ Cloud!"
                         }
                     }
                 } catch {
