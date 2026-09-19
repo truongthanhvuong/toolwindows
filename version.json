@@ -1,9 +1,9 @@
-﻿{
+{
     "version":  "20.5.908.70",
     "releaseDate":  "19/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
-                      "Bản Cập Nhật Hoàn Hảo v20.5.908.69: Hợp nhất Tối Ưu \u0026 Dọn Dẹp và Tweaks Pro thành 1 tab duy nhất, bổ sung tính năng Menu Chuột Phải Windows 10 cổ điển, cố định thanh Thao Tác bên trái tab Cài Đặt Ứng Dụng khi cuộn trang, khắc phục triệt để lỗi font ï»¿ và đồng bộ hóa toàn bộ font chữ hệ thống sang Segoe UI sắc nét.",
+                      "Bản Cập Nhật Hotfix v20.5.908.70: Khắc phục triệt để 100% lỗi tải Office ('The underlying connection was closed: An unexpected error occurred on a send') bằng động cơ Fallback ODT đa tầng, tích hợp sẵn setup.exe trong Assets, giải nén không cần UAC và tái cấu trúc layout form Office căn chỉnh cột chuẩn mực chống đè chữ.",
                       "Toi uu hoa he thong dong bo Cloud License Keys 2 chieu thoi gian thuc: Hop nhat danh sach key giua cac may, tu dong loai bo key rac, uu tien trang thai da kich hoat va cap nhat tuc thi qua GitHub REST API 0s latency.",
                       "Khac phuc triet de loi kich hoat Key PRO khong nhan ban quyen va trang Admin khong nhan dien key da dung: Luu ban quyen da tang RAM/Registry/File, day tu dong trang thai kich hoat len Cloud GitHub va dong bo 2 chieu tuc thi giua cac may.",
                       "BẢN FINAL CHÍNH THỨC 2026: Tối ưu hóa toàn diện 16 phân hệ, loại bỏ triệt để lỗi gán phím Font, nâng cấp động cơ Direct NVMe SMART IOCTL siêu tốc, xóa bỏ 100% lỗi N/A thông số ổ cứng, bổ sung công cụ kiểm tra chi tiết số giờ chạy và tối ưu hóa bộ nhớ siêu nhẹ mượt.",

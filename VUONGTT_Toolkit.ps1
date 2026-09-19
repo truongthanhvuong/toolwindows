@@ -1419,12 +1419,16 @@ function Execute-EnhancedOfficeInstall {
     try {
         $script:runningOfficeProc = Start-VUONGTTOfficeInstall -ConfigFile $cfg -DownloadOnly $DownloadOnly -OnProgress {
             param($msg)
-            $txtOfficeLog.Text = $msg
+            if ($txtOfficeLog) {
+                $txtOfficeLog.Text = $msg
+                Invoke-VUONGTTDoEvents
+            }
         }
         $prgOffice.Value = 100
         $txtOfficeLog.Text = "Tiến trình ODT đã khởi động thành công! Đang thực thi ngầm..."
         [System.Windows.MessageBox]::Show("Tiến trình Microsoft Office ODT đang chạy ngầm trong máy. Vui lòng giữ kết nối Internet ổn định!", "Cài Đặt Office", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
     } catch {
+        $prgOffice.Value = 0
         $txtOfficeLog.Text = "Lỗi: $($_.Exception.Message)"
         [System.Windows.MessageBox]::Show("Lỗi: $($_.Exception.Message)", "Lỗi Cài Đặt", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
     }

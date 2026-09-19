@@ -99,6 +99,137 @@ $visioXml
     return $OutputPath
 }
 
+function Get-VUONGTTOfficeDeploymentTool {
+    [CmdletBinding()]
+    param(
+        [string]$DestinationDir = "$env:TEMP\VUONGTT_ODT",
+        [scriptblock]$OnProgress = $null
+    )
+
+    if (-not (Test-Path $DestinationDir)) {
+        New-Item -ItemType Directory -Path $DestinationDir -Force | Out-Null
+    }
+
+    $setupExe = Join-Path $DestinationDir "setup.exe"
+    if (Test-Path $setupExe) {
+        $size = (Get-Item $setupExe).Length
+        if ($size -gt 500000) {
+            return $setupExe
+        }
+    }
+
+    # 1. Kiểm tra file setup.exe có sẵn trong thư mục Assets của Tool
+    $assetSetupCandidates = @(
+        "$PSScriptRoot\..\Assets\setup.exe",
+        "src\Assets\setup.exe",
+        "$env:TEMP\setup.exe"
+    )
+    foreach ($cand in $assetSetupCandidates) {
+        if (Test-Path $cand) {
+            Copy-Item -Path $cand -Destination $setupExe -Force -ErrorAction SilentlyContinue
+            if ((Test-Path $setupExe) -and (Get-Item $setupExe).Length -gt 1000000) {
+                return $setupExe
+            }
+        }
+    }
+
+    # Kích hoạt toàn diện các giao thức TLS hiện đại và tối ưu kết nối
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Tls,Tls11,Tls12' -bor 3072 -bor 12288
+    [System.Net.ServicePointManager]::DefaultConnectionLimit = 64
+    [System.Net.ServicePointManager]::Expect100Continue = $false
+
+    if ($OnProgress) { & $OnProgress "Đang tìm kiếm phiên bản Microsoft Office Deployment Tool (ODT) mới nhất..." }
+
+    # Danh sách URL tải ODT (ưu tiên cào link mới nhất từ Microsoft, fallback qua link direct)
+    $candidateUrls = [System.Collections.Generic.List[string]]::new()
+
+    # 1. Cố gắng lấy link direct mới nhất từ trang download chính thức của Microsoft
+    try {
+        $wc = New-Object System.Net.WebClient
+        $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+        $html = $wc.DownloadString("https://www.microsoft.com/en-us/download/details.aspx?id=49117")
+        if ($html -match 'https://download\.microsoft\.com/download/[^"''\s\<\>]+\.exe') {
+            $candidateUrls.Add($matches[0])
+        }
+    } catch {}
+
+    # 2. Link direct Microsoft ODT chính thức cập nhật 2026
+    $candidateUrls.Add("https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_20326-20112.exe")
+
+    # 3. Link direct dự phòng của Microsoft
+    $candidateUrls.Add("https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool.exe")
+
+    $installer = Join-Path $DestinationDir "odt_installer.exe"
+    $downloadSuccess = $false
+
+    foreach ($url in $candidateUrls) {
+        try {
+            if ($OnProgress) { & $OnProgress "Đang tải công cụ ODT từ máy chủ Microsoft ($url)..." }
+            $wc = New-Object System.Net.WebClient
+            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+            $wc.DownloadFile($url, $installer)
+            if ((Test-Path $installer) -and (Get-Item $installer).Length -gt 1000000) {
+                $downloadSuccess = $true
+                break
+            }
+        } catch {
+            # Thử URL tiếp theo nếu URL hiện tại lỗi
+        }
+    }
+
+    if (-not $downloadSuccess) {
+        throw "Không thể kết nối đến máy chủ Microsoft để tải công cụ Office ODT! Vui lòng kiểm tra lại kết nối mạng Internet hoặc tường lửa."
+    }
+
+    # Trích xuất file setup.exe từ odt_installer.exe
+    if ($OnProgress) { & $OnProgress "Đang giải nén bộ cài Microsoft ODT..." }
+
+    # Kỹ thuật 1: Trích xuất trực tiếp khối CAB (MSCF signature) và dùng expand.exe (Không cần quyền Elevation!)
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($installer)
+        $cabOffset = -1
+        for ($i = 0; $i -lt ($bytes.Length - 4); $i++) {
+            if ($bytes[$i] -eq 0x4D -and $bytes[$i+1] -eq 0x53 -and $bytes[$i+2] -eq 0x43 -and $bytes[$i+3] -eq 0x46) {
+                $cabOffset = $i
+                break
+            }
+        }
+        if ($cabOffset -gt 0) {
+            $cabFile = Join-Path $DestinationDir "odt_inner.cab"
+            $cabBytes = New-Object byte[] ($bytes.Length - $cabOffset)
+            [System.Array]::Copy($bytes, $cabOffset, $cabBytes, 0, $cabBytes.Length)
+            [System.IO.File]::WriteAllBytes($cabFile, $cabBytes)
+            & expand $cabFile -F:* $DestinationDir | Out-Null
+            Remove-Item $cabFile -Force -ErrorAction SilentlyContinue
+        }
+    } catch {}
+
+    # Kỹ thuật 2 (Fallback): Gọi trực tiếp tiến trình giải nén nếu Kỹ thuật 1 chưa tạo ra setup.exe
+    if (-not (Test-Path $setupExe)) {
+        try {
+            Start-Process -FilePath $installer -ArgumentList "/quiet /extract:`"$DestinationDir`"" -Wait -NoNewWindow
+        } catch {}
+    }
+
+    # Kỹ thuật 3 (Fallback cuối cùng): Tải trực tiếp file setup.exe từ kho CDN GitHub
+    if (-not (Test-Path $setupExe)) {
+        try {
+            if ($OnProgress) { & $OnProgress "Đang tải file setup.exe dự phòng từ CDN GitHub..." }
+            $ghUrl = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/src/Assets/setup.exe"
+            $wc = New-Object System.Net.WebClient
+            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            $wc.DownloadFile($ghUrl, $setupExe)
+        } catch {}
+    }
+
+    # Kiểm tra lại setup.exe
+    if (Test-Path $setupExe) {
+        return $setupExe
+    } else {
+        throw "Không tìm thấy file setup.exe sau khi giải nén Microsoft ODT."
+    }
+}
+
 function Start-VUONGTTOfficeInstall {
     param(
         [string]$ConfigFile,
@@ -107,19 +238,7 @@ function Start-VUONGTTOfficeInstall {
     )
 
     $workDir = "$env:TEMP\VUONGTT_ODT"
-    if (-not (Test-Path $workDir)) {
-        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
-    }
-
-    $setupExe = Join-Path $workDir "setup.exe"
-    if (-not (Test-Path $setupExe)) {
-        if ($OnProgress) { & $OnProgress "Đang tải công cụ Microsoft Office Deployment Tool (ODT)..." }
-        $odtUrl = "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_17830.20162.exe"
-        $installer = Join-Path $workDir "odt_installer.exe"
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri $odtUrl -OutFile $installer -UseBasicParsing
-        Start-Process -FilePath $installer -ArgumentList "/quiet /extract:`"$workDir`"" -Wait -NoNewWindow
-    }
+    $setupExe = Get-VUONGTTOfficeDeploymentTool -DestinationDir $workDir -OnProgress $OnProgress
 
     if (Test-Path $setupExe) {
         $modeArg = if ($DownloadOnly) { "/download `"$ConfigFile`"" } else { "/configure `"$ConfigFile`"" }
@@ -137,7 +256,7 @@ function Uninstall-VUONGTTOffice {
     param([scriptblock]$OnProgress = $null)
 
     $workDir = "$env:TEMP\VUONGTT_ODT"
-    $setupExe = Join-Path $workDir "setup.exe"
+    $setupExe = Get-VUONGTTOfficeDeploymentTool -DestinationDir $workDir -OnProgress $OnProgress
     
     $removeXml = "$env:TEMP\VUONGTT_Office_Remove.xml"
     @"
