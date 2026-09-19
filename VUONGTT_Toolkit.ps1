@@ -3071,51 +3071,81 @@ $onFontLog = {
 
 if ($btnInstallAllFonts) {
     $btnInstallAllFonts.Add_Click({
-        if ($txtFontLog) { $txtFontLog.Text = "" }
-        $txtFooterStatus.Text = "• [FONTS] Đang nạp toàn bộ Font Tiếng Việt & Unicode..."
-        $res = Install-VietnameseFonts -FontType "ALL" -OnProgress $onFontLog
-        $txtFooterStatus.Text = "• [OK] Đã hoàn tất cài đặt toàn bộ Font Tiếng Việt!"
-        [System.Windows.MessageBox]::Show("Đã hoàn tất quá trình cài đặt và kích hoạt toàn bộ Font Tiếng Việt vào hệ thống Windows!", "Cài Đặt Font Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        $btnInstallAllFonts.IsEnabled = $false
+        try {
+            if ($txtFontLog) { $txtFontLog.Text = "" }
+            $txtFooterStatus.Text = "• [FONTS] Đang nạp toàn bộ Font Tiếng Việt & Unicode..."
+            Invoke-VUONGTTDoEvents
+            $res = Install-VietnameseFonts -FontType "ALL" -OnProgress $onFontLog
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất cài đặt toàn bộ Font Tiếng Việt!"
+            [System.Windows.MessageBox]::Show("Đã hoàn tất quá trình cài đặt và kích hoạt toàn bộ Font Tiếng Việt vào hệ thống Windows!", "Cài Đặt Font Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } finally {
+            $btnInstallAllFonts.IsEnabled = $true
+        }
     })
 }
 
 if ($btnInstallAutoCADFonts) {
     $btnInstallAutoCADFonts.Add_Click({
-        if ($txtFontLog) { $txtFontLog.Text = "" }
-        $txtFooterStatus.Text = "• [AUTOCAD] Đang nạp bộ Font AutoCAD (.SHX & TTF) chống lỗi bản vẽ..."
-        $res = Install-VietnameseFonts -FontType "AUTOCAD" -OnProgress $onFontLog
-        $txtFooterStatus.Text = "• [OK] Đã hoàn tất cài đặt trọn bộ Font AutoCAD!"
-        [System.Windows.MessageBox]::Show("ĐÃ HOÀN TẤT CÀI ĐẶT BỘ FONT AUTOCAD!`n`n• Toàn bộ font .SHX đã được nạp vào tất cả phiên bản AutoCAD tìm thấy trên máy.`n• Toàn bộ font bản vẽ TTF đã được đăng ký vào Windows Fonts.`n• Đã xuất gói dự phòng tại màn hình Desktop (AutoCAD_Fonts_Full).", "Cài Đặt Font AutoCAD Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        $btnInstallAutoCADFonts.IsEnabled = $false
+        try {
+            if ($txtFontLog) { $txtFontLog.Text = "" }
+            $txtFooterStatus.Text = "• [AUTOCAD] Đang nạp bộ Font AutoCAD (.SHX & TTF) chống lỗi bản vẽ..."
+            Invoke-VUONGTTDoEvents
+            $res = Install-VietnameseFonts -FontType "AUTOCAD" -OnProgress $onFontLog
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất cài đặt trọn bộ Font AutoCAD!"
+            [System.Windows.MessageBox]::Show("ĐÃ HOÀN TẤT CÀI ĐẶT BỘ FONT AUTOCAD!`n`n• Toàn bộ font .SHX đã được nạp vào tất cả phiên bản AutoCAD tìm thấy trên máy.`n• Toàn bộ font bản vẽ TTF đã được đăng ký vào Windows Fonts.`n• Đã xuất gói dự phòng tại màn hình Desktop (AutoCAD_Fonts_Full).", "Cài Đặt Font AutoCAD Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } finally {
+            $btnInstallAutoCADFonts.IsEnabled = $true
+        }
     })
 }
 
 if ($btnInstallVNIFonts) {
     $btnInstallVNIFonts.Add_Click({
-        if ($txtFontLog) { $txtFontLog.Text = "" }
-        $txtFooterStatus.Text = "• [FONTS] Đang cài đặt bộ Font VNI..."
-        $res = Install-VietnameseFonts -FontType "VNI" -OnProgress $onFontLog
-        $txtFooterStatus.Text = "• [OK] Đã cài đặt bộ Font VNI!"
-        [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt bộ Font VNI (VNI-Times, VNI-Aptima...)!", "Cài Đặt Font VNI Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        $btnInstallVNIFonts.IsEnabled = $false
+        try {
+            if ($txtFontLog) { $txtFontLog.Text = "" }
+            $txtFooterStatus.Text = "• [FONTS] Đang cài đặt bộ Font VNI..."
+            Invoke-VUONGTTDoEvents
+            $res = Install-VietnameseFonts -FontType "VNI" -OnProgress $onFontLog
+            $txtFooterStatus.Text = "• [OK] Đã cài đặt bộ Font VNI!"
+            [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt bộ Font VNI (VNI-Times, VNI-Aptima...)!", "Cài Đặt Font VNI Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } finally {
+            $btnInstallVNIFonts.IsEnabled = $true
+        }
     })
 }
 
 if ($btnInstallTCVN3Fonts) {
     $btnInstallTCVN3Fonts.Add_Click({
-        if ($txtFontLog) { $txtFontLog.Text = "" }
-        $txtFooterStatus.Text = "• [FONTS] Đang cài đặt bộ Font TCVN3 / ABC..."
-        $res = Install-VietnameseFonts -FontType "TCVN3" -OnProgress $onFontLog
-        $txtFooterStatus.Text = "• [OK] Đã cài đặt bộ Font TCVN3!"
-        [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt bộ Font TCVN3 (.VnTime, .VnArial...)!", "Cài Đặt Font TCVN3 Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        $btnInstallTCVN3Fonts.IsEnabled = $false
+        try {
+            if ($txtFontLog) { $txtFontLog.Text = "" }
+            $txtFooterStatus.Text = "• [FONTS] Đang cài đặt bộ Font TCVN3 / ABC..."
+            Invoke-VUONGTTDoEvents
+            $res = Install-VietnameseFonts -FontType "TCVN3" -OnProgress $onFontLog
+            $txtFooterStatus.Text = "• [OK] Đã cài đặt bộ Font TCVN3!"
+            [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt bộ Font TCVN3 (.VnTime, .VnArial...)!", "Cài Đặt Font TCVN3 Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } finally {
+            $btnInstallTCVN3Fonts.IsEnabled = $true
+        }
     })
 }
 
 if ($btnInstallGoogleFonts) {
     $btnInstallGoogleFonts.Add_Click({
-        if ($txtFontLog) { $txtFontLog.Text = "" }
-        $txtFooterStatus.Text = "• [FONTS] Đang cài đặt Google Fonts tiếng Việt (Roboto, Inter...)..."
-        $res = Install-VietnameseFonts -FontType "UNICODE" -OnProgress $onFontLog
-        $txtFooterStatus.Text = "• [OK] Đã cài đặt Google Fonts tiếng Việt!"
-        [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt bộ Google Fonts Tiếng Việt hiện đại!", "Cài Đặt Google Fonts Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        $btnInstallGoogleFonts.IsEnabled = $false
+        try {
+            if ($txtFontLog) { $txtFontLog.Text = "" }
+            $txtFooterStatus.Text = "• [FONTS] Đang cài đặt Google Fonts tiếng Việt (Roboto, Inter...)..."
+            Invoke-VUONGTTDoEvents
+            $res = Install-VietnameseFonts -FontType "UNICODE" -OnProgress $onFontLog
+            $txtFooterStatus.Text = "• [OK] Đã cài đặt Google Fonts tiếng Việt!"
+            [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt bộ Google Fonts Tiếng Việt hiện đại!", "Cài Đặt Google Fonts Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } finally {
+            $btnInstallGoogleFonts.IsEnabled = $true
+        }
     })
 }
 
@@ -3126,11 +3156,17 @@ if ($btnInstallCustomFonts) {
         $dlg.Filter = "Tất cả định dạng font (*.zip;*.shx;*.ttf;*.otf)|*.zip;*.shx;*.ttf;*.otf|Tệp ZIP Font (*.zip)|*.zip|Font AutoCAD (*.shx)|*.shx|Font Windows (*.ttf;*.otf)|*.ttf;*.otf|Mọi tệp (*.*)|*.*"
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             $selFile = $dlg.FileName
-            if ($txtFontLog) { $txtFontLog.Text = "" }
-            $txtFooterStatus.Text = "• [FONTS] Đang nạp gói font từ: $selFile..."
-            $res = Install-VietnameseFonts -FontType "CUSTOM" -CustomSourcePath $selFile -OnProgress $onFontLog
-            $txtFooterStatus.Text = "• [OK] Đã nạp xong gói font tùy chọn!"
-            [System.Windows.MessageBox]::Show("Đã nạp thành công toàn bộ font từ tệp tùy chọn vào hệ thống Windows và AutoCAD!", "Cài Đặt Font Tùy Chọn", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            $btnInstallCustomFonts.IsEnabled = $false
+            try {
+                if ($txtFontLog) { $txtFontLog.Text = "" }
+                $txtFooterStatus.Text = "• [FONTS] Đang nạp gói font từ: $selFile..."
+                Invoke-VUONGTTDoEvents
+                $res = Install-VietnameseFonts -FontType "CUSTOM" -CustomSourcePath $selFile -OnProgress $onFontLog
+                $txtFooterStatus.Text = "• [OK] Đã nạp xong gói font tùy chọn!"
+                [System.Windows.MessageBox]::Show("Đã nạp thành công toàn bộ font từ tệp tùy chọn vào hệ thống Windows và AutoCAD!", "Cài Đặt Font Tùy Chọn", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            } finally {
+                $btnInstallCustomFonts.IsEnabled = $true
+            }
         }
     })
 }

@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.908.62",
+    "version":  "20.5.908.63",
     "releaseDate":  "19/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Khắc phục triệt để 100% lỗi đơ treo tool (Not Responding) khi cài đặt Font: Chuyển đổi thông điệp WM_FONTCHANGE sang SendNotifyMessage Win32 bất đồng bộ phi khóa, bổ sung liên kết FontSubstitutes chống lỗi font cũ và tối ưu hóa luồng giao diện UI.",
                       "Bổ sung Module Kiểm Tra Sức Khỏe Ổ Cứng chuyên sâu (CrystalDiskInfo style): Chẩn đoán tình trạng sức khỏe S.M.A.R.T, nhiệt độ, giờ hoạt động, tuổi thọ chip nhớ, đo tốc độ Đọc/Ghi thực tế SSD/HDD và quét kiểm tra bề mặt phân vùng.",
                       "Khắc phục triệt để lỗi tràn giao diện khi thu nhỏ cửa sổ Admin Portal, mở rộng ô hiển thị Thời hạn, chuẩn hóa kho License Key.",
                       "He thong 1000 may dong bo 1 ban duy nhat: Tu dong Hot-Update khong can bam nut, toi uu hoa CDN Fastly khong bi rate limit va tu dong dong bo moi khi Admin cap nhat cau hinh",

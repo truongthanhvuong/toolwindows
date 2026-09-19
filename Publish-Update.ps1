@@ -1,4 +1,4 @@
-# =========================================================================
+﻿# =========================================================================
 #   VUONGTT TOOLKIT 2026 - 1-CLICK RELEASE & AUTO-UPDATE PUBLISHER
 #   Chuc nang: Tu dong dong goi EXE, cap nhat version va push len GitHub
 #              de tat ca cac may khach hang bam 'Cap Nhat Tool' la nhan ngay ban moi.

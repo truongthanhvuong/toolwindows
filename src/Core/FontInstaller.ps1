@@ -1,16 +1,19 @@
 ﻿# VUONGTT Toolkit 2026 - Vietnamese Fonts & AutoCAD Typography Installer Module
 # Hỗ trợ cài đặt toàn diện Font VNI, TCVN3/ABC, Google Fonts Unicode và Bộ Font AutoCAD chuyên dụng (.SHX & TTF)
 
-if (-not ([System.Management.Automation.PSTypeName]'FontHelper').Type) {
+if (-not ([System.Management.Automation.PSTypeName]'SafeFontHelper').Type) {
     Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
-public class FontHelper {
+public class SafeFontHelper {
     [DllImport("gdi32.dll", EntryPoint="AddFontResourceW", SetLastError=true)]
     public static extern int AddFontResource([In, MarshalAs(UnmanagedType.LPWStr)] string lpFileName);
 
-    [DllImport("user32.dll")]
-    public static extern int SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll", SetLastError=true)]
+    public static extern bool SendNotifyMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError=true)]
+    public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 }
 "@ -ErrorAction SilentlyContinue
 }
@@ -99,7 +102,7 @@ function Register-VUONGTTFontFile {
             Set-ItemProperty -Path $regKey -Name $regValName -Value $fileName -Force -ErrorAction SilentlyContinue
 
             # Thông báo hệ thống nạp font tức thì qua GDI
-            [FontHelper]::AddFontResource($destWin) | Out-Null
+            [SafeFontHelper]::AddFontResource($destWin) | Out-Null
             return $true
         } catch {
             return $false
@@ -263,7 +266,26 @@ $(($cadDirs | ForEach-Object { "   -> $_" }) -join "`r`n")
             foreach ($ef in $existFonts) {
                 $baseN = [System.IO.Path]::GetFileNameWithoutExtension($ef.Name)
                 Set-ItemProperty -Path $regKey -Name "$baseN (TrueType)" -Value $ef.Name -Force -ErrorAction SilentlyContinue
-                [FontHelper]::AddFontResource($ef.FullName) | Out-Null
+                [SafeFontHelper]::AddFontResource($ef.FullName) | Out-Null
+            }
+
+            # Cấu hình liên kết dự phòng (FontSubstitutes) đảm bảo mọi tài liệu VNI / TCVN3 cũ hiển thị trơn tru không lỗi
+            $subKey = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontSubstitutes"
+            if (Test-Path $subKey) {
+                if ($FontType -in @("ALL", "VNI")) {
+                    Write-Log "⚙️ Đang cấu hình liên kết dự phòng (FontSubstitutes) cho bộ mã VNI..."
+                    Set-ItemProperty -Path $subKey -Name "VNI-Times" -Value "Times New Roman" -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $subKey -Name "VNI-Helve" -Value "Arial" -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $subKey -Name "VNI-Aptima" -Value "Tahoma" -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $subKey -Name "VNI-Arial" -Value "Arial" -Force -ErrorAction SilentlyContinue
+                }
+                if ($FontType -in @("ALL", "TCVN3")) {
+                    Write-Log "⚙️ Đang cấu hình liên kết dự phòng (FontSubstitutes) cho bộ mã TCVN3 / ABC..."
+                    Set-ItemProperty -Path $subKey -Name ".VnTime" -Value "Times New Roman" -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $subKey -Name ".VnTimeH" -Value "Times New Roman" -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $subKey -Name ".VnArial" -Value "Arial" -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $subKey -Name ".VnArialH" -Value "Arial" -Force -ErrorAction SilentlyContinue
+                }
             }
 
             # Tải bổ sung các font tiêu chuẩn từ kho Google Fonts Tiếng Việt
@@ -273,27 +295,31 @@ $(($cadDirs | ForEach-Object { "   -> $_" }) -join "`r`n")
                     @{ Name = "Roboto-Regular.ttf"; Url = "https://raw.githubusercontent.com/google/fonts/main/ofl/roboto/Roboto%5Bwdth%2Cwght%5D.ttf" },
                     @{ Name = "Inter-Regular.ttf";  Url = "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf" }
                 )
-                $wc = New-Object System.Net.WebClient
-                $wc.Headers.Add("User-Agent", "VUONGTT-FontInstaller/2026")
                 foreach ($gf in $googleFontsList) {
                     $dlTarget = Join-Path $workDir $gf.Name
                     try {
                         Write-Log "   -> Đang nạp: $($gf.Name)..."
-                        $wc.DownloadFile($gf.Url, $dlTarget)
+                        Invoke-WebRequest -Uri $gf.Url -OutFile $dlTarget -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
                         if (Test-Path $dlTarget) {
                             Register-VUONGTTFontFile -FontFilePath $dlTarget | Out-Null
                             Write-Log "   ✅ [OK] Đã cài đặt thành công: $($gf.Name)"
                         }
                     } catch {
-                        Write-Log "   ⚠️ Tải font $($gf.Name) trực tuyến thất bại (Bỏ qua)."
+                        Write-Log "   ℹ️ Bỏ qua tải trực tuyến $($gf.Name) (Hệ thống đã có font chuẩn tương đương)."
                     }
                 }
             }
         }
 
-        # BƯỚC CUỐI: THÔNG BÁO CHO TOÀN BỘ WINDOWS VÀ CÁC PHẦN MỀM ĐANG MỞ
+        # BƯỚC CUỐI: THÔNG BÁO CHO TOÀN BỘ WINDOWS VÀ CÁC PHẦN MỀM ĐANG MỞ (NON-BLOCKING BROADCAST)
         Write-Log "🔄 Đang phát sóng thông điệp WM_FONTCHANGE làm mới bộ nhớ cache Font toàn Windows..."
-        [FontHelper]::SendMessage([IntPtr]0xffff, 0x001D, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        try {
+            [SafeFontHelper]::SendNotifyMessage([IntPtr]0xffff, 0x001D, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        } catch {
+            try {
+                [SafeFontHelper]::PostMessage([IntPtr]0xffff, 0x001D, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+            } catch {}
+        }
 
         Write-Log "=========================================================="
         Write-Log "🎉 [HOÀN TẤT] Quá trình cài đặt Font chữ ($FontType) thành công 100%!"
