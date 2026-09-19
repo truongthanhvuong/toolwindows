@@ -1,9 +1,13 @@
 ﻿[
     {
-        "value":  [
-
-                  ],
-        "Count":  0
+        "Key":  "VUONG-4P34-HE36-5B74-FHCV",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Lifetime",
+        "CreatedDate":  "19/09/2026 11:51:28",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
+        "UsedPCName":  "DESKTOP-BJ38TQN",
+        "ActivatedDate":  "19/09/2026 11:51:28"
     },
     {
         "Key":  "VUONG-LEFF-KV34-ZKWQ-7QZF",

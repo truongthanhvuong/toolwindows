@@ -4551,7 +4551,8 @@ function Render-VUONGTTAdminKeys {
     if (-not $panelKeysContainer) { return }
     $panelKeysContainer.Children.Clear()
 
-    $keys = Get-VUONGTTAllLicenses
+    $rawKeys = Get-VUONGTTAllLicenses
+    $keys = @($rawKeys | Where-Object { $_ -and $_.Key -and ($_.Key -like "VUONG-*") })
     $totalCount = $keys.Count
     $usedCount  = ($keys | Where-Object { $_.IsUsed }).Count
     $freeCount  = $totalCount - $usedCount
@@ -4570,8 +4571,17 @@ function Render-VUONGTTAdminKeys {
         return
     }
 
+    # Hiển thị key mới tạo lên đầu danh sách để Quản trị viên dễ nhìn thấy ngay
+    if ($keys.Count -gt 1) {
+        $displayKeys = [System.Collections.ArrayList]::new($keys)
+        $displayKeys.Reverse()
+    } else {
+        $displayKeys = $keys
+    }
+
     $conv = [System.Windows.Media.BrushConverter]::new()
-    foreach ($k in $keys) {
+    foreach ($k in $displayKeys) {
+        if (-not $k -or -not $k.Key) { continue }
         $card = New-Object System.Windows.Controls.Border
         $card.Background = $window.Resources["CardInnerBgBrush"]
         $card.BorderBrush = if ($k.IsUsed) { $conv.ConvertFromString("#FCA5A5") } else { $conv.ConvertFromString("#A7F3D0") }

@@ -310,6 +310,35 @@ function Test-VUONGTTCryptographicKey {
     return [PSCustomObject]@{ IsValid = $false; Duration = ""; Customer = "" }
 }
 
+function Save-VUONGTTLicenseVault {
+    param([array]$KeyList)
+    $cleanList = @()
+    foreach ($k in $KeyList) {
+        if ($k -and $k.Key -and ($k.Key -like "VUONG-*")) {
+            $cleanList += [PSCustomObject]@{
+                Key           = [string]$k.Key
+                Customer      = [string]$k.Customer
+                Duration      = [string]$k.Duration
+                CreatedDate   = [string]$k.CreatedDate
+                IsUsed        = [bool]$k.IsUsed
+                UsedHWID      = [string]$k.UsedHWID
+                UsedPCName    = [string]$k.UsedPCName
+                ActivatedDate = [string]$k.ActivatedDate
+            }
+        }
+    }
+
+    $json = if ($cleanList.Count -eq 0) { "[]" } else { [object[]]$cleanList | ConvertTo-Json -Depth 4 }
+    [System.IO.File]::WriteAllText($script:VAULT_FILE, $json, [System.Text.Encoding]::UTF8)
+
+    try {
+        $localVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
+        if (Test-Path (Split-Path $localVault -Parent)) {
+            [System.IO.File]::WriteAllText($localVault, $json, [System.Text.Encoding]::UTF8)
+        }
+    } catch {}
+}
+
 function Init-VUONGTTLicenseVault {
     if (-not (Test-Path $script:VAULT_FILE)) {
         # Tự động nạp sẵn các key pre-approved để Admin luôn nhìn thấy trong kho
@@ -326,7 +355,7 @@ function Init-VUONGTTLicenseVault {
                 ActivatedDate = ""
             }
         }
-        $initList | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
+        Save-VUONGTTLicenseVault -KeyList $initList
     }
 }
 
@@ -339,11 +368,9 @@ function New-VUONGTTLicenseKey {
     )
     Init-VUONGTTLicenseVault
     $rng = [System.Security.Cryptography.RNGCryptoServiceProvider]::new()
-    $vault = @()
-    try {
-        $content = Get-Content -Path $script:VAULT_FILE -Raw -Encoding UTF8
-        if ($content) { $vault = @($content | ConvertFrom-Json) }
-    } catch {}
+    
+    # 1. Luôn đọc danh sách key hợp lệ hiện có từ Vault (Lọc sạch rác)
+    $vault = @(Get-VUONGTTAllLicenses)
 
     $durCode = switch ($Duration) {
         "1 Year"  { "Y" }
@@ -353,23 +380,28 @@ function New-VUONGTTLicenseKey {
 
     $newKeys = @()
     for ($i = 0; $i -lt $Count; $i++) {
-        # Tạo 7 ký tự ngẫu nhiên sau mã thời hạn
-        $randBytes = New-Object byte[] 7
-        $rng.GetBytes($randBytes)
-        $rand7 = ""
-        for ($j = 0; $j -lt 7; $j++) {
-            $rand7 += $script:LICENSE_CHARSET[$randBytes[$j] % $script:LICENSE_CHARSET.Length]
-        }
+        $keyCode = ""
+        $attempts = 0
+        # Đảm bảo sinh key duy nhất, không bao giờ trùng lặp key đã có
+        do {
+            $randBytes = New-Object byte[] 7
+            $rng.GetBytes($randBytes)
+            $rand7 = ""
+            for ($j = 0; $j -lt 7; $j++) {
+                $rand7 += $script:LICENSE_CHARSET[$randBytes[$j] % $script:LICENSE_CHARSET.Length]
+            }
 
-        $payload = "$durCode$rand7" # Đúng 8 ký tự (Block 1 & Block 2)
-        $sig = Get-VUONGTTKeySignature -Payload ("VUONGTT_KEY_PAYLOAD:" + $payload) # Đúng 8 ký tự (Block 3 & Block 4)
+            $payload = "$durCode$rand7" # Đúng 8 ký tự (Block 1 & Block 2)
+            $sig = Get-VUONGTTKeySignature -Payload ("VUONGTT_KEY_PAYLOAD:" + $payload) # Đúng 8 ký tự (Block 3 & Block 4)
 
-        $part1 = $payload.Substring(0, 4)
-        $part2 = $payload.Substring(4, 4)
-        $part3 = $sig.Substring(0, 4)
-        $part4 = $sig.Substring(4, 4)
+            $part1 = $payload.Substring(0, 4)
+            $part2 = $payload.Substring(4, 4)
+            $part3 = $sig.Substring(0, 4)
+            $part4 = $sig.Substring(4, 4)
 
-        $keyCode = "VUONG-" + $part1 + "-" + $part2 + "-" + $part3 + "-" + $part4
+            $keyCode = "VUONG-" + $part1 + "-" + $part2 + "-" + $part3 + "-" + $part4
+            $attempts++
+        } while (($vault.Key -contains $keyCode) -and $attempts -lt 100)
 
         $keyObj = [PSCustomObject]@{
             Key           = $keyCode
@@ -385,15 +417,8 @@ function New-VUONGTTLicenseKey {
         $newKeys += $keyObj
     }
 
-    $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
-
-    # Đồng bộ sang local config nếu tồn tại
-    try {
-        $localVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
-        if (Test-Path (Split-Path $localVault -Parent)) {
-            $vault | ConvertTo-Json -Depth 4 | Set-Content -Path $localVault -Encoding UTF8
-        }
-    } catch {}
+    # 2. Lưu đồng bộ và sạch sẽ (chỉ lưu các key hợp lệ)
+    Save-VUONGTTLicenseVault -KeyList $vault
 
     return $newKeys
 }
@@ -401,10 +426,33 @@ function New-VUONGTTLicenseKey {
 function Get-VUONGTTAllLicenses {
     Init-VUONGTTLicenseVault
     try {
-        $content = Get-Content -Path $script:VAULT_FILE -Raw -Encoding UTF8
-        if ($content) {
-            $list = @($content | ConvertFrom-Json)
-            return $list
+        if (Test-Path $script:VAULT_FILE) {
+            $content = [System.IO.File]::ReadAllText($script:VAULT_FILE, [System.Text.Encoding]::UTF8)
+            if ($content) {
+                $parsed = $content | ConvertFrom-Json
+                $rawItems = @()
+                if ($parsed -is [System.Collections.IEnumerable] -and -not ($parsed -is [string])) {
+                    $rawItems = @($parsed)
+                } elseif ($parsed -and ($parsed.PSObject.Properties.Name -contains "value")) {
+                    $rawItems = @($parsed.value)
+                } else {
+                    $rawItems = @($parsed)
+                }
+
+                $validList = @()
+                foreach ($item in $rawItems) {
+                    if ($item -and $item.Key -and ($item.Key -like "VUONG-*")) {
+                        $validList += $item
+                    } elseif ($item -and ($item.PSObject.Properties.Name -contains "value")) {
+                        foreach ($sub in $item.value) {
+                            if ($sub -and $sub.Key -and ($sub.Key -like "VUONG-*")) {
+                                $validList += $sub
+                            }
+                        }
+                    }
+                }
+                return $validList
+            }
         }
     } catch {}
     return @()
@@ -417,11 +465,7 @@ function Remove-VUONGTTLicenseKey {
         $vault = Get-VUONGTTAllLicenses
         $targetKey = $vault | Where-Object { $_.Key -eq $Key }
         $newVault = @($vault | Where-Object { $_.Key -ne $Key })
-        if ($newVault.Count -eq 0) {
-            "[]" | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
-        } else {
-            $newVault | ConvertTo-Json -Depth 4 | Set-Content -Path $script:VAULT_FILE -Encoding UTF8
-        }
+        Save-VUONGTTLicenseVault -KeyList $newVault
 
         # NẾU KEY BỊ XÓA LÀ KEY ĐANG DÙNG TRÊN MÁY NÀY HOẶC TRÙNG HWID -> THU HỒI BẢN QUYỀN MÁY TỨC THÌ
         if (Test-Path $script:ACTIVE_LIC_FILE) {
