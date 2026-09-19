@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.908.57",
+    "version":  "20.5.908.58",
     "releaseDate":  "19/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "He thong Realtime 2-Way Cloud Auto-Sync: Tu dong day len GitHub khi Admin doi cau hinh va tu dong cap nhat toan bo cac may dang mo tool",
                       "He thong Dong Bo Dam May Cloud Sync 2 chieu cho Admin giua cac may tinh va hop nhat kho License Keys",
                       "He thong cap nhat tu dong truc tiep tu GitHub API thoi gian thuc va fix loi tao License Key",
                       "Khắc phục triệt để lỗi tạo License Key: Loại bỏ 100% thẻ vàng rác, đảm bảo tạo key mới nối tiếp không bao giờ đổi hoặc mất key cũ, tự động đẩy key mới nhất lên đầu danh sách Admin.",

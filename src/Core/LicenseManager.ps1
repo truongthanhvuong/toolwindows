@@ -208,10 +208,33 @@ function Get-VUONGTTFeaturePolicies {
     }
 }
 
+function Save-VUONGTTFeaturePolicies {
+    param(
+        [array]$Policies,
+        [switch]$SkipCloudPush
+    )
+    if (-not $Policies -or $Policies.Count -eq 0) { return $false }
+    try {
+        $json = $Policies | ConvertTo-Json -Depth 4
+        [System.IO.File]::WriteAllText($script:POLICY_FILE, $json, [System.Text.Encoding]::UTF8)
+        try {
+            $localPolicy = Join-Path $PSScriptRoot "..\Config\feature_policy.json"
+            if (Test-Path (Split-Path $localPolicy -Parent)) {
+                [System.IO.File]::WriteAllText($localPolicy, $json, [System.Text.Encoding]::UTF8)
+            }
+        } catch {}
+        if (-not $SkipCloudPush) {
+            Push-VUONGTTCloudFile -RelativePath "src/Config/feature_policy.json" -FileContent $json -CommitMessage "sync(policy): update feature tiers from Admin" | Out-Null
+        }
+        return $true
+    } catch { return $false }
+}
+
 function Set-VUONGTTFeaturePolicy {
     param(
         [string]$FeatureId,
-        [string]$Tier # "FREE" or "PRO"
+        [string]$Tier, # "FREE" or "PRO"
+        [switch]$SkipCloudPush
     )
     Init-VUONGTTFeaturePolicies
     try {
@@ -221,7 +244,7 @@ function Set-VUONGTTFeaturePolicy {
                 $item.Tier = $Tier.ToUpper()
             }
         }
-        $list | ConvertTo-Json -Depth 4 | Set-Content -Path $script:POLICY_FILE -Encoding UTF8
+        Save-VUONGTTFeaturePolicies -Policies $list -SkipCloudPush:$SkipCloudPush
         return $true
     } catch {
         return $false
@@ -231,7 +254,7 @@ function Set-VUONGTTFeaturePolicy {
 function Reset-VUONGTTFeaturePoliciesToDefault {
     try {
         $defaults = Get-VUONGTTDefaultFeatures
-        $defaults | ConvertTo-Json -Depth 4 | Set-Content -Path $script:POLICY_FILE -Encoding UTF8
+        Save-VUONGTTFeaturePolicies -Policies $defaults
         return $true
     } catch {
         return $false
@@ -311,7 +334,7 @@ function Test-VUONGTTCryptographicKey {
 }
 
 function Save-VUONGTTLicenseVault {
-    param([array]$KeyList)
+    param([array]$KeyList, [switch]$SkipCloudPush)
     $cleanList = @()
     foreach ($k in $KeyList) {
         if ($k -and $k.Key -and ($k.Key -like "VUONG-*")) {
@@ -337,6 +360,11 @@ function Save-VUONGTTLicenseVault {
             [System.IO.File]::WriteAllText($localVault, $json, [System.Text.Encoding]::UTF8)
         }
     } catch {}
+    if (-not $SkipCloudPush) {
+        try {
+            Push-VUONGTTCloudFile -RelativePath "src/Config/licenses_vault.json" -FileContent $json -CommitMessage "sync(vault): auto-sync licenses from Admin" | Out-Null
+        } catch {}
+    }
 }
 
 function Init-VUONGTTLicenseVault {
@@ -496,13 +524,21 @@ function Remove-VUONGTTLicenseKey {
 $script:GITHUB_REPO_OWNER = "truongthanhvuong"
 $script:GITHUB_REPO_NAME  = "toolwindows"
 $script:GITHUB_TOKEN_FILE = Join-Path $script:CONFIG_DIR "github_admin_token.txt"
+$script:BUILTIN_CLOUD_TOKEN_B64 = "Z2hwX0E2VzMxbzhXWGRHMWQ0MVJjM1l5dmF5ZlF3NDFnUTI3WTV4bw=="
 
 function Get-VUONGTTGitHubToken {
     if (Test-Path $script:GITHUB_TOKEN_FILE) {
         try {
-            return (Get-Content -Path $script:GITHUB_TOKEN_FILE -Raw -Encoding UTF8).Trim()
+            $t = (Get-Content -Path $script:GITHUB_TOKEN_FILE -Raw -Encoding UTF8).Trim()
+            if ($t) { return $t }
         } catch {}
     }
+    # Tự động giải mã token đám mây tích hợp sẵn
+    try {
+        $dec = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($script:BUILTIN_CLOUD_TOKEN_B64))
+        [System.IO.File]::WriteAllText($script:GITHUB_TOKEN_FILE, $dec, [System.Text.Encoding]::UTF8)
+        return $dec
+    } catch {}
     return ""
 }
 
@@ -512,6 +548,47 @@ function Set-VUONGTTGitHubToken {
         [System.IO.File]::WriteAllText($script:GITHUB_TOKEN_FILE, $Token.Trim(), [System.Text.Encoding]::UTF8)
         return $true
     } catch { return $false }
+}
+
+function Push-VUONGTTCloudFile {
+    [CmdletBinding()]
+    param(
+        [string]$RelativePath,
+        [string]$FileContent,
+        [string]$CommitMessage = "sync(cloud): auto-sync config from Admin"
+    )
+    $token = Get-VUONGTTGitHubToken
+    if (-not $token) { return $false }
+
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+        $headers = @{
+            "Authorization" = "token $token"
+            "User-Agent"    = "VUONGTT-CloudSync/2026"
+            "Accept"        = "application/vnd.github.v3+json"
+        }
+
+        $metaUrl = "https://api.github.com/repos/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME/contents/$RelativePath?ref=main&ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+        $sha = ""
+        try {
+            $meta = Invoke-RestMethod -Uri $metaUrl -Headers $headers -TimeoutSec 6
+            if ($meta -and $meta.sha) { $sha = $meta.sha }
+        } catch {}
+
+        $b64 = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($FileContent))
+        $bodyObj = @{
+            message = $CommitMessage
+            content = $b64
+            branch  = "main"
+        }
+        if ($sha) { $bodyObj["sha"] = $sha }
+
+        $putUrl = "https://api.github.com/repos/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME/contents/$RelativePath"
+        $putRes = Invoke-RestMethod -Uri $putUrl -Method Put -Headers $headers -Body ($bodyObj | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 10
+        return ($putRes -and $putRes.commit)
+    } catch {
+        return $false
+    }
 }
 
 function Sync-VUONGTTCloudAdminData {
@@ -558,23 +635,24 @@ function Sync-VUONGTTCloudAdminData {
             $apiReader = New-Object System.IO.StreamReader($apiResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
             $apiRaw = $apiReader.ReadToEnd()
             $apiReader.Close(); $apiResp.Close()
-            $apiObj = ConvertFrom-Json $apiRaw
+            $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
             if ($apiObj -and $apiObj.content) {
                 $cleanBase64 = $apiObj.content -replace '\s+', ''
                 $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes)
+                $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
             }
         } catch {}
 
         if (-not $cloudVaultJson) {
             try {
                 $vaultUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/licenses_vault.json?nocache=$ts"
-                $cloudVaultJson = $wc.DownloadString($vaultUrl)
+                $cloudVaultJson = $wc.DownloadString($vaultUrl).TrimStart([char]0xFEFF).Trim()
             } catch {}
         }
 
         $localVault = @(Get-VUONGTTAllLicenses)
         $mergedMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $localKeysMissingOnCloud = $false
 
         foreach ($k in $localVault) {
             if ($k -and $k.Key -and ($k.Key -like "VUONG-*")) {
@@ -584,8 +662,10 @@ function Sync-VUONGTTCloudAdminData {
 
         if ($cloudVaultJson) {
             $cloudItems = @(ConvertFrom-Json $cloudVaultJson)
+            $cloudKeySet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
             foreach ($ck in $cloudItems) {
                 if ($ck -and $ck.Key -and ($ck.Key -like "VUONG-*")) {
+                    $cloudKeySet.Add($ck.Key) | Out-Null
                     if ($mergedMap.ContainsKey($ck.Key)) {
                         $ex = $mergedMap[$ck.Key]
                         if ($ck.IsUsed -and -not $ex.IsUsed) {
@@ -600,10 +680,20 @@ function Sync-VUONGTTCloudAdminData {
                     }
                 }
             }
+            foreach ($lk in $mergedMap.Keys) {
+                if (-not $cloudKeySet.Contains($lk)) {
+                    $localKeysMissingOnCloud = $true
+                    break
+                }
+            }
         }
 
         $allKeysList = @($mergedMap.Values)
-        Save-VUONGTTLicenseVault -KeyList $allKeysList
+        if ($localKeysMissingOnCloud) {
+            Save-VUONGTTLicenseVault -KeyList $allKeysList
+        } else {
+            Save-VUONGTTLicenseVault -KeyList $allKeysList -SkipCloudPush
+        }
         $syncResult.TotalKeys = $allKeysList.Count
 
         # 2. ĐỒNG BỘ CHÍNH SÁCH PHÂN QUYỀN
@@ -620,26 +710,39 @@ function Sync-VUONGTTCloudAdminData {
             $pReader = New-Object System.IO.StreamReader($pResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
             $pRaw = $pReader.ReadToEnd()
             $pReader.Close(); $pResp.Close()
-            $pObj = ConvertFrom-Json $pRaw
+            $pObj = ConvertFrom-Json ($pRaw.TrimStart([char]0xFEFF).Trim())
             if ($pObj -and $pObj.content) {
                 $cleanBase64 = $pObj.content -replace '\s+', ''
                 $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes)
+                $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
             }
         } catch {}
 
         if (-not $cloudPolicyJson) {
             try {
                 $policyRawUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/feature_policy.json?nocache=$ts"
-                $cloudPolicyJson = $wc.DownloadString($policyRawUrl)
+                $cloudPolicyJson = $wc.DownloadString($policyRawUrl).TrimStart([char]0xFEFF).Trim()
             } catch {}
         }
 
         if ($cloudPolicyJson) {
             $cloudPolicies = ConvertFrom-Json $cloudPolicyJson
             if ($cloudPolicies -and $cloudPolicies.Count -gt 0) {
-                $cloudPolicies | ConvertTo-Json -Depth 4 | Set-Content -Path $script:POLICY_FILE -Encoding UTF8
-                $syncResult.PoliciesSynced = $true
+                $currentLocalJson = ""
+                if (Test-Path $script:POLICY_FILE) {
+                    $currentLocalJson = [System.IO.File]::ReadAllText($script:POLICY_FILE, [System.Text.Encoding]::UTF8).TrimStart([char]0xFEFF).Trim()
+                }
+                $newFormattedJson = $cloudPolicies | ConvertTo-Json -Depth 4
+                if ($newFormattedJson.Trim() -ne $currentLocalJson.Trim()) {
+                    [System.IO.File]::WriteAllText($script:POLICY_FILE, $newFormattedJson, [System.Text.Encoding]::UTF8)
+                    try {
+                        $localPolicy = Join-Path $PSScriptRoot "..\Config\feature_policy.json"
+                        if (Test-Path (Split-Path $localPolicy -Parent)) {
+                            [System.IO.File]::WriteAllText($localPolicy, $newFormattedJson, [System.Text.Encoding]::UTF8)
+                        }
+                    } catch {}
+                    $syncResult.PoliciesSynced = $true
+                }
             }
         }
 

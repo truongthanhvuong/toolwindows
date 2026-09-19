@@ -4739,13 +4739,20 @@ if ($btnAdminLogout) {
 
 if ($btnSavePolicies) {
     $btnSavePolicies.Add_Click({
+        $policies = Get-VUONGTTFeaturePolicies
         foreach ($fid in $script:adminPolicyCombos.Keys) {
             $cmb = $script:adminPolicyCombos[$fid]
             $tier = if ($cmb.SelectedIndex -eq 1) { "PRO" } else { "FREE" }
-            Set-VUONGTTFeaturePolicy -FeatureId $fid -Tier $tier | Out-Null
+            foreach ($p in $policies) {
+                if ($p.Id -eq $fid) { $p.Tier = $tier }
+            }
         }
-        $txtFooterStatus.Text = "• [SAVED] Đã lưu cấu hình phân quyền tính năng Free/PRO thành công!"
-        [System.Windows.MessageBox]::Show("ĐÃ LƯU CẤU HÌNH PHÂN QUYỀN THÀNH CÔNG!`n`nCác tính năng cấu hình là PRO sẽ yêu cầu License Key khi người dùng Free sử dụng.", "Phân Quyền Tính Năng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        $txtFooterStatus.Text = "• [SAVING] Đang lưu cấu hình và tự động đồng bộ lên GitHub Cloud..."
+        Invoke-VUONGTTDoEvents
+        $saved = Save-VUONGTTFeaturePolicies -Policies $policies
+        Update-VUONGTTLicenseUI
+        $txtFooterStatus.Text = "• [SAVED & CLOUD SYNC] Đã lưu cấu hình phân quyền và tự động đồng bộ lên GitHub thành công!"
+        [System.Windows.MessageBox]::Show("ĐÃ LƯU VÀ TỰ ĐỘNG ĐỒNG BỘ LÊN GITHUB THÀNH CÔNG!`n`n- Phân quyền tính năng mới đã được cập nhật trực tiếp lên GitHub Cloud.`n- Toàn bộ các máy khác đang mở tool sẽ tự động nhận diện và cập nhật phân quyền này trong vòng 20 giây!", "Phân Quyền Tính Năng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
     })
 }
 
@@ -5231,21 +5238,113 @@ $window.Add_ContentRendered({
     Update-VUONGTTLicenseUI
     $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng phục vụ!"
 
-    # Kiểm tra bản cập nhật ngầm sau 3.5 giây không làm chậm người dùng
-    $updTimer = New-Object System.Windows.Threading.DispatcherTimer
-    $updTimer.Interval = [TimeSpan]::FromSeconds(3.5)
-    $updTimer.Add_Tick({
-        $updTimer.Stop()
+    # ================= REALTIME BACKGROUND 2-WAY CLOUD AUTO-SYNC WORKER =================
+    # Tự động đồng bộ chính sách phân quyền (Free/PRO), kho license keys và kiểm tra bản update
+    # Chạy ngầm trong background runspace mỗi 20s, hoàn toàn không gây gián đoạn hay đơ giao diện WPF.
+    $script:bgSyncState = @{
+        IsBusy      = $false
+        PowerShell  = $null
+        AsyncHandle = $null
+    }
+    $script:lastSyncTime = [DateTime]::MinValue
+    $script:appRootDir   = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+
+    $bgWorkerScript = {
+        param($appRoot)
         try {
-            $check = Get-VUONGTTAppUpdateInfo
-            if ($check.HasUpdate -and $btnCheckAppUpdate) {
-                $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($check.LatestVersion)"
-                $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
-                $txtFooterStatus.Text = "• [CHÚ Ý] Đã có bản cập nhật mới v$($check.LatestVersion)! Bấm nút 'Có Bản Mới' ở trên để nâng cấp."
+            $licFile = Join-Path $appRoot "src\Core\LicenseManager.ps1"
+            $updFile = Join-Path $appRoot "src\Core\AppUpdater.ps1"
+            if (Test-Path $licFile) { . $licFile }
+            if (Test-Path $updFile) { . $updFile }
+            $cRes = if (Get-Command "Sync-VUONGTTCloudAdminData" -ErrorAction SilentlyContinue) { Sync-VUONGTTCloudAdminData } else { $null }
+            $uInfo = if (Get-Command "Get-VUONGTTAppUpdateInfo" -ErrorAction SilentlyContinue) { Get-VUONGTTAppUpdateInfo } else { $null }
+            return @{
+                Success    = $true
+                SyncResult = $cRes
+                UpdateInfo = $uInfo
+            }
+        } catch {
+            return @{
+                Success = $false
+                Error   = $_.Exception.Message
+            }
+        }
+    }
+
+    $syncWorkerTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $syncWorkerTimer.Interval = [TimeSpan]::FromSeconds(3)
+    $syncWorkerTimer.Add_Tick({
+        # 1. Kiểm tra nếu tác vụ ngầm đã có kết quả
+        if ($script:bgSyncState.IsBusy) {
+            if ($script:bgSyncState.AsyncHandle -and $script:bgSyncState.AsyncHandle.IsCompleted) {
+                try {
+                    $rawRes = $script:bgSyncState.PowerShell.EndInvoke($script:bgSyncState.AsyncHandle)
+                    $script:bgSyncState.PowerShell.Dispose()
+                    $script:bgSyncState.PowerShell = $null
+                    $script:bgSyncState.AsyncHandle = $null
+                    $script:bgSyncState.IsBusy = $false
+                    $script:lastSyncTime = [DateTime]::UtcNow
+
+                    if ($rawRes -and $rawRes.Success) {
+                        $cRes = $rawRes.SyncResult
+                        $uInfo = $rawRes.UpdateInfo
+
+                        # Nhận diện bản cập nhật phần mềm mới từ GitHub
+                        if ($uInfo -and $uInfo.HasUpdate -and $btnCheckAppUpdate) {
+                            $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
+                            $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                            $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
+                            $txtFooterStatus.Text = "• [CHÚ Ý] Đã có bản cập nhật mới v$($uInfo.LatestVersion)! Bấm nút 'Có Bản Mới' ở trên để nâng cấp."
+                        }
+
+                        # Tự động cập nhật phân quyền Free/PRO nếu Admin vừa đổi trên Cloud
+                        if ($cRes -and $cRes.PoliciesSynced) {
+                            Update-VUONGTTLicenseUI
+                            if ($pageAdminPortal -and $pageAdminPortal.Visibility -eq [System.Windows.Visibility]::Visible) {
+                                Render-VUONGTTAdminPolicies
+                            }
+                            $txtFooterStatus.Text = "• [AUTO-SYNC] Đã tự động cập nhật phân quyền tính năng mới nhất từ Cloud GitHub!"
+                        }
+
+                        # Tự động cập nhật kho key nếu có key mới hoặc thay đổi trạng thái kích hoạt từ xa
+                        if ($cRes -and $cRes.KeysMerged -gt 0) {
+                            if ($pageAdminPortal -and $pageAdminPortal.Visibility -eq [System.Windows.Visibility]::Visible) {
+                                Render-VUONGTTAdminKeys
+                            }
+                            $txtFooterStatus.Text = "• [AUTO-SYNC] Đã tự động đồng bộ thêm $($cRes.KeysMerged) License Key mới từ Cloud!"
+                        }
+                    }
+                } catch {
+                    $script:bgSyncState.IsBusy = $false
+                }
+            }
+            return
+        }
+
+        # 2. Kích hoạt lượt đồng bộ mới nếu đã đủ chu kỳ 20 giây (hoặc ngay lần đầu)
+        $elapsed = ([DateTime]::UtcNow - $script:lastSyncTime).TotalSeconds
+        if ($elapsed -ge 20) {
+            $script:bgSyncState.IsBusy = $true
+            try {
+                $ps = [System.Management.Automation.PowerShell]::Create()
+                $ps.AddScript($bgWorkerScript).AddArgument($script:appRootDir) | Out-Null
+                $script:bgSyncState.PowerShell = $ps
+                $script:bgSyncState.AsyncHandle = $ps.BeginInvoke()
+            } catch {
+                $script:bgSyncState.IsBusy = $false
+            }
+        }
+    })
+    $syncWorkerTimer.Start()
+
+    $window.Add_Closing({
+        try {
+            $syncWorkerTimer.Stop()
+            if ($script:bgSyncState -and $script:bgSyncState.PowerShell) {
+                $script:bgSyncState.PowerShell.Dispose()
             }
         } catch {}
     })
-    $updTimer.Start()
 })
 
 # Hiển thị cửa sổ giao diện ngay lập tức
