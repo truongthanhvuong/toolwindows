@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "Key":  "VUONG-LFGQ-TVDM-36KJ-E8ST",
         "Customer":  "Khách Hàng VIP",
@@ -48,5 +48,35 @@
         "UsedHWID":  "HWID-5941-0247-F735-CB0F",
         "UsedPCName":  "DESKTOP-BJ38TQN",
         "ActivatedDate":  "19/09/2026 11:51:28"
+    },
+    {
+        "Key":  "VUONG-LNQ6-N88X-V7G4-8VDH",
+        "Customer":  "Test Customer",
+        "Duration":  "Lifetime",
+        "CreatedDate":  "19/09/2026 14:03:16",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
+        "UsedPCName":  "DESKTOP-BJ38TQN",
+        "ActivatedDate":  "19/09/2026 14:03:19"
+    },
+    {
+        "Key":  "VUONG-LBX3-LMRB-WHLX-XSVA",
+        "Customer":  "Khách Hàng VIP Test",
+        "Duration":  "Lifetime",
+        "CreatedDate":  "19/09/2026 14:11:43",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
+        "UsedPCName":  "DESKTOP-BJ38TQN",
+        "ActivatedDate":  "19/09/2026 14:11:44"
+    },
+    {
+        "Key":  "VUONG-L93R-S54Z-5HQE-RCAB",
+        "Customer":  "Khách Hàng VIP Test",
+        "Duration":  "Lifetime",
+        "CreatedDate":  "19/09/2026 14:12:12",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
+        "UsedPCName":  "DESKTOP-BJ38TQN",
+        "ActivatedDate":  "19/09/2026 14:12:13"
     }
 ]
