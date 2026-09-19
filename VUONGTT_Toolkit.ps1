@@ -4297,41 +4297,24 @@ if ($btnCheckAppUpdate) {
         $origContent = $btnCheckAppUpdate.Content
         $btnCheckAppUpdate.Content = "⏳ Đang kiểm tra..."
 
-        $txtFooterStatus.Text = "• [UPDATE] Đang kiểm tra phiên bản mới từ máy chủ..."
+        $txtFooterStatus.Text = "• [UPDATE] Đang kiểm tra phiên bản mới thời gian thực từ GitHub..."
         Invoke-VUONGTTDoEvents
 
-        $info = Get-VUONGTTAppUpdateInfo
+        $info = Get-VUONGTTAppUpdateInfo -ForceApi
         $btnCheckAppUpdate.Content = $origContent
         $btnCheckAppUpdate.IsEnabled = $true
 
         if ($info.HasUpdate) {
             $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($info.LatestVersion)"
             $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
-
-            $changeText = ($info.Changelog -join "`n• ")
-            $msg = @"
-ĐÃ CÓ PHIÊN BẢN MỚI CHO VUONGTT TOOL PRO 2026!
-=====================================================
-• Phiên bản hiện tại:  v$($info.CurrentVersion)
-• Phiên bản mới nhất:  v$($info.LatestVersion) (Ngày: $($info.ReleaseDate))
-
-ĐIỂM MỚI TRONG BẢN CẬP NHẬT:
-• $changeText
-
-=====================================================
-Bạn có muốn tải và tự động cập nhật ngay bây giờ không?
-(Tool sẽ tự động thay thế file và khởi động lại sau khi tải xong)
-"@
-            $choice = [System.Windows.MessageBox]::Show($msg, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
-            if ($choice -eq [System.Windows.MessageBoxResult]::Yes) {
-                $txtFooterStatus.Text = "• [UPDATE] Đang tải bản cập nhật v$($info.LatestVersion)... Vui lòng chờ!"
-                $res = Invoke-VUONGTTAppSelfUpdate -DownloadUrl $info.DownloadUrl -NewVersion $info.LatestVersion -OnProgress {
-                    param($m)
-                    $txtFooterStatus.Text = "• [UPDATE] $m"
-                    Invoke-VUONGTTDoEvents
-                }
-                [System.Windows.MessageBox]::Show($res, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            $txtFooterStatus.Text = "• [AUTO-UPDATE] Đã tìm thấy bản mới v$($info.LatestVersion)! Đang tự động tải và thay thế file..."
+            Invoke-VUONGTTDoEvents
+            $res = Invoke-VUONGTTAppSelfUpdate -DownloadUrl $info.DownloadUrl -NewVersion $info.LatestVersion -OnProgress {
+                param($m)
+                $txtFooterStatus.Text = "• [UPDATE] $m"
+                Invoke-VUONGTTDoEvents
             }
+            [System.Windows.MessageBox]::Show($res, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
         } elseif (-not $info.IsOnline) {
             $txtFooterStatus.Text = "• [!] Không thể kết nối máy chủ cập nhật!"
             [System.Windows.MessageBox]::Show("KHÔNG THỂ KẾT NỐI MÁY CHỦ CẬP NHẬT!`n`n$($info.Message)", "Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
@@ -4771,7 +4754,7 @@ if ($btnSyncPolicies) {
     $btnSyncPolicies.Add_Click({
         $txtFooterStatus.Text = "• [CLOUD SYNC] Đang đồng bộ cấu hình phân quyền từ Cloud GitHub..."
         Invoke-VUONGTTDoEvents
-        $res = Sync-VUONGTTCloudAdminData
+        $res = Sync-VUONGTTCloudAdminData -ForceApi
         Render-VUONGTTAdminPolicies
         $txtFooterStatus.Text = "• [CLOUD SYNC] " + $res.Message
         [System.Windows.MessageBox]::Show($res.Message, "Đồng Bộ Phân Quyền Cloud", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
@@ -4782,7 +4765,7 @@ if ($btnSyncCloudKeys) {
     $btnSyncCloudKeys.Add_Click({
         $txtFooterStatus.Text = "• [CLOUD SYNC] Đang kết nối máy chủ Cloud và hợp nhất License Keys giữa các máy Admin..."
         Invoke-VUONGTTDoEvents
-        $res = Sync-VUONGTTCloudAdminData
+        $res = Sync-VUONGTTCloudAdminData -ForceApi
         Render-VUONGTTAdminKeys
         Render-VUONGTTAdminPolicies
         $txtFooterStatus.Text = "• [CLOUD SYNC] " + $res.Message
@@ -5290,11 +5273,35 @@ $window.Add_ContentRendered({
                         $uInfo = $rawRes.UpdateInfo
 
                         # Nhận diện bản cập nhật phần mềm mới từ GitHub
-                        if ($uInfo -and $uInfo.HasUpdate -and $btnCheckAppUpdate) {
-                            $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
-                            $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
-                            $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
-                            $txtFooterStatus.Text = "• [CHÚ Ý] Đã có bản cập nhật mới v$($uInfo.LatestVersion)! Bấm nút 'Có Bản Mới' ở trên để nâng cấp."
+                        if ($uInfo -and $uInfo.HasUpdate) {
+                            if ($btnCheckAppUpdate) {
+                                $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
+                                $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                                $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
+                            }
+
+                            # Tự động nâng cấp cho 1000 máy khách hàng (Auto-Yes Hot-Update):
+                            $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
+                            if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdate) {
+                                $script:hasTriggeredAutoUpdate = $true
+                                $txtFooterStatus.Text = "• [AUTO-UPDATE] Tác giả vừa cập nhật bản mới v$($uInfo.LatestVersion)! Tự động nâng cấp sau 3 giây..."
+
+                                $autoUpdTimer = New-Object System.Windows.Threading.DispatcherTimer
+                                $autoUpdTimer.Interval = [TimeSpan]::FromSeconds(3)
+                                $autoUpdTimer.Add_Tick({
+                                    $autoUpdTimer.Stop()
+                                    $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang tải bản v$($uInfo.LatestVersion) từ GitHub..."
+                                    Invoke-VUONGTTDoEvents
+                                    Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -OnProgress {
+                                        param($m)
+                                        $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
+                                        Invoke-VUONGTTDoEvents
+                                    }
+                                })
+                                $autoUpdTimer.Start()
+                            } elseif ($isDevSourceRepo) {
+                                $txtFooterStatus.Text = "• [CHÚ Ý] Đã có bản cập nhật mới v$($uInfo.LatestVersion) trên GitHub! Bấm nút 'Có Bản Mới' ở trên để nâng cấp."
+                            }
                         }
 
                         # Tự động cập nhật phân quyền Free/PRO nếu Admin vừa đổi trên Cloud

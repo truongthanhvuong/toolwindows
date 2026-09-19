@@ -596,7 +596,8 @@ function Sync-VUONGTTCloudAdminData {
     param(
         [string]$RepoOwner = $script:GITHUB_REPO_OWNER,
         [string]$RepoName  = $script:GITHUB_REPO_NAME,
-        [string]$Branch    = "main"
+        [string]$Branch    = "main",
+        [switch]$ForceApi
     )
 
     $syncResult = [PSCustomObject]@{
@@ -621,32 +622,58 @@ function Sync-VUONGTTCloudAdminData {
 
         # 1. ĐỒNG BỘ KHO LICENSE KEYS
         $cloudVaultJson = ""
-        try {
-            $apiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/licenses_vault.json?ref=$Branch&ts=$ts"
-            $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
-            $apiReq.Proxy = $null
-            $apiReq.Timeout = 6000
-            $apiReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
-            $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
-            $apiReq.Headers.Add("Pragma", "no-cache")
-            $ghToken = Get-VUONGTTGitHubToken
-            if ($ghToken) { $apiReq.Headers.Add("Authorization", "Bearer $ghToken") }
-            $apiResp = $apiReq.GetResponse()
-            $apiReader = New-Object System.IO.StreamReader($apiResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
-            $apiRaw = $apiReader.ReadToEnd()
-            $apiReader.Close(); $apiResp.Close()
-            $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
-            if ($apiObj -and $apiObj.content) {
-                $cleanBase64 = $apiObj.content -replace '\s+', ''
-                $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
-            }
-        } catch {}
+        if ($ForceApi) {
+            try {
+                $apiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/licenses_vault.json?ref=$Branch&ts=$ts"
+                $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
+                $apiReq.Proxy = $null
+                $apiReq.Timeout = 6000
+                $apiReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
+                $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                $apiReq.Headers.Add("Pragma", "no-cache")
+                $ghToken = Get-VUONGTTGitHubToken
+                if ($ghToken) { $apiReq.Headers.Add("Authorization", "Bearer $ghToken") }
+                $apiResp = $apiReq.GetResponse()
+                $apiReader = New-Object System.IO.StreamReader($apiResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $apiRaw = $apiReader.ReadToEnd()
+                $apiReader.Close(); $apiResp.Close()
+                $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
+                if ($apiObj -and $apiObj.content) {
+                    $cleanBase64 = $apiObj.content -replace '\s+', ''
+                    $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                    $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                }
+            } catch {}
+        }
 
+        # Fastly CDN Raw URL (Chịu tải 1000+ máy không giới hạn rate limit)
         if (-not $cloudVaultJson) {
             try {
                 $vaultUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/licenses_vault.json?nocache=$ts"
                 $cloudVaultJson = $wc.DownloadString($vaultUrl).TrimStart([char]0xFEFF).Trim()
+            } catch {}
+        }
+
+        # Fallback sang REST API nếu Raw CDN tạm thời chưa tải được
+        if (-not $cloudVaultJson -and -not $ForceApi) {
+            try {
+                $apiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/licenses_vault.json?ref=$Branch&ts=$ts"
+                $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
+                $apiReq.Proxy = $null
+                $apiReq.Timeout = 6000
+                $apiReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
+                $ghToken = Get-VUONGTTGitHubToken
+                if ($ghToken) { $apiReq.Headers.Add("Authorization", "Bearer $ghToken") }
+                $apiResp = $apiReq.GetResponse()
+                $apiReader = New-Object System.IO.StreamReader($apiResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $apiRaw = $apiReader.ReadToEnd()
+                $apiReader.Close(); $apiResp.Close()
+                $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
+                if ($apiObj -and $apiObj.content) {
+                    $cleanBase64 = $apiObj.content -replace '\s+', ''
+                    $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                    $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                }
             } catch {}
         }
 
@@ -696,32 +723,58 @@ function Sync-VUONGTTCloudAdminData {
         }
         $syncResult.TotalKeys = $allKeysList.Count
 
-        # 2. ĐỒNG BỘ CHÍNH SÁCH PHÂN QUYỀN
+        # 2. ĐỒNG BỘ CHÍNH SÁCH PHÂN QUYỀN (FREE VS PRO)
         $cloudPolicyJson = ""
-        try {
-            $policyApiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/feature_policy.json?ref=$Branch&ts=$ts"
-            $pReq = [System.Net.HttpWebRequest]::Create($policyApiUrl)
-            $pReq.Proxy = $null
-            $pReq.Timeout = 6000
-            $pReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
-            $ghToken = Get-VUONGTTGitHubToken
-            if ($ghToken) { $pReq.Headers.Add("Authorization", "Bearer $ghToken") }
-            $pResp = $pReq.GetResponse()
-            $pReader = New-Object System.IO.StreamReader($pResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
-            $pRaw = $pReader.ReadToEnd()
-            $pReader.Close(); $pResp.Close()
-            $pObj = ConvertFrom-Json ($pRaw.TrimStart([char]0xFEFF).Trim())
-            if ($pObj -and $pObj.content) {
-                $cleanBase64 = $pObj.content -replace '\s+', ''
-                $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
-            }
-        } catch {}
+        if ($ForceApi) {
+            try {
+                $policyApiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/feature_policy.json?ref=$Branch&ts=$ts"
+                $pReq = [System.Net.HttpWebRequest]::Create($policyApiUrl)
+                $pReq.Proxy = $null
+                $pReq.Timeout = 6000
+                $pReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
+                $ghToken = Get-VUONGTTGitHubToken
+                if ($ghToken) { $pReq.Headers.Add("Authorization", "Bearer $ghToken") }
+                $pResp = $pReq.GetResponse()
+                $pReader = New-Object System.IO.StreamReader($pResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $pRaw = $pReader.ReadToEnd()
+                $pReader.Close(); $pResp.Close()
+                $pObj = ConvertFrom-Json ($pRaw.TrimStart([char]0xFEFF).Trim())
+                if ($pObj -and $pObj.content) {
+                    $cleanBase64 = $pObj.content -replace '\s+', ''
+                    $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                    $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                }
+            } catch {}
+        }
 
+        # Fastly CDN Raw URL cho cấu hình phân quyền (chịu tải 1000+ máy)
         if (-not $cloudPolicyJson) {
             try {
                 $policyRawUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/feature_policy.json?nocache=$ts"
                 $cloudPolicyJson = $wc.DownloadString($policyRawUrl).TrimStart([char]0xFEFF).Trim()
+            } catch {}
+        }
+
+        # Fallback sang REST API nếu Raw CDN chưa trả về
+        if (-not $cloudPolicyJson -and -not $ForceApi) {
+            try {
+                $policyApiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/feature_policy.json?ref=$Branch&ts=$ts"
+                $pReq = [System.Net.HttpWebRequest]::Create($policyApiUrl)
+                $pReq.Proxy = $null
+                $pReq.Timeout = 6000
+                $pReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
+                $ghToken = Get-VUONGTTGitHubToken
+                if ($ghToken) { $pReq.Headers.Add("Authorization", "Bearer $ghToken") }
+                $pResp = $pReq.GetResponse()
+                $pReader = New-Object System.IO.StreamReader($pResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $pRaw = $pReader.ReadToEnd()
+                $pReader.Close(); $pResp.Close()
+                $pObj = ConvertFrom-Json ($pRaw.TrimStart([char]0xFEFF).Trim())
+                if ($pObj -and $pObj.content) {
+                    $cleanBase64 = $pObj.content -replace '\s+', ''
+                    $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                    $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                }
             } catch {}
         }
 

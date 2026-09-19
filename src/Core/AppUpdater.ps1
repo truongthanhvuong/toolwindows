@@ -1,7 +1,7 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.908.58"
+$script:APP_CURRENT_VERSION = "20.5.908.59"
 
 # Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {
@@ -32,7 +32,8 @@ function Get-VUONGTTAppUpdateInfo {
     [CmdletBinding()]
     param(
         [string]$CheckUrl = $script:UPDATE_CHECK_URL,
-        [int]$TimeoutSec = 5
+        [int]$TimeoutSec = 5,
+        [switch]$ForceApi
     )
 
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
@@ -55,32 +56,36 @@ function Get-VUONGTTAppUpdateInfo {
             $localPath = if ($CheckUrl -like "file://*") { [System.Uri]::new($CheckUrl).LocalPath } else { $CheckUrl }
             $jsonText = [System.IO.File]::ReadAllText($localPath, [System.Text.Encoding]::UTF8)
         } else {
-            # 1. Tầng 1: Truy vấn trực tiếp GitHub REST API (Thời gian thực 100% không bao giờ bị đệm cache)
-            try {
-                $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main&ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-                $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
-                $apiReq.Proxy = $null
-                $apiReq.Timeout = $TimeoutSec * 1000
-                $apiReq.UserAgent = "VUONGTT-Toolkit-Updater/2026"
-                $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
-                $apiReq.Headers.Add("Pragma", "no-cache")
-                $ghToken = if (Get-Command "Get-VUONGTTGitHubToken" -ErrorAction SilentlyContinue) { Get-VUONGTTGitHubToken } else { "" }
-                if ($ghToken) { $apiReq.Headers.Add("Authorization", "Bearer $ghToken") }
-                $apiResp = $apiReq.GetResponse()
-                $apiStream = $apiResp.GetResponseStream()
-                $apiReader = New-Object System.IO.StreamReader($apiStream, [System.Text.Encoding]::UTF8)
-                $apiRaw = $apiReader.ReadToEnd()
-                $apiReader.Close(); $apiStream.Close(); $apiResp.Close()
+            # Kiến trúc phân tán cho 1000+ máy:
+            # - Khi bấm kiểm tra thủ công (-ForceApi): Dùng REST API thời gian thực 0s.
+            # - Khi máy khách chạy ngầm định kỳ: Dùng Fastly Raw CDN không giới hạn rate limit.
+            if ($ForceApi) {
+                try {
+                    $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main&ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+                    $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
+                    $apiReq.Proxy = $null
+                    $apiReq.Timeout = $TimeoutSec * 1000
+                    $apiReq.UserAgent = "VUONGTT-Toolkit-Updater/2026"
+                    $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                    $apiReq.Headers.Add("Pragma", "no-cache")
+                    $ghToken = if (Get-Command "Get-VUONGTTGitHubToken" -ErrorAction SilentlyContinue) { Get-VUONGTTGitHubToken } else { "" }
+                    if ($ghToken) { $apiReq.Headers.Add("Authorization", "Bearer $ghToken") }
+                    $apiResp = $apiReq.GetResponse()
+                    $apiStream = $apiResp.GetResponseStream()
+                    $apiReader = New-Object System.IO.StreamReader($apiStream, [System.Text.Encoding]::UTF8)
+                    $apiRaw = $apiReader.ReadToEnd()
+                    $apiReader.Close(); $apiStream.Close(); $apiResp.Close()
 
-                $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
-                if ($apiObj -and $apiObj.content) {
-                    $cleanBase64 = $apiObj.content -replace '\s+', ''
-                    $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                    $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
-                }
-            } catch {}
+                    $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
+                    if ($apiObj -and $apiObj.content) {
+                        $cleanBase64 = $apiObj.content -replace '\s+', ''
+                        $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                        $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                    }
+                } catch {}
+            }
 
-            # 2. Tầng 2: Fallback sang raw.githubusercontent.com kèm cache-busting timestamp
+            # Fastly CDN Raw URL (Không giới hạn lượt gọi cho 1000+ máy)
             if (-not $jsonText) {
                 $candidateUrls = @(
                     "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json",
@@ -104,6 +109,31 @@ function Get-VUONGTTAppUpdateInfo {
                         }
                     } catch {}
                 }
+            }
+
+            # Fallback sang REST API nếu Raw CDN tạm thời chưa sẵn sàng
+            if (-not $jsonText -and -not $ForceApi) {
+                try {
+                    $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main&ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+                    $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
+                    $apiReq.Proxy = $null
+                    $apiReq.Timeout = $TimeoutSec * 1000
+                    $apiReq.UserAgent = "VUONGTT-Toolkit-Updater/2026"
+                    $ghToken = if (Get-Command "Get-VUONGTTGitHubToken" -ErrorAction SilentlyContinue) { Get-VUONGTTGitHubToken } else { "" }
+                    if ($ghToken) { $apiReq.Headers.Add("Authorization", "Bearer $ghToken") }
+                    $apiResp = $apiReq.GetResponse()
+                    $apiStream = $apiResp.GetResponseStream()
+                    $apiReader = New-Object System.IO.StreamReader($apiStream, [System.Text.Encoding]::UTF8)
+                    $apiRaw = $apiReader.ReadToEnd()
+                    $apiReader.Close(); $apiStream.Close(); $apiResp.Close()
+
+                    $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
+                    if ($apiObj -and $apiObj.content) {
+                        $cleanBase64 = $apiObj.content -replace '\s+', ''
+                        $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                        $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
+                    }
+                } catch {}
             }
         }
 
