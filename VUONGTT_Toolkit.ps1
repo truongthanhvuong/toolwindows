@@ -4552,7 +4552,7 @@ function Render-VUONGTTAdminKeys {
     $panelKeysContainer.Children.Clear()
 
     $rawKeys = Get-VUONGTTAllLicenses
-    $keys = @($rawKeys | Where-Object { $_ -and $_.Key -and ($_.Key -like "VUONG-*") })
+    $keys = @($rawKeys | Where-Object { $_ -and $_.Key -and ($_.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$') })
     $totalCount = $keys.Count
     $usedCount  = ($keys | Where-Object { $_.IsUsed }).Count
     $freeCount  = $totalCount - $usedCount
@@ -4581,7 +4581,7 @@ function Render-VUONGTTAdminKeys {
 
     $conv = [System.Windows.Media.BrushConverter]::new()
     foreach ($k in $displayKeys) {
-        if (-not $k -or -not $k.Key) { continue }
+        if (-not $k -or -not $k.Key -or ($k.Key.Trim() -notmatch '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) { continue }
         $card = New-Object System.Windows.Controls.Border
         $card.Background = $window.Resources["CardInnerBgBrush"]
         $card.BorderBrush = if ($k.IsUsed) { $conv.ConvertFromString("#FCA5A5") } else { $conv.ConvertFromString("#A7F3D0") }
@@ -4598,22 +4598,26 @@ function Render-VUONGTTAdminKeys {
 
         $spInfo = New-Object System.Windows.Controls.StackPanel
         
-        $spKeyRow = New-Object System.Windows.Controls.StackPanel
+        $spKeyRow = New-Object System.Windows.Controls.WrapPanel
         $spKeyRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+        $spKeyRow.Margin = New-Object System.Windows.Thickness(0, 0, 0, 2)
 
         $txtKeyVal = New-Object System.Windows.Controls.TextBlock
-        $txtKeyVal.Text = $k.Key
+        $txtKeyVal.Text = $k.Key.Trim()
         $txtKeyVal.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas, Courier New, monospace")
         $txtKeyVal.FontWeight = [System.Windows.FontWeights]::Bold
-        $txtKeyVal.FontSize = 13.5
+        $txtKeyVal.FontSize = 13
         $txtKeyVal.Foreground = $conv.ConvertFromString("#1E40AF")
-        $txtKeyVal.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+        $txtKeyVal.Margin = New-Object System.Windows.Thickness(0, 0, 8, 2)
+        $txtKeyVal.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $spKeyRow.Children.Add($txtKeyVal) | Out-Null
 
         $durBadge = New-Object System.Windows.Controls.Border
         $durBadge.Background = $conv.ConvertFromString("#FEF3C7")
         $durBadge.CornerRadius = New-Object System.Windows.CornerRadius(3)
         $durBadge.Padding = New-Object System.Windows.Thickness(6, 1, 6, 1)
+        $durBadge.Margin = New-Object System.Windows.Thickness(0, 0, 0, 2)
+        $durBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $durTxt = New-Object System.Windows.Controls.TextBlock
         $durTxt.Text = $k.Duration
         $durTxt.FontSize = 10.5
@@ -4626,8 +4630,9 @@ function Render-VUONGTTAdminKeys {
 
         $txtCust = New-Object System.Windows.Controls.TextBlock
         $txtCust.Text = "Khách hàng: $($k.Customer) • Ngày tạo: $($k.CreatedDate)"
-        $txtCust.FontSize = 11.5
+        $txtCust.FontSize = 11
         $txtCust.Foreground = $window.Resources["TextSecondaryBrush"]
+        $txtCust.TextWrapping = [System.Windows.TextWrapping]::Wrap
         $txtCust.Margin = New-Object System.Windows.Thickness(0, 2, 0, 2)
         $spInfo.Children.Add($txtCust) | Out-Null
 
@@ -4642,6 +4647,7 @@ function Render-VUONGTTAdminKeys {
             $txtStatus.FontWeight = [System.Windows.FontWeights]::SemiBold
         }
         $txtStatus.FontSize = 11
+        $txtStatus.TextWrapping = [System.Windows.TextWrapping]::Wrap
         $spInfo.Children.Add($txtStatus) | Out-Null
 
         [System.Windows.Controls.Grid]::SetColumn($spInfo, 0)

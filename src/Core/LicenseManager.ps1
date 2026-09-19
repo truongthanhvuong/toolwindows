@@ -337,7 +337,7 @@ function Save-VUONGTTLicenseVault {
     param([array]$KeyList, [switch]$SkipCloudPush)
     $cleanList = @()
     foreach ($k in $KeyList) {
-        if ($k -and $k.Key -and ($k.Key -like "VUONG-*")) {
+        if ($k -and $k.Key -and ($k.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
             $cleanList += [PSCustomObject]@{
                 Key           = [string]$k.Key
                 Customer      = [string]$k.Customer
@@ -469,11 +469,11 @@ function Get-VUONGTTAllLicenses {
 
                 $validList = @()
                 foreach ($item in $rawItems) {
-                    if ($item -and $item.Key -and ($item.Key -like "VUONG-*")) {
+                    if ($item -and $item.Key -and ($item.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
                         $validList += $item
                     } elseif ($item -and ($item.PSObject.Properties.Name -contains "value")) {
                         foreach ($sub in $item.value) {
-                            if ($sub -and $sub.Key -and ($sub.Key -like "VUONG-*")) {
+                            if ($sub -and $sub.Key -and ($sub.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
                                 $validList += $sub
                             }
                         }
@@ -682,8 +682,8 @@ function Sync-VUONGTTCloudAdminData {
         $localKeysMissingOnCloud = $false
 
         foreach ($k in $localVault) {
-            if ($k -and $k.Key -and ($k.Key -like "VUONG-*")) {
-                $mergedMap[$k.Key] = $k
+            if ($k -and $k.Key -and ($k.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
+                $mergedMap[$k.Key.Trim()] = $k
             }
         }
 
@@ -691,10 +691,11 @@ function Sync-VUONGTTCloudAdminData {
             $cloudItems = @(ConvertFrom-Json $cloudVaultJson)
             $cloudKeySet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
             foreach ($ck in $cloudItems) {
-                if ($ck -and $ck.Key -and ($ck.Key -like "VUONG-*")) {
-                    $cloudKeySet.Add($ck.Key) | Out-Null
-                    if ($mergedMap.ContainsKey($ck.Key)) {
-                        $ex = $mergedMap[$ck.Key]
+                if ($ck -and $ck.Key -and ($ck.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
+                    $cKeyClean = $ck.Key.Trim()
+                    $cloudKeySet.Add($cKeyClean) | Out-Null
+                    if ($mergedMap.ContainsKey($cKeyClean)) {
+                        $ex = $mergedMap[$cKeyClean]
                         if ($ck.IsUsed -and -not $ex.IsUsed) {
                             $ex.IsUsed = $true
                             $ex.UsedHWID = $ck.UsedHWID
@@ -702,7 +703,7 @@ function Sync-VUONGTTCloudAdminData {
                             $ex.ActivatedDate = $ck.ActivatedDate
                         }
                     } else {
-                        $mergedMap[$ck.Key] = $ck
+                        $mergedMap[$cKeyClean] = $ck
                         $syncResult.KeysMerged++
                     }
                 }

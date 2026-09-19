@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.908.60",
+    "version":  "20.5.908.61",
     "releaseDate":  "19/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Khắc phục triệt để lỗi tràn giao diện khi thu nhỏ cửa sổ Admin Portal, mở rộng ô hiển thị Thời hạn, chuẩn hóa kho License Key.",
                       "He thong 1000 may dong bo 1 ban duy nhat: Tu dong Hot-Update khong can bam nut, toi uu hoa CDN Fastly khong bi rate limit va tu dong dong bo moi khi Admin cap nhat cau hinh",
                       "He thong Realtime 2-Way Cloud Auto-Sync: Tu dong day len GitHub khi Admin doi cau hinh va tu dong cap nhat toan bo cac may dang mo tool",
                       "He thong Dong Bo Dam May Cloud Sync 2 chieu cho Admin giua cac may tinh va hop nhat kho License Keys",
