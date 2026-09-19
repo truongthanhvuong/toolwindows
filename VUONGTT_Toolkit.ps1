@@ -113,6 +113,9 @@ $btnCopyMoMoSysInfo = Get-Control "btnCopyMoMoSysInfo"
 $btnShowDisclaimer  = Get-Control "btnShowDisclaimer"
 $txtFooterVersionDisplay = Get-Control "txtFooterVersionDisplay"
 if ($txtFooterVersionDisplay) { $txtFooterVersionDisplay.Text = "v" + (Get-VUONGTTCurrentVersion) }
+$txtLogoVersionDisplay = Get-Control "txtLogoVersionDisplay"
+if ($txtLogoVersionDisplay) { $txtLogoVersionDisplay.Text = "v" + (Get-VUONGTTCurrentVersion) + " — Professional" }
+if ($window) { $window.Title = "VUONGTT Tool Pro 2026 - v" + (Get-VUONGTTCurrentVersion) }
 
 # Admin & License Controls
 $borderLicenseBadge         = Get-Control "borderLicenseBadge"
