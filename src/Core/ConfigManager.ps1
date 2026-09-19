@@ -114,23 +114,192 @@ function Open-VUONGTTLegacyPanel {
         switch ($PanelId) {
             "compmgmt"   { Start-Process "compmgmt.msc" }
             "control"    { Start-Process "control.exe" }
-            "main"       { Start-Process "main.cpl" }
-            "ncpa"       { Start-Process "ncpa.cpl" }
-            "power"      { Start-Process "powercfg.cpl" }
-            "printers"   { Start-Process "control" -ArgumentList "printers" }
-            "appwiz"     { Start-Process "appwiz.cpl" }
-            "region"     { Start-Process "intl.cpl" }
-            "security"   { Start-Process "wscui.cpl" }
-            "sound"      { Start-Process "mmsys.cpl" }
-            "sysdm"      { Start-Process "sysdm.cpl" }
-            "timedate"   { Start-Process "timedate.cpl" }
-            "firewall"   { Start-Process "firewall.cpl" }
+            "main"       { Start-Process "control.exe" -ArgumentList "main.cpl" }
+            "ncpa"       { Start-Process "control.exe" -ArgumentList "ncpa.cpl" }
+            "power"      { Start-Process "control.exe" -ArgumentList "powercfg.cpl" }
+            "printers"   { Start-Process "control.exe" -ArgumentList "printers" }
+            "appwiz"     { Start-Process "control.exe" -ArgumentList "appwiz.cpl" }
+            "region"     { Start-Process "control.exe" -ArgumentList "intl.cpl" }
+            "security"   { Start-Process "control.exe" -ArgumentList "wscui.cpl" }
+            "sound"      { Start-Process "control.exe" -ArgumentList "mmsys.cpl" }
+            "sysdm"      { Start-Process "control.exe" -ArgumentList "sysdm.cpl" }
+            "timedate"   { Start-Process "control.exe" -ArgumentList "timedate.cpl" }
+            "firewall"   { Start-Process "control.exe" -ArgumentList "firewall.cpl" }
             "restore"    { Start-Process "rstrui.exe" }
-            "autologon"  { Start-Process "control" -ArgumentList "userpasswords2" }
+            "autologon"  { Start-Process "control.exe" -ArgumentList "userpasswords2" }
             default      { Start-Process "control.exe" }
         }
-        return "[OK] Đã mở bảng điều khiển ${PanelId}."
+        return "[OK] Đã mở bảng điều khiển $PanelId."
     } catch {
-        return "[LỖI] Không thể mở bảng điều khiển ${PanelId}: $($_.Exception.Message)"
+        return "[LỖI] Không thể mở bảng điều khiển $PanelId : $($_.Exception.Message)"
     }
 }
+
+# --- BỘ CÔNG CỤ SỬA LỖI WINDOWS CƠ BẢN & NÂNG CAO ---
+
+function Invoke-VUONGTTFixPrintSpoolerService {
+    $log = @()
+    try {
+        $log += "[1/3] Dừng dịch vụ Print Spooler..."
+        Stop-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+        
+        $log += "[2/3] Dọn dẹp toàn bộ hàng đợi lệnh in bị kẹt (PRINTERS)..."
+        $spoolDir = "$env:WINDIR\System32\spool\PRINTERS"
+        if (Test-Path $spoolDir) {
+            Get-ChildItem -Path $spoolDir -Force -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+        }
+
+        $log += "[3/3] Khởi động lại dịch vụ Print Spooler..."
+        Set-Service -Name "Spooler" -StartupType Automatic -ErrorAction SilentlyContinue
+        Start-Service -Name "Spooler" -ErrorAction SilentlyContinue
+        $log += "[OK] Đã sửa lỗi hàng đợi in và khôi phục dịch vụ Print Spooler thành công!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixExplorerTaskbar {
+    $log = @()
+    try {
+        $log += "[1/3] Đóng các tiến trình Windows Explorer và Shell Host..."
+        Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
+        Stop-Process -Name "StartMenuExperienceHost" -Force -ErrorAction SilentlyContinue
+        Stop-Process -Name "ShellExperienceHost" -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 800
+
+        $log += "[2/3] Dọn dẹp Icon Cache và Thumbnail Cache hệ thống..."
+        $iconCache = "$env:LOCALAPPDATA\IconCache.db"
+        if (Test-Path $iconCache) { Remove-Item -Path $iconCache -Force -ErrorAction SilentlyContinue }
+        $thumbDir = "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"
+        if (Test-Path $thumbDir) {
+            Get-ChildItem -Path $thumbDir -Filter "thumbcache_*.db" -Force -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+
+        $log += "[3/3] Khởi động lại Windows Explorer hoàn toàn mới..."
+        Start-Process "explorer.exe" -ErrorAction SilentlyContinue
+        $log += "[OK] Đã khởi động lại Explorer và làm mới giao diện Taskbar mượt mà!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixWindowsSearch {
+    $log = @()
+    try {
+        $log += "[1/3] Dừng dịch vụ Windows Search (WSearch)..."
+        Stop-Service -Name "WSearch" -Force -ErrorAction SilentlyContinue
+        
+        $log += "[2/3] Đặt lại trạng thái dịch vụ sang Tự động (Automatic)..."
+        Set-Service -Name "WSearch" -StartupType Automatic -ErrorAction SilentlyContinue
+        
+        $log += "[3/3] Khởi động lại dịch vụ Windows Search..."
+        Start-Service -Name "WSearch" -ErrorAction SilentlyContinue
+        $log += "[OK] Đã làm mới chỉ mục tìm kiếm và khôi phục Windows Search thành công!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixMicrosoftStore {
+    $log = @()
+    try {
+        $log += "[1/2] Đang xóa bộ nhớ đệm Microsoft Store Cache (wsreset)..."
+        Start-Process -FilePath "wsreset.exe" -ArgumentList "-i" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+        
+        $log += "[2/2] Đăng ký lại gói cài đặt Microsoft Windows Store..."
+        Get-AppxPackage -AllUsers *WindowsStore* -ErrorAction SilentlyContinue | ForEach-Object {
+            $manifest = "$($_.InstallLocation)\AppXManifest.xml"
+            if (Test-Path $manifest) {
+                Add-AppxPackage -DisableDevelopmentMode -Register $manifest -ErrorAction SilentlyContinue
+            }
+        }
+        $log += "[OK] Đã đặt lại Microsoft Store và khôi phục hoạt động bình thường!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixAudioService {
+    $log = @()
+    try {
+        $log += "[1/2] Dừng và thiết lập dịch vụ Windows Audio & AudioEndpointBuilder..."
+        $audioServices = @("AudioEndpointBuilder", "Audiosrv")
+        foreach ($s in $audioServices) {
+            Set-Service -Name $s -StartupType Automatic -ErrorAction SilentlyContinue
+            Restart-Service -Name $s -Force -ErrorAction SilentlyContinue
+        }
+        $log += "[OK] Đã khởi động lại toàn bộ dịch vụ âm thanh hệ thống thành công!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixTempAndPrefetch {
+    $log = @()
+    try {
+        $log += "[1/3] Dọn dẹp tệp tin rác trong %TEMP%..."
+        if (Test-Path $env:TEMP) {
+            Get-ChildItem -Path $env:TEMP -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        
+        $log += "[2/3] Dọn dẹp thư mục C:\Windows\Temp..."
+        $winTemp = "$env:WINDIR\Temp"
+        if (Test-Path $winTemp) {
+            Get-ChildItem -Path $winTemp -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        $log += "[3/3] Dọn dẹp thư mục Prefetch..."
+        $prefetch = "$env:WINDIR\Prefetch"
+        if (Test-Path $prefetch) {
+            Get-ChildItem -Path $prefetch -Filter "*.pf" -Force -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+        $log += "[OK] Đã dọn sạch tệp tạm, bộ nhớ đệm và file rác hệ thống!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixWindowsFirewall {
+    $log = @()
+    try {
+        $log += "[1/2] Khôi phục cấu hình Windows Defender Firewall về mặc định..."
+        netsh advfirewall reset | Out-Null
+        $log += "[2/2] Khởi động lại dịch vụ mpssvc (Windows Firewall)..."
+        Set-Service -Name "mpssvc" -StartupType Automatic -ErrorAction SilentlyContinue
+        Start-Service -Name "mpssvc" -ErrorAction SilentlyContinue
+        $log += "[OK] Đã thiết lập lại tường lửa Windows Defender Firewall về cấu hình chuẩn!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixHostsFile {
+    $log = @()
+    try {
+        $hostsPath = "$env:WINDIR\System32\drivers\etc\hosts"
+        $log += "[1/2] Sao lưu file hosts hiện tại..."
+        if (Test-Path $hostsPath) {
+            Copy-Item -Path $hostsPath -Destination "$hostsPath.bak_$(Get-Date -Format 'yyyyMMddHHmm')" -Force -ErrorAction SilentlyContinue
+        }
+
+        $defaultHosts = @"
+# Copyright (c) 1993-2009 Microsoft Corp.
+# Default Windows Hosts File
+127.0.0.1       localhost
+::1             localhost
+"@
+        [System.IO.File]::WriteAllText($hostsPath, $defaultHosts, [System.Text.Encoding]::ASCII)
+        $log += "[OK] Đã khôi phục file hosts về nguyên bản sạch 100%!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+

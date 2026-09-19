@@ -1,7 +1,7 @@
 ﻿[
     {
         "Id":  "coccoc",
-        "Name":  "Cá»‘c Cá»‘c Browser",
+        "Name":  "Cốc Cốc Browser",
         "Category":  "Browsers",
         "WingetId":  "CocCoc.CocCoc",
         "Link":  "https://coccoc.com",
@@ -23,7 +23,7 @@
     },
     {
         "Id":  "unikey",
-        "Name":  "UniKey (GÃµ Tiáº¿ng Viá»‡t)",
+        "Name":  "UniKey (Gõ Tiếng Việt)",
         "Category":  "Document",
         "WingetId":  "UniKey.UniKey",
         "Link":  "https://www.unikey.org",
@@ -34,7 +34,7 @@
     },
     {
         "Id":  "evkey",
-        "Name":  "EVKey (Bá»™ gÃµ tiáº¿ng Viá»‡t)",
+        "Name":  "EVKey (Bộ gõ tiếng Việt)",
         "Category":  "Document",
         "WingetId":  "lamquangminh.EVKey",
         "Link":  "https://evkeyvn.com",
@@ -56,7 +56,7 @@
     },
     {
         "Id":  "htkk",
-        "Name":  "HTKK (Há»— Trá»£ KÃª Khai Thuáº¿)",
+        "Name":  "HTKK (Hỗ Trợ Kê Khai Thuế)",
         "Category":  "Accounting",
         "WingetId":  "",
         "Link":  "https://thuedientu.gdt.gov.vn",
@@ -67,7 +67,7 @@
     },
     {
         "Id":  "itaxviewer",
-        "Name":  "iTaxViewer (Äá»c XML Thuáº¿)",
+        "Name":  "iTaxViewer (Đọc XML Thuế)",
         "Category":  "Accounting",
         "WingetId":  "",
         "Link":  "https://thuedientu.gdt.gov.vn",
@@ -78,7 +78,7 @@
     },
     {
         "Id":  "misasme",
-        "Name":  "MISA SME (Káº¿ ToÃ¡n Doanh Nghiá»‡p)",
+        "Name":  "MISA SME (Kế Toán Doanh Nghiệp)",
         "Category":  "Accounting",
         "WingetId":  "",
         "Link":  "https://sme.misa.vn",
@@ -89,7 +89,7 @@
     },
     {
         "Id":  "meinvoice",
-        "Name":  "MISA meInvoice (HÃ³a ÄÆ¡n Äiá»‡n Tá»­)",
+        "Name":  "MISA meInvoice (Hóa Đơn Điện Tử)",
         "Category":  "Accounting",
         "WingetId":  "",
         "Link":  "https://meinvoice.vn",
@@ -100,7 +100,7 @@
     },
     {
         "Id":  "kbhxh",
-        "Name":  "KBHXH (Báº£o Hiá»ƒm XÃ£ Há»™i)",
+        "Name":  "KBHXH (Bảo Hiểm Xã Hội)",
         "Category":  "Accounting",
         "WingetId":  "",
         "Link":  "https://gddt.baohiemxahoi.gov.vn",
@@ -111,7 +111,7 @@
     },
     {
         "Id":  "javatax",
-        "Name":  "Java Token KÃ½ Sá»‘",
+        "Name":  "Java Token Ký Số",
         "Category":  "Accounting",
         "WingetId":  "Oracle.JavaRuntimeEnvironment",
         "Link":  "https://www.java.com",

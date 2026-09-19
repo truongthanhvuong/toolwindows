@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.45
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.46
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -682,8 +682,8 @@ $clockTimer.Add_Tick({
     $txtRealtimeClock.Text = "$($now.ToString('HH:mm:ss')) | $($now.ToString('dd/MM/yyyy'))"
 
     $timerTicks++
-    if ($timerTicks % 3 -eq 0 -and $script:currentTab -eq "SysInfo") {
-        # Update live metrics
+    if ($timerTicks % 2 -eq 0 -and $script:currentTab -eq "SysInfo") {
+        # Update live metrics every 2s
         Update-LiveGaugeValues
     }
 })
@@ -704,6 +704,7 @@ $txtGaugeGpuVram       = Get-Control "txtGaugeGpuVram"
 $txtGaugeGpuName       = Get-Control "txtGaugeGpuName"
 $txtGaugeNetSpeed      = Get-Control "txtGaugeNetSpeed"
 $txtGaugeNetName       = Get-Control "txtGaugeNetName"
+$txtGaugeDiskPercent   = Get-Control "txtGaugeDiskPercent"
 $txtGaugeDiskSummary   = Get-Control "txtGaugeDiskSummary"
 
 $lblCpuTurbo           = Get-Control "lblCpuTurbo"
@@ -768,6 +769,9 @@ function Update-LiveGaugeValues {
         $txtGaugeGpuName.Text      = $m.GpuName
         $txtGaugeNetSpeed.Text     = $m.NetSpeed
         $txtGaugeNetName.Text      = $m.NetName
+        if ($txtGaugeDiskPercent) {
+            $txtGaugeDiskPercent.Text = "$($m.DiskLoadPercent)%"
+        }
         $txtGaugeDiskSummary.Text  = "Ổ cứng trống: $($m.DiskSummary)"
     } catch {}
 }
@@ -3575,60 +3579,57 @@ if ($btnInstallFeatures) {
     })
 }
 
-# 6 Fixes
-if ($btnFixAutoLogon)        { $btnFixAutoLogon.Add_Click({ Open-VUONGTTLegacyPanel "autologon" }) }
-if ($btnFixNetworkReset)     {
-    $btnFixNetworkReset.Add_Click({
-        $btnFixNetworkReset.IsEnabled = $false
-        try {
-            if ($txtConfigLog) {
-                $txtConfigLog.Text = "Đang tiến hành Reset Network (Winsock, IP stack, DNS)...`r`n"
-                $txtConfigLog.ScrollToEnd()
-            }
-            Invoke-VUONGTTDoEvents
-            $res = Invoke-VUONGTTResetNetwork
-            if ($txtConfigLog) {
-                $txtConfigLog.AppendText("$res`r`n")
-                $txtConfigLog.ScrollToEnd()
-            }
-        } finally {
-            $btnFixNetworkReset.IsEnabled = $true
-            Invoke-VUONGTTDoEvents
+# --- BỘ CÔNG CỤ SỬA LỖI WINDOWS (CHECKLIST - CHỌN RỒI MỚI CHẠY) ---
+$fixCheckBoxNames = @(
+    "chk_FixSystemFiles", "chk_FixWindowsUpdate", "chk_FixNetwork", "chk_FixPrintSpooler",
+    "chk_FixExplorer", "chk_FixSearch", "chk_FixStore", "chk_FixAudio", "chk_FixNtp",
+    "chk_FixTempFiles", "chk_FixWinGet", "chk_FixFirewall", "chk_FixHostsFile", "chk_FixAutoLogon"
+)
+
+$btnSelectAllFixes   = Get-Control "btnSelectAllFixes"
+$btnUnselectAllFixes = Get-Control "btnUnselectAllFixes"
+$btnRunSelectedFixes = Get-Control "btnRunSelectedFixes"
+
+if ($btnSelectAllFixes) {
+    $btnSelectAllFixes.Add_Click({
+        foreach ($name in $fixCheckBoxNames) {
+            $c = Get-Control $name
+            if ($c) { $c.IsChecked = $true }
         }
     })
 }
-if ($btnFixNtpServer)        {
-    $btnFixNtpServer.Add_Click({
-        $btnFixNtpServer.IsEnabled = $false
-        try {
-            if ($txtConfigLog) {
-                $txtConfigLog.Text = "Đang đồng bộ lại đồng hồ hệ thống qua máy chủ NTP...`r`n"
-                $txtConfigLog.ScrollToEnd()
-            }
-            Invoke-VUONGTTDoEvents
-            $res = Invoke-VUONGTTSyncNtpServer
-            if ($txtConfigLog) {
-                $txtConfigLog.AppendText("$res`r`n")
-                $txtConfigLog.ScrollToEnd()
-            }
-        } finally {
-            $btnFixNtpServer.IsEnabled = $true
-            Invoke-VUONGTTDoEvents
+
+if ($btnUnselectAllFixes) {
+    $btnUnselectAllFixes.Add_Click({
+        foreach ($name in $fixCheckBoxNames) {
+            $c = Get-Control $name
+            if ($c) { $c.IsChecked = $false }
         }
     })
 }
-if ($btnFixSystemCorruption) {
-    $btnFixSystemCorruption.Add_Click({
-        $btnFixSystemCorruption.IsEnabled = $false
+
+if ($btnRunSelectedFixes) {
+    $btnRunSelectedFixes.Add_Click({
+        $selectedCount = 0
+        foreach ($name in $fixCheckBoxNames) {
+            $c = Get-Control $name
+            if ($c -and $c.IsChecked) { $selectedCount++ }
+        }
+
+        if ($selectedCount -eq 0) {
+            [System.Windows.MessageBox]::Show("Vui lòng tích chọn ít nhất 1 lỗi cần sửa trong danh sách trước khi nhấn Chạy!", "Chưa Chọn Lỗi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+
+        $btnRunSelectedFixes.IsEnabled = $false
         try {
             if ($txtConfigLog) {
-                $txtConfigLog.Text = "=== [BẮT ĐẦU TỰ ĐỘNG QUÉT & SỬA LỖI TẬP TIN HỆ THỐNG] ===`r`n"
-                $txtConfigLog.AppendText("[1/2] Đang quét file hệ thống bằng công cụ SFC (sfc /scannow)...`r`n")
+                $txtConfigLog.Text = "=== [BẮT ĐẦU SỬA LỖI HỆ THỐNG WINDOWS - $selectedCount MỤC ĐÃ CHỌN] ===`r`n`r`n"
                 $txtConfigLog.ScrollToEnd()
             }
             Invoke-VUONGTTDoEvents
 
-            $onSfcLog = {
+            $onLiveLog = {
                 param($line)
                 if ($txtConfigLog) {
                     $txtConfigLog.AppendText("$line`r`n")
@@ -3636,67 +3637,133 @@ if ($btnFixSystemCorruption) {
                 }
                 Invoke-VUONGTTDoEvents
             }
-            Invoke-VUONGTTProcessWithLiveLog -FilePath "sfc.exe" -ArgumentList "/scannow" -OnOutputLine $onSfcLog -TimeoutSeconds 900
 
-            if ($txtConfigLog) {
-                $txtConfigLog.AppendText("`r`n[2/2] Đang phục hồi kho ảnh Windows bằng DISM RestoreHealth...`r`n")
-                $txtConfigLog.ScrollToEnd()
+            # 1. System Files (SFC /scannow & DISM)
+            $chkSys = Get-Control "chk_FixSystemFiles"
+            if ($chkSys -and $chkSys.IsChecked) {
+                & $onLiveLog "▶ [1/14] Đang quét và sửa lỗi file hệ thống (SFC & DISM)..."
+                Invoke-VUONGTTProcessWithLiveLog -FilePath "sfc.exe" -ArgumentList "/scannow" -OnOutputLine $onLiveLog -TimeoutSeconds 600
+                Invoke-VUONGTTProcessWithLiveLog -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /restorehealth" -OnOutputLine $onLiveLog -TimeoutSeconds 600
+                & $onLiveLog "✔ Hoàn tất sửa file hệ thống!`r`n"
             }
-            Invoke-VUONGTTDoEvents
-            Invoke-VUONGTTProcessWithLiveLog -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /restorehealth" -OnOutputLine $onSfcLog -TimeoutSeconds 900
 
-            if ($txtConfigLog) {
-                $txtConfigLog.AppendText("`r`n=== [HOÀN TẤT] Quá trình quét và sửa lỗi file hệ thống đã kết thúc! ===`r`n")
-                $txtConfigLog.ScrollToEnd()
+            # 2. Windows Update
+            $chkUpd = Get-Control "chk_FixWindowsUpdate"
+            if ($chkUpd -and $chkUpd.IsChecked) {
+                & $onLiveLog "▶ [2/14] Đang khôi phục và sửa lỗi Windows Update..."
+                $res = Invoke-VUONGTTRepairWindowsUpdate
+                & $onLiveLog "$res`r`n"
             }
-            $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét và sửa lỗi file hệ thống!"
+
+            # 3. Network & DNS
+            $chkNet = Get-Control "chk_FixNetwork"
+            if ($chkNet -and $chkNet.IsChecked) {
+                & $onLiveLog "▶ [3/14] Đang đặt lại kết nối mạng & xóa DNS cache..."
+                $res = Invoke-VUONGTTResetNetwork
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 4. Print Spooler
+            $chkPrn = Get-Control "chk_FixPrintSpooler"
+            if ($chkPrn -and $chkPrn.IsChecked) {
+                & $onLiveLog "▶ [4/14] Đang sửa lỗi máy in & dịch vụ Print Spooler..."
+                $res = Invoke-VUONGTTFixPrintSpoolerService
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 5. Explorer & Taskbar
+            $chkExp = Get-Control "chk_FixExplorer"
+            if ($chkExp -and $chkExp.IsChecked) {
+                & $onLiveLog "▶ [5/14] Đang khởi động lại Explorer & làm mới Taskbar..."
+                $res = Invoke-VUONGTTFixExplorerTaskbar
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 6. Windows Search
+            $chkSrch = Get-Control "chk_FixSearch"
+            if ($chkSrch -and $chkSrch.IsChecked) {
+                & $onLiveLog "▶ [6/14] Đang khôi phục dịch vụ tìm kiếm Windows Search..."
+                $res = Invoke-VUONGTTFixWindowsSearch
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 7. Microsoft Store
+            $chkStore = Get-Control "chk_FixStore"
+            if ($chkStore -and $chkStore.IsChecked) {
+                & $onLiveLog "▶ [7/14] Đang đặt lại bộ nhớ đệm Microsoft Store (wsreset)..."
+                $res = Invoke-VUONGTTFixMicrosoftStore
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 8. Audio Service
+            $chkAud = Get-Control "chk_FixAudio"
+            if ($chkAud -and $chkAud.IsChecked) {
+                & $onLiveLog "▶ [8/14] Đang khởi động lại toàn bộ dịch vụ âm thanh..."
+                $res = Invoke-VUONGTTFixAudioService
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 9. NTP Time Sync
+            $chkNtp = Get-Control "chk_FixNtp"
+            if ($chkNtp -and $chkNtp.IsChecked) {
+                & $onLiveLog "▶ [9/14] Đang đồng bộ lại đồng hồ chuẩn qua NTP..."
+                $res = Invoke-VUONGTTSyncNtpServer
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 10. Temp & Prefetch
+            $chkTmp = Get-Control "chk_FixTempFiles"
+            if ($chkTmp -and $chkTmp.IsChecked) {
+                & $onLiveLog "▶ [10/14] Đang dọn dẹp các tệp tạm và rác hệ thống..."
+                $res = Invoke-VUONGTTFixTempAndPrefetch
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 11. WinGet
+            $chkWg = Get-Control "chk_FixWinGet"
+            if ($chkWg -and $chkWg.IsChecked) {
+                & $onLiveLog "▶ [11/14] Đang cài đặt / làm mới gói WinGet App Installer..."
+                $res = Invoke-VUONGTTReinstallWinget
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 12. Windows Firewall
+            $chkFw = Get-Control "chk_FixFirewall"
+            if ($chkFw -and $chkFw.IsChecked) {
+                & $onLiveLog "▶ [12/14] Đang khôi phục cấu hình Windows Firewall về mặc định..."
+                $res = Invoke-VUONGTTFixWindowsFirewall
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 13. Hosts File
+            $chkHosts = Get-Control "chk_FixHostsFile"
+            if ($chkHosts -and $chkHosts.IsChecked) {
+                & $onLiveLog "▶ [13/14] Đang đặt lại tệp hosts về trạng thái nguyên bản..."
+                $res = Invoke-VUONGTTFixHostsFile
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 14. AutoLogon
+            $chkAuto = Get-Control "chk_FixAutoLogon"
+            if ($chkAuto -and $chkAuto.IsChecked) {
+                & $onLiveLog "▶ [14/14] Đang mở giao diện cấu hình tự động đăng nhập (netplwiz)..."
+                Start-Process "control.exe" -ArgumentList "userpasswords2"
+                & $onLiveLog "✔ Đã mở cửa sổ tài khoản người dùng userpasswords2!`r`n"
+            }
+
+            & $onLiveLog "=========================================================="
+            & $onLiveLog "🎉 [HOÀN TẤT] Quá trình xử lý các lỗi đã chọn kết thúc thành công 100%!"
+            & $onLiveLog "=========================================================="
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất sửa các lỗi đã chọn thành công!"
+            [System.Windows.MessageBox]::Show("ĐÃ HOÀN TẤT QUÁ TRÌNH SỬA LỖI HỆ THỐNG!`n`nToàn bộ các lỗi bạn đã chọn đã được xử lý và khôi phục.", "Sửa Lỗi Hoàn Tất", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
         } finally {
-            $btnFixSystemCorruption.IsEnabled = $true
+            $btnRunSelectedFixes.IsEnabled = $true
             Invoke-VUONGTTDoEvents
         }
     })
 }
-if ($btnFixWindowsUpdate)    {
-    $btnFixWindowsUpdate.Add_Click({
-        $btnFixWindowsUpdate.IsEnabled = $false
-        try {
-            if ($txtConfigLog) {
-                $txtConfigLog.Text = "Đang khôi phục và sửa lỗi dịch vụ Windows Update...`r`n"
-                $txtConfigLog.ScrollToEnd()
-            }
-            Invoke-VUONGTTDoEvents
-            $res = Invoke-VUONGTTRepairWindowsUpdate
-            if ($txtConfigLog) {
-                $txtConfigLog.AppendText("$res`r`n")
-                $txtConfigLog.ScrollToEnd()
-            }
-        } finally {
-            $btnFixWindowsUpdate.IsEnabled = $true
-            Invoke-VUONGTTDoEvents
-        }
-    })
-}
-if ($btnFixWinGet)           {
-    $btnFixWinGet.Add_Click({
-        $btnFixWinGet.IsEnabled = $false
-        try {
-            if ($txtConfigLog) {
-                $txtConfigLog.Text = "Đang kiểm tra và cài đặt lại gói WinGet...`r`n"
-                $txtConfigLog.ScrollToEnd()
-            }
-            Invoke-VUONGTTDoEvents
-            $res = Invoke-VUONGTTReinstallWinget
-            if ($txtConfigLog) {
-                $txtConfigLog.AppendText("$res`r`n")
-                $txtConfigLog.ScrollToEnd()
-            }
-        } finally {
-            $btnFixWinGet.IsEnabled = $true
-            Invoke-VUONGTTDoEvents
-        }
-    })
-}
-if ($btnEnableOpenSSH)       {
+
+if ($btnEnableOpenSSH) {
     $btnEnableOpenSSH.Add_Click({
         $btnEnableOpenSSH.IsEnabled = $false
         try {
@@ -3717,7 +3784,7 @@ if ($btnEnableOpenSSH)       {
     })
 }
 
-# 14 Legacy Panels
+# 14 Legacy Panels với Scoping An Toàn (.GetNewClosure) và Ghi Log Trực Tiếp
 $panelMap = @{
     "btnPanelCompMgmt"      = "compmgmt"
     "btnPanelControl"       = "control"
@@ -3738,7 +3805,17 @@ foreach ($btnId in $panelMap.Keys) {
     $b = Get-Control $btnId
     if ($b) {
         $panelTarget = $panelMap[$btnId]
-        $b.Add_Click({ Open-VUONGTTLegacyPanel $panelTarget })
+        $b.Add_Click({
+            $res = Open-VUONGTTLegacyPanel $panelTarget
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("$res`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+            if ($txtFooterStatus) {
+                $txtFooterStatus.Text = "• $res"
+            }
+            Invoke-VUONGTTDoEvents
+        }.GetNewClosure())
     }
 }
 

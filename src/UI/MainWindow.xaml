@@ -1,6 +1,6 @@
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.45"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.46"
         Height="780" Width="1280"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
@@ -324,7 +324,7 @@
                                 <Border Background="#FEF3C7" CornerRadius="4" Padding="5,1,5,1" Margin="6,0,0,0">
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
-                            </StackPanel>                            <TextBlock Text="v20.5.908.45 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            </StackPanel>                            <TextBlock Text="v20.5.908.46 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -646,7 +646,7 @@
                             <Border Style="{StaticResource CardBorder}" Margin="3" Padding="8,10,8,10">
                                 <StackPanel HorizontalAlignment="Center">
                                     <Border Width="68" Height="68" CornerRadius="34" BorderBrush="#B45309" BorderThickness="4" HorizontalAlignment="Center">
-                                        <TextBlock Text="0%" FontSize="18" FontWeight="Bold" Foreground="#B45309" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="txtGaugeDiskPercent" Text="0%" FontSize="18" FontWeight="Bold" Foreground="#B45309" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="% Disk Time" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                     <TextBlock Text="Ổ Cứng" FontSize="12.5" FontWeight="Bold" HorizontalAlignment="Center"/>
@@ -1142,7 +1142,7 @@
                                         </ComboBox>
                                     </StackPanel>                                    <Button x:Name="btnCompareCpu" Grid.Column="4" Content="⚖️ So Sánh Đối Đầu" VerticalAlignment="Bottom" Height="32" Background="#B45309" Style="{StaticResource ActionBtn}" Padding="14,0,14,0"/>
                                 </Grid>
-                                <TextBox x:Name="txtCpuCompareReport" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" FontFamily="Consolas, Cascadia Code, Courier New" FontSize="12.5" Height="220" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Text="Chọn hoặc gõ 2 CPU cần so sánh bên trên rồi bấm 'So Sánh Đối Đầu' để phân tích chi tiết thông số, sức mạnh render và gaming."/>
+                                <TextBox x:Name="txtCpuCompareReport" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" FontFamily="SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI Variable Display, Segoe UI, sans-serif" FontSize="12.5" Height="220" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Text="Chọn hoặc gõ 2 CPU cần so sánh bên trên rồi bấm 'So Sánh Đối Đầu' để phân tích chi tiết thông số, sức mạnh render và gaming."/>
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
 
@@ -1466,9 +1466,9 @@
                                 <StackPanel x:Name="appsGridContainer">
                                     <!-- Browsers -->
                                     <StackPanel x:Name="secBrowsers" Margin="0,4,0,8">
-                                        <TextBlock Text="Trinh Duyet Web (Browsers)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Tru{ec}nh Duyu{1ec7}t Web (Browsers)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_coccoc" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\coccoc.png" Content="Cá»‘c Cá»‘c Browser"/>
+                                            <CheckBox x:Name="app_coccoc" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\coccoc.png" Content="Cu{1ed1}c Cu{1ed1}c Browser"/>
                                             <CheckBox x:Name="app_brave" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\brave.png" Content="Brave"/>
                                             <CheckBox x:Name="app_chrome" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\chrome.png" Content="Chrome" IsChecked="True"/>
                                             <CheckBox x:Name="app_chromium" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\chromium.png" Content="Chromium"/>
@@ -1488,7 +1488,7 @@
                                     </StackPanel>
                                     <!-- Communications -->
                                     <StackPanel x:Name="secComms" Margin="0,4,0,8">
-                                        <TextBlock Text="Lien Lac &amp; Chat (Communications)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Liu{ea}n Lu{1ea1}c &amp; Chat (Communications)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
                                             <CheckBox x:Name="app_zalo" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\zalo.png" Content="Zalo PC" IsChecked="True"/>
                                             <CheckBox x:Name="app_chatterino" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\chatterino.png" Content="Chatterino"/>
@@ -1513,7 +1513,7 @@
                                     </StackPanel>
                                     <!-- Development -->
                                     <StackPanel x:Name="secDev" Margin="0,4,0,8">
-                                        <TextBlock Text="Lap Trinh &amp; Phat Trien (Development)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Lu{1ead}p Tru{ec}nh &amp; Phu{e1}t Triu{1ec3}n (Development)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
                                             <CheckBox x:Name="app_bruno" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\bruno.png" Content="Bruno"/>
                                             <CheckBox x:Name="app_chatgpt" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\chatgpt.png" Content="ChatGPT Desktop"/>
@@ -1560,10 +1560,10 @@
                                     </StackPanel>
                                     <!-- Document -->
                                     <StackPanel x:Name="secDocs" Margin="0,4,0,8">
-                                        <TextBlock Text="Van Phong, Go Tieng Viet &amp; PDF (Document)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Vu{103}n Phu{f2}ng &amp; Tu{e0}i Liu{1ec7}u (Document)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_unikey" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\unikey.png" Content="UniKey (GÃµ Tiáº¿ng Viá»‡t)" IsChecked="True"/>
-                                            <CheckBox x:Name="app_evkey" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\evkey.png" Content="EVKey (Bá»™ gÃµ tiáº¿ng Viá»‡t)"/>
+                                            <CheckBox x:Name="app_unikey" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\unikey.png" Content="UniKey (Gu{f5} Tiu{1ebf}ng Viu{1ec7}t)" IsChecked="True"/>
+                                            <CheckBox x:Name="app_evkey" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\evkey.png" Content="EVKey (Bu{1ed9} gu{f5} tiu{1ebf}ng Viu{1ec7}t)"/>
                                             <CheckBox x:Name="app_adobe" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\adobe.png" Content="Adobe Acrobat Reader"/>
                                             <CheckBox x:Name="app_foxpdfreader" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\foxpdfreader.png" Content="Foxit PDF Reader"/>
                                             <CheckBox x:Name="app_joplin" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\joplin.png" Content="Joplin"/>
@@ -1585,7 +1585,7 @@
                                     </StackPanel>
                                     <!-- Games -->
                                     <StackPanel x:Name="secGames" Margin="0,4,0,8">
-                                        <TextBlock Text="Tro Choi &amp; Game Launchers (Games)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Tru{f2} Chu{1a1}i &amp; Giu{1ea3}i Tru{ed} (Games)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
                                             <CheckBox x:Name="app_battlenet" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\battlenet.png" Content="Battle.net"/>
                                             <CheckBox x:Name="app_cemu" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\cemu.png" Content="Cemu"/>
@@ -1608,7 +1608,7 @@
                                     </StackPanel>
                                     <!-- Microsoft Tools -->
                                     <StackPanel x:Name="secMicrosoft" Margin="0,4,0,8">
-                                        <TextBlock Text="Cong Cu Microsoft &amp; He Thong (Microsoft Tools)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Cu{f4}ng Cu{1ee5} Microsoft (Microsoft Tools)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
                                             <CheckBox x:Name="app_autoruns" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\autoruns.png" Content="Autoruns"/>
                                             <CheckBox x:Name="app_rdcman" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\rdcman.png" Content="RDCMan"/>
@@ -1632,7 +1632,7 @@
                                     </StackPanel>
                                     <!-- Multimedia Tools -->
                                     <StackPanel x:Name="secMedia" Margin="0,4,0,8">
-                                        <TextBlock Text="Da Phuong Tien, Video &amp; Livestream (Multimedia)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="u{110}a Phu{1b0}u{1a1}ng Tiu{1ec7}n &amp; u{110}u{1ed3} Hu{1ecd}a (Multimedia Tools)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
                                             <CheckBox x:Name="app_aimp" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\aimp.png" Content="AIMP (Music Player)"/>
                                             <CheckBox x:Name="app_audacity" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\audacity.png" Content="Audacity"/>
@@ -1660,7 +1660,7 @@
                                     </StackPanel>
                                     <!-- Pro Tools -->
                                     <StackPanel x:Name="secPro" Margin="0,4,0,8">
-                                        <TextBlock Text="Cong Cu Chuyen Sau &amp; Mang (Pro Tools)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Cu{f4}ng Cu{1ee5} Ku{fd} Thuu{1ead}t Chuyu{ea}n Su{e2}u (Pro Tools)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
                                             <CheckBox x:Name="app_advancedip" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\advancedip.png" Content="Advanced IP Scanner"/>
                                             <CheckBox x:Name="app_angryipscanner" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\angryipscanner.png" Content="Angry IP Scanner"/>
@@ -1685,7 +1685,7 @@
                                     </StackPanel>
                                     <!-- Selfhosted Tools -->
                                     <StackPanel x:Name="secSelfhosted" Margin="0,4,0,8">
-                                        <TextBlock Text="May Chu Tu Luu Tru &amp; Streaming (Selfhosted Tools)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Mu{e1}y Chu{1ee7} Gia u{110}u{ec}nh (Selfhosted Tools)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
                                             <CheckBox x:Name="app_jellyfinmediaplayer" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\jellyfinmediaplayer.png" Content="Jellyfin Media Player"/>
                                             <CheckBox x:Name="app_jellyfinserver" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\jellyfinserver.png" Content="Jellyfin Server"/>
@@ -1701,7 +1701,7 @@
                                     </StackPanel>
                                     <!-- Utilities -->
                                     <StackPanel x:Name="secUtils" Margin="0,4,0,8">
-                                        <TextBlock Text="Tien Ich Ky Thuat &amp; Dieu Khien Tu Xa (Utilities)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Tiu{1ec7}n u{cd}ch Hu{1ec7} Thu{1ed1}ng (Utilities)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
                                             <CheckBox x:Name="app_ultraviewer" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\ultraviewer.png" Content="UltraViewer" IsChecked="True"/>
                                             <CheckBox x:Name="app_1password" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\1password.png" Content="1Password"/>
@@ -1764,14 +1764,14 @@
                                     </StackPanel>
                                     <!-- Accounting -->
                                     <StackPanel x:Name="secAccounting" Margin="0,4,0,8">
-                                        <TextBlock Text="Ke Toan, Hoa Don Dien Tu &amp; Ke Khai Thue (Accounting)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
+                                        <TextBlock Text="Ku{1ebf} Tou{e1}n &amp; Thuu{1ebf} Viu{1ec7}t Nam (Accounting)" FontWeight="Bold" FontSize="13.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4"/>
                                         <WrapPanel>
-                                            <CheckBox x:Name="app_htkk" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\htkk.png" Content="HTKK (Há»— Trá»£ KÃª Khai Thuáº¿)" IsChecked="True"/>
-                                            <CheckBox x:Name="app_itaxviewer" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\itaxviewer.png" Content="iTaxViewer (Äá»c XML Thuáº¿)" IsChecked="True"/>
-                                            <CheckBox x:Name="app_misasme" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\misasme.png" Content="MISA SME (Káº¿ ToÃ¡n Doanh Nghiá»‡p)"/>
-                                            <CheckBox x:Name="app_meinvoice" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\meinvoice.png" Content="MISA meInvoice (HÃ³a ÄÆ¡n Äiá»‡n Tá»­)"/>
-                                            <CheckBox x:Name="app_kbhxh" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\kbhxh.png" Content="KBHXH (Báº£o Hiá»ƒm XÃ£ Há»™i)"/>
-                                            <CheckBox x:Name="app_javatax" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\javatax.png" Content="Java Token KÃ½ Sá»‘"/>
+                                            <CheckBox x:Name="app_htkk" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\htkk.png" Content="HTKK (Hu{1ed7} Tru{1ee3} Ku{ea} Khai Thuu{1ebf})" IsChecked="True"/>
+                                            <CheckBox x:Name="app_itaxviewer" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\itaxviewer.png" Content="iTaxViewer (u{110}u{1ecdc} XML Thuu{1ebf})" IsChecked="True"/>
+                                            <CheckBox x:Name="app_misasme" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\misasme.png" Content="MISA SME (Ku{1ebf} Tou{e1}n Doanh Nghiu{1ec7}p)"/>
+                                            <CheckBox x:Name="app_meinvoice" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\meinvoice.png" Content="MISA meInvoice (Hu{f3}a u{110}u{1a1}n u{110}iu{1ec7}n Tu{1eed})"/>
+                                            <CheckBox x:Name="app_kbhxh" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\kbhxh.png" Content="KBHXH (Bu{1ea3}o Hiu{1ec3}m Xu{e3} Hu{1ed9}i)"/>
+                                            <CheckBox x:Name="app_javatax" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\javatax.png" Content="Java Token Ku{fd} Su{1ed1}"/>
                                         </WrapPanel>
                                     </StackPanel>
 
@@ -2223,19 +2223,40 @@
                                         </StackPanel>                                        <Button x:Name="btnInstallFeatures" Content="🚀 Cài Đặt Tính Năng Đã Chọn (Install Features)" Background="#2563EB" Style="{StaticResource ActionBtn}" Height="34" Margin="0,4,0,0"/>
                                     </StackPanel>                                </Border>
 
-                                <!-- Fixes Group -->
+                                <!-- Fixes Checklist Group -->
                                 <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="Bộ Công Cụ Sửa Lỗi (Fixes)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-                                        <UniformGrid Columns="2" Margin="0,2,0,0">
-                                            <Button x:Name="btnFixAutoLogon" Content="🔑 AutoLogon - Chạy" Background="#334155" Style="{StaticResource ActionBtn}" Height="32"/>
-                                            <Button x:Name="btnFixNetworkReset" Content="🌐 Reset Mạng - Chạy" Background="#059669" Style="{StaticResource ActionBtn}" Height="32"/>
-                                            <Button x:Name="btnFixNtpServer" Content="⏰ Đồng Bộ Giờ NTP - Chạy" Background="#334155" Style="{StaticResource ActionBtn}" Height="32"/>
-                                            <Button x:Name="btnFixSystemCorruption" Content="🛠️ Sửa File Hỏng SFC/DISM" Background="#BE123C" Style="{StaticResource ActionBtn}" Height="32"/>
-                                            <Button x:Name="btnFixWindowsUpdate" Content="🔄 Reset Windows Update" Background="#D97706" Style="{StaticResource ActionBtn}" Height="32"/>
-                                            <Button x:Name="btnFixWinGet" Content="📦 Cài Lại WinGet - Chạy" Background="#334155" Style="{StaticResource ActionBtn}" Height="32"/>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="Bộ Công Cụ Sửa Lỗi (Fixes Checklist)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button x:Name="btnSelectAllFixes" Content="✓ Chọn Tất Cả" Background="#334155" Style="{StaticResource ActionBtn}" Height="26" Padding="8,0,8,0" Margin="0,0,4,0" FontSize="11"/>
+                                                <Button x:Name="btnUnselectAllFixes" Content="✕ Bỏ Chọn" Background="#475569" Style="{StaticResource ActionBtn}" Height="26" Padding="8,0,8,0" FontSize="11"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <TextBlock Text="💡 Tích chọn các lỗi cần xử lý bên dưới, sau đó bấm 'Chạy Sửa Lỗi Đã Chọn'." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                                        <UniformGrid Columns="2" Margin="0,0,0,10">
+                                            <CheckBox x:Name="chk_FixSystemFiles" Content="🛠️ Sửa File Hỏng (SFC &amp; DISM)" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixWindowsUpdate" Content="🔄 Khôi Phục Windows Update" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixNetwork" Content="🌐 Reset Mạng &amp; Flush DNS" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixPrintSpooler" Content="🖨️ Sửa Lỗi In &amp; Spooler" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixExplorer" Content="📁 Reset Explorer &amp; Taskbar" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixSearch" Content="🔍 Sửa Lỗi Windows Search" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixStore" Content="🛒 Reset Microsoft Store" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixAudio" Content="🔊 Sửa Lỗi Dịch Vụ Âm Thanh" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixNtp" Content="⏰ Đồng Bộ Giờ Chuẩn NTP" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixTempFiles" Content="🧹 Dọn Tệp Tạm &amp; Prefetch" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixWinGet" Content="📦 Cài Lại Gói WinGet" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixFirewall" Content="🧱 Reset Windows Firewall" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixHostsFile" Content="📄 Khôi Phục File Hosts Sạch" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixAutoLogon" Content="🔑 Cấu Hình AutoLogon" Margin="0,3,4,3"/>
                                         </UniformGrid>
-                                    </StackPanel>                                </Border>
+                                        <Button x:Name="btnRunSelectedFixes" Content="🚀 Chạy Sửa Lỗi Đã Chọn (Run Selected Fixes)" Background="#BE123C" Style="{StaticResource ActionBtn}" Height="36" FontWeight="Bold" FontSize="13.5"/>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                             <!-- RIGHT COLUMN: Legacy Windows Panels & Remote Access -->
                             <StackPanel Grid.Column="1" Margin="6,0,0,0">
@@ -2795,7 +2816,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.45" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.46" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

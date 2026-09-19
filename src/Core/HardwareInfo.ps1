@@ -209,20 +209,47 @@ function Get-VUONGTTLiveMetrics {
 
     Get-VUONGTTHardwareSnapshot
 
-    # 1. CPU Load & Frequency
+    # 1. Dynamic CPU Load & Frequency
     $cpuPerf = $script:cachedCpu
-    $cpuLoad = if ($cpuPerf -and $cpuPerf.LoadPercentage -ne $null) { $cpuPerf.LoadPercentage } else { 20 }
+    $cpuLoad = 15
+    try {
+        $perfCpu = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+        if ($perfCpu -and ($perfCpu.PercentProcessorTime -ne $null)) {
+            $cpuLoad = [int]$perfCpu.PercentProcessorTime
+            if ($cpuLoad -gt 100) { $cpuLoad = 100 }
+        }
+    } catch {
+        if ($cpuPerf -and $cpuPerf.LoadPercentage -ne $null) { $cpuLoad = $cpuPerf.LoadPercentage }
+    }
+
     $currentClockGHz = if ($cpuPerf -and $cpuPerf.CurrentClockSpeed) { [math]::Round($cpuPerf.CurrentClockSpeed / 1000, 2) } else { 2.90 }
     $maxClockGHz     = if ($cpuPerf -and $cpuPerf.MaxClockSpeed) { [math]::Round($cpuPerf.MaxClockSpeed / 1000, 2) } else { 4.10 }
     $cpuName         = if ($cpuPerf) { $cpuPerf.Name } else { "Intel / AMD Processor" }
     $cpuTemp         = 36
 
-    # 2. RAM Usage
-    $os = $script:cachedOs
-    $totalMemGB = if ($os -and $os.TotalVisibleMemorySize) { [math]::Round($os.TotalVisibleMemorySize / 1MB, 1) } else { 16.0 }
-    $freeMemGB  = if ($os -and $os.FreePhysicalMemory) { [math]::Round($os.FreePhysicalMemory / 1MB, 1) } else { 8.0 }
-    $usedMemGB  = [math]::Round($totalMemGB - $freeMemGB, 1)
-    $ramPercent = if ($totalMemGB -gt 0) { [math]::Round(($usedMemGB / $totalMemGB) * 100) } else { 50 }
+    # 2. Dynamic Realtime RAM Usage (Using ComputerInfo for immediate live data)
+    $totalMemGB = 16.0
+    $usedMemGB  = 8.0
+    $ramPercent = 50
+    try {
+        Add-Type -AssemblyName 'Microsoft.VisualBasic' -ErrorAction SilentlyContinue
+        $ci = New-Object Microsoft.VisualBasic.Devices.ComputerInfo
+        $tot = [math]::Round($ci.TotalPhysicalMemory / 1GB, 1)
+        $free = [math]::Round($ci.AvailablePhysicalMemory / 1GB, 1)
+        if ($tot -gt 0) {
+            $totalMemGB = $tot
+            $usedMemGB  = [math]::Round($tot - $free, 1)
+            $ramPercent = [math]::Round(($usedMemGB / $totalMemGB) * 100)
+        }
+    } catch {
+        $os = $script:cachedOs
+        if ($os -and $os.TotalVisibleMemorySize) {
+            $totalMemGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 1)
+            $freeMemGB  = if ($os.FreePhysicalMemory) { [math]::Round($os.FreePhysicalMemory / 1MB, 1) } else { 8.0 }
+            $usedMemGB  = [math]::Round($totalMemGB - $freeMemGB, 1)
+            $ramPercent = if ($totalMemGB -gt 0) { [math]::Round(($usedMemGB / $totalMemGB) * 100) } else { 50 }
+        }
+    }
 
     # 3. GPU VRAM & Info (Uu tien hien thi Card Roi tren Gauge dashboard neu co)
     $allGpus = Get-VUONGTTAllGpus
@@ -244,7 +271,7 @@ function Get-VUONGTTLiveMetrics {
     } catch {}
     $netSpeed = "12.5 KB/s"
 
-    # 5. Disk Free Summary
+    # 5. Disk Free Summary & Disk Activity
     $diskFreeArr = @()
     try {
         $drives = [System.IO.DriveInfo]::GetDrives() | Where-Object { $_.IsReady -and ($_.DriveType -eq [System.IO.DriveType]::Fixed) }
@@ -257,8 +284,19 @@ function Get-VUONGTTLiveMetrics {
     $diskSummary = ($diskFreeArr -join ", ")
     if (-not $diskSummary) { $diskSummary = "C: Khả dụng" }
 
+    $diskLoad = 0
+    try {
+        $perfDisk = Get-CimInstance Win32_PerfFormattedData_PerfDisk_PhysicalDisk -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+        if ($perfDisk -and ($perfDisk.PercentDiskTime -ne $null)) {
+            $diskLoad = [int]$perfDisk.PercentDiskTime
+            if ($diskLoad -gt 100) { $diskLoad = 100 }
+        }
+    } catch {}
+
+    $sysLoad = [math]::Round(($cpuLoad + $ramPercent) / 2)
+
     return [PSCustomObject]@{
-        SystemLoadPercent = $cpuLoad
+        SystemLoadPercent = $sysLoad
         CpuClockGHz       = $currentClockGHz
         CpuMaxClockGHz    = $maxClockGHz
         CpuTempC          = $cpuTemp
@@ -273,7 +311,7 @@ function Get-VUONGTTLiveMetrics {
         NetName           = $netName
         NetSpeed          = $netSpeed
         DiskSummary       = $diskSummary
-        DiskLoadPercent   = 5
+        DiskLoadPercent   = $diskLoad
     }
 }
 

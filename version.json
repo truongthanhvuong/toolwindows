@@ -1,18 +1,14 @@
-{
-  "version": "20.5.908.45",
+﻿{
+  "version": "20.5.908.46",
   "releaseDate": "19/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
-    "Tích hợp trọn bộ hơn 240 ứng dụng chuẩn Chris Titus WinUtil (Browsers, Communications, Development, Document, Games, Microsoft Tools, Multimedia Tools, Pro Tools, Selfhosted, Utilities, Kế toán & Thuế Việt Nam) với Icon màu sắc chính hãng và thanh Tìm kiếm nhanh tức thời (Instant Search).",
-    "Làm lại toàn bộ Icon của ứng dụng theo Icon thương hiệu chính gốc có màu sắc sống động (Colorful Brand Icons) theo chuẩn thiết kế Chris Titus WinUtil hiện đại.",
-    "Sửa triệt để hiện tượng đơ/treo ứng dụng khi Chạy Tweaks (Run Tweaks/Undo Tweaks): Thay thế kiến trúc điều phối thông điệp WPF Dispatcher Frame (Zero Freezing), chuyển Disk Cleanup và dọn tệp tạm chạy ngầm mượt mà, gộp làm mới Explorer an toàn sau khi hoàn tất.",
-    "Khắc phục 100% lỗi cài đặt và cập nhật phần mềm: Bổ sung Revo Uninstaller, fix WinGet ID cho Zalo PC, EVKey, UniKey, UltraViewer, CapCut, CrystalDiskInfo, OBS Studio; tự động kiểm tra và nâng cấp lên phiên bản mới nhất.",
-    "Cải tiến cơ chế tải trực tiếp: Thêm User-Agent Chrome chính thống và liên kết cổng chính hãng tránh bị CDN / nhà cung cấp chặn kết nối.",
-    "Tối ưu hóa các chức năng Sửa Lỗi Hệ Thống (SFC /scannow, DISM RestoreHealth, Cài đặt Features): Tích hợp luồng ghi log trực tiếp theo thời gian thực (Live-Log streaming) không khóa giao diện.",
-    "Bổ sung Tùy chọn Tinh chỉnh hệ thống (Customize Preferences) với công tắc Toggle Switch hiện đại phong cách Apple/iOS cùng kế hoạch hiệu năng Ultimate Performance Profile.",
-    "Hỗ trợ Song ngữ Anh - Việt hoàn chỉnh (Bilingual VI/EN) và đồng bộ chủ đề màu sắc Dark/Light chuẩn giao diện VUONGTT Tool Pro 2026.",
-    "Thiết kế lại Kho Phần Mềm dạng Thẻ Lưới (Grid Cards) với biểu tượng Logo chính hãng, huy hiệu đã chọn góc xanh lá, và thanh lọc danh mục trực quan (Browsers, Communications, Development, Document, Games, Multimedia, Utilities, Accounting).",
-    "Bổ sung Trang Cấu hình & Sửa lỗi hệ thống (pageConfig): Quản lý Windows Optional Features (.NET 3.5, Hyper-V, WSL 2, Sandbox, NFS...), Sửa lỗi 1-Click (AutoLogon, Reset Network, SFC/DISM, Reset Update, WinGet), và mở nhanh 14 Bảng điều khiển Legacy Windows Panels.",
-    "Đại tu Engine Advanced IP Scanner siêu tốc: Áp dụng động cơ C# đa luồng bất đồng bộ (Zero UI Freezing) quét mượt mà không đơ giật giao diện, dừng tức thì và tự động nhận diện Hostname, MAC, Vendor, Cổng dịch vụ SMB/Web/RDP."
+    "Sửa triệt để toàn bộ 14 nút Bảng Điều Khiển Cổ Điển (Legacy Windows Panels) và Tùy chọn tính năng Windows: Chạy an toàn với lệnh điều khiển control.exe tương thích 100% Windows 10 & Windows 11.",
+    "Bổ sung trọn bộ 14 công cụ Sửa lỗi cơ bản Windows: Sửa lỗi kẹt lệnh in Print Spooler / RPC 0x6ba, Khởi động lại Explorer & Taskbar, Khắc phục Windows Search & Cortana, Reset Microsoft Store AppX WSReset, Khởi động lại Audio Windows, Dọn dẹp File tạm Temp & Prefetch, Khôi phục Windows Firewall mặc định, Reset File Hosts.",
+    "Cải tiến quy trình Sửa Lỗi: Chuyển đổi sang dạng Checklist chọn lỗi tùy ý (Select checkboxes) trước khi bấm Chạy Sửa Lỗi Đã Chọn (Run Selected Fixes) kèm nút Chọn Tất Cả / Bỏ Chọn.",
+    "Khắc phục triệt để 100% lỗi Font Tiếng Việt & Mojibake: Chuẩn hóa toàn bộ tên ứng dụng (Cốc Cốc, UniKey, EVKey, HTKK...) và toàn bộ giao diện theo bảng mã UTF-8 with BOM.",
+    "Đồng bộ hóa toàn bộ Font chữ theo chuẩn Apple Font Stack (SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont) trên toàn bộ thành phần giao diện.",
+    "Nâng cấp bộ đo cấu hình máy tính thời gian thực (Realtime Metrics): Cập nhật mượt mà mỗi 2 giây với cảm biến tải CPU, RAM (ComputerInfo), GPU, Mạng và thời gian hoạt động ổ đĩa (% Disk Time).",
+    "Tích hợp hơn 240 ứng dụng chuẩn Chris Titus WinUtil với biểu tượng Logo chính hãng có màu sắc và tìm kiếm tức thời."
   ]
 }
