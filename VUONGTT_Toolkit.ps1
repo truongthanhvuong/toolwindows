@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.42
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.43
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -32,6 +32,17 @@ if (-not $isAdmin) {
 
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
+
+function Invoke-VUONGTTDoEvents {
+    try {
+        if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher) {
+            [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
+        }
+    } catch {}
+    try {
+        Invoke-VUONGTTDoEvents
+    } catch {}
+}
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ScriptDir -or -not (Test-Path (Join-Path $ScriptDir "src\UI\MainWindow.xaml"))) {
@@ -941,9 +952,7 @@ function Show-VUONGTTDriverDoctorModal {
     if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "Đang kiểm tra sâu bus PnP và chẩn đoán toàn bộ Driver..." }
     if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = "Đang truy vấn hệ thống và phân tích mã lỗi phần cứng..." }
 
-    if ([System.Windows.Forms.Application]::MessageLoop) {
-        [System.Windows.Forms.Application]::DoEvents()
-    }
+    Invoke-VUONGTTDoEvents
 
     try {
         $diag = Get-VUONGTTDeepDriverDiagnostic
@@ -1018,7 +1027,7 @@ if ($btnDriverAutoWinUpdate) {
         $res = Invoke-VUONGTTWindowsUpdateDriverScan -OnProgress {
             param($m)
             if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = "$m`n$($txtDriverDoctorDetails.Text)" }
-            if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
+            Invoke-VUONGTTDoEvents
         }
         if ($prgDriverDoctor) { $prgDriverDoctor.Value = 100 }
         if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Quét Windows Update hoàn tất." }
@@ -1956,9 +1965,7 @@ $btnInstallSelectedApps.Add_Click({
             $txtSoftwareLog.AppendText("$msg`r`n")
             $txtSoftwareLog.ScrollToEnd()
         }
-        if ([System.Windows.Forms.Application]::MessageLoop) {
-            [System.Windows.Forms.Application]::DoEvents()
-        }
+        Invoke-VUONGTTDoEvents
     }
 
     $i = 0
@@ -1977,9 +1984,7 @@ $btnInstallSelectedApps.Add_Click({
 
         if ($prgSoftware) { $prgSoftware.Value = $pct }
         if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "$pct%" }
-        if ([System.Windows.Forms.Application]::MessageLoop) {
-            [System.Windows.Forms.Application]::DoEvents()
-        }
+        Invoke-VUONGTTDoEvents
     }
 
     if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng!" }
@@ -1996,7 +2001,7 @@ $btnUpdateAllApps.Add_Click({
     if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đang cập nhật toàn bộ ứng dụng..." }
     if ($prgSoftware) { $prgSoftware.Value = 30 }
 
-    $res = Invoke-VUONGTTProcessWithLiveLog -FilePath "powershell.exe" -ArgumentList "-NoProfile -Command winget upgrade --all --silent" -OnOutputLine {
+    $res = Invoke-VUONGTTProcessWithLiveLog -FilePath "powershell.exe" -ArgumentList "-NoProfile -Command winget upgrade --all --silent --accept-package-agreements --accept-source-agreements" -OnOutputLine {
         param($m)
         if ($txtSoftwareLog) { 
             $txtSoftwareLog.AppendText("$m`r`n")
@@ -2042,9 +2047,7 @@ if ($btnInstallAccountingOnly) {
                 $txtSoftwareLog.AppendText("$m`r`n")
                 $txtSoftwareLog.ScrollToEnd()
             }
-            if ([System.Windows.Forms.Application]::MessageLoop) {
-                [System.Windows.Forms.Application]::DoEvents()
-            }
+            Invoke-VUONGTTDoEvents
         }
 
         $k = 0
@@ -2087,9 +2090,7 @@ if ($btnUpdateAccounting) {
                 $txtSoftwareLog.AppendText("$m`r`n")
                 $txtSoftwareLog.ScrollToEnd()
             }
-            if ([System.Windows.Forms.Application]::MessageLoop) {
-                [System.Windows.Forms.Application]::DoEvents()
-            }
+            Invoke-VUONGTTDoEvents
         }
         if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("=== [HOÀN TẤT TIẾN TRÌNH CẬP NHẬT KẾ TOÁN] ===`r`n") }
         [System.Windows.MessageBox]::Show("Tiến trình cập nhật các phần mềm kế toán đã hoàn tất!`nXem log chi tiết tại khung nhật ký.", "Cập Nhật Kế Toán", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
@@ -2128,9 +2129,7 @@ $btnInstallCustomApp.Add_Click({
             $txtCustomAppLog.AppendText("$m`r`n")
             $txtCustomAppLog.ScrollToEnd()
         }
-        if ([System.Windows.Forms.Application]::MessageLoop) {
-            [System.Windows.Forms.Application]::DoEvents()
-        }
+        Invoke-VUONGTTDoEvents
     }
 
     $res = Install-VUONGTTCustomApp -TargetInput $target -OnProgress $customStream -AutoLaunch:$autoLaunch
@@ -2170,9 +2169,7 @@ if ($btnRunSilentInstall) {
                 $txtCustomAppLog.AppendText("$m`r`n")
                 $txtCustomAppLog.ScrollToEnd()
             }
-            if ([System.Windows.Forms.Application]::MessageLoop) {
-                [System.Windows.Forms.Application]::DoEvents()
-            }
+            Invoke-VUONGTTDoEvents
         }
 
         & $customStream "=== [BẮT ĐẦU CÀI ĐẶT CỤC BỘ: $path] ==="
@@ -2239,7 +2236,7 @@ function Refresh-InstalledAppsGrid {
     if (-not $Filter -or $script:allInstalledApps.Count -eq 0) {
         $txtFooterStatus.Text = "• [SCAN] Đang phát hiện phần mềm đã cài trên Windows..."
         if ($txtUninstallerLog) { $txtUninstallerLog.Text = "Đang quét danh sách phần mềm từ Registry 64-bit, 32-bit và CurrentUser..." }
-        if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
+        Invoke-VUONGTTDoEvents
         
         $script:allInstalledApps = Get-VUONGTTInstalledSoftware
     }
@@ -2364,7 +2361,7 @@ if ($btnUninstallStandard) {
                 $null = $logBuilder.AppendLine($msg)
                 $txtUninstallerLog.Text = $logBuilder.ToString()
                 $txtUninstallerLog.ScrollToEnd()
-                if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
+                Invoke-VUONGTTDoEvents
             }
 
             $idx = 1
@@ -2422,7 +2419,7 @@ if ($btnUninstallClean) {
                 $null = $logBuilder.AppendLine($msg)
                 $txtUninstallerLog.Text = $logBuilder.ToString()
                 $txtUninstallerLog.ScrollToEnd()
-                if ([System.Windows.Forms.Application]::MessageLoop) { [System.Windows.Forms.Application]::DoEvents() }
+                Invoke-VUONGTTDoEvents
             }
 
             $idx = 1
@@ -2749,9 +2746,7 @@ $onFontLog = {
         $txtFontLog.AppendText("$msg`r`n")
         $txtFontLog.ScrollToEnd()
     }
-    if ([System.Windows.Forms.Application]::MessageLoop) {
-        [System.Windows.Forms.Application]::DoEvents()
-    }
+    Invoke-VUONGTTDoEvents
 }
 
 if ($btnInstallAllFonts) {
@@ -3295,54 +3290,133 @@ if ($btnAppXRemoval) {
 # Run Tweaks
 if ($btnRunTweaks) {
     $btnRunTweaks.Add_Click({
-        if ($txtTweaksLog) {
-            $txtTweaksLog.Text = "=== [BẮT ĐẦU ÁP DỤNG CÁC TINH CHỈNH ĐÃ CHỌN - $(Get-Date -Format 'HH:mm:ss')] ===`r`n"
-        }
-        $count = 0
-        foreach ($name in $allTweakCheckboxes) {
-            $c = Get-Control $name
-            if ($c -and $c.IsChecked) {
-                $key = $name.Replace("chk_", "").Replace("tog_", "")
-                $res = Invoke-VUONGTTSingleTweak -TweakKey $key -Enable $true
-                if ($txtTweaksLog) { $txtTweaksLog.AppendText("$res`r`n") }
-                $count++
+        $btnRunTweaks.IsEnabled = $false
+        if ($btnUndoTweaks) { $btnUndoTweaks.IsEnabled = $false }
+        $cursorBefore = [System.Windows.Input.Mouse]::OverrideCursor
+        [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+
+        try {
+            if ($txtTweaksLog) {
+                $txtTweaksLog.Text = "=== [BẮT ĐẦU ÁP DỤNG CÁC TINH CHỈNH ĐÃ CHỌN - $(Get-Date -Format 'HH:mm:ss')] ===`r`n"
+                $txtTweaksLog.ScrollToEnd()
             }
-        }
+            Invoke-VUONGTTDoEvents
 
-        # Apply DNS if selected
-        if ($cmbDnsProvider -and $cmbDnsProvider.SelectedItem) {
-            $dnsText = $cmbDnsProvider.SelectedItem.Content.ToString()
-            if ($dnsText -like "*Cloudflare*") { $dRes = Set-VUONGTTDns "Cloudflare" }
-            elseif ($dnsText -like "*Google*") { $dRes = Set-VUONGTTDns "Google" }
-            elseif ($dnsText -like "*Quad9*") { $dRes = Set-VUONGTTDns "Quad9" }
-            elseif ($dnsText -like "*AdGuard*") { $dRes = Set-VUONGTTDns "AdGuard" }
-            else { $dRes = Set-VUONGTTDns "Default" }
-            if ($txtTweaksLog) { $txtTweaksLog.AppendText("$dRes`r`n") }
-        }
+            $count = 0
+            $restartExplorerNeeded = $false
+            foreach ($name in $allTweakCheckboxes) {
+                $c = Get-Control $name
+                if ($c -and $c.IsChecked) {
+                    $key = $name.Replace("chk_", "").Replace("tog_", "")
+                    if ($key -in @("ShowFileExt", "ShowHiddenFiles", "ClassicContextMenu", "TaskbarCenter", "StartMenuLayout")) {
+                        $restartExplorerNeeded = $true
+                    }
+                    $res = Invoke-VUONGTTSingleTweak -TweakKey $key -Enable $true
+                    if ($txtTweaksLog) {
+                        $txtTweaksLog.AppendText("$res`r`n")
+                        $txtTweaksLog.ScrollToEnd()
+                    }
+                    $count++
+                    Invoke-VUONGTTDoEvents
+                }
+            }
 
-        if ($txtTweaksLog) { $txtTweaksLog.AppendText("=== [HOÀN TẤT] Đã áp dụng thành công $count mục tinh chỉnh! ===`r`n") }
-        $txtFooterStatus.Text = "• [OK] Đã áp dụng thành công các tinh chỉnh Windows!"
+            # Apply DNS if selected
+            if ($cmbDnsProvider -and $cmbDnsProvider.SelectedItem) {
+                $dnsText = $cmbDnsProvider.SelectedItem.Content.ToString()
+                if ($dnsText -like "*Cloudflare*") { $dRes = Set-VUONGTTDns "Cloudflare" }
+                elseif ($dnsText -like "*Google*") { $dRes = Set-VUONGTTDns "Google" }
+                elseif ($dnsText -like "*Quad9*") { $dRes = Set-VUONGTTDns "Quad9" }
+                elseif ($dnsText -like "*AdGuard*") { $dRes = Set-VUONGTTDns "AdGuard" }
+                else { $dRes = Set-VUONGTTDns "Default" }
+                if ($txtTweaksLog) {
+                    $txtTweaksLog.AppendText("$dRes`r`n")
+                    $txtTweaksLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+            }
+
+            if ($restartExplorerNeeded) {
+                if ($txtTweaksLog) {
+                    $txtTweaksLog.AppendText("• Đang làm mới giao diện Windows Explorer...`r`n")
+                    $txtTweaksLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+                Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 400
+                Invoke-VUONGTTDoEvents
+            }
+
+            if ($txtTweaksLog) {
+                $txtTweaksLog.AppendText("=== [HOÀN TẤT] Đã áp dụng thành công $count mục tinh chỉnh! ===`r`n")
+                $txtTweaksLog.ScrollToEnd()
+            }
+            $txtFooterStatus.Text = "• [OK] Đã áp dụng thành công các tinh chỉnh Windows!"
+        } finally {
+            [System.Windows.Input.Mouse]::OverrideCursor = $cursorBefore
+            $btnRunTweaks.IsEnabled = $true
+            if ($btnUndoTweaks) { $btnUndoTweaks.IsEnabled = $true }
+            Invoke-VUONGTTDoEvents
+        }
     })
 }
 
 # Undo Tweaks
 if ($btnUndoTweaks) {
     $btnUndoTweaks.Add_Click({
-        if ($txtTweaksLog) {
-            $txtTweaksLog.Text = "=== [BẮT ĐẦU HOÀN TÁC CÁC TINH CHỈNH ĐÃ CHỌN - $(Get-Date -Format 'HH:mm:ss')] ===`r`n"
-        }
-        $count = 0
-        foreach ($name in $allTweakCheckboxes) {
-            $c = Get-Control $name
-            if ($c -and $c.IsChecked) {
-                $key = $name.Replace("chk_", "").Replace("tog_", "")
-                $res = Invoke-VUONGTTSingleTweak -TweakKey $key -Enable $false
-                if ($txtTweaksLog) { $txtTweaksLog.AppendText("$res`r`n") }
-                $count++
+        $btnUndoTweaks.IsEnabled = $false
+        if ($btnRunTweaks) { $btnRunTweaks.IsEnabled = $false }
+        $cursorBefore = [System.Windows.Input.Mouse]::OverrideCursor
+        [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+
+        try {
+            if ($txtTweaksLog) {
+                $txtTweaksLog.Text = "=== [BẮT ĐẦU HOÀN TÁC CÁC TINH CHỈNH ĐÃ CHỌN - $(Get-Date -Format 'HH:mm:ss')] ===`r`n"
+                $txtTweaksLog.ScrollToEnd()
             }
+            Invoke-VUONGTTDoEvents
+
+            $count = 0
+            $restartExplorerNeeded = $false
+            foreach ($name in $allTweakCheckboxes) {
+                $c = Get-Control $name
+                if ($c -and $c.IsChecked) {
+                    $key = $name.Replace("chk_", "").Replace("tog_", "")
+                    if ($key -in @("ShowFileExt", "ShowHiddenFiles", "ClassicContextMenu", "TaskbarCenter", "StartMenuLayout")) {
+                        $restartExplorerNeeded = $true
+                    }
+                    $res = Invoke-VUONGTTSingleTweak -TweakKey $key -Enable $false
+                    if ($txtTweaksLog) {
+                        $txtTweaksLog.AppendText("$res`r`n")
+                        $txtTweaksLog.ScrollToEnd()
+                    }
+                    $count++
+                    Invoke-VUONGTTDoEvents
+                }
+            }
+
+            if ($restartExplorerNeeded) {
+                if ($txtTweaksLog) {
+                    $txtTweaksLog.AppendText("• Đang làm mới giao diện Windows Explorer...`r`n")
+                    $txtTweaksLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+                Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 400
+                Invoke-VUONGTTDoEvents
+            }
+
+            if ($txtTweaksLog) {
+                $txtTweaksLog.AppendText("=== [HOÀN TẤT] Đã hoàn tác $count mục tinh chỉnh về mặc định! ===`r`n")
+                $txtTweaksLog.ScrollToEnd()
+            }
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tác các tinh chỉnh về mặc định!"
+        } finally {
+            [System.Windows.Input.Mouse]::OverrideCursor = $cursorBefore
+            $btnUndoTweaks.IsEnabled = $true
+            if ($btnRunTweaks) { $btnRunTweaks.IsEnabled = $true }
+            Invoke-VUONGTTDoEvents
         }
-        if ($txtTweaksLog) { $txtTweaksLog.AppendText("=== [HOÀN TẤT] Đã hoàn tác $count mục tinh chỉnh về mặc định! ===`r`n") }
-        $txtFooterStatus.Text = "• [OK] Đã hoàn tác các tinh chỉnh về mặc định!"
     })
 }
 
@@ -3378,50 +3452,213 @@ $txtConfigLog            = Get-Control "txtConfigLog"
 # Install Features
 if ($btnInstallFeatures) {
     $btnInstallFeatures.Add_Click({
-        if ($txtConfigLog) { $txtConfigLog.Text = "=== [BẮT ĐẦU CÀI ĐẶT TÍNH NĂNG WINDOWS] ===`r`n" }
-
-        $feats = @(
-            @{ Control="chk_FeatNetFx3"; DismName="NetFx3" },
-            @{ Control="chk_FeatHyperV"; DismName="Microsoft-Hyper-V" },
-            @{ Control="chk_FeatDirectPlay"; DismName="DirectPlay" },
-            @{ Control="chk_FeatNFS"; DismName="ServicesForNFS-ClientOnly" },
-            @{ Control="chk_FeatSandbox"; DismName="Containers-DisposableClientVM" },
-            @{ Control="chk_FeatWSL"; DismName="Microsoft-Windows-Subsystem-Linux" }
-        )
-
-        foreach ($f in $feats) {
-            $ctrl = Get-Control $f.Control
-            if ($ctrl -and $ctrl.IsChecked) {
-                $res = Enable-VUONGTTOptionalFeature -FeatureName $f.DismName
-                if ($txtConfigLog) { $txtConfigLog.AppendText("$res`r`n") }
+        $btnInstallFeatures.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "=== [BẮT ĐẦU CÀI ĐẶT TÍNH NĂNG WINDOWS] ===`r`n"
+                $txtConfigLog.ScrollToEnd()
             }
-        }
+            Invoke-VUONGTTDoEvents
 
-        $chkF8 = Get-Control "chk_FeatF8Boot"
-        if ($chkF8 -and $chkF8.IsChecked) {
-            $resF8 = Set-VUONGTTLegacyF8Boot -Enable $true
-            if ($txtConfigLog) { $txtConfigLog.AppendText("$resF8`r`n") }
-        }
+            $feats = @(
+                @{ Control="chk_FeatNetFx3"; DismName="NetFx3" },
+                @{ Control="chk_FeatHyperV"; DismName="Microsoft-Hyper-V" },
+                @{ Control="chk_FeatDirectPlay"; DismName="DirectPlay" },
+                @{ Control="chk_FeatNFS"; DismName="ServicesForNFS-ClientOnly" },
+                @{ Control="chk_FeatSandbox"; DismName="Containers-DisposableClientVM" },
+                @{ Control="chk_FeatWSL"; DismName="Microsoft-Windows-Subsystem-Linux" }
+            )
 
-        $chkReg = Get-Control "chk_FeatRegBackup"
-        if ($chkReg -and $chkReg.IsChecked) {
-            $resReg = Enable-VUONGTTRegistryBackupDaily
-            if ($txtConfigLog) { $txtConfigLog.AppendText("$resReg`r`n") }
-        }
+            foreach ($f in $feats) {
+                $ctrl = Get-Control $f.Control
+                if ($ctrl -and $ctrl.IsChecked) {
+                    if ($txtConfigLog) {
+                        $txtConfigLog.AppendText("Đang kích hoạt tính năng: $($f.DismName)...`r`n")
+                        $txtConfigLog.ScrollToEnd()
+                    }
+                    Invoke-VUONGTTDoEvents
+                    $res = Enable-VUONGTTOptionalFeature -FeatureName $f.DismName
+                    if ($txtConfigLog) {
+                        $txtConfigLog.AppendText("$res`r`n")
+                        $txtConfigLog.ScrollToEnd()
+                    }
+                    Invoke-VUONGTTDoEvents
+                }
+            }
 
-        if ($txtConfigLog) { $txtConfigLog.AppendText("=== [HOÀN TẤT] Quá trình thiết lập tính năng đã xong! ===`r`n") }
-        $txtFooterStatus.Text = "• [OK] Đã hoàn tất cài đặt tính năng Windows!"
+            $chkF8 = Get-Control "chk_FeatF8Boot"
+            if ($chkF8 -and $chkF8.IsChecked) {
+                $resF8 = Set-VUONGTTLegacyF8Boot -Enable $true
+                if ($txtConfigLog) {
+                    $txtConfigLog.AppendText("$resF8`r`n")
+                    $txtConfigLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+            }
+
+            $chkReg = Get-Control "chk_FeatRegBackup"
+            if ($chkReg -and $chkReg.IsChecked) {
+                $resReg = Enable-VUONGTTRegistryBackupDaily
+                if ($txtConfigLog) {
+                    $txtConfigLog.AppendText("$resReg`r`n")
+                    $txtConfigLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+            }
+
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("=== [HOÀN TẤT] Quá trình thiết lập tính năng đã xong! ===`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất cài đặt tính năng Windows!"
+        } finally {
+            $btnInstallFeatures.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
     })
 }
 
 # 6 Fixes
 if ($btnFixAutoLogon)        { $btnFixAutoLogon.Add_Click({ Open-VUONGTTLegacyPanel "autologon" }) }
-if ($btnFixNetworkReset)     { $btnFixNetworkReset.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTResetNetwork) } }) }
-if ($btnFixNtpServer)        { $btnFixNtpServer.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTSyncNtpServer) } }) }
-if ($btnFixSystemCorruption) { $btnFixSystemCorruption.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTRepairSystemFiles) } }) }
-if ($btnFixWindowsUpdate)    { $btnFixWindowsUpdate.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTRepairWindowsUpdate) } }) }
-if ($btnFixWinGet)           { $btnFixWinGet.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Invoke-VUONGTTReinstallWinget) } }) }
-if ($btnEnableOpenSSH)       { $btnEnableOpenSSH.Add_Click({ if ($txtConfigLog) { $txtConfigLog.Text = (Enable-VUONGTTOpenSSHServer) } }) }
+if ($btnFixNetworkReset)     {
+    $btnFixNetworkReset.Add_Click({
+        $btnFixNetworkReset.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "Đang tiến hành Reset Network (Winsock, IP stack, DNS)...`r`n"
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            $res = Invoke-VUONGTTResetNetwork
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("$res`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+        } finally {
+            $btnFixNetworkReset.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+if ($btnFixNtpServer)        {
+    $btnFixNtpServer.Add_Click({
+        $btnFixNtpServer.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "Đang đồng bộ lại đồng hồ hệ thống qua máy chủ NTP...`r`n"
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            $res = Invoke-VUONGTTSyncNtpServer
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("$res`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+        } finally {
+            $btnFixNtpServer.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+if ($btnFixSystemCorruption) {
+    $btnFixSystemCorruption.Add_Click({
+        $btnFixSystemCorruption.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "=== [BẮT ĐẦU TỰ ĐỘNG QUÉT & SỬA LỖI TẬP TIN HỆ THỐNG] ===`r`n"
+                $txtConfigLog.AppendText("[1/2] Đang quét file hệ thống bằng công cụ SFC (sfc /scannow)...`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+
+            $onSfcLog = {
+                param($line)
+                if ($txtConfigLog) {
+                    $txtConfigLog.AppendText("$line`r`n")
+                    $txtConfigLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+            }
+            Invoke-VUONGTTProcessWithLiveLog -FilePath "sfc.exe" -ArgumentList "/scannow" -OnOutputLine $onSfcLog -TimeoutSeconds 900
+
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("`r`n[2/2] Đang phục hồi kho ảnh Windows bằng DISM RestoreHealth...`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            Invoke-VUONGTTProcessWithLiveLog -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /restorehealth" -OnOutputLine $onSfcLog -TimeoutSeconds 900
+
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("`r`n=== [HOÀN TẤT] Quá trình quét và sửa lỗi file hệ thống đã kết thúc! ===`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét và sửa lỗi file hệ thống!"
+        } finally {
+            $btnFixSystemCorruption.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+if ($btnFixWindowsUpdate)    {
+    $btnFixWindowsUpdate.Add_Click({
+        $btnFixWindowsUpdate.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "Đang khôi phục và sửa lỗi dịch vụ Windows Update...`r`n"
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            $res = Invoke-VUONGTTRepairWindowsUpdate
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("$res`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+        } finally {
+            $btnFixWindowsUpdate.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+if ($btnFixWinGet)           {
+    $btnFixWinGet.Add_Click({
+        $btnFixWinGet.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "Đang kiểm tra và cài đặt lại gói WinGet...`r`n"
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            $res = Invoke-VUONGTTReinstallWinget
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("$res`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+        } finally {
+            $btnFixWinGet.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+if ($btnEnableOpenSSH)       {
+    $btnEnableOpenSSH.Add_Click({
+        $btnEnableOpenSSH.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "Đang kích hoạt OpenSSH Server...`r`n"
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            $res = Enable-VUONGTTOpenSSHServer
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("$res`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+        } finally {
+            $btnEnableOpenSSH.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
 
 # 14 Legacy Panels
 $panelMap = @{
@@ -3766,7 +4003,7 @@ if ($btnCheckDiskHealth) {
     $btnCheckDiskHealth.Add_Click({
         $txtPartitionLog.Text = "Đang kiểm tra thông số SMART và sức khỏe chi tiết toàn bộ ổ cứng..."
         $txtFooterStatus.Text = "• [Đang xử lý] Đang kiểm tra sức khỏe SMART toàn bộ ổ đĩa..."
-        [System.Windows.Forms.Application]::DoEvents()
+        Invoke-VUONGTTDoEvents
         $report = Get-VUONGTTDiskHealthReport
         $txtPartitionLog.Text = "$report`n`n$($txtPartitionLog.Text)"
         $txtFooterStatus.Text = "• [OK] Đã hoàn tất kiểm tra sức khỏe SMART ổ cứng!"
@@ -3785,7 +4022,7 @@ if ($btnExecuteSplit) {
 
         $txtFooterStatus.Text = "• [Đang xử lý] Đang thu nhỏ phân vùng ${srcDrive}: và tạo ổ mới ${newLetter}:..."
         $txtPartitionLog.Text = "Bắt đầu tiến trình chia phân vùng tự động..."
-        [System.Windows.Forms.Application]::DoEvents()
+        Invoke-VUONGTTDoEvents
 
         $res = Invoke-VUONGTTSplitPartition -SourceDriveLetter $srcDrive -SplitSizeGB $splitSize -NewDriveLetter $newLetter -NewVolumeLabel $newLabel
         $txtPartitionLog.Text = "$res`n`n$($txtPartitionLog.Text)"
@@ -3817,7 +4054,7 @@ $btnLaunchMAS.Add_Click({
 })
 $btnCheckStatus.Add_Click({
     $txtActivationLog.Text = "Đang tiến hành kiểm tra sâu bản quyền Windows, Office và trích xuất Product Key..."
-    [System.Windows.Forms.Application]::DoEvents()
+    Invoke-VUONGTTDoEvents
     $st = Get-VUONGTTActivationStatus
     $txtActivationLog.Text = $st.DetailedReport
     if ($txtFooterStatus) {
@@ -3895,9 +4132,7 @@ if ($btnCheckAppUpdate) {
         $btnCheckAppUpdate.Content = "⏳ Đang kiểm tra..."
 
         $txtFooterStatus.Text = "• [UPDATE] Đang kiểm tra phiên bản mới từ máy chủ..."
-        if ([System.Windows.Forms.Application]::MessageLoop) {
-            [System.Windows.Forms.Application]::DoEvents()
-        }
+        Invoke-VUONGTTDoEvents
 
         $info = Get-VUONGTTAppUpdateInfo
         $btnCheckAppUpdate.Content = $origContent
@@ -3927,9 +4162,7 @@ Bạn có muốn tải và tự động cập nhật ngay bây giờ không?
                 $res = Invoke-VUONGTTAppSelfUpdate -DownloadUrl $info.DownloadUrl -NewVersion $info.LatestVersion -OnProgress {
                     param($m)
                     $txtFooterStatus.Text = "• [UPDATE] $m"
-                    if ([System.Windows.Forms.Application]::MessageLoop) {
-                        [System.Windows.Forms.Application]::DoEvents()
-                    }
+                    Invoke-VUONGTTDoEvents
                 }
                 [System.Windows.MessageBox]::Show($res, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
             }
@@ -4695,9 +4928,7 @@ $txtFooterStatus.Text = "• [OK] Đang khởi động hệ thống và nạp th
 
 # Tải dữ liệu phần cứng ngầm sau khi cửa sổ đã hiện lên màn hình người dùng
 $window.Add_ContentRendered({
-    if ([System.Windows.Forms.Application]::MessageLoop) {
-        [System.Windows.Forms.Application]::DoEvents()
-    }
+    Invoke-VUONGTTDoEvents
     Refresh-SysInfoDisplay
     Update-VUONGTTLicenseUI
     $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng phục vụ!"

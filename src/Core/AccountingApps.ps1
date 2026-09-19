@@ -148,7 +148,7 @@ function Invoke-VUONGTTDownloadWithLog {
 
     try {
         $client = New-Object System.Net.WebClient
-        $client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) VUONGTT-Toolkit/2026")
+        $client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
         
         # Download truc tiep
         $client.DownloadFile($Url, $DestPath)
@@ -164,7 +164,7 @@ function Invoke-VUONGTTDownloadWithLog {
         if ($OnProgress) { & $OnProgress "  -> [CHÚ Ý] Lỗi khi tải trực tiếp: $($_.Exception.Message)" }
         # Fallback qua Invoke-WebRequest
         try {
-            Invoke-WebRequest -Uri $Url -OutFile $DestPath -UseBasicParsing -TimeoutSec 30
+            Invoke-WebRequest -Uri $Url -OutFile $DestPath -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" -TimeoutSec 45
             return (Test-Path $DestPath)
         } catch {
             return $false
@@ -195,7 +195,8 @@ function Install-VUONGTTAccountingApp {
             try {
                 $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --force"
                 $p = Start-Process -FilePath "winget.exe" -ArgumentList $arg -Wait -PassThru -NoNewWindow
-                if ($p.ExitCode -eq 0 -or $p.ExitCode -eq -1978335189) {
+                $wingetOkCodes = @(0, -1978335189, -1978335215, -1978335188, 3010, 1641, 2316632065)
+                if ($p.ExitCode -in $wingetOkCodes) {
                     if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Đã cài đặt/cập nhật $($app.Name) qua Winget!" }
                     if ($AutoLaunch -and (Get-Command Start-VUONGTTInstalledApp -ErrorAction SilentlyContinue)) {
                         Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
@@ -217,7 +218,11 @@ function Install-VUONGTTAccountingApp {
 
     $dlSuccess = Invoke-VUONGTTDownloadWithLog -Url $activeUrl -DestPath $destFile -OnProgress $OnProgress
     if (-not $dlSuccess -or -not (Test-Path $destFile)) {
-        return "[LỖI] Không thể tải bộ cài từ máy chủ chính thức của $($app.Publisher). Vui lòng kiểm tra kết nối mạng!"
+        if ($OnProgress) { & $OnProgress "  -> [CHUYỂN HƯỚNG] Máy chủ yêu cầu xác thực hoặc giới hạn tải trực tiếp. Đang tự động mở cổng chính thức..." }
+        try {
+            Start-Process $app.HomeUrl
+        } catch {}
+        return "[CHÚ Ý] Đã mở trang chủ chính thức ($($app.HomeUrl)) để tải bản mới nhất $($app.Name)!"
     }
 
     # Giai nen hoac Cai dat

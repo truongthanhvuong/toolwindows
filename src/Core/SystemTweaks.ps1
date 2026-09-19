@@ -26,6 +26,19 @@ public class MemoryCleaner {
 }
 "@ -ErrorAction SilentlyContinue
 
+function Invoke-VUONGTTDoEvents {
+    try {
+        if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher) {
+            [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
+        }
+    } catch {}
+    try {
+        if ([Type]::GetType("System.Windows.Forms.Application, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")) {
+            [System.Windows.Forms.Application]::DoEvents()
+        }
+    } catch {}
+}
+
 function Set-VUONGTTClassicContextMenu {
     param([bool]$Enable = $true)
     $keyPath = "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"
@@ -79,23 +92,24 @@ function Disable-VUONGTTTelemetry {
 
 function Invoke-VUONGTTDeepClean {
     $log = @()
-    $freed = 0
-
     $cleanPaths = @(
-        "$env:TEMP\*",
-        "$env:LOCALAPPDATA\Temp\*",
-        "$env:WINDIR\Temp\*",
-        "$env:WINDIR\Prefetch\*",
-        "$env:WINDIR\SoftwareDistribution\Download\*"
+        "$env:TEMP",
+        "$env:LOCALAPPDATA\Temp",
+        "$env:WINDIR\Temp",
+        "$env:WINDIR\Prefetch",
+        "$env:WINDIR\SoftwareDistribution\Download"
     )
 
+    $deletedCount = 0
     foreach ($path in $cleanPaths) {
-        $files = Get-ChildItem -Path $path -Recurse -Force -ErrorAction SilentlyContinue
-        foreach ($f in $files) {
-            try {
-                if (-not $f.PSIsContainer) { $freed += $f.Length }
-                Remove-Item -Path $f.FullName -Recurse -Force -ErrorAction SilentlyContinue
-            } catch {}
+        if (Test-Path $path) {
+            Invoke-VUONGTTDoEvents
+            Get-ChildItem -Path $path -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                try {
+                    Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                    $deletedCount++
+                } catch {}
+            }
         }
     }
 
@@ -105,8 +119,7 @@ function Invoke-VUONGTTDeepClean {
         $log += "[OK] Đã làm rỗng Thùng rác (Recycle Bin)."
     } catch {}
 
-    $freedMB = [math]::Round($freed / 1MB, 2)
-    $log += "[OK] Đã dọn dẹp các tệp tạm, Prefetch và cache Windows Update: Giải phóng ~$freedMB MB bộ nhớ đĩa!"
+    $log += "[OK] Đã dọn dẹp các tệp tạm, Prefetch và cache Windows Update ($deletedCount mục đã dọn dẹp an toàn)!"
     return ($log -join "`n")
 }
 
@@ -670,8 +683,8 @@ function Invoke-VUONGTTSingleTweak {
             }
             "DiskCleanup" {
                 if ($Enable) {
-                    Start-Process "cleanmgr.exe" -ArgumentList "/sagerun:1" -Wait -NoNewWindow -ErrorAction SilentlyContinue
-                    return "[OK] Đã chạy dọn dẹp đĩa Disk Cleanup tự động."
+                    Start-Process "cleanmgr.exe" -ArgumentList "/autoclean /d C:" -WindowStyle Hidden -ErrorAction SilentlyContinue
+                    return "[OK] Đã kích hoạt dọn dẹp Disk Cleanup ổ C: ngầm (không gây đơ ứng dụng)."
                 }
                 return "[OK] Bỏ qua dọn đĩa."
             }
@@ -715,6 +728,47 @@ function Invoke-VUONGTTSingleTweak {
                 Set-ItemProperty -Path $p -Name "DisableStoreSearchInstall" -Value $val -Type DWord -Force
                 $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
                 return "[OK] Tắt gợi ý tìm kiếm Microsoft Store: $statusTxt"
+            }
+            "PreventDeviceApps" {
+                $p1 = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
+                if (-not (Test-Path $p1)) { New-Item -Path $p1 -Force | Out-Null }
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $p1 -Name "DisableWindowsConsumerFeatures" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+                $p2 = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Device Metadata"
+                if (-not (Test-Path $p2)) { New-Item -Path $p2 -Force | Out-Null }
+                Set-ItemProperty -Path $p2 -Name "PreventDeviceMetadataFromNetwork" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Chặn Tải App Kèm Thiết Bị (Prevent Device Companion Apps): $statusTxt"
+            }
+            "RestorePoint" {
+                if ($Enable) {
+                    try {
+                        Enable-ComputerRestore -Drive "C:\" -ErrorAction SilentlyContinue
+                        Checkpoint-Computer -Description "VUONGTT_Toolkit_$(Get-Date -Format 'yyyyMMdd_HHmm')" -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
+                        return "[OK] Đã tạo Điểm Khôi Phục Hệ Thống (System Restore Point) thành công!"
+                    } catch {
+                        return "[CHÚ Ý] Không thể tạo Restore Point tự động: $($_.Exception.Message)"
+                    }
+                }
+                return "[OK] Bỏ qua tạo Restore Point."
+            }
+            "ServicesManual" {
+                if ($Enable) {
+                    $svcs = @("Fax", "RetailDemo", "WMPNetworkSvc", "MapsBroker", "XblAuthManager", "XblGameSave", "XboxNetApiSvc")
+                    foreach ($s in $svcs) {
+                        Set-Service -Name $s -StartupType Manual -ErrorAction SilentlyContinue
+                    }
+                    return "[OK] Đã chuyển các dịch vụ thừa (Fax, Maps, Xbox...) sang khởi động Thủ công (Manual)!"
+                } else {
+                    return "[OK] Giữ nguyên cấu hình dịch vụ."
+                }
+            }
+            "StartMenuLayout" {
+                $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                $val = if ($Enable) { 1 } else { 0 }
+                Set-ItemProperty -Path $adv -Name "Start_ShowClassicMode" -Value $val -Force -ErrorAction SilentlyContinue
+                $statusTxt = if ($Enable) { "BẬT (Bố cục cũ)" } else { "TẮT (Mặc định)" }
+                return "[OK] Bố Cục Start Menu: $statusTxt"
             }
             "Telemetry" {
                 if ($Enable) {
@@ -797,7 +851,6 @@ function Invoke-VUONGTTSingleTweak {
                 $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 $val = if ($Enable) { 0 } else { 1 }
                 Set-ItemProperty -Path $adv -Name "HideFileExt" -Value $val -Force
-                Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
                 $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
                 return "[OK] Hiện phần mở rộng tệp tin (.exe, .docx...): $statusTxt"
             }
@@ -805,14 +858,13 @@ function Invoke-VUONGTTSingleTweak {
                 $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 $val = if ($Enable) { 1 } else { 2 }
                 Set-ItemProperty -Path $adv -Name "Hidden" -Value $val -Force
-                Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
                 $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
                 return "[OK] Hiện tệp và thư mục ẩn (File Explorer Hidden Files): $statusTxt"
             }
             "GameMode" {
                 return (Set-VUONGTTToggleGameMode)
             }
-            "NumLockStartup" {
+            { $_ -in @("NumLock", "NumLockStartup") } {
                 $p = "HKU:\.DEFAULT\Control Panel\Keyboard"
                 $val = if ($Enable) { "2" } else { "0" }
                 Set-ItemProperty -Path $p -Name "InitialKeyboardIndicators" -Value $val -Force
@@ -840,13 +892,19 @@ function Invoke-VUONGTTSingleTweak {
                 $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
                 return "[OK] Nút Task View trên Taskbar: $statusTxt"
             }
-            "StartMenuBingSearch" {
+            { $_ -in @("StartBing", "StartMenuBingSearch") } {
                 $p = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
                 if (-not (Test-Path $p)) { New-Item -Path $p -Force | Out-Null }
                 $val = if ($Enable) { 0 } else { 1 }
                 Set-ItemProperty -Path $p -Name "DisableSearchBoxSuggestions" -Value $val -Type DWord -Force
                 $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
                 return "[OK] Tìm kiếm Web Bing trong Start Menu: $statusTxt"
+            }
+            "WindowSnap" {
+                $val = if ($Enable) { "1" } else { "0" }
+                Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "WindowArrangementActive" -Value $val -Force -ErrorAction SilentlyContinue
+                $statusTxt = if ($Enable) { "BẬT" } else { "TẮT" }
+                return "[OK] Chia Cửa Sổ (Window Snapping): $statusTxt"
             }
             default {
                 return "[BỎ QUA] Tweak chưa hỗ trợ: $TweakKey"
