@@ -55,21 +55,28 @@ function Get-VUONGTTAppUpdateInfo {
             $localPath = if ($CheckUrl -like "file://*") { [System.Uri]::new($CheckUrl).LocalPath } else { $CheckUrl }
             $jsonText = [System.IO.File]::ReadAllText($localPath, [System.Text.Encoding]::UTF8)
         } else {
-            # 1. Tầng 1: Truy vấn trực tiếp Raw URL GitHub kèm Cache-Busting qua WebClient (Tốc độ ~200ms, không giới hạn Rate Limit)
-            try {
-                $rawUrl = $CheckUrl
-                $sep = if ($rawUrl -like "*\?*") { "&" } else { "?" }
-                $rawUrlWithBust = "$rawUrl$($sep)ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+            # 1. Tầng 1: Truy vấn qua các endpoint máy chủ GitHub tốc độ cao (Bao gồm raw.githack.com không bị đệm CDN)
+            $candidateUrls = @(
+                "https://raw.githack.com/truongthanhvuong/toolwindows/main/version.json",
+                $CheckUrl
+            )
+            foreach ($targetUrl in $candidateUrls) {
+                try {
+                    $sep = if ($targetUrl -like "*\?*") { "&" } else { "?" }
+                    $urlWithBust = "$targetUrl$($sep)ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
 
-                $wc = New-Object System.Net.WebClient
-                $wc.Proxy = $null
-                $wc.Encoding = [System.Text.Encoding]::UTF8
-                $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))")
-                $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
-                $wc.Headers.Add("Pragma", "no-cache")
-                $jsonText = $wc.DownloadString($rawUrlWithBust)
-            } catch {
-                $jsonText = ""
+                    $wc = New-Object System.Net.WebClient
+                    $wc.Proxy = $null
+                    $wc.Encoding = [System.Text.Encoding]::UTF8
+                    $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))")
+                    $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+                    $wc.Headers.Add("Pragma", "no-cache")
+                    $downloaded = $wc.DownloadString($urlWithBust)
+                    if ($downloaded -and $downloaded.Length -gt 20) {
+                        $jsonText = $downloaded
+                        break
+                    }
+                } catch {}
             }
 
             # 2. Tầng 2: Fallback sang GitHub REST API nếu Raw URL bị chặn
