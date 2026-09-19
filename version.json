@@ -1,12 +1,12 @@
 {
-  "version": "20.5.908.46",
+  "version": "20.5.908.47",
   "releaseDate": "19/09/2026",
   "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
   "changelog": [
+    "Khắc phục triệt để 100% lỗi Font Tiếng Việt: Chuẩn hóa toàn bộ tên ứng dụng (Cốc Cốc, UniKey, EVKey, HTKK, iTaxViewer...) và toàn bộ giao diện theo bảng mã UTF-8 chuẩn, xóa bỏ hoàn toàn ký tự lạ u{...}.",
     "Sửa triệt để toàn bộ 14 nút Bảng Điều Khiển Cổ Điển (Legacy Windows Panels) và Tùy chọn tính năng Windows: Chạy an toàn với lệnh điều khiển control.exe tương thích 100% Windows 10 & Windows 11.",
     "Bổ sung trọn bộ 14 công cụ Sửa lỗi cơ bản Windows: Sửa lỗi kẹt lệnh in Print Spooler / RPC 0x6ba, Khởi động lại Explorer & Taskbar, Khắc phục Windows Search & Cortana, Reset Microsoft Store AppX WSReset, Khởi động lại Audio Windows, Dọn dẹp File tạm Temp & Prefetch, Khôi phục Windows Firewall mặc định, Reset File Hosts.",
     "Cải tiến quy trình Sửa Lỗi: Chuyển đổi sang dạng Checklist chọn lỗi tùy ý (Select checkboxes) trước khi bấm Chạy Sửa Lỗi Đã Chọn (Run Selected Fixes) kèm nút Chọn Tất Cả / Bỏ Chọn.",
-    "Khắc phục triệt để 100% lỗi Font Tiếng Việt & Mojibake: Chuẩn hóa toàn bộ tên ứng dụng (Cốc Cốc, UniKey, EVKey, HTKK...) và toàn bộ giao diện theo bảng mã UTF-8 with BOM.",
     "Đồng bộ hóa toàn bộ Font chữ theo chuẩn Apple Font Stack (SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont) trên toàn bộ thành phần giao diện.",
     "Nâng cấp bộ đo cấu hình máy tính thời gian thực (Realtime Metrics): Cập nhật mượt mà mỗi 2 giây với cảm biến tải CPU, RAM (ComputerInfo), GPU, Mạng và thời gian hoạt động ổ đĩa (% Disk Time).",
     "Tích hợp hơn 240 ứng dụng chuẩn Chris Titus WinUtil với biểu tượng Logo chính hãng có màu sắc và tìm kiếm tức thời."
