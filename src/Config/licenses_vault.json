@@ -1,4 +1,4 @@
-[
+﻿[
     {
         "Key":  "VUONG-LFGQ-TVDM-36KJ-E8ST",
         "Customer":  "Khách Hàng VIP",
@@ -48,5 +48,15 @@
         "UsedHWID":  "HWID-5941-0247-F735-CB0F",
         "UsedPCName":  "DESKTOP-BJ38TQN",
         "ActivatedDate":  "19/09/2026 11:51:28"
+    },
+    {
+        "Key":  "VUONG-LFGQ-TVDM-36KJ-E8ST VUONG-LCG4-4AMB-YAPH-E6A8 VUONG-LXCA-TDXE-WDSH-AU62 VUONG-LEFF-KV34-ZKWQ-7QZF VUONG-4P34-HE36-5B74-FHCV",
+        "Customer":  "Khách Hàng VIP Khách Hàng VIP Khach Hang Doanh Nghiep Khach Hang Doanh Nghiep Khách Hàng VIP",
+        "Duration":  "Lifetime Lifetime Lifetime Lifetime Lifetime",
+        "CreatedDate":  "19/09/2026 12:23:04 19/09/2026 12:22:45 19/09/2026 11:51:26 19/09/2026 11:51:26 19/09/2026 11:51:28",
+        "IsUsed":  true,
+        "UsedHWID":  "    HWID-5941-0247-F735-CB0F",
+        "UsedPCName":  "    DESKTOP-BJ38TQN",
+        "ActivatedDate":  "    19/09/2026 11:51:28"
     }
 ]

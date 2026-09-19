@@ -64,17 +64,19 @@ function Get-VUONGTTAppUpdateInfo {
                 $apiReq.UserAgent = "VUONGTT-Toolkit-Updater/2026"
                 $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
                 $apiReq.Headers.Add("Pragma", "no-cache")
+                $ghToken = if (Get-Command "Get-VUONGTTGitHubToken" -ErrorAction SilentlyContinue) { Get-VUONGTTGitHubToken } else { "" }
+                if ($ghToken) { $apiReq.Headers.Add("Authorization", "Bearer $ghToken") }
                 $apiResp = $apiReq.GetResponse()
                 $apiStream = $apiResp.GetResponseStream()
                 $apiReader = New-Object System.IO.StreamReader($apiStream, [System.Text.Encoding]::UTF8)
                 $apiRaw = $apiReader.ReadToEnd()
                 $apiReader.Close(); $apiStream.Close(); $apiResp.Close()
 
-                $apiObj = ConvertFrom-Json $apiRaw
+                $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
                 if ($apiObj -and $apiObj.content) {
                     $cleanBase64 = $apiObj.content -replace '\s+', ''
                     $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                    $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes)
+                    $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF).Trim()
                 }
             } catch {}
 
