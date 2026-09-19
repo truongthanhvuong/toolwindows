@@ -195,7 +195,7 @@ $menuButtons = @(
     "btnMenuSysInfo", "btnMenuCustomize", "btnMenuUsers", "btnMenuBenchmark",
     "btnMenuLaptopCheck", "btnMenuCpuMain",
     "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuUninstaller", "btnMenuFonts",
-    "btnMenuCleaner", "btnMenuTweaks", "btnMenuConfig", "btnMenuPrinterLAN", "btnMenuBackupDriver",
+    "btnMenuCleaner", "btnMenuConfig", "btnMenuPrinterLAN", "btnMenuBackupDriver",
     "btnMenuDevMgmt", "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition",
     "btnMenuIpScanner", "btnMenuAdmin"
 )
@@ -214,7 +214,7 @@ $pages = @{
     "Uninstaller"  = Get-Control "pageUninstaller"
     "Fonts"        = Get-Control "pageFonts"
     "Cleaner"      = Get-Control "pageCleaner"
-    "Tweaks"       = Get-Control "pageTweaks"
+    "Tweaks"       = Get-Control "pageCleaner"
     "Config"       = Get-Control "pageConfig"
     "PrinterLAN"   = Get-Control "pagePrinterLAN"
     "BackupDriver" = Get-Control "pageBackupDriver"
@@ -239,8 +239,8 @@ $pageTitlesVI = @{
     "CustomApp"    = @{ Title = "Cài App Tùy Chỉnh & Silent"; Icon = "📦" }
     "Uninstaller"  = @{ Title = "Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)"; Icon = "🗑️" }
     "Fonts"        = @{ Title = "Cài Font Tiếng Việt Đầy Đủ"; Icon = "🔤" }
-    "Cleaner"      = @{ Title = "Tối Ưu & Dọn Dẹp Hệ Thống"; Icon = "🚀" }
-    "Tweaks"       = @{ Title = "Tối Ưu Hóa Windows (Tweaks Pro)"; Icon = "⚡" }
+    "Cleaner"      = @{ Title = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"; Icon = "⚡" }
+    "Tweaks"       = @{ Title = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"; Icon = "⚡" }
     "Config"       = @{ Title = "Cấu Hình Tính Năng & Sửa Lỗi Hệ Thống"; Icon = "🛠️" }
     "PrinterLAN"   = @{ Title = "Sửa Lỗi Máy In (87 Chức Năng)"; Icon = "🖨️" }
     "BackupDriver" = @{ Title = "Sao Lưu & Khôi Phục Driver Thiết Bị"; Icon = "💾" }
@@ -265,8 +265,8 @@ $pageTitlesEN = @{
     "CustomApp"    = @{ Title = "Custom Silent Install"; Icon = "📦" }
     "Uninstaller"  = @{ Title = "Clean Uninstaller Pro"; Icon = "🗑️" }
     "Fonts"        = @{ Title = "Install Vietnamese Fonts"; Icon = "🔤" }
-    "Cleaner"      = @{ Title = "System Cleaner & Junk"; Icon = "🚀" }
-    "Tweaks"       = @{ Title = "Windows Tweaks Pro"; Icon = "⚡" }
+    "Cleaner"      = @{ Title = "System Cleaner & Tweaks Pro"; Icon = "⚡" }
+    "Tweaks"       = @{ Title = "System Cleaner & Tweaks Pro"; Icon = "⚡" }
     "Config"       = @{ Title = "Windows Config & Fixes Manager"; Icon = "🛠️" }
     "PrinterLAN"   = @{ Title = "Printer Repair (87 Tools)"; Icon = "🖨️" }
     "BackupDriver" = @{ Title = "Backup & Restore Drivers"; Icon = "💾" }
@@ -390,8 +390,8 @@ function Switch-Tab {
             }
         }
         "Fonts"        { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt trọn bộ Font tiếng Việt VNI, TCVN3, Unicode." }
-        "Cleaner"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và giải phóng bộ nhớ RAM." }
-        "Tweaks"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng tinh chỉnh Windows và sửa lỗi hệ thống." }
+        "Cleaner"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro." }
+        "Tweaks"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro." }
         "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
         "BackupDriver" { $txtFooterStatus.Text = "• [OK] Đang ở trang Sao Lưu & Khôi Phục Driver Thiết Bị." }
         "DevMgmt"      { 
@@ -462,8 +462,7 @@ function Set-ToolkitLanguage {
             "btnMenuCustomApp"    = "Cài app tùy chỉnh"
             "btnMenuUninstaller"  = "Gỡ Bỏ Phần Mềm (Clean)"
             "btnMenuFonts"        = "Cài font tiếng Việt"
-            "btnMenuCleaner"      = "Tối Ưu & Dọn Dẹp"
-            "btnMenuTweaks"       = "Tối Ưu Windows (Tweaks Pro)"
+            "btnMenuCleaner"      = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"
             "btnMenuConfig"       = "Cấu Hình & Sửa Lỗi (Config)"
             "btnMenuPrinterLAN"   = "Sửa Lỗi Máy In (87 Chức Năng)"
             "btnMenuBackupDriver" = "Backup Driver Thiết Bị"
@@ -519,8 +518,7 @@ function Set-ToolkitLanguage {
             "btnMenuCustomApp"    = "Custom Silent Install"
             "btnMenuUninstaller"  = "Clean Uninstaller Pro"
             "btnMenuFonts"        = "Install Vietnamese Fonts"
-            "btnMenuCleaner"      = "System Cleaner & Junk"
-            "btnMenuTweaks"       = "Windows Tweaks Pro"
+            "btnMenuCleaner"      = "System Cleaner & Tweaks Pro"
             "btnMenuConfig"       = "Windows Config & Fixes"
             "btnMenuPrinterLAN"   = "Printer Repair (87 Tools)"
             "btnMenuBackupDriver" = "Backup & Restore Drivers"
@@ -1875,7 +1873,7 @@ function Update-VUONGTTAppSelectionCount {
         if ($item.Control.IsChecked) { $cCount++ }
     }
     if ($txtSelectedAppsCount) {
-        $txtSelectedAppsCount.Text = "ÄÃ£ chá»n: $cCount á»©ng dá»¥ng"
+        $txtSelectedAppsCount.Text = "Đã chọn: $cCount ứng dụng"
     }
 }
 
@@ -3557,6 +3555,7 @@ $cmbDnsProvider       = Get-Control "cmbDnsProvider"
 $btnEnableUltimatePlan = Get-Control "btnEnableUltimatePlan"
 $btnDisableUltimatePlan= Get-Control "btnDisableUltimatePlan"
 $txtTweaksLog         = Get-Control "txtTweaksLog"
+if (-not $txtTweaksLog) { $txtTweaksLog = $txtCleanerLog }
 
 $allTweakCheckboxes = @(
     "chk_ActivityHistory", "chk_BitLocker", "chk_ConsumerFeatures", "chk_DeliveryOptimization",
@@ -3877,6 +3876,21 @@ if ($btnInstallFeatures) {
                 Invoke-VUONGTTDoEvents
             }
 
+            $chkClassicMenu = Get-Control "chk_FeatClassicMenu"
+            if ($chkClassicMenu -and $chkClassicMenu.IsChecked) {
+                if ($txtConfigLog) {
+                    $txtConfigLog.AppendText("Đang kích hoạt Menu Chuột Phải Windows 10 (Classic Context Menu)...`r`n")
+                    $txtConfigLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+                $resMenu = Set-VUONGTTClassicContextMenu -Enable $true
+                if ($txtConfigLog) {
+                    $txtConfigLog.AppendText("$resMenu`r`n")
+                    $txtConfigLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+            }
+
             if ($txtConfigLog) {
                 $txtConfigLog.AppendText("=== [HOÀN TẤT] Quá trình thiết lập tính năng đã xong! ===`r`n")
                 $txtConfigLog.ScrollToEnd()
@@ -3893,7 +3907,8 @@ if ($btnInstallFeatures) {
 $fixCheckBoxNames = @(
     "chk_FixSystemFiles", "chk_FixWindowsUpdate", "chk_FixNetwork", "chk_FixPrintSpooler",
     "chk_FixExplorer", "chk_FixSearch", "chk_FixStore", "chk_FixAudio", "chk_FixNtp",
-    "chk_FixTempFiles", "chk_FixWinGet", "chk_FixFirewall", "chk_FixHostsFile", "chk_FixAutoLogon"
+    "chk_FixTempFiles", "chk_FixWinGet", "chk_FixFirewall", "chk_FixHostsFile", "chk_FixAutoLogon",
+    "chk_FixClassicContextMenu"
 )
 
 $btnSelectAllFixes   = Get-Control "btnSelectAllFixes"
@@ -4056,9 +4071,17 @@ if ($btnRunSelectedFixes) {
             # 14. AutoLogon
             $chkAuto = Get-Control "chk_FixAutoLogon"
             if ($chkAuto -and $chkAuto.IsChecked) {
-                & $onLiveLog "▶ [14/14] Đang mở giao diện cấu hình tự động đăng nhập (netplwiz)..."
+                & $onLiveLog "▶ [14/15] Đang mở giao diện cấu hình tự động đăng nhập (netplwiz)..."
                 Start-Process "control.exe" -ArgumentList "userpasswords2"
                 & $onLiveLog "✔ Đã mở cửa sổ tài khoản người dùng userpasswords2!`r`n"
+            }
+
+            # 15. Classic Context Menu Win 10
+            $chkClassicCtx = Get-Control "chk_FixClassicContextMenu"
+            if ($chkClassicCtx -and $chkClassicCtx.IsChecked) {
+                & $onLiveLog "▶ [15/15] Đang bật Menu Chuột Phải Windows 10 cổ điển..."
+                $resMenu = Set-VUONGTTClassicContextMenu -Enable $true
+                & $onLiveLog "✔ $resMenu`r`n"
             }
 
             & $onLiveLog "=========================================================="

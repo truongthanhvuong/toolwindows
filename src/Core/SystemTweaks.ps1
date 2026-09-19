@@ -55,6 +55,7 @@ function Set-VUONGTTClassicContextMenu {
         return "Đã khôi phục Menu chuột phải mặc định Windows 11. Đã khởi động lại Explorer!"
     }
 }
+Set-Alias -Name Set-ClassicContextMenu -Value Set-VUONGTTClassicContextMenu -ErrorAction SilentlyContinue
 
 function Set-VUONGTTShowFileExtensions {
     $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
