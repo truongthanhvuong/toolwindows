@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.56"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.57"
         Height="780" Width="1280"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
@@ -325,7 +325,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.908.56 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.908.57 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -2717,6 +2717,7 @@
                                     <Grid Margin="0,0,0,10">
                                         <TextBlock Text="🛠️ PHÂN QUYỀN CHỨC NĂNG (TIERS)" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button x:Name="btnSyncPolicies" Content="☁️ Đồng Bộ Cloud" Height="28" Background="#0284C7" Style="{StaticResource ActionBtn}" Padding="8,0,8,0" Margin="0,0,6,0" ToolTip="Kéo cấu hình phân quyền mới nhất từ Cloud"/>
                                             <Button x:Name="btnResetPolicies" Content="🔄 Mặc Định" Height="28" Background="#64748B" Style="{StaticResource ActionBtn}" Padding="8,0,8,0" Margin="0,0,6,0"/>
                                             <Button x:Name="btnSavePolicies" Content="💾 Lưu Cấu Hình" Height="28" Background="#047857" Style="{StaticResource ActionBtn}" Padding="10,0,10,0"/>
                                         </StackPanel>                                    </Grid>
@@ -2767,7 +2768,14 @@
                                             <TextBlock Text="📋 DANH SÁCH LICENSE KEY TRONG KHO" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
                                             <TextBlock x:Name="lblKeyVaultStats" Text="Tổng: 0 | Đã kích hoạt: 0 | Còn trống: 0" FontSize="11.5" Foreground="#B45309" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                         </Grid>
-                                        <TextBlock Text="💡 Mỗi key chỉ kích hoạt được trên 1 máy tính duy nhất và tự động khóa chặt với HWID máy đó." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                                        <Grid Margin="0,0,0,8">
+                                            <TextBlock Text="💡 Khóa theo HWID 1 máy. Đồng bộ qua Cloud giữa các máy Admin." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Button x:Name="btnSyncCloudKeys" Content="☁️ Đồng Bộ Cloud" Height="26" Background="#0284C7" Style="{StaticResource ActionBtn}" Padding="8,0,8,0" Margin="0,0,6,0" ToolTip="Tự động đồng bộ và gộp License Key giữa 2 máy Admin qua GitHub"/>
+                                                <Button x:Name="btnExportKeys" Content="📋 Copy Tất Cả" Height="26" Background="#475569" Style="{StaticResource ActionBtn}" Padding="8,0,8,0" Margin="0,0,6,0" ToolTip="Sao chép toàn bộ mã Key ra Clipboard"/>
+                                                <Button x:Name="btnImportKeys" Content="📥 Nhập Key" Height="26" Background="#334155" Style="{StaticResource ActionBtn}" Padding="8,0,8,0" ToolTip="Nhập danh sách mã Key từ máy khác"/>
+                                            </StackPanel>
+                                        </Grid>
                                         
                                         <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                             <StackPanel x:Name="panelKeysContainer">
@@ -2817,7 +2825,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.56" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.57" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

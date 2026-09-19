@@ -128,12 +128,16 @@ $pageAdminPortal            = Get-Control "pageAdminPortal"
 $btnAdminLogout             = Get-Control "btnAdminLogout"
 $btnSavePolicies            = Get-Control "btnSavePolicies"
 $btnResetPolicies           = Get-Control "btnResetPolicies"
+$btnSyncPolicies            = Get-Control "btnSyncPolicies"
 $panelFeaturePoliciesList   = Get-Control "panelFeaturePoliciesList"
 $txtNewKeyCustomer          = Get-Control "txtNewKeyCustomer"
 $cmbNewKeyDuration          = Get-Control "cmbNewKeyDuration"
 $txtNewKeyCount             = Get-Control "txtNewKeyCount"
 $btnGenerateKeys            = Get-Control "btnGenerateKeys"
 $lblKeyVaultStats           = Get-Control "lblKeyVaultStats"
+$btnSyncCloudKeys           = Get-Control "btnSyncCloudKeys"
+$btnExportKeys              = Get-Control "btnExportKeys"
+$btnImportKeys              = Get-Control "btnImportKeys"
 $panelKeysContainer         = Get-Control "panelKeysContainer"
 $pwdAdminChangeNew          = Get-Control "pwdAdminChangeNew"
 $pwdAdminChangeConfirm      = Get-Control "pwdAdminChangeConfirm"
@@ -349,9 +353,19 @@ function Switch-Tab {
     # Module specific lazy refresh
     switch ($TargetTag) {
         "AdminPortal"  {
-            $txtFooterStatus.Text = "• [ADMIN] Đang trong Trang Quản Trị Viên (Admin Portal)."
+            $txtFooterStatus.Text = "• [ADMIN] Đang mở Trang Quản Trị Viên & tự động đồng bộ Cloud..."
             Render-VUONGTTAdminPolicies
             Render-VUONGTTAdminKeys
+            try {
+                [System.Windows.Threading.Dispatcher]::CurrentDispatcher.BeginInvoke([action]{
+                    $cRes = Sync-VUONGTTCloudAdminData
+                    if ($cRes -and $cRes.Success) {
+                        Render-VUONGTTAdminPolicies
+                        Render-VUONGTTAdminKeys
+                        $txtFooterStatus.Text = "• [ADMIN CLOUD] Đã đồng bộ với Cloud! Kho: $($cRes.TotalKeys) keys."
+                    }
+                }) | Out-Null
+            } catch {}
         }
         "SysInfo"      { Refresh-SysInfoDisplay }
         "Benchmark"    {
@@ -4743,6 +4757,87 @@ if ($btnResetPolicies) {
             Render-VUONGTTAdminPolicies
             $txtFooterStatus.Text = "• [RESET] Đã khôi phục phân quyền tính năng về mặc định ban đầu."
         }
+    })
+}
+
+if ($btnSyncPolicies) {
+    $btnSyncPolicies.Add_Click({
+        $txtFooterStatus.Text = "• [CLOUD SYNC] Đang đồng bộ cấu hình phân quyền từ Cloud GitHub..."
+        Invoke-VUONGTTDoEvents
+        $res = Sync-VUONGTTCloudAdminData
+        Render-VUONGTTAdminPolicies
+        $txtFooterStatus.Text = "• [CLOUD SYNC] " + $res.Message
+        [System.Windows.MessageBox]::Show($res.Message, "Đồng Bộ Phân Quyền Cloud", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($btnSyncCloudKeys) {
+    $btnSyncCloudKeys.Add_Click({
+        $txtFooterStatus.Text = "• [CLOUD SYNC] Đang kết nối máy chủ Cloud và hợp nhất License Keys giữa các máy Admin..."
+        Invoke-VUONGTTDoEvents
+        $res = Sync-VUONGTTCloudAdminData
+        Render-VUONGTTAdminKeys
+        Render-VUONGTTAdminPolicies
+        $txtFooterStatus.Text = "• [CLOUD SYNC] " + $res.Message
+        [System.Windows.MessageBox]::Show("ĐÃ ĐỒNG BỘ ĐÁM MÂY THÀNH CÔNG!`n`n- Tổng số License Key trong kho: $($res.TotalKeys) key`n- Số key mới gộp thêm từ máy khác/Cloud: $($res.KeysMerged) key`n- Phân quyền tính năng: Đã đồng bộ`n`nToàn bộ dữ liệu Admin giữa 2 máy đã được hợp nhất hoàn toàn!", "Đồng Bộ Cloud Admin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($btnExportKeys) {
+    $btnExportKeys.Add_Click({
+        $keys = Get-VUONGTTAllLicenses
+        if ($keys.Count -eq 0) {
+            [System.Windows.MessageBox]::Show("Kho khóa hiện đang trống!", "Sao Chép Danh Sách Key", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+        $lines = @()
+        foreach ($k in $keys) {
+            $status = if ($k.IsUsed) { "[ĐÃ KÍCH HOẠT: $($k.UsedPCName)]" } else { "[CHƯA DÙNG]" }
+            $lines += "$($k.Key) | $($k.Duration) | $($k.Customer) | $status"
+        }
+        $text = $lines -join "`r`n"
+        [System.Windows.Clipboard]::SetText($text)
+        $txtFooterStatus.Text = "• [EXPORT] Đã sao chép toàn bộ $($keys.Count) License Keys vào Clipboard!"
+        [System.Windows.MessageBox]::Show("ĐÃ SAO CHÉP TOÀN BỘ $($keys.Count) LICENSE KEYS VÀO CLIPBOARD!`n`nBạn có thể dán sang Zalo/Telegram hoặc gửi sang máy Admin khác để bấm nút 'Nhập Key'.", "Sao Chép Toàn Bộ Key", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($btnImportKeys) {
+    $btnImportKeys.Add_Click({
+        $clip = ""
+        try { $clip = [System.Windows.Clipboard]::GetText() } catch {}
+        $matches = [regex]::Matches($clip, 'VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}')
+        if ($matches.Count -gt 0) {
+            $vault = @(Get-VUONGTTAllLicenses)
+            $importedCount = 0
+            foreach ($m in $matches) {
+                $kVal = $m.Value
+                if (-not ($vault.Key -contains $kVal)) {
+                    $vault += [PSCustomObject]@{
+                        Key           = $kVal
+                        Customer      = "Đồng bộ từ máy Admin khác"
+                        Duration      = "Lifetime"
+                        CreatedDate   = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
+                        IsUsed        = $false
+                        UsedHWID      = ""
+                        UsedPCName    = ""
+                        ActivatedDate = ""
+                    }
+                    $importedCount++
+                }
+            }
+            if ($importedCount -gt 0) {
+                Save-VUONGTTLicenseVault -KeyList $vault
+                Render-VUONGTTAdminKeys
+                $txtFooterStatus.Text = "• [IMPORT] Đã gộp thành công $importedCount License Key mới vào kho!"
+                [System.Windows.MessageBox]::Show("ĐÃ GỘP THÀNH CÔNG $importedCount LICENSE KEY MỚI TỪ CLIPBOARD!`n`nTổng số License Key trong kho hiện tại: $($vault.Count) keys.", "Nhập License Key Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                return
+            } else {
+                [System.Windows.MessageBox]::Show("Tất cả $($matches.Count) License Key trong Clipboard đã có sẵn trong kho hiện tại!", "Thông Báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                return
+            }
+        }
+        [System.Windows.MessageBox]::Show("Không tìm thấy mã License Key (dạng VUONG-XXXX-XXXX-XXXX-XXXX) nào trong Clipboard!`n`nHướng dẫn nhanh: Ở máy kia bấm nút '📋 Copy Tất Cả', rồi sang máy này bấm '📥 Nhập Key' là 2 máy có kho key giống hệt nhau ngay lập tức!", "Hướng Dẫn Nhập Key", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
     })
 }
 

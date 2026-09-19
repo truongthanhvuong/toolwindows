@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.908.56",
+    "version":  "20.5.908.57",
     "releaseDate":  "19/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "He thong Dong Bo Dam May Cloud Sync 2 chieu cho Admin giua cac may tinh va hop nhat kho License Keys",
                       "He thong cap nhat tu dong truc tiep tu GitHub API thoi gian thuc va fix loi tao License Key",
                       "Khắc phục triệt để lỗi tạo License Key: Loại bỏ 100% thẻ vàng rác, đảm bảo tạo key mới nối tiếp không bao giờ đổi hoặc mất key cũ, tự động đẩy key mới nhất lên đầu danh sách Admin.",
                       "Khắc phục triệt để lỗi kích hoạt License Key PRO trên máy khác: Tích hợp động cơ Universal Cryptographic Key Engine (HMAC-SHA256) giúp mọi máy tính kích hoạt thành công mã Key tạo từ trang Admin (bao gồm mã VUONG-4P34-HE36-5B74-FHCV) và tự động khóa chặt với phần cứng HWID vĩnh viễn.",

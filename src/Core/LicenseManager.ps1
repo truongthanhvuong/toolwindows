@@ -491,6 +491,169 @@ function Remove-VUONGTTLicenseKey {
 }
 
 # -------------------------------------------------------------------------
+# 4.1 CLOUD ADMIN SYNC ENGINE (ĐỒNG BỘ 2 CHIỀU GIỮA CÁC MÁY ADMIN QUA GITHUB)
+# -------------------------------------------------------------------------
+$script:GITHUB_REPO_OWNER = "truongthanhvuong"
+$script:GITHUB_REPO_NAME  = "toolwindows"
+$script:GITHUB_TOKEN_FILE = Join-Path $script:CONFIG_DIR "github_admin_token.txt"
+
+function Get-VUONGTTGitHubToken {
+    if (Test-Path $script:GITHUB_TOKEN_FILE) {
+        try {
+            return (Get-Content -Path $script:GITHUB_TOKEN_FILE -Raw -Encoding UTF8).Trim()
+        } catch {}
+    }
+    return ""
+}
+
+function Set-VUONGTTGitHubToken {
+    param([string]$Token)
+    try {
+        [System.IO.File]::WriteAllText($script:GITHUB_TOKEN_FILE, $Token.Trim(), [System.Text.Encoding]::UTF8)
+        return $true
+    } catch { return $false }
+}
+
+function Sync-VUONGTTCloudAdminData {
+    [CmdletBinding()]
+    param(
+        [string]$RepoOwner = $script:GITHUB_REPO_OWNER,
+        [string]$RepoName  = $script:GITHUB_REPO_NAME,
+        [string]$Branch    = "main"
+    )
+
+    $syncResult = [PSCustomObject]@{
+        Success        = $false
+        KeysMerged     = 0
+        TotalKeys      = 0
+        PoliciesSynced = $false
+        Message        = ""
+    }
+
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+
+        $ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+        $wc = New-Object System.Net.WebClient
+        $wc.Proxy = $null
+        $wc.Encoding = [System.Text.Encoding]::UTF8
+        $wc.Headers.Add("User-Agent", "VUONGTT-AdminCloudSync/2026")
+        $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+        $wc.Headers.Add("Pragma", "no-cache")
+
+        # 1. ĐỒNG BỘ KHO LICENSE KEYS
+        $cloudVaultJson = ""
+        try {
+            $apiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/licenses_vault.json?ref=$Branch&ts=$ts"
+            $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
+            $apiReq.Proxy = $null
+            $apiReq.Timeout = 6000
+            $apiReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
+            $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+            $apiReq.Headers.Add("Pragma", "no-cache")
+            $ghToken = Get-VUONGTTGitHubToken
+            if ($ghToken) { $apiReq.Headers.Add("Authorization", "Bearer $ghToken") }
+            $apiResp = $apiReq.GetResponse()
+            $apiReader = New-Object System.IO.StreamReader($apiResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+            $apiRaw = $apiReader.ReadToEnd()
+            $apiReader.Close(); $apiResp.Close()
+            $apiObj = ConvertFrom-Json $apiRaw
+            if ($apiObj -and $apiObj.content) {
+                $cleanBase64 = $apiObj.content -replace '\s+', ''
+                $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes)
+            }
+        } catch {}
+
+        if (-not $cloudVaultJson) {
+            try {
+                $vaultUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/licenses_vault.json?nocache=$ts"
+                $cloudVaultJson = $wc.DownloadString($vaultUrl)
+            } catch {}
+        }
+
+        $localVault = @(Get-VUONGTTAllLicenses)
+        $mergedMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+        foreach ($k in $localVault) {
+            if ($k -and $k.Key -and ($k.Key -like "VUONG-*")) {
+                $mergedMap[$k.Key] = $k
+            }
+        }
+
+        if ($cloudVaultJson) {
+            $cloudItems = @(ConvertFrom-Json $cloudVaultJson)
+            foreach ($ck in $cloudItems) {
+                if ($ck -and $ck.Key -and ($ck.Key -like "VUONG-*")) {
+                    if ($mergedMap.ContainsKey($ck.Key)) {
+                        $ex = $mergedMap[$ck.Key]
+                        if ($ck.IsUsed -and -not $ex.IsUsed) {
+                            $ex.IsUsed = $true
+                            $ex.UsedHWID = $ck.UsedHWID
+                            $ex.UsedPCName = $ck.UsedPCName
+                            $ex.ActivatedDate = $ck.ActivatedDate
+                        }
+                    } else {
+                        $mergedMap[$ck.Key] = $ck
+                        $syncResult.KeysMerged++
+                    }
+                }
+            }
+        }
+
+        $allKeysList = @($mergedMap.Values)
+        Save-VUONGTTLicenseVault -KeyList $allKeysList
+        $syncResult.TotalKeys = $allKeysList.Count
+
+        # 2. ĐỒNG BỘ CHÍNH SÁCH PHÂN QUYỀN
+        $cloudPolicyJson = ""
+        try {
+            $policyApiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/feature_policy.json?ref=$Branch&ts=$ts"
+            $pReq = [System.Net.HttpWebRequest]::Create($policyApiUrl)
+            $pReq.Proxy = $null
+            $pReq.Timeout = 6000
+            $pReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
+            $ghToken = Get-VUONGTTGitHubToken
+            if ($ghToken) { $pReq.Headers.Add("Authorization", "Bearer $ghToken") }
+            $pResp = $pReq.GetResponse()
+            $pReader = New-Object System.IO.StreamReader($pResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+            $pRaw = $pReader.ReadToEnd()
+            $pReader.Close(); $pResp.Close()
+            $pObj = ConvertFrom-Json $pRaw
+            if ($pObj -and $pObj.content) {
+                $cleanBase64 = $pObj.content -replace '\s+', ''
+                $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes)
+            }
+        } catch {}
+
+        if (-not $cloudPolicyJson) {
+            try {
+                $policyRawUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/feature_policy.json?nocache=$ts"
+                $cloudPolicyJson = $wc.DownloadString($policyRawUrl)
+            } catch {}
+        }
+
+        if ($cloudPolicyJson) {
+            $cloudPolicies = ConvertFrom-Json $cloudPolicyJson
+            if ($cloudPolicies -and $cloudPolicies.Count -gt 0) {
+                $cloudPolicies | ConvertTo-Json -Depth 4 | Set-Content -Path $script:POLICY_FILE -Encoding UTF8
+                $syncResult.PoliciesSynced = $true
+            }
+        }
+
+        $syncResult.Success = $true
+        $syncResult.Message = "Đồng bộ đám mây thành công! Tổng số License Key trong kho: $($syncResult.TotalKeys) key."
+        return $syncResult
+    } catch {
+        $syncResult.Success = $false
+        $syncResult.Message = "Lỗi đồng bộ đám mây: $($_.Exception.Message)"
+        return $syncResult
+    }
+}
+
+# -------------------------------------------------------------------------
 # 5. ACTIVATION & PRO LICENSE VERIFICATION (CROSS-MACHINE & HWID LOCKED)
 # -------------------------------------------------------------------------
 function Invoke-VUONGTTKeyActivation {
