@@ -1,42 +1,32 @@
 [
     {
-        "Key":  "VUONG-LS3W-MF5D-N42M-ANBR",
-        "Customer":  "KhÃ¡ch HÃ ng VIP",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 14:24:51",
-        "IsUsed":  false,
-        "UsedHWID":  "",
-        "UsedPCName":  "",
-        "ActivatedDate":  ""
+        "Key": "VUONG-LS3W-MF5D-N42M-ANBR",
+        "Customer": "Khách Hàng VIP",
+        "Duration": "Lifetime",
+        "CreatedDate": "19/09/2026 14:24:51",
+        "IsUsed": false,
+        "UsedHWID": "",
+        "UsedPCName": "",
+        "ActivatedDate": ""
     },
     {
-        "Key":  "VUONG-LVDT-5BR8-2N5J-W6UQ",
-        "Customer":  "KhÃ¡ch HÃ ng VIP",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 13:44:14",
-        "IsUsed":  true,
-        "UsedHWID":  "HWID-A7C5-5014-F6D9-1E08",
-        "UsedPCName":  "DESKTOP-8P5CKNF",
-        "ActivatedDate":  "19/09/2026 13:45:09"
+        "Key": "VUONG-LVDT-5BR8-2N5J-W6UQ",
+        "Customer": "Khách Hàng VIP",
+        "Duration": "Lifetime",
+        "CreatedDate": "19/09/2026 13:44:14",
+        "IsUsed": true,
+        "UsedHWID": "HWID-A7C5-5014-F6D9-1E08",
+        "UsedPCName": "DESKTOP-8P5CKNF",
+        "ActivatedDate": "19/09/2026 13:45:09"
     },
     {
-        "Key":  "VUONG-4P34-HE36-5B74-FHCV",
-        "Customer":  "KhÃ¡ch HÃ ng VIP",
-        "Duration":  "Lifetime",
-        "CreatedDate":  "19/09/2026 08:56:12",
-        "IsUsed":  true,
-        "UsedHWID":  "HWID-4475-C9AC-57FC-0FFF",
-        "UsedPCName":  "VUONGTT",
-        "ActivatedDate":  "19/09/2026 11:36:46"
-    },
-    {
-        "Key":  "VUONG-LS3W-MF5D-N42M-ANBR VUONG-LVDT-5BR8-2N5J-W6UQ VUONG-4P34-HE36-5B74-FHCV",
-        "Customer":  "KhÃ¡ch HÃ ng VIP KhÃ¡ch HÃ ng VIP KhÃ¡ch HÃ ng VIP",
-        "Duration":  "Lifetime Lifetime Lifetime",
-        "CreatedDate":  "19/09/2026 14:24:51 19/09/2026 13:44:14 19/09/2026 08:56:12",
-        "IsUsed":  true,
-        "UsedHWID":  " HWID-A7C5-5014-F6D9-1E08 HWID-4475-C9AC-57FC-0FFF",
-        "UsedPCName":  " DESKTOP-8P5CKNF VUONGTT",
-        "ActivatedDate":  " 19/09/2026 13:45:09 19/09/2026 11:36:46"
+        "Key": "VUONG-4P34-HE36-5B74-FHCV",
+        "Customer": "Khách Hàng VIP",
+        "Duration": "Lifetime",
+        "CreatedDate": "19/09/2026 08:56:12",
+        "IsUsed": true,
+        "UsedHWID": "HWID-4475-C9AC-57FC-0FFF",
+        "UsedPCName": "VUONGTT",
+        "ActivatedDate": "19/09/2026 11:36:46"
     }
 ]
