@@ -1,7 +1,7 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.908.55"
+$script:APP_CURRENT_VERSION = "20.5.908.56"
 
 # Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {
@@ -55,53 +55,53 @@ function Get-VUONGTTAppUpdateInfo {
             $localPath = if ($CheckUrl -like "file://*") { [System.Uri]::new($CheckUrl).LocalPath } else { $CheckUrl }
             $jsonText = [System.IO.File]::ReadAllText($localPath, [System.Text.Encoding]::UTF8)
         } else {
-            # 1. Tầng 1: Truy vấn qua các endpoint máy chủ GitHub tốc độ cao (Bao gồm raw.githack.com không bị đệm CDN)
-            $candidateUrls = @(
-                "https://raw.githack.com/truongthanhvuong/toolwindows/main/version.json",
-                $CheckUrl
-            )
-            foreach ($targetUrl in $candidateUrls) {
-                try {
-                    $sep = if ($targetUrl -like "*\?*") { "&" } else { "?" }
-                    $urlWithBust = "$targetUrl$($sep)ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+            # 1. Tầng 1: Truy vấn trực tiếp GitHub REST API (Thời gian thực 100% không bao giờ bị đệm cache)
+            try {
+                $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main&ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+                $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
+                $apiReq.Proxy = $null
+                $apiReq.Timeout = $TimeoutSec * 1000
+                $apiReq.UserAgent = "VUONGTT-Toolkit-Updater/2026"
+                $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                $apiReq.Headers.Add("Pragma", "no-cache")
+                $apiResp = $apiReq.GetResponse()
+                $apiStream = $apiResp.GetResponseStream()
+                $apiReader = New-Object System.IO.StreamReader($apiStream, [System.Text.Encoding]::UTF8)
+                $apiRaw = $apiReader.ReadToEnd()
+                $apiReader.Close(); $apiStream.Close(); $apiResp.Close()
 
-                    $wc = New-Object System.Net.WebClient
-                    $wc.Proxy = $null
-                    $wc.Encoding = [System.Text.Encoding]::UTF8
-                    $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))")
-                    $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
-                    $wc.Headers.Add("Pragma", "no-cache")
-                    $downloaded = $wc.DownloadString($urlWithBust)
-                    if ($downloaded -and $downloaded.Length -gt 20) {
-                        $jsonText = $downloaded
-                        break
-                    }
-                } catch {}
-            }
+                $apiObj = ConvertFrom-Json $apiRaw
+                if ($apiObj -and $apiObj.content) {
+                    $cleanBase64 = $apiObj.content -replace '\s+', ''
+                    $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                    $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes)
+                }
+            } catch {}
 
-            # 2. Tầng 2: Fallback sang GitHub REST API nếu Raw URL bị chặn
-            if (-not $jsonText -and ($CheckUrl -like "*github*")) {
-                try {
-                    $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main"
-                    $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
-                    $apiReq.Proxy = $null
-                    $apiReq.Timeout = $TimeoutSec * 1000
-                    $apiReq.UserAgent = "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))"
-                    $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
-                    $apiReq.Headers.Add("Pragma", "no-cache")
-                    $apiResp = $apiReq.GetResponse()
-                    $apiStream = $apiResp.GetResponseStream()
-                    $apiReader = New-Object System.IO.StreamReader($apiStream, [System.Text.Encoding]::UTF8)
-                    $apiRaw = $apiReader.ReadToEnd()
-                    $apiReader.Close(); $apiStream.Close(); $apiResp.Close()
+            # 2. Tầng 2: Fallback sang raw.githubusercontent.com kèm cache-busting timestamp
+            if (-not $jsonText) {
+                $candidateUrls = @(
+                    "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json",
+                    $CheckUrl
+                )
+                foreach ($targetUrl in $candidateUrls) {
+                    try {
+                        $sep = if ($targetUrl -like "*\?*") { "&" } else { "?" }
+                        $urlWithBust = "$targetUrl$($sep)nocache=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
 
-                    $apiObj = ConvertFrom-Json $apiRaw
-                    if ($apiObj -and $apiObj.content) {
-                        $cleanBase64 = $apiObj.content -replace '\s+', ''
-                        $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                        $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes)
-                    }
-                } catch {}
+                        $wc = New-Object System.Net.WebClient
+                        $wc.Proxy = $null
+                        $wc.Encoding = [System.Text.Encoding]::UTF8
+                        $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                        $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                        $wc.Headers.Add("Pragma", "no-cache")
+                        $downloaded = $wc.DownloadString($urlWithBust)
+                        if ($downloaded -and $downloaded.Length -gt 20) {
+                            $jsonText = $downloaded
+                            break
+                        }
+                    } catch {}
+                }
             }
         }
 

@@ -1,15 +1,16 @@
-{
-  "version": "20.5.908.55",
-  "releaseDate": "19/09/2026",
-  "downloadUrl": "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
-  "changelog": [
-    "Khắc phục triệt để lỗi tạo License Key: Loại bỏ 100% thẻ vàng rác, đảm bảo tạo key mới nối tiếp không bao giờ đổi hoặc mất key cũ, tự động đẩy key mới nhất lên đầu danh sách Admin.",
-    "Khắc phục triệt để lỗi kích hoạt License Key PRO trên máy khác: Tích hợp động cơ Universal Cryptographic Key Engine (HMAC-SHA256) giúp mọi máy tính kích hoạt thành công mã Key tạo từ trang Admin (bao gồm mã VUONG-4P34-HE36-5B74-FHCV) và tự động khóa chặt với phần cứng HWID vĩnh viễn.",
-    "Tự động đồng bộ và bảo lưu bản quyền trong ProgramData: Không bị mất bản quyền khi dọn rác Windows hoặc sau mỗi lần cập nhật phiên bản mới.",
-    "Khắc phục triệt để lỗi bấm mã lỗi máy in (0x6ba, 0x11b, 0x709...): Tự động sửa lỗi siêu tốc không mở bảng nhầm Print Management.",
-    "Khắc phục triệt để 100% lỗi Font Tiếng Việt: Chuẩn hóa toàn bộ tên ứng dụng (Cốc Cốc, UniKey, EVKey, HTKK, iTaxViewer...) và toàn bộ giao diện theo bảng mã UTF-8 chuẩn.",
-    "Sửa triệt để toàn bộ 14 nút Bảng Điều Khiển Cổ Điển và Tùy chọn tính năng Windows: Chạy an toàn với lệnh điều khiển control.exe tương thích 100% Windows 10 & Windows 11.",
-    "Bổ sung trọn bộ 14 công cụ Sửa lỗi cơ bản Windows: Sửa lỗi kẹt lệnh in Print Spooler / RPC 0x6ba, Khởi động lại Explorer & Taskbar, Khắc phục Windows Search, Reset Store WSReset...",
-    "Đồng bộ hóa hiển thị số hiệu phiên bản v20.5.908.55 động trên toàn bộ giao diện thanh tiêu đề, logo và footer."
-  ]
+﻿{
+    "version":  "20.5.908.56",
+    "releaseDate":  "19/09/2026",
+    "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
+    "changelog":  [
+                      "He thong cap nhat tu dong truc tiep tu GitHub API thoi gian thuc va fix loi tao License Key",
+                      "Khắc phục triệt để lỗi tạo License Key: Loại bỏ 100% thẻ vàng rác, đảm bảo tạo key mới nối tiếp không bao giờ đổi hoặc mất key cũ, tự động đẩy key mới nhất lên đầu danh sách Admin.",
+                      "Khắc phục triệt để lỗi kích hoạt License Key PRO trên máy khác: Tích hợp động cơ Universal Cryptographic Key Engine (HMAC-SHA256) giúp mọi máy tính kích hoạt thành công mã Key tạo từ trang Admin (bao gồm mã VUONG-4P34-HE36-5B74-FHCV) và tự động khóa chặt với phần cứng HWID vĩnh viễn.",
+                      "Tự động đồng bộ và bảo lưu bản quyền trong ProgramData: Không bị mất bản quyền khi dọn rác Windows hoặc sau mỗi lần cập nhật phiên bản mới.",
+                      "Khắc phục triệt để lỗi bấm mã lỗi máy in (0x6ba, 0x11b, 0x709...): Tự động sửa lỗi siêu tốc không mở bảng nhầm Print Management.",
+                      "Khắc phục triệt để 100% lỗi Font Tiếng Việt: Chuẩn hóa toàn bộ tên ứng dụng (Cốc Cốc, UniKey, EVKey, HTKK, iTaxViewer...) và toàn bộ giao diện theo bảng mã UTF-8 chuẩn.",
+                      "Sửa triệt để toàn bộ 14 nút Bảng Điều Khiển Cổ Điển và Tùy chọn tính năng Windows: Chạy an toàn với lệnh điều khiển control.exe tương thích 100% Windows 10 \u0026 Windows 11.",
+                      "Bổ sung trọn bộ 14 công cụ Sửa lỗi cơ bản Windows: Sửa lỗi kẹt lệnh in Print Spooler / RPC 0x6ba, Khởi động lại Explorer \u0026 Taskbar, Khắc phục Windows Search, Reset Store WSReset...",
+                      "Đồng bộ hóa hiển thị số hiệu phiên bản v20.5.908.55 động trên toàn bộ giao diện thanh tiêu đề, logo và footer."
+                  ]
 }
