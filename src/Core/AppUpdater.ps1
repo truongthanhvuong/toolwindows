@@ -3,13 +3,10 @@
 
 $script:APP_CURRENT_VERSION = "20.5.908.46"
 
-# Tu dong dong bo phien ban tu version.json neu ton tai cuc bo
+# Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {
     $verJsonCandidates = @(
-        (Join-Path $PSScriptRoot "..\..\version.json"),
-        (Join-Path $PSScriptRoot "version.json"),
-        "$env:TEMP\VUONGTT_Toolkit_Runtime\version.json",
-        "E:\toolwindows\version.json"
+        "$env:TEMP\VUONGTT_Toolkit_Runtime\version.json"
     )
     if ($global:ScriptDir) {
         $verJsonCandidates += (Join-Path $global:ScriptDir "version.json")
@@ -25,7 +22,7 @@ try {
     }
 } catch {}
 
-$script:UPDATE_CHECK_URL    = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json"
+$script:UPDATE_CHECK_URL = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json"
 
 function Get-VUONGTTCurrentVersion {
     return $script:APP_CURRENT_VERSION
@@ -35,7 +32,7 @@ function Get-VUONGTTAppUpdateInfo {
     [CmdletBinding()]
     param(
         [string]$CheckUrl = $script:UPDATE_CHECK_URL,
-        [int]$TimeoutSec = 4
+        [int]$TimeoutSec = 5
     )
 
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
@@ -58,13 +55,30 @@ function Get-VUONGTTAppUpdateInfo {
             $localPath = if ($CheckUrl -like "file://*") { [System.Uri]::new($CheckUrl).LocalPath } else { $CheckUrl }
             $jsonText = [System.IO.File]::ReadAllText($localPath, [System.Text.Encoding]::UTF8)
         } else {
-            # 1. Tầng 1: Truy vấn thời gian thực qua GitHub REST API (0 giây delay, loại bỏ triệt để Fastly CDN Cache)
-            $apiFetched = $false
-            if ($CheckUrl -like "*github*") {
+            # 1. Tầng 1: Truy vấn trực tiếp Raw URL GitHub kèm Cache-Busting qua WebClient (Tốc độ ~200ms, không giới hạn Rate Limit)
+            try {
+                $rawUrl = $CheckUrl
+                $sep = if ($rawUrl -like "*\?*") { "&" } else { "?" }
+                $rawUrlWithBust = "$rawUrl$($sep)ts=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+
+                $wc = New-Object System.Net.WebClient
+                $wc.Proxy = $null
+                $wc.Encoding = [System.Text.Encoding]::UTF8
+                $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))")
+                $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+                $wc.Headers.Add("Pragma", "no-cache")
+                $jsonText = $wc.DownloadString($rawUrlWithBust)
+            } catch {
+                $jsonText = ""
+            }
+
+            # 2. Tầng 2: Fallback sang GitHub REST API nếu Raw URL bị chặn
+            if (-not $jsonText -and ($CheckUrl -like "*github*")) {
                 try {
                     $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/contents/version.json?ref=main"
                     $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
-                    $apiReq.Timeout = 3500
+                    $apiReq.Proxy = $null
+                    $apiReq.Timeout = $TimeoutSec * 1000
                     $apiReq.UserAgent = "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))"
                     $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
                     $apiReq.Headers.Add("Pragma", "no-cache")
@@ -79,32 +93,8 @@ function Get-VUONGTTAppUpdateInfo {
                         $cleanBase64 = $apiObj.content -replace '\s+', ''
                         $bytes = [System.Convert]::FromBase64String($cleanBase64)
                         $jsonText = [System.Text.Encoding]::UTF8.GetString($bytes)
-                        $apiFetched = $true
                     }
-                } catch {
-                    $apiFetched = $false
-                }
-            }
-
-            # 2. Tầng 2: Fallback sang Raw URL kèm Cache-Busting nếu GitHub API bị chặn hoặc lỗi
-            if (-not $apiFetched -or -not $jsonText) {
-                $rawUrl = $CheckUrl
-                $sep = if ($rawUrl -like "*\?*") { "&" } else { "?" }
-                $rawUrlWithBust = "$rawUrl$($sep)nocache=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-
-                $req = [System.Net.HttpWebRequest]::Create($rawUrlWithBust)
-                $req.Timeout = $TimeoutSec * 1000
-                $req.UserAgent = "VUONGTT-Toolkit-Updater/2026 ($($script:APP_CURRENT_VERSION))"
-                $req.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
-                $req.Headers.Add("Pragma", "no-cache")
-                $resp = $req.GetResponse()
-                
-                $stream = $resp.GetResponseStream()
-                $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)
-                $jsonText = $reader.ReadToEnd()
-                $reader.Close()
-                $stream.Close()
-                $resp.Close()
+                } catch {}
             }
         }
 
@@ -134,11 +124,13 @@ function Get-VUONGTTAppUpdateInfo {
                     }
                 }
             }
+        } else {
+            $result.IsOnline = $false
+            $result.Message = "Không thể kết nối đến máy chủ cập nhật GitHub. Vui lòng kiểm tra kết nối mạng!"
         }
     } catch {
-        # Fallback offline an toan - khong bao gio crash
         $result.IsOnline = $false
-        $result.Message = "Đang chạy ngoại tuyến (Offline) - Phiên bản v$($script:APP_CURRENT_VERSION)"
+        $result.Message = "Lỗi kết nối máy chủ cập nhật: $($_.Exception.Message)"
     }
 
     return $result

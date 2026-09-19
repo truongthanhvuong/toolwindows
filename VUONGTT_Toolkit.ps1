@@ -4300,6 +4300,9 @@ Bạn có muốn tải và tự động cập nhật ngay bây giờ không?
                 }
                 [System.Windows.MessageBox]::Show($res, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
             }
+        } elseif (-not $info.IsOnline) {
+            $txtFooterStatus.Text = "• [!] Không thể kết nối máy chủ cập nhật!"
+            [System.Windows.MessageBox]::Show("KHÔNG THỂ KẾT NỐI MÁY CHỦ CẬP NHẬT!`n`n$($info.Message)", "Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
         } else {
             $txtFooterStatus.Text = "• [OK] Bạn đang dùng phiên bản mới nhất (v$($info.CurrentVersion))!"
             $msg = "BẠN ĐANG SỬ DỤNG PHIÊN BẢN MỚI NHẤT!`n`n- Phiên bản: v$($info.CurrentVersion)`n- Hệ thống không tìm thấy bản cập nhật nào mới hơn."
