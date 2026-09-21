@@ -139,31 +139,22 @@ if ($pushSuccess) {
     Write-Host " la se tu dong tai va cap nhat len phien ban v$targetVer!" -ForegroundColor Yellow
     Write-Host "==========================================================" -ForegroundColor Green
 
-    Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
     try {
-        [System.Windows.Forms.MessageBox]::Show(
-            "CHÚC MỪNG! ĐÃ PHÁT HÀNH BẢN v$targetVer LÊN GITHUB THÀNH CÔNG!`n`n" +
-            "• Phiên bản mới: v$targetVer`n" +
-            "• Dung lượng EXE: $exeSize KB`n`n" +
-            "Tất cả các máy Client chỉ cần bấm 'Cập Nhật Tool' hoặc mở Tool lên là sẽ tự động nâng cấp!",
-            "Phát Hành Thành Công - VUONGTT Toolkit 2026",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
-        ) | Out-Null
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
+        $successMsg = "CHUC MUNG! DA PHAT HANH BAN v$targetVer LEN GITHUB THANH CONG!`n`n" +
+                      "- Phien ban moi: v$targetVer`n" +
+                      "- Dung luong EXE: $exeSize KB`n`n" +
+                      "Tat ca cac may Client chi can bam 'Cap Nhat Tool' la se tu dong nhan ban moi!"
+        [System.Windows.Forms.MessageBox]::Show($successMsg, "Phat Hanh Thanh Cong - VUONGTT Toolkit 2026", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
     } catch {}
 } else {
     Write-Host "`n[CANH BAO] Push len GitHub chua hoan tat. Vui long kiem tra ket noi mang hoac tai khoan GitHub!" -ForegroundColor Red
-    Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
     try {
-        [System.Windows.Forms.MessageBox]::Show(
-            "CẢNH BÁO: Không thể đẩy bản cập nhật lên GitHub!`n`n" +
-            "Vui lòng kiểm tra lại kết nối mạng Internet hoặc thông tin tài khoản Git.",
-            "Lỗi Phát Hành GitHub",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        ) | Out-Null
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
+        $failMsg = "CANH BAO: Khong the day ban cap nhat len GitHub!`n`nVui long kiem tra lai ket noi mang Internet hoac thong tin tai khoan Git."
+        [System.Windows.Forms.MessageBox]::Show($failMsg, "Loi Phat Hanh GitHub", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
     } catch {}
 }
 
 Write-Host "`n"
-Read-Host "Bam Enter de dong cua so..."
+Read-Host "Bam phim Enter de dong cua so..."
