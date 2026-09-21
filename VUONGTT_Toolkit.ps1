@@ -390,8 +390,14 @@ function Switch-Tab {
             }
         }
         "Fonts"        { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt trọn bộ Font tiếng Việt VNI, TCVN3, Unicode." }
-        "Cleaner"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro." }
-        "Tweaks"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro." }
+        "Cleaner"      { 
+            $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
+            Refresh-PowerPlanBadge
+        }
+        "Tweaks"       { 
+            $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
+            Refresh-PowerPlanBadge
+        }
         "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
         "BackupDriver" { 
             $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." }
@@ -3723,8 +3729,15 @@ $btnAppXRemoval       = Get-Control "btnAppXRemoval"
 $btnRunTweaks         = Get-Control "btnRunTweaks"
 $btnUndoTweaks        = Get-Control "btnUndoTweaks"
 $cmbDnsProvider       = Get-Control "cmbDnsProvider"
-$btnEnableUltimatePlan = Get-Control "btnEnableUltimatePlan"
-$btnDisableUltimatePlan= Get-Control "btnDisableUltimatePlan"
+$txtCurrentPowerPlan    = Get-Control "txtCurrentPowerPlan"
+$btnPlanUltimate        = Get-Control "btnPlanUltimate"
+$btnPlanHighPerf        = Get-Control "btnPlanHighPerf"
+$btnPlanBalanced        = Get-Control "btnPlanBalanced"
+$btnPlanPowerSaver      = Get-Control "btnPlanPowerSaver"
+$btnPlanRestoreDefault  = Get-Control "btnPlanRestoreDefault"
+$btnPlanOpenControl     = Get-Control "btnPlanOpenControl"
+$btnEnableUltimatePlan  = Get-Control "btnEnableUltimatePlan"
+$btnDisableUltimatePlan = Get-Control "btnDisableUltimatePlan"
 $txtTweaksLog         = Get-Control "txtTweaksLog"
 if (-not $txtTweaksLog) { $txtTweaksLog = $txtCleanerLog }
 
@@ -3961,19 +3974,75 @@ if ($btnUndoTweaks) {
     })
 }
 
-if ($btnEnableUltimatePlan) {
-    $btnEnableUltimatePlan.Add_Click({
-        $res = Set-VUONGTTUltimatePerformancePlan -Enable $true
+function Refresh-PowerPlanBadge {
+    if ($txtCurrentPowerPlan) {
+        $cur = Get-VUONGTTCurrentPowerScheme
+        $txtCurrentPowerPlan.Text = "$cur"
+        if ($cur -match "Ultimate") {
+            $txtCurrentPowerPlan.Foreground = [System.Windows.Media.Brushes]::Orange
+        } elseif ($cur -match "High performance") {
+            $txtCurrentPowerPlan.Foreground = [System.Windows.Media.Brushes]::Crimson
+        } elseif ($cur -match "Balanced") {
+            $txtCurrentPowerPlan.Foreground = [System.Windows.Media.Brushes]::LightGreen
+        } elseif ($cur -match "Power saver") {
+            $txtCurrentPowerPlan.Foreground = [System.Windows.Media.Brushes]::SkyBlue
+        } else {
+            $txtCurrentPowerPlan.Foreground = [System.Windows.Media.Brushes]::SkyBlue
+        }
+    }
+}
+
+if ($btnPlanUltimate -or $btnEnableUltimatePlan) {
+    $btnU = if ($btnPlanUltimate) { $btnPlanUltimate } else { $btnEnableUltimatePlan }
+    $btnU.Add_Click({
+        $res = Set-VUONGTTPowerScheme -Scheme "Ultimate"
         if ($txtTweaksLog) { $txtTweaksLog.Text = $res }
         $txtFooterStatus.Text = "• [OK] Đã kích hoạt Ultimate Performance Power Plan"
+        Refresh-PowerPlanBadge
     })
 }
 
-if ($btnDisableUltimatePlan) {
-    $btnDisableUltimatePlan.Add_Click({
-        $res = Set-VUONGTTUltimatePerformancePlan -Enable $false
+if ($btnPlanHighPerf) {
+    $btnPlanHighPerf.Add_Click({
+        $res = Set-VUONGTTPowerScheme -Scheme "HighPerf"
+        if ($txtTweaksLog) { $txtTweaksLog.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Đã kích hoạt High Performance Power Plan"
+        Refresh-PowerPlanBadge
+    })
+}
+
+if ($btnPlanBalanced -or $btnDisableUltimatePlan) {
+    $btnB = if ($btnPlanBalanced) { $btnPlanBalanced } else { $btnDisableUltimatePlan }
+    $btnB.Add_Click({
+        $res = Set-VUONGTTPowerScheme -Scheme "Balanced"
         if ($txtTweaksLog) { $txtTweaksLog.Text = $res }
         $txtFooterStatus.Text = "• [OK] Đã chuyển về Balanced Power Plan"
+        Refresh-PowerPlanBadge
+    })
+}
+
+if ($btnPlanPowerSaver) {
+    $btnPlanPowerSaver.Add_Click({
+        $res = Set-VUONGTTPowerScheme -Scheme "PowerSaver"
+        if ($txtTweaksLog) { $txtTweaksLog.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Đã kích hoạt Power Saver Power Plan"
+        Refresh-PowerPlanBadge
+    })
+}
+
+if ($btnPlanRestoreDefault) {
+    $btnPlanRestoreDefault.Add_Click({
+        $res = Set-VUONGTTPowerScheme -Scheme "Restore"
+        if ($txtTweaksLog) { $txtTweaksLog.Text = $res }
+        $txtFooterStatus.Text = "• [OK] Đã khôi phục các gói nguồn điện chuẩn của Windows"
+        Refresh-PowerPlanBadge
+    })
+}
+
+if ($btnPlanOpenControl) {
+    $btnPlanOpenControl.Add_Click({
+        Start-Process "control.exe" -ArgumentList "powercfg.cpl"
+        $txtFooterStatus.Text = "• [OK] Đã mở cài đặt nguồn điện Power Options"
     })
 }
 

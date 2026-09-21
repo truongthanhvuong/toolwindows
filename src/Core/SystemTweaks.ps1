@@ -624,20 +624,97 @@ function Set-VUONGTTDns {
     }
 }
 
-function Set-VUONGTTUltimatePerformancePlan {
-    param([bool]$Enable = $true)
+function Get-VUONGTTCurrentPowerScheme {
     try {
-        if ($Enable) {
-            $guid = "e9a42b02-d5df-448d-aa00-03f14749eb61"
-            powercfg -duplicatescheme $guid 2>&1 | Out-Null
-            powercfg -setactive $guid 2>&1 | Out-Null
-            return "[OK] Đã kích hoạt gói điện năng Tối Đa Hiệu Năng (Ultimate Performance Power Plan)!"
-        } else {
-            powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>&1 | Out-Null
-            return "[OK] Đã chuyển về chế độ Tiêu chuẩn cân bằng (Balanced Power Plan)!"
+        $raw = (powercfg /getactivescheme) | Out-String
+        if ($raw -match "\(([^\)]+)\)") {
+            $name = $matches[1].Trim()
+            return $name
+        }
+        return "Balanced"
+    } catch {
+        return "Balanced"
+    }
+}
+
+function Set-VUONGTTPowerScheme {
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateSet("Ultimate", "HighPerf", "Balanced", "PowerSaver", "Restore")]
+        [string]$Scheme
+    )
+
+    try {
+        switch ($Scheme) {
+            "Ultimate" {
+                $matchLine = (powercfg /list) | Where-Object { $_ -match "Ultimate" } | Select-Object -First 1
+                if (-not $matchLine) {
+                    powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>&1 | Out-Null
+                    $matchLine = (powercfg /list) | Where-Object { $_ -match "Ultimate" } | Select-Object -First 1
+                }
+                if ($matchLine -and $matchLine -match "([a-f0-9\-]{36})") {
+                    powercfg -setactive $matches[1] 2>&1 | Out-Null
+                    return "[OK] Đã kích hoạt gói điện năng Tối Đa Hiệu Năng (Ultimate Performance)! Xung nhịp và tài nguyên phần cứng luôn ở mức cao nhất."
+                }
+                return "[LỖI] Không thể tạo hoặc kích hoạt gói Ultimate Performance trên thiết bị này."
+            }
+            "HighPerf" {
+                $matchLine = (powercfg /list) | Where-Object { $_ -match "High performance" } | Select-Object -First 1
+                if (-not $matchLine) {
+                    powercfg -duplicatescheme 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>&1 | Out-Null
+                    $matchLine = (powercfg /list) | Where-Object { $_ -match "High performance" } | Select-Object -First 1
+                }
+                if ($matchLine -and $matchLine -match "([a-f0-9\-]{36})") {
+                    powercfg -setactive $matches[1] 2>&1 | Out-Null
+                    return "[OK] Đã kích hoạt gói điện năng Hiệu Năng Cao (High Performance)! Tối ưu hóa cho chơi game và tác vụ đồ họa nặng."
+                } else {
+                    powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>&1 | Out-Null
+                    return "[OK] Đã kích hoạt gói điện năng Hiệu Năng Cao (High Performance)!"
+                }
+            }
+            "Balanced" {
+                $matchLine = (powercfg /list) | Where-Object { $_ -match "Balanced" } | Select-Object -First 1
+                if (-not $matchLine) {
+                    powercfg -duplicatescheme 381b4222-f694-41f0-9685-ff5bb260df2e 2>&1 | Out-Null
+                    $matchLine = (powercfg /list) | Where-Object { $_ -match "Balanced" } | Select-Object -First 1
+                }
+                if ($matchLine -and $matchLine -match "([a-f0-9\-]{36})") {
+                    powercfg -setactive $matches[1] 2>&1 | Out-Null
+                } else {
+                    powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>&1 | Out-Null
+                }
+                return "[OK] Đã chuyển về chế độ Tiêu Chuẩn Cân Bằng (Balanced)! Tối ưu cân đối hoàn hảo giữa hiệu năng và nhiệt độ máy."
+            }
+            "PowerSaver" {
+                $matchLine = (powercfg /list) | Where-Object { $_ -match "Power saver" } | Select-Object -First 1
+                if (-not $matchLine) {
+                    powercfg -duplicatescheme a1841308-3541-4fab-bc81-f71556f20b4a 2>&1 | Out-Null
+                    $matchLine = (powercfg /list) | Where-Object { $_ -match "Power saver" } | Select-Object -First 1
+                }
+                if ($matchLine -and $matchLine -match "([a-f0-9\-]{36})") {
+                    powercfg -setactive $matches[1] 2>&1 | Out-Null
+                } else {
+                    powercfg -setactive a1841308-3541-4fab-bc81-f71556f20b4a 2>&1 | Out-Null
+                }
+                return "[OK] Đã kích hoạt gói Tiết Kiệm Điện (Power Saver)! Giảm tải xung nhịp khi rảnh rỗi và kéo dài thời lượng pin tối đa."
+            }
+            "Restore" {
+                powercfg -restoredefaultschemes 2>&1 | Out-Null
+                powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>&1 | Out-Null
+                return "[OK] Đã khôi phục toàn bộ các gói nguồn điện chuẩn của Windows về mặc định gốc (Balanced Active)!"
+            }
         }
     } catch {
-        return "[LỖI] Thay đổi Power Plan thất bại: $($_.Exception.Message)"
+        return "[LỖI] Thao tác nguồn điện thất bại: $($_.Exception.Message)"
+    }
+}
+
+function Set-VUONGTTUltimatePerformancePlan {
+    param([bool]$Enable = $true)
+    if ($Enable) {
+        return Set-VUONGTTPowerScheme -Scheme "Ultimate"
+    } else {
+        return Set-VUONGTTPowerScheme -Scheme "Balanced"
     }
 }
 

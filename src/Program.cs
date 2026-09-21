@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
@@ -58,7 +58,7 @@ namespace VUONGTT
                     pb.Location = new Point(22, 78);
 
                     Label lblVer = new Label();
-                    lblVer.Text = "v20.5.908.72 • Professional Standalone (All-in-One)";
+                    lblVer.Text = "v20.5.908.73 • Professional Standalone (All-in-One)";
                     lblVer.ForeColor = Color.FromArgb(148, 163, 184);
                     lblVer.Font = new Font("Segoe UI", 7.5f, FontStyle.Regular);
                     lblVer.Location = new Point(22, 98);
