@@ -200,10 +200,21 @@ function New-VUONGTTAutoUnattendXml {
   <settings pass="specialize">
     <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
       <TimeZone>SE Asia Standard Time</TimeZone>
+      <RegisteredOwner>VUONGTT</RegisteredOwner>
+      <RegisteredOrganization>VUONGTT</RegisteredOrganization>
     </component>
   </settings>
   <settings pass="oobeSystem">
     <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+      <AutoLogon>
+        <Password>
+          <Value></Value>
+          <PlainText>true</PlainText>
+        </Password>
+        <Enabled>true</Enabled>
+        <LogonCount>1</LogonCount>
+        <Username>$AdminUsername</Username>
+      </AutoLogon>
       <OOBE>
         <HideEULAPage>true</HideEULAPage>
         <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
@@ -224,6 +235,18 @@ function New-VUONGTTAutoUnattendXml {
           </LocalAccount>
         </LocalAccounts>
       </UserAccounts>
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>1</Order>
+          <CommandLine>reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v Shell /t REG_SZ /d explorer.exe /f</CommandLine>
+          <Description>Ensure Windows Explorer Shell</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>2</Order>
+          <CommandLine>reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v TdrDelay /t REG_DWORD /d 10 /f</CommandLine>
+          <Description>Prevent Graphics Timeout Black Screen</Description>
+        </SynchronousCommand>
+      </FirstLogonCommands>
     </component>
   </settings>
 </unattend>
@@ -440,15 +463,24 @@ function Initialize-VUONGTTPostInstallPayload {
             "chcp 65001 >nul",
             "echo [VUONGTT POST-INSTALL AUTOMATION] Starting system restore...",
             "",
-            ":: 1. Tu dong nap lai toan bo Driver phan cung tu moi nguon (D, C hoac Windows.old)",
+            ":: 1. Thiet lap an toan chong crash man hinh den do hoa & Winlogon Shell",
+            "reg add `"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers`" /v `"TdrDelay`" /t REG_DWORD /d 10 /f >nul 2>&1",
+            "reg add `"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers`" /v `"TdrDdiDelay`" /t REG_DWORD /d 10 /f >nul 2>&1",
+            "reg add `"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon`" /v `"Shell`" /t REG_SZ /d `"explorer.exe`" /f >nul 2>&1",
+            "reg add `"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon`" /v `"AutoRestartShell`" /t REG_DWORD /d 1 /f >nul 2>&1",
+            "",
+            ":: 2. Tu dong nap Driver Mang (LAN/WiFi) va nap DriverStore an toan (KHONG ep /install VGA de tranh sap DWM)",
             "if exist `"$safeDrive\Backup_Drivers`" (",
-            "    pnputil.exe /add-driver `"$safeDrive\Backup_Drivers\*.inf`" /subdirs /install >nul 2>&1",
+            "    pnputil.exe /add-driver `"$safeDrive\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
+            "    pnputil.exe /add-driver `"$safeDrive\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
             ")",
             "if exist `"C:\Backup_Drivers`" (",
-            "    pnputil.exe /add-driver `"C:\Backup_Drivers\*.inf`" /subdirs /install >nul 2>&1",
+            "    pnputil.exe /add-driver `"C:\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
+            "    pnputil.exe /add-driver `"C:\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
             ")",
             "if exist `"C:\Windows.old\Backup_Drivers`" (",
-            "    pnputil.exe /add-driver `"C:\Windows.old\Backup_Drivers\*.inf`" /subdirs /install >nul 2>&1",
+            "    pnputil.exe /add-driver `"C:\Windows.old\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
+            "    pnputil.exe /add-driver `"C:\Windows.old\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
             ")",
             "",
             ":: 2. Tu dong khoi phuc VUONGTT Toolkit len Public Desktop (Ke ca khi may chi co o C)",

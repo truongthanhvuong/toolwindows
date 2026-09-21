@@ -179,3 +179,96 @@ function Restore-SystemCustomizerInfo {
         return "Lỗi khi khôi phục: $($_.Exception.Message)"
     }
 }
+
+function Invoke-VUONGTTRenameComputer {
+    param([string]$NewName)
+    if ([string]::IsNullOrWhiteSpace($NewName)) {
+        return @{ Success = $false; Message = "Tên máy tính không được để trống!" }
+    }
+    $cleanName = $NewName.Trim()
+    if ($cleanName.Length -gt 15) {
+        return @{ Success = $false; Message = "Tên máy tính không được vượt quá 15 ký tự theo chuẩn Windows NetBIOS!" }
+    }
+    if ($cleanName -match '[\/\\:\*\?"<>\|]') {
+        return @{ Success = $false; Message = "Tên máy tính không được chứa các ký tự đặc biệt: \ / : * ? `" < > |" }
+    }
+    if ($cleanName -eq $env:COMPUTERNAME) {
+        return @{ Success = $true; Message = "Tên máy tính hiện tại đã là '$cleanName'." }
+    }
+
+    try {
+        Rename-Computer -NewName $cleanName -Force -ErrorAction Stop
+        return @{
+            Success = $true
+            Message = "ĐÃ ĐỔI TÊN MÁY TÍNH THÀNH CÔNG SANG: $cleanName`n(Lưu ý: Tên mới sẽ có hiệu lực sau khi bạn khởi động lại máy tính)."
+        }
+    } catch {
+        return @{
+            Success = $false
+            Message = "Lỗi khi đổi tên máy tính: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Invoke-VUONGTTJoinDomain {
+    param(
+        [string]$DomainName,
+        [string]$DomainUser,
+        [string]$DomainPassword
+    )
+
+    if ([string]::IsNullOrWhiteSpace($DomainName)) {
+        return @{ Success = $false; Message = "Vui lòng nhập tên Domain (ví dụ: company.local)!" }
+    }
+    if ([string]::IsNullOrWhiteSpace($DomainUser)) {
+        return @{ Success = $false; Message = "Vui lòng nhập tài khoản quản trị Domain (Domain Admin)!" }
+    }
+
+    try {
+        $secPass = ConvertTo-SecureString $DomainPassword -AsPlainText -Force
+        $cred = New-Object System.Management.Automation.PSCredential($DomainUser, $secPass)
+
+        Add-Computer -DomainName $DomainName.Trim() -Credential $cred -Force -Restart:$false -ErrorAction Stop
+        return @{
+            Success = $true
+            Message = "CHÚC MỪNG! ĐÃ GIA NHẬP DOMAIN '$DomainName' THÀNH CÔNG!`n`nMáy tính đã trở thành thành viên của Domain. Hãy khởi động lại máy để áp dụng chính sách Active Directory."
+        }
+    } catch {
+        return @{
+            Success = $false
+            Message = "Không thể gia nhập Domain '$DomainName':`n$($_.Exception.Message)`n`nGợi ý kiểm tra:`n1. Máy tính đã trỏ đúng DNS Server của Domain Controller chưa?`n2. Tài khoản và mật khẩu Domain Admin đã chính xác chưa?`n3. Kiểm tra kết nối mạng nội bộ LAN tới máy chủ DC."
+        }
+    }
+}
+
+function Invoke-VUONGTTJoinWorkgroup {
+    param([string]$WorkgroupName)
+    if ([string]::IsNullOrWhiteSpace($WorkgroupName)) { $WorkgroupName = "WORKGROUP" }
+    try {
+        Add-Computer -WorkGroupName $WorkgroupName.Trim() -Force -ErrorAction Stop
+        return @{
+            Success = $true
+            Message = "Đã chuyển máy tính về Workgroup '$WorkgroupName' thành công!`n(Có hiệu lực sau khi khởi động lại)."
+        }
+    } catch {
+        return @{
+            Success = $false
+            Message = "Lỗi khi thiết lập Workgroup: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Open-VUONGTTSystemPropertiesComputerNameDialog {
+    try {
+        Start-Process "SystemPropertiesComputerName.exe" -ErrorAction SilentlyContinue
+        return $true
+    } catch {
+        try {
+            Start-Process "control.exe" -ArgumentList "sysdm.cpl,,1" -ErrorAction SilentlyContinue
+            return $true
+        } catch {
+            return $false
+        }
+    }
+}
+

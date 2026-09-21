@@ -314,3 +314,172 @@ function Invoke-VUONGTTFixHostsFile {
     return ($log -join "`n")
 }
 
+function Invoke-VUONGTTFixDefender {
+    $log = @()
+    try {
+        $log += "[1/3] Gỡ bỏ các chính sách chặn Windows Defender do virus hoặc tool khóa..."
+        $regPaths = @(
+            "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender",
+            "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection",
+            "HKLM:\SOFTWARE\Microsoft\Windows Defender\Real-Time Protection"
+        )
+        $names = @("DisableAntiSpyware", "DisableRealtimeMonitoring", "DisableBehaviorMonitoring", "DisableIOAVProtection", "DisableOnAccessProtection")
+        foreach ($p in $regPaths) {
+            if (Test-Path $p) {
+                foreach ($n in $names) {
+                    Remove-ItemProperty -Path $p -Name $n -Force -ErrorAction SilentlyContinue | Out-Null
+                }
+            }
+        }
+
+        $log += "[2/3] Khởi động và thiết lập lại dịch vụ bảo mật Windows Defender..."
+        Set-Service -Name "WinDefend" -StartupType Automatic -ErrorAction SilentlyContinue
+        Start-Service -Name "WinDefend" -ErrorAction SilentlyContinue
+        Set-Service -Name "SecurityHealthService" -StartupType Automatic -ErrorAction SilentlyContinue
+        Start-Service -Name "SecurityHealthService" -ErrorAction SilentlyContinue
+
+        $log += "[3/3] Đăng ký lại Windows Defender Security Center..."
+        Get-AppxPackage -AllUsers *Microsoft.SecHealthUI* -ErrorAction SilentlyContinue | Reset-AppxPackage -ErrorAction SilentlyContinue | Out-Null
+
+        $log += "[OK] Đã khôi phục và mở khóa Windows Defender & Security Center thành công!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixWindowsInstaller {
+    $log = @()
+    try {
+        $log += "[1/3] Hủy đăng ký và đăng ký lại Windows Installer Engine (msiexec)..."
+        Start-Process "msiexec.exe" -ArgumentList "/unregister" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+        Start-Process "msiexec.exe" -ArgumentList "/regserver" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+
+        $log += "[2/3] Thiết lập trạng thái dịch vụ msiserver..."
+        Set-Service -Name "msiserver" -StartupType Manual -ErrorAction SilentlyContinue
+        Start-Service -Name "msiserver" -ErrorAction SilentlyContinue
+
+        $log += "[3/3] Cấp quyền thư mục cài đặt Installer..."
+        $instDir = "$env:WINDIR\Installer"
+        if (-not (Test-Path $instDir)) { New-Item -ItemType Directory -Path $instDir -Force | Out-Null }
+
+        $log += "[OK] Đã sửa lỗi dịch vụ Windows Installer (msiserver), sẵn sàng cài/gỡ app .msi!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixIconAndThumbnailCache {
+    $log = @()
+    try {
+        $log += "[1/3] Đóng tiến trình Windows Explorer để giải phóng bộ nhớ đệm icon..."
+        Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 600
+
+        $log += "[2/3] Xóa triệt để IconCache.db và Thumbnail cache bị hỏng..."
+        $localApp = [Environment]::GetFolderPath("LocalApplicationData")
+        $iconCache = Join-Path $localApp "IconCache.db"
+        if (Test-Path $iconCache) { Remove-Item -Path $iconCache -Force -ErrorAction SilentlyContinue }
+
+        $explorerCache = Join-Path $localApp "Microsoft\Windows\Explorer"
+        if (Test-Path $explorerCache) {
+            Get-ChildItem -Path $explorerCache -Filter "*cache*.db" -Force -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+
+        $log += "[3/3] Khởi động lại Windows Explorer để tái tạo lại toàn bộ Icon..."
+        Start-Process "explorer.exe" -ErrorAction SilentlyContinue
+        $log += "[OK] Đã sửa lỗi mất icon / icon trắng và làm mới Icon Cache thành công!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixBluetoothService {
+    $log = @()
+    try {
+        $log += "[1/2] Đặt lại và khởi động lại các dịch vụ Bluetooth hệ thống..."
+        $services = @("bthserv", "BTAGService", "BluetoothUserService")
+        foreach ($s in $services) {
+            Set-Service -Name $s -StartupType Automatic -ErrorAction SilentlyContinue
+            Restart-Service -Name $s -Force -ErrorAction SilentlyContinue
+        }
+        $log += "[2/2] Kích hoạt chế độ cho phép thiết bị Bluetooth kết nối..."
+        $btKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\ActionCenter\Quick Actions\All\SystemSettings_Device_BluetoothQuickAction"
+        if (Test-Path $btKey) { Set-ItemProperty -Path $btKey -Name "Type" -Value 0 -Force -ErrorAction SilentlyContinue }
+        $log += "[OK] Đã khôi phục dịch vụ Bluetooth và ngăn xếp kết nối không dây!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixLanSharingNetworkDiscovery {
+    $log = @()
+    try {
+        $log += "[1/3] Kích hoạt và đặt chế độ Tự Động cho các dịch vụ Network Discovery..."
+        $netServices = @("FDResPub", "fdPHost", "LanmanServer", "LanmanWorkstation", "SSDPSRV", "upnphost", "dnscache")
+        foreach ($srv in $netServices) {
+            Set-Service -Name $srv -StartupType Automatic -ErrorAction SilentlyContinue
+            Start-Service -Name $srv -ErrorAction SilentlyContinue
+        }
+
+        $log += "[2/3] Mở thông tường lửa cho Chia Sẻ Tệp Tin & Máy In và Dò Tìm Mạng (Network Discovery)..."
+        netsh advfirewall firewall set rule group="Network Discovery" new enable=Yes | Out-Null
+        netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=Yes | Out-Null
+
+        $log += "[3/3] Kích hoạt giao thức SMBv2 / SMBv3 an toàn..."
+        Set-SmbServerConfiguration -EnableSMB2Protocol $true -Force -ErrorAction SilentlyContinue | Out-Null
+
+        $log += "[OK] Đã kích hoạt toàn bộ Network Discovery và sửa lỗi không thấy máy khác trong mạng LAN!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixPowerSleepHibernate {
+    $log = @()
+    try {
+        $log += "[1/3] Khôi phục toàn bộ sơ đồ nguồn điện về mặc định (Restore Default Power Schemes)..."
+        powercfg -restoredefaultschemes | Out-Null
+
+        $log += "[2/3] Bật lại tính năng Hibernate và Fast Startup chuẩn..."
+        powercfg -h on | Out-Null
+
+        $log += "[3/3] Sửa lỗi máy tính không tắt được nguồn hoặc treo khi Sleep..."
+        $pwrKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Power"
+        if (Test-Path $pwrKey) {
+            Set-ItemProperty -Path $pwrKey -Name "HibernateEnabled" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        }
+        $log += "[OK] Đã sửa lỗi treo máy khi Sleep/Shutdown và khôi phục cài đặt nguồn điện thành công!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixWmiRepository {
+    $log = @()
+    try {
+        $log += "[1/2] Kiểm tra và khôi phục tính toàn vẹn của WMI Repository..."
+        $res = winmgmt /salvagerepository 2>&1
+        $log += "  -> $res"
+
+        $log += "[2/2] Đăng ký lại các thư viện WMI DLL quan trọng..."
+        $wbemPath = "$env:WINDIR\System32\wbem"
+        $dlls = @("wmidcprv.dll", "wbemcore.dll", "wbemprox.dll", "wmisvc.dll", "fastprox.dll")
+        foreach ($d in $dlls) {
+            $p = Join-Path $wbemPath $d
+            if (Test-Path $p) {
+                Start-Process "regsvr32.exe" -ArgumentList "/s `"$p`"" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+            }
+        }
+        $log += "[OK] Đã kiểm tra và sửa lỗi WMI Repository thành công!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+

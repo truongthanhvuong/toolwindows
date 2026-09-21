@@ -1014,9 +1014,53 @@ function Invoke-VUONGTTLaunchDriverTool {
         }
         "3dpnet" {
             # 3DP Net (Tích hợp toàn bộ driver Card Mạng LAN & Wi-Fi)
-            if ($OnProgress) { & $OnProgress "Đang mở trang tải 3DP Net (Bộ Driver Mạng Toàn Năng)..." }
+            if ($OnProgress) { & $OnProgress "Đang tìm kiếm bộ cài Driver Mạng 3DP Net trên các ổ đĩa và USB..." }
+            
+            # 1. Quét tìm file 3DP Net offline có sẵn trong máy tính hoặc USB cứu hộ
+            $candidatePaths = @(
+                "C:\Tools\3DP_Net*.exe",
+                "C:\Tools\3DPNet*.exe",
+                "Z:\VUONGTT_RESCUE\3DP_Net*.exe",
+                "Z:\3DP_Net*.exe",
+                "D:\3DP_Net*.exe",
+                "E:\3DP_Net*.exe",
+                "$env:TEMP\3DP_Net*.exe",
+                "$env:USERPROFILE\Downloads\3DP_Net*.exe"
+            )
+            # Quét thêm tất cả các ổ đĩa ngoài (USB, ổ cứng di động)
+            try {
+                $removableDrives = Get-CimInstance Win32_LogicalDisk -Filter "DriveType = 2" -ErrorAction SilentlyContinue
+                foreach ($rd in $removableDrives) {
+                    $candidatePaths += "$($rd.DeviceID)\3DP_Net*.exe"
+                    $candidatePaths += "$($rd.DeviceID)\Tools\3DP_Net*.exe"
+                    $candidatePaths += "$($rd.DeviceID)\Drivers\3DP_Net*.exe"
+                }
+            } catch {}
+
+            $foundOffline = $null
+            foreach ($p in $candidatePaths) {
+                $item = Resolve-Path $p -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($item -and (Test-Path $item.Path -ErrorAction SilentlyContinue)) {
+                    $foundOffline = $item.Path
+                    break
+                }
+            }
+
+            if ($foundOffline) {
+                if ($OnProgress) { & $OnProgress "Tìm thấy bộ cài 3DP Net Offline: $foundOffline. Đang khởi chạy..." }
+                Start-Process $foundOffline
+                return "Đã khởi chạy 3DP Net Offline: $foundOffline (Đầy đủ driver Wi-Fi & LAN)!"
+            }
+
+            # 2. Nếu máy đã có mạng: Mở trang chủ 3DP Net chính thức để tải nhanh
+            if ($OnProgress) { & $OnProgress "Chưa có file offline. Đang mở trang tải chính thức 3DP Net..." }
             Start-Process "https://www.3dpchip.com/3dpchip/sub/net_eng.html"
-            return "Đã mở trang tải 3DP Net (Chuyên trị máy mất mạng / thiếu driver Wi-Fi, LAN)."
+            return "Đã mở trang tải 3DP Net chính thức (Bộ driver mạng toàn năng cho máy mới cài Win)."
+        }
+        "driverassistant" {
+            # Tải / Khởi chạy Driver Assistant chính hãng của máy
+            if ($OnProgress) { & $OnProgress "Đang xác định hãng sản xuất máy tính để tải phần mềm Driver Assistant..." }
+            return (Start-VUONGTTOEMDriverAssistant -OnProgress $OnProgress)
         }
         "devmgmt" {
             Start-Process "devmgmt.msc"
@@ -1026,6 +1070,102 @@ function Invoke-VUONGTTLaunchDriverTool {
             return "Không tìm thấy công cụ driver: $ToolName"
         }
     }
+}
+
+function Start-VUONGTTOEMDriverAssistant {
+    param([scriptblock]$OnProgress = $null)
+    try {
+        $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+        $mb = Get-CimInstance Win32_BaseBoard -ErrorAction SilentlyContinue
+        $mfg = if ($cs.Manufacturer) { $cs.Manufacturer.Trim().ToUpper() } else { "" }
+        $boardMfg = if ($mb.Manufacturer) { $mb.Manufacturer.Trim().ToUpper() } else { "" }
+
+        if ($mfg -like "*DELL*") {
+            if ($OnProgress) { & $OnProgress "Phát hiện máy DELL. Đang mở công cụ Dell SupportAssist / Command Update..." }
+            Start-Process "https://www.dell.com/support/home/vi-vn/driverpack/supportassist"
+            return "Đã mở trang tải công cụ cập nhật Driver tự động Dell SupportAssist!"
+        } elseif ($mfg -like "*HP*" -or $mfg -like "*HEWLETT*") {
+            if ($OnProgress) { & $OnProgress "Phát hiện máy HP. Đang mở công cụ HP Support Assistant..." }
+            Start-Process "https://support.hp.com/vn-en/help/hp-support-assistant"
+            return "Đã mở trang tải công cụ cập nhật Driver tự động HP Support Assistant!"
+        } elseif ($mfg -like "*LENOVO*") {
+            if ($OnProgress) { & $OnProgress "Phát hiện máy LENOVO. Đang mở công cụ Lenovo Vantage / System Update..." }
+            Start-Process "https://support.lenovo.com/vn/vi/downloads/ds012808-lenovo-system-update-for-windows-11-10-7-32-bit-64-bit"
+            return "Đã mở trang tải công cụ cập nhật Driver tự động Lenovo System Update!"
+        } elseif ($mfg -like "*ASUS*") {
+            if ($OnProgress) { & $OnProgress "Phát hiện máy ASUS. Đang mở công cụ MyASUS / Driver Center..." }
+            Start-Process "https://www.asus.com/vn/support/download-center/"
+            return "Đã mở trung tâm hỗ trợ Driver tự động ASUS!"
+        } elseif ($mfg -like "*ACER*") {
+            if ($OnProgress) { & $OnProgress "Phát hiện máy ACER. Đang mở Acer Care Center / Driver Support..." }
+            Start-Process "https://www.acer.com/vn-vi/support/drivers-and-manuals"
+            return "Đã mở trang hỗ trợ tải Driver chính hãng Acer!"
+        } else {
+            # Máy lắp ráp / Intel
+            if ($OnProgress) { & $OnProgress "Máy tính Desktop / Tự lắp ráp. Đang mở Intel Driver & Support Assistant (IDSA)..." }
+            Start-Process "https://www.intel.com/content/www/us/en/support/detect.html"
+            return "Đã mở trang tải công cụ tự động quét và cài Driver Intel (Intel Driver & Support Assistant)!"
+        }
+    } catch {
+        Start-Process "https://www.google.com/search?q=intel+driver+support+assistant"
+        return "Đã mở trang tìm kiếm Driver Assistant!"
+    }
+}
+
+function Get-VUONGTTPostWinDriverStatus {
+    $status = [PSCustomObject]@{
+        MachineModel  = "Đang nhận diện..."
+        HasInternet   = $false
+        NetworkStatus = "Đang kiểm tra..."
+        MissingCount  = 0
+        GpuStatus     = "Đang quét..."
+    }
+
+    try {
+        $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+        $bios = Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue
+        $mfg = if ($cs.Manufacturer) { $cs.Manufacturer.Trim() } else { "PC" }
+        $model = if ($cs.Model) { $cs.Model.Trim() } else { "Desktop" }
+        $status.MachineModel = "$mfg $model"
+
+        # Kiểm tra card mạng và kết nối Internet
+        $adapters = Get-CimInstance Win32_NetworkAdapter -Filter "NetConnectionStatus = 2" -ErrorAction SilentlyContinue
+        $pingSuccess = $false
+        try {
+            $ping = New-Object System.Net.NetworkInformation.Ping
+            $reply = $ping.Send("8.8.8.8", 1200)
+            if ($reply.Status -eq [System.Net.NetworkInformation.IPStatus]::Success) {
+                $pingSuccess = $true
+            }
+        } catch {}
+
+        if ($pingSuccess) {
+            $status.HasInternet = $true
+            $status.NetworkStatus = "🟢 Đã có Internet (Wi-Fi / LAN)"
+        } elseif ($adapters -and $adapters.Count -gt 0) {
+            $status.HasInternet = $false
+            $status.NetworkStatus = "🟡 Có Card Mạng (Chưa có Internet)"
+        } else {
+            $status.HasInternet = $false
+            $status.NetworkStatus = "🔴 MẤT DRIVER MẠNG (Thiếu Wi-Fi/LAN)"
+        }
+
+        # Quét số thiết bị thiếu Driver (!)
+        $missing = Get-CimInstance Win32_PnPEntity -Filter "ConfigManagerErrorCode <> 0" -ErrorAction SilentlyContinue
+        $status.MissingCount = if ($missing) { $missing.Count } else { 0 }
+
+        # GPU
+        $gpu = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($gpu) {
+            if ($gpu.Name -like "*Microsoft Basic Display*") {
+                $status.GpuStatus = "⚠️ Basic Display (Chưa có Driver)"
+            } else {
+                $status.GpuStatus = "✅ $($gpu.Name)"
+            }
+        }
+    } catch {}
+
+    return $status
 }
 
 function Open-VUONGTTOfficialDriverPortal {

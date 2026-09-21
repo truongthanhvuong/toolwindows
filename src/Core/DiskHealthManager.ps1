@@ -8,6 +8,7 @@ if (-not ([System.Management.Automation.PSTypeName]'DiskSmartNativeHelper').Type
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using Microsoft.Win32.SafeHandles;
 
 public class DiskSmartNativeHelper {
@@ -17,6 +18,8 @@ public class DiskSmartNativeHelper {
     private const uint FILE_SHARE_WRITE = 0x00000002;
     private const uint OPEN_EXISTING = 3;
     private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
+    private const uint SMART_RCV_DRIVE_DATA = 0x0007C088;
+    private const uint IOCTL_ATA_PASS_THROUGH = 0x0004D02C;
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     private static extern SafeFileHandle CreateFile(
@@ -39,13 +42,52 @@ public class DiskSmartNativeHelper {
         out uint lpBytesReturned,
         IntPtr lpOverlapped);
 
+    public class SmartAttributeRaw {
+        public int Id;
+        public int Current;
+        public int Worst;
+        public ulong RawValue;
+    }
+
     public class SmartInfo {
         public bool HasData;
+        public bool HasAtaData;
         public int TemperatureC;
         public ulong PowerOnHours;
         public ulong PowerCycles;
-        public int WearLevel;
-        public string Source;
+        public int WearLevel = -1;
+        public string Source = "";
+        public ulong ReallocatedSectors;
+        public ulong CurrentPendingSectors;
+        public ulong OfflineUncorrectable;
+        public ulong UdmaCrcErrors;
+        public ulong RawReadErrors;
+        public Dictionary<int, SmartAttributeRaw> Attributes = new Dictionary<int, SmartAttributeRaw>();
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    private struct IDEREGS {
+        public byte bFeaturesReg;
+        public byte bSectorCountReg;
+        public byte bSectorNumberReg;
+        public byte bCylLowReg;
+        public byte bCylHighReg;
+        public byte bDriveHeadReg;
+        public byte bCommandReg;
+        public byte bReserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    private struct SENDCMDINPARAMS {
+        public uint cBufferSize;
+        public IDEREGS irDriveRegs;
+        public byte bDriveNumber;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
+        public byte[] bReserved;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+        public uint[] dwReserved;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
+        public byte[] bBuffer;
     }
 
     public static SmartInfo QueryDiskSmart(int diskIndex) {
@@ -62,15 +104,25 @@ public class DiskSmartNativeHelper {
         }
 
         using (hDisk) {
-            // 1. Thu nghiem NVMe StorageDeviceProtocolSpecificProperty (PropertyId = 50)
+            // 1. Giao thức NVMe Log Page 0x02
             if (TryQueryNvme(hDisk, 50, info)) {
                 info.Source = "Giao thức NVMe Log Page 0x02 (Device IOCTL 50)";
                 return info;
             }
-
-            // 2. Thu nghiem NVMe StorageAdapterProtocolSpecificProperty (PropertyId = 49)
             if (TryQueryNvme(hDisk, 49, info)) {
                 info.Source = "Giao thức NVMe Log Page 0x02 (Adapter IOCTL 49)";
+                return info;
+            }
+
+            // 2. Giao thức ATA SMART IOCTL 0x0007C088 (Chuẩn SATA HDD/SSD)
+            if (TryQueryAtaSmart(hDisk, diskIndex, info)) {
+                info.Source = "Giao thức ATA S.M.A.R.T (IOCTL 0x0007C088)";
+                return info;
+            }
+
+            // 3. Giao thức ATA Pass-Through IOCTL 0x0004D02C
+            if (TryQueryAtaPassThrough(hDisk, info)) {
+                info.Source = "Giao thức ATA Pass-Through (IOCTL 0x0004D02C)";
                 return info;
             }
         }
@@ -127,6 +179,143 @@ public class DiskSmartNativeHelper {
         }
 
         return false;
+    }
+
+    private static bool TryQueryAtaSmart(SafeFileHandle hDisk, int diskIndex, SmartInfo info) {
+        int inBufferSize = Marshal.SizeOf(typeof(SENDCMDINPARAMS)) - 1;
+        int outBufferSize = 16 + 512;
+
+        IntPtr pIn = Marshal.AllocHGlobal(inBufferSize);
+        IntPtr pOut = Marshal.AllocHGlobal(outBufferSize);
+
+        try {
+            for (int i = 0; i < inBufferSize; i++) Marshal.WriteByte(pIn, i, 0);
+            for (int i = 0; i < outBufferSize; i++) Marshal.WriteByte(pOut, i, 0);
+
+            SENDCMDINPARAMS scip = new SENDCMDINPARAMS();
+            scip.cBufferSize = 512;
+            scip.bDriveNumber = (byte)diskIndex;
+            scip.irDriveRegs = new IDEREGS();
+            scip.irDriveRegs.bFeaturesReg = 0xD0; // SMART READ ATTRIBUTES
+            scip.irDriveRegs.bSectorCountReg = 1;
+            scip.irDriveRegs.bSectorNumberReg = 1;
+            scip.irDriveRegs.bCylLowReg = 0x4F;
+            scip.irDriveRegs.bCylHighReg = 0xC2;
+            scip.irDriveRegs.bDriveHeadReg = (byte)(0xA0 | ((diskIndex & 1) << 4));
+            scip.irDriveRegs.bCommandReg = 0xB0; // SMART
+
+            Marshal.StructureToPtr(scip, pIn, false);
+
+            uint bytesReturned = 0;
+            bool ok = DeviceIoControl(hDisk, SMART_RCV_DRIVE_DATA, pIn, (uint)inBufferSize, pOut, (uint)outBufferSize, out bytesReturned, IntPtr.Zero);
+
+            if (ok && bytesReturned >= 512) {
+                byte[] rawSmart = new byte[512];
+                Marshal.Copy(new IntPtr(pOut.ToInt64() + 16), rawSmart, 0, 512);
+                ParseSmartSector(rawSmart, info);
+                if (info.HasData) return true;
+            }
+        } catch {
+        } finally {
+            Marshal.FreeHGlobal(pIn);
+            Marshal.FreeHGlobal(pOut);
+        }
+        return false;
+    }
+
+    private static bool TryQueryAtaPassThrough(SafeFileHandle hDisk, SmartInfo info) {
+        int headerSize = 40;
+        int totalSize = headerSize + 512;
+        IntPtr pBuffer = Marshal.AllocHGlobal(totalSize);
+
+        try {
+            for (int i = 0; i < totalSize; i++) Marshal.WriteByte(pBuffer, i, 0);
+
+            Marshal.WriteInt16(pBuffer, 0, (short)headerSize);
+            Marshal.WriteInt16(pBuffer, 2, 0x0002); // ATA_FLAGS_DATA_IN
+            Marshal.WriteByte(pBuffer, 4, 0);
+            Marshal.WriteByte(pBuffer, 5, 0);
+            Marshal.WriteByte(pBuffer, 6, 0);
+            Marshal.WriteByte(pBuffer, 7, 0);
+            Marshal.WriteInt32(pBuffer, 8, 512);
+            Marshal.WriteInt32(pBuffer, 12, 3);
+            Marshal.WriteInt32(pBuffer, 16, 0);
+            Marshal.WriteIntPtr(pBuffer, 20, new IntPtr(headerSize));
+
+            int tfOffset = 32;
+            Marshal.WriteByte(pBuffer, tfOffset + 0, 0xD0);
+            Marshal.WriteByte(pBuffer, tfOffset + 1, 1);
+            Marshal.WriteByte(pBuffer, tfOffset + 2, 1);
+            Marshal.WriteByte(pBuffer, tfOffset + 3, 0x4F);
+            Marshal.WriteByte(pBuffer, tfOffset + 4, 0xC2);
+            Marshal.WriteByte(pBuffer, tfOffset + 5, 0xA0);
+            Marshal.WriteByte(pBuffer, tfOffset + 6, 0xB0);
+
+            uint bytesReturned = 0;
+            bool ok = DeviceIoControl(hDisk, IOCTL_ATA_PASS_THROUGH, pBuffer, (uint)totalSize, pBuffer, (uint)totalSize, out bytesReturned, IntPtr.Zero);
+
+            if (ok) {
+                byte[] rawSmart = new byte[512];
+                Marshal.Copy(new IntPtr(pBuffer.ToInt64() + headerSize), rawSmart, 0, 512);
+                ParseSmartSector(rawSmart, info);
+                if (info.HasData) return true;
+            }
+        } catch {
+        } finally {
+            Marshal.FreeHGlobal(pBuffer);
+        }
+        return false;
+    }
+
+    public static void ParseSmartSector(byte[] rawSmart, SmartInfo info) {
+        if (rawSmart == null || rawSmart.Length < 362) return;
+
+        for (int i = 0; i < 30; i++) {
+            int offset = 2 + (i * 12);
+            byte attrId = rawSmart[offset];
+            if (attrId == 0) continue;
+
+            byte current = rawSmart[offset + 3];
+            byte worst = rawSmart[offset + 4];
+            ulong rawVal = 0;
+            for (int b = 0; b < 6; b++) {
+                rawVal |= ((ulong)rawSmart[offset + 5 + b]) << (b * 8);
+            }
+
+            SmartAttributeRaw item = new SmartAttributeRaw {
+                Id = attrId,
+                Current = current,
+                Worst = worst,
+                RawValue = rawVal
+            };
+            info.Attributes[attrId] = item;
+
+            if (attrId == 1) {
+                info.RawReadErrors = rawVal;
+            } else if (attrId == 5) {
+                info.ReallocatedSectors = rawVal;
+            } else if (attrId == 9) {
+                info.PowerOnHours = rawVal;
+            } else if (attrId == 12) {
+                info.PowerCycles = rawVal;
+            } else if (attrId == 194 || (attrId == 190 && info.TemperatureC == 0)) {
+                int t = (int)(rawVal & 0xFF);
+                if (t > 0 && t < 100) info.TemperatureC = t;
+            } else if (attrId == 197) {
+                info.CurrentPendingSectors = rawVal;
+            } else if (attrId == 198) {
+                info.OfflineUncorrectable = rawVal;
+            } else if (attrId == 199) {
+                info.UdmaCrcErrors = rawVal;
+            } else if (attrId == 231) {
+                info.WearLevel = 100 - current;
+            }
+        }
+
+        if (info.Attributes.Count > 0) {
+            info.HasData = true;
+            info.HasAtaData = true;
+        }
     }
 }
 "@ -ErrorAction SilentlyContinue
@@ -255,9 +444,14 @@ function Get-VUONGTTDiskHealthList {
             $wear = $null
             $readErrors = 0
             $writeErrors = 0
+            $realloc = 0
+            $pending = 0
+            $uncorrectable = 0
+            $udmaCrc = 0
             $smartSource = "Đang quét..."
+            $smartNative = $null
 
-            # TANG 1: Direct Win32 Hardware IOCTL (NVMe Log Page 0x02 cho Kingmax, Samsung, Kingston...)
+            # TANG 1: Direct Win32 Hardware IOCTL (NVMe Log Page 0x02 & ATA SMART 0x0007C088)
             try {
                 $devNum = 0
                 if ([int]::TryParse($devId, [ref]$devNum)) {
@@ -276,10 +470,55 @@ function Get-VUONGTTDiskHealthList {
                         if ($smartNative.WearLevel -ge 0) {
                             $wear = [int]$smartNative.WearLevel
                         }
+                        if ($smartNative.ReallocatedSectors -gt 0) {
+                            $realloc = [ulong]$smartNative.ReallocatedSectors
+                        }
+                        if ($smartNative.CurrentPendingSectors -gt 0) {
+                            $pending = [ulong]$smartNative.CurrentPendingSectors
+                        }
+                        if ($smartNative.OfflineUncorrectable -gt 0) {
+                            $uncorrectable = [ulong]$smartNative.OfflineUncorrectable
+                        }
+                        if ($smartNative.UdmaCrcErrors -gt 0) {
+                            $udmaCrc = [ulong]$smartNative.UdmaCrcErrors
+                        }
+                        if ($smartNative.RawReadErrors -gt 0) {
+                            $readErrors = [long]$smartNative.RawReadErrors
+                        }
                         $smartSource = $smartNative.Source
                     }
                 }
             } catch {}
+
+            # TANG 1.5: WMI ATA SMART (Dự phòng cho các dòng chipset SATA đặc thù)
+            if ($realloc -eq 0 -and $pending -eq 0) {
+                try {
+                    $wmiSmartArr = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_ATAPISmartData -ErrorAction SilentlyContinue
+                    if ($wmiSmartArr) {
+                        foreach ($ws in $wmiSmartArr) {
+                            if ($ws.VendorSpecific -and $ws.VendorSpecific.Length -ge 362) {
+                                $wmiInfo = New-Object DiskSmartNativeHelper+SmartInfo
+                                [DiskSmartNativeHelper]::ParseSmartSector($ws.VendorSpecific, $wmiInfo)
+                                if ($wmiInfo.HasData) {
+                                    if ($wmiInfo.ReallocatedSectors -gt 0) { $realloc = $wmiInfo.ReallocatedSectors }
+                                    if ($wmiInfo.CurrentPendingSectors -gt 0) { $pending = $wmiInfo.CurrentPendingSectors }
+                                    if ($wmiInfo.OfflineUncorrectable -gt 0) { $uncorrectable = $wmiInfo.OfflineUncorrectable }
+                                    if ($wmiInfo.UdmaCrcErrors -gt 0) { $udmaCrc = $wmiInfo.UdmaCrcErrors }
+                                    if ($wmiInfo.PowerOnHours -gt 0 -and $powerHours -eq $null) { $powerHours = [long]$wmiInfo.PowerOnHours }
+                                    if ($wmiInfo.PowerCycles -gt 0 -and $powerCount -eq $null) { $powerCount = [long]$wmiInfo.PowerCycles }
+                                    if ($wmiInfo.TemperatureC -gt 0 -and $tempC -eq $null) {
+                                        $tempC = $wmiInfo.TemperatureC
+                                        $tempText = "$($tempC)°C"
+                                    }
+                                    if ($smartNative -eq $null -or -not $smartNative.HasData) { $smartNative = $wmiInfo }
+                                    $smartSource = "WMI ATA S.M.A.R.T (MSStorageDriver_ATAPISmartData)"
+                                    break
+                                }
+                            }
+                        }
+                    }
+                } catch {}
+            }
 
             # TANG 2: Storage Reliability Counter (WMI / Storage Management Provider)
             if ($powerHours -eq $null -or $powerHours -le 0) {
@@ -306,7 +545,9 @@ function Get-VUONGTTDiskHealthList {
             # TANG 3: Fallback thong minh tu Nhat ky He dieu hanh (KHONG BAO GIO BI N/A)
             if ($powerHours -eq $null -or $powerHours -le 0) {
                 $powerHours = $bootDiag.EstimatedPowerHours
-                $smartSource = "Nhật ký vận hành Windows (OS Boot Lifecycle)"
+                if ($smartSource -eq "Đang quét...") {
+                    $smartSource = "Nhật ký vận hành Windows (OS Boot Lifecycle)"
+                }
             }
             if ($powerCount -eq $null -or $powerCount -le 0) {
                 $powerCount = $bootDiag.EstimatedPowerCycles
@@ -324,18 +565,41 @@ function Get-VUONGTTDiskHealthList {
                 if ($serial -eq "N/A" -and $wmiMatch.SerialNumber) { $serial = $wmiMatch.SerialNumber.Trim() }
             }
 
-            # Tinh toan Phan tram Suc Khoe & Danh Gia
+            # TÍNH TOÁN SỨC KHỎE SÂU (DEEP S.M.A.R.T HEALTH ENGINE - CRYSTALDISKINFO / HARD DISK SENTINEL STANDARD)
             $healthPct = 100
             $healthLevel = "GOOD"
             $healthText = "TỐT (GOOD)"
             $healthColor = "#047857" # Green
             $healthDesc = "Ổ cứng hoạt động hoàn hảo, đạt chuẩn S.M.A.R.T, không có lỗi bad sector."
 
-            if ($wear -ne $null) {
-                $remLife = [math]::Max(0, 100 - $wear)
-                $healthPct = $remLife
+            if ($wear -ne $null -and $wear -ge 0) {
+                $healthPct = [math]::Max(0, 100 - $wear)
             }
 
+            # 1. ĐÁNH GIÁ SECTOR LỖI VẬT LÝ (Bad Sectors / Pending / Reallocated)
+            if ($pending -gt 0 -or $realloc -ge 10 -or $uncorrectable -gt 0) {
+                $penalty = ($realloc * 1.5) + ($pending * 5) + ($uncorrectable * 6)
+                $healthPct = [math]::Max(5, [math]::Min(90, [int](100 - $penalty)))
+                if ($healthPct -le 40 -or $pending -ge 10 -or $realloc -ge 50) {
+                    $healthLevel = "BAD"
+                    $healthText = "NGUY HIỂM (BAD)"
+                    $healthColor = "#BE123C"
+                    $healthDesc = "NGUY CƠ HỎNG Ổ CỨNG: Phát hiện $realloc sector tái phân bổ (Reallocated), $pending sector lỗi chờ xử lý (Pending), $uncorrectable sector lỗi vật lý. Cần sao lưu dữ liệu khẩn cấp và thay thế ổ đĩa ngay!"
+                } else {
+                    $healthLevel = "CAUTION"
+                    $healthText = "CẢNH BÁO SỨC KHỎE (CAUTION)"
+                    $healthColor = "#B45309"
+                    $healthDesc = "CẢNH BÁO SỨC KHỎE: Phát hiện $realloc sector tái phân bổ (Reallocated), $pending sector nghi ngờ chờ xử lý (Pending). Ổ cứng có dấu hiệu bad sector, khuyến nghị sao lưu dữ liệu quan trọng!"
+                }
+            } elseif ($realloc -gt 0) {
+                $healthPct = [math]::Max(60, [math]::Min(95, [int](100 - ($realloc * 2))))
+                $healthLevel = "CAUTION"
+                $healthText = "CẢNH BÁO NHẸ (CAUTION)"
+                $healthColor = "#D97706"
+                $healthDesc = "Đã có $realloc sector bị lỗi và được chuyển vùng dự phòng (Reallocated). Hiện chưa có pending sector mới, cần theo dõi định kỳ."
+            }
+
+            # 2. Đánh giá nhiệt độ
             if ($tempC -and $tempC -ge 65) {
                 $healthLevel = "CAUTION"
                 $healthText = "CẢNH BÁO NHIỆT ĐỘ (CAUTION)"
@@ -343,16 +607,17 @@ function Get-VUONGTTDiskHealthList {
                 $healthDesc = "Nhiệt độ ổ cứng đang ở mức cao ($tempText). Hãy kiểm tra lại quạt tản nhiệt hoặc thông gió máy tính."
             }
 
+            # 3. Đánh giá lỗi I/O đọc ghi
             if ($healthStatus -ne "Healthy" -or $operationalStatus -ne "OK" -or $readErrors -gt 100 -or $writeErrors -gt 100) {
-                $healthPct = [math]::Min($healthPct, 60)
+                $healthPct = [math]::Min($healthPct, 55)
                 $healthLevel = "CAUTION"
                 $healthText = "CẢNH BÁO SỨC KHỎE (CAUTION)"
                 $healthColor = "#B45309"
-                $healthDesc = "Phát hiện dấu hiệu suy giảm hiệu năng hoặc lỗi I/O đọc ghi. Khuyến nghị sao lưu dữ liệu quan trọng."
+                $healthDesc = "Phát hiện dấu hiệu suy giảm hiệu năng hoặc lỗi I/O đọc ghi (Read Errors: $readErrors). Khuyến nghị sao lưu dữ liệu quan trọng."
             }
 
             if ($healthStatus -eq "Unhealthy" -or $operationalStatus -like "*Degraded*" -or $operationalStatus -like "*Error*") {
-                $healthPct = [math]::Min($healthPct, 20)
+                $healthPct = [math]::Min($healthPct, 15)
                 $healthLevel = "BAD"
                 $healthText = "NGUY HIỂM (BAD)"
                 $healthColor = "#BE123C"
@@ -417,7 +682,7 @@ function Get-VUONGTTDiskHealthList {
             }
 
             # Tao danh sach cac chi so S.M.A.R.T chi tiet
-            $smartList = Get-VUONGTTSmartAttributes -Disk $pd -HealthLevel $healthLevel -TempC $tempC -PowerHours $powerHours -Wear $wear -ReadErrors $readErrors
+            $smartList = Get-VUONGTTSmartAttributes -Disk $pd -HealthLevel $healthLevel -TempC $tempC -PowerHours $powerHours -Wear $wear -ReadErrors $readErrors -SmartNative $smartNative -Realloc $realloc -Pending $pending -Uncorrectable $uncorrectable -UdmaCrc $udmaCrc
 
             $results += [PSCustomObject]@{
                 DeviceId          = $devId
@@ -442,6 +707,10 @@ function Get-VUONGTTDiskHealthList {
                 WearLevel         = $wear
                 ReadErrors        = $readErrors
                 WriteErrors       = $writeErrors
+                ReallocatedSectors= $realloc
+                PendingSectors    = $pending
+                UncorrectableSectors = $uncorrectable
+                UdmaCrcErrors     = $udmaCrc
                 Volumes           = $diskVolumes
                 SmartAttributes   = $smartList
             }
@@ -519,14 +788,19 @@ function Get-VUONGTTSmartAttributes {
         $TempC = $null,
         $PowerHours = $null,
         $Wear = $null,
-        $ReadErrors = 0
+        $ReadErrors = 0,
+        $SmartNative = $null,
+        [ulong]$Realloc = 0,
+        [ulong]$Pending = 0,
+        [ulong]$Uncorrectable = 0,
+        [ulong]$UdmaCrc = 0
     )
 
-    $rawErrors = if ($ReadErrors) { [string]$ReadErrors } else { "000000000000" }
+    $rawErrors = if ($ReadErrors -gt 0) { [string]$ReadErrors } else { "000000000000" }
     $pHours = if ($PowerHours) { $PowerHours } else { 1250 }
     $pCount = if ($PowerHours) { [math]::Max(50, [int]($PowerHours / 2.5)) } else { 450 }
     $tVal = if ($TempC) { "$($TempC)°C" } else { "36°C" }
-    $ssdLife = if ($Wear -ne $null) { "$([math]::Max(0, 100 - $Wear))%" } else { "100%" }
+    $ssdLife = if ($Wear -ne $null -and $Wear -ge 0) { "$([math]::Max(0, 100 - $Wear))%" } else { "100%" }
 
     $statusGood = "🟢 Tốt (OK)"
     $statusWarn = "🟡 Cảnh báo"
@@ -536,18 +810,18 @@ function Get-VUONGTTSmartAttributes {
         [PSCustomObject]@{
             Id        = "01"
             Name      = "Raw Read Error Rate (Tỷ lệ lỗi đọc dữ liệu)"
-            Current   = "100"
+            Current   = if ($ReadErrors -gt 100) { "50" } else { "100" }
             Threshold = "50"
             RawValue  = $rawErrors
-            Status    = if ($ReadErrors -gt 50) { $statusWarn } else { $statusGood }
+            Status    = if ($ReadErrors -gt 100) { $statusBad } elseif ($ReadErrors -gt 10) { $statusWarn } else { $statusGood }
         },
         [PSCustomObject]@{
             Id        = "05"
             Name      = "Reallocated Sectors Count (Sector tái phân bổ)"
-            Current   = "100"
+            Current   = if ($Realloc -ge 50) { "10" } elseif ($Realloc -gt 0) { "$([math]::Max(10, 100 - $Realloc))" } else { "100" }
             Threshold = "10"
-            RawValue  = "000000000000"
-            Status    = if ($HealthLevel -eq "BAD") { $statusBad } else { $statusGood }
+            RawValue  = if ($Realloc -gt 0) { "$Realloc Sector (Đã remap)" } else { "000000000000" }
+            Status    = if ($Realloc -ge 10) { $statusBad } elseif ($Realloc -gt 0) { $statusWarn } else { $statusGood }
         },
         [PSCustomObject]@{
             Id        = "09"
@@ -584,10 +858,10 @@ function Get-VUONGTTSmartAttributes {
         [PSCustomObject]@{
             Id        = "BB"
             Name      = "Reported Uncorrectable Errors (Lỗi không thể tự sửa)"
-            Current   = "100"
+            Current   = if ($Uncorrectable -gt 0) { "20" } else { "100" }
             Threshold = "0"
-            RawValue  = "000000000000"
-            Status    = $statusGood
+            RawValue  = if ($Uncorrectable -gt 0) { "$Uncorrectable Lỗi" } else { "000000000000" }
+            Status    = if ($Uncorrectable -gt 0) { $statusBad } else { $statusGood }
         },
         [PSCustomObject]@{
             Id        = "C2"
@@ -600,18 +874,26 @@ function Get-VUONGTTSmartAttributes {
         [PSCustomObject]@{
             Id        = "C5"
             Name      = "Current Pending Sector Count (Sector nghi ngờ chờ xử lý)"
-            Current   = "100"
+            Current   = if ($Pending -gt 0) { "30" } else { "100" }
             Threshold = "0"
-            RawValue  = "000000000000"
-            Status    = if ($HealthLevel -eq "BAD") { $statusBad } else { $statusGood }
+            RawValue  = if ($Pending -gt 0) { "$Pending Sector (Chờ xử lý / BAD)" } else { "000000000000" }
+            Status    = if ($Pending -gt 0) { $statusBad } else { $statusGood }
+        },
+        [PSCustomObject]@{
+            Id        = "C6"
+            Name      = "Offline Uncorrectable Sector Count (Sector hỏng vật lý)"
+            Current   = if ($Uncorrectable -gt 0) { "20" } else { "100" }
+            Threshold = "0"
+            RawValue  = if ($Uncorrectable -gt 0) { "$Uncorrectable Sector (Hỏng vĩnh viễn)" } else { "000000000000" }
+            Status    = if ($Uncorrectable -gt 0) { $statusBad } else { $statusGood }
         },
         [PSCustomObject]@{
             Id        = "C7"
             Name      = "UltraDMA CRC Error Count (Lỗi đường truyền cáp SATA/NVMe)"
-            Current   = "100"
+            Current   = if ($UdmaCrc -gt 10) { "50" } else { "100" }
             Threshold = "0"
-            RawValue  = "000000000000"
-            Status    = $statusGood
+            RawValue  = if ($UdmaCrc -gt 0) { "$UdmaCrc Lỗi tín hiệu cáp" } else { "000000000000" }
+            Status    = if ($UdmaCrc -gt 10) { $statusWarn } else { $statusGood }
         },
         [PSCustomObject]@{
             Id        = "E7"

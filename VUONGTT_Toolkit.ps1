@@ -1219,34 +1219,136 @@ $btnRestoreCustomize    = Get-Control "btnRestoreCustomize"
 $btnReloadCustomize     = Get-Control "btnReloadCustomize"
 $txtCustomizeLog        = Get-Control "txtCustomizeLog"
 
+# Domain & Computer Name Controls
+$btnOpenSystemPropertiesComputerName = Get-Control "btnOpenSystemPropertiesComputerName"
+$btnRenameComputerDirect             = Get-Control "btnRenameComputerDirect"
+$rbMemberWorkgroup                   = Get-Control "rbMemberWorkgroup"
+$rbMemberDomain                      = Get-Control "rbMemberDomain"
+$pnlWorkgroupContainer               = Get-Control "pnlWorkgroupContainer"
+$pnlDomainContainer                  = Get-Control "pnlDomainContainer"
+$txtDomainName                       = Get-Control "txtDomainName"
+$txtDomainUser                       = Get-Control "txtDomainUser"
+$pwdDomainPass                       = Get-Control "pwdDomainPass"
+$btnJoinDomainDirect                 = Get-Control "btnJoinDomainDirect"
+
 function Refresh-CustomizeDisplay {
     $info = Get-SystemCustomizerInfo
-    $txtCustomComputerName.Text = $info.ComputerName
-    $txtCustomWorkgroup.Text    = $info.Workgroup
-    $txtCustomDescription.Text  = if ($info.ComputerDescription) { $info.ComputerDescription } else { "Không bắt buộc" }
-    $txtCustomOwner.Text        = if ($info.RegisteredOwner) { $info.RegisteredOwner } else { "VUONGTT" }
-    $txtCustomOrg.Text          = if ($info.RegisteredOrganization) { $info.RegisteredOrganization } else { "Không bắt buộc" }
-    $txtCustomManufacturer.Text = if ($info.Manufacturer) { $info.Manufacturer } else { "Ví dụ: VUONGTT Technology" }
-    $txtCustomModel.Text        = if ($info.Model) { $info.Model } else { "Ví dụ: VTT-Pro2026" }
-    $txtCustomPhone.Text        = if ($info.SupportPhone) { $info.SupportPhone } else { "Ví dụ: 1900 xxxx" }
-    $txtCustomURL.Text          = if ($info.SupportURL) { $info.SupportURL } else { "https://..." }
+    if ($txtCustomComputerName) { $txtCustomComputerName.Text = $info.ComputerName }
+    if ($txtCustomWorkgroup)    { $txtCustomWorkgroup.Text    = $info.Workgroup }
+    if ($txtCustomDescription)  { $txtCustomDescription.Text  = if ($info.ComputerDescription) { $info.ComputerDescription } else { "Không bắt buộc" } }
+    if ($txtCustomOwner)        { $txtCustomOwner.Text        = if ($info.RegisteredOwner) { $info.RegisteredOwner } else { "VUONGTT" } }
+    if ($txtCustomOrg)          { $txtCustomOrg.Text          = if ($info.RegisteredOrganization) { $info.RegisteredOrganization } else { "Không bắt buộc" } }
+    if ($txtCustomManufacturer) { $txtCustomManufacturer.Text = if ($info.Manufacturer) { $info.Manufacturer } else { "Ví dụ: VUONGTT Technology" } }
+    if ($txtCustomModel)        { $txtCustomModel.Text        = if ($info.Model) { $info.Model } else { "Ví dụ: VTT-Pro2026" } }
+    if ($txtCustomPhone)        { $txtCustomPhone.Text        = if ($info.SupportPhone) { $info.SupportPhone } else { "Ví dụ: 1900 xxxx" } }
+    if ($txtCustomURL)          { $txtCustomURL.Text          = if ($info.SupportURL) { $info.SupportURL } else { "https://..." } }
+
+    # Detect domain or workgroup membership
+    try {
+        $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+        if ($cs -and $cs.PartOfDomain) {
+            if ($rbMemberDomain) { $rbMemberDomain.IsChecked = $true }
+            if ($txtDomainName)  { $txtDomainName.Text = $cs.Domain }
+            if ($pnlDomainContainer) { $pnlDomainContainer.Visibility = "Visible" }
+            if ($pnlWorkgroupContainer) { $pnlWorkgroupContainer.Visibility = "Collapsed" }
+        } else {
+            if ($rbMemberWorkgroup) { $rbMemberWorkgroup.IsChecked = $true }
+            if ($pnlWorkgroupContainer) { $pnlWorkgroupContainer.Visibility = "Visible" }
+            if ($pnlDomainContainer) { $pnlDomainContainer.Visibility = "Collapsed" }
+        }
+    } catch {}
 
     # Update preview
-    $prevComputerName.Text = $info.ComputerName
-    $prevManufacturer.Text = if ($info.Manufacturer) { $info.Manufacturer } else { "-" }
-    $prevModel.Text        = if ($info.Model) { $info.Model } else { "-" }
-    $prevWorkgroup.Text    = $info.Workgroup
-    $prevOwner.Text        = if ($info.RegisteredOwner) { $info.RegisteredOwner } else { "VUONGTT" }
+    if ($prevComputerName) { $prevComputerName.Text = $info.ComputerName }
+    if ($prevManufacturer) { $prevManufacturer.Text = if ($info.Manufacturer) { $info.Manufacturer } else { "-" } }
+    if ($prevModel)        { $prevModel.Text        = if ($info.Model) { $info.Model } else { "-" } }
+    if ($prevWorkgroup)    { $prevWorkgroup.Text    = $info.Workgroup }
+    if ($prevOwner)        { $prevOwner.Text        = if ($info.RegisteredOwner) { $info.RegisteredOwner } else { "VUONGTT" } }
 
-    $txtCustomizeLog.Text  = "Đã tải thông tin hiện tại."
+    if ($txtCustomizeLog)  { $txtCustomizeLog.Text  = "Đã tải thông tin hiện tại." }
 }
 
 # Live preview sync as user types
-$txtCustomComputerName.Add_TextChanged({ $prevComputerName.Text = $txtCustomComputerName.Text })
-$txtCustomManufacturer.Add_TextChanged({ $prevManufacturer.Text = $txtCustomManufacturer.Text })
-$txtCustomModel.Add_TextChanged({ $prevModel.Text = $txtCustomModel.Text })
-$txtCustomWorkgroup.Add_TextChanged({ $prevWorkgroup.Text = $txtCustomWorkgroup.Text })
-$txtCustomOwner.Add_TextChanged({ $prevOwner.Text = $txtCustomOwner.Text })
+if ($txtCustomComputerName) { $txtCustomComputerName.Add_TextChanged({ $prevComputerName.Text = $txtCustomComputerName.Text }) }
+if ($txtCustomManufacturer) { $txtCustomManufacturer.Add_TextChanged({ $prevManufacturer.Text = $txtCustomManufacturer.Text }) }
+if ($txtCustomModel)        { $txtCustomModel.Add_TextChanged({ $prevModel.Text = $txtCustomModel.Text }) }
+if ($txtCustomWorkgroup)    { $txtCustomWorkgroup.Add_TextChanged({ $prevWorkgroup.Text = $txtCustomWorkgroup.Text }) }
+if ($txtCustomOwner)        { $txtCustomOwner.Add_TextChanged({ $prevOwner.Text = $txtCustomOwner.Text }) }
+
+# Toggle Domain / Workgroup panel
+if ($rbMemberWorkgroup) {
+    $rbMemberWorkgroup.Add_Checked({
+        if ($pnlWorkgroupContainer) { $pnlWorkgroupContainer.Visibility = "Visible" }
+        if ($pnlDomainContainer)    { $pnlDomainContainer.Visibility    = "Collapsed" }
+    })
+}
+if ($rbMemberDomain) {
+    $rbMemberDomain.Add_Checked({
+        if ($pnlDomainContainer)    { $pnlDomainContainer.Visibility    = "Visible" }
+        if ($pnlWorkgroupContainer) { $pnlWorkgroupContainer.Visibility = "Collapsed" }
+    })
+}
+
+# Open Windows Native Dialog SystemPropertiesComputerName
+if ($btnOpenSystemPropertiesComputerName) {
+    $btnOpenSystemPropertiesComputerName.Add_Click({
+        [void](Open-VUONGTTSystemPropertiesComputerNameDialog)
+    })
+}
+
+# Rename Computer
+if ($btnRenameComputerDirect) {
+    $btnRenameComputerDirect.Add_Click({
+        $newName = if ($txtCustomComputerName) { $txtCustomComputerName.Text } else { "" }
+        $res = Invoke-VUONGTTRenameComputer -NewName $newName
+        if ($txtCustomizeLog) { $txtCustomizeLog.Text = $res.Message }
+        if ($res.Success) {
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đổi tên máy thành công (Cần khởi động lại máy)" }
+            [System.Windows.MessageBox]::Show($res.Message, "Thông Báo Đổi Tên Máy", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } else {
+            [System.Windows.MessageBox]::Show($res.Message, "Cảnh Báo Đổi Tên Máy", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        }
+    })
+}
+
+# Join Domain / Workgroup
+if ($btnJoinDomainDirect) {
+    $btnJoinDomainDirect.Add_Click({
+        if ($rbMemberDomain -and $rbMemberDomain.IsChecked) {
+            $dName = if ($txtDomainName) { $txtDomainName.Text.Trim() } else { "" }
+            $dUser = if ($txtDomainUser) { $txtDomainUser.Text.Trim() } else { "" }
+            $dPass = if ($pwdDomainPass) { $pwdDomainPass.Password } else { "" }
+
+            if ([string]::IsNullOrWhiteSpace($dName) -or [string]::IsNullOrWhiteSpace($dUser)) {
+                [System.Windows.MessageBox]::Show("Vui lòng nhập đầy đủ Tên Domain và Tài khoản Domain Admin!", "Thiếu Thông Tin Domain", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                return
+            }
+
+            $confirm = [System.Windows.MessageBox]::Show("Bạn có chắc chắn muốn gia nhập máy tính vào Domain '$dName' không?`n`nQuá trình này cần kết nối mạng đến máy chủ DC và tài khoản quản trị Domain.", "Xác Nhận Join Domain", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+            if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+            if ($txtCustomizeLog) { $txtCustomizeLog.Text = "Đang kết nối và gia nhập Domain '$dName'..." }
+            $res = Invoke-VUONGTTJoinDomain -DomainName $dName -DomainUser $dUser -DomainPassword $dPass
+            if ($txtCustomizeLog) { $txtCustomizeLog.Text = $res.Message }
+            if ($res.Success) {
+                if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Gia nhập Domain thành công" }
+                [System.Windows.MessageBox]::Show($res.Message, "Gia Nhập Domain Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            } else {
+                [System.Windows.MessageBox]::Show($res.Message, "Lỗi Gia Nhập Domain", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        } else {
+            $wgName = if ($txtCustomWorkgroup) { $txtCustomWorkgroup.Text.Trim() } else { "WORKGROUP" }
+            $res = Invoke-VUONGTTJoinWorkgroup -WorkgroupName $wgName
+            if ($txtCustomizeLog) { $txtCustomizeLog.Text = $res.Message }
+            if ($res.Success) {
+                if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Cập nhật Workgroup thành công" }
+                [System.Windows.MessageBox]::Show($res.Message, "Thiết Lập Workgroup", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            } else {
+                [System.Windows.MessageBox]::Show($res.Message, "Lỗi Thiết Lập Workgroup", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+}
 
 $btnApplyCustomize.Add_Click({
     $mfg = if ($txtCustomManufacturer.Text -notlike "Ví dụ*") { $txtCustomManufacturer.Text } else { "" }
