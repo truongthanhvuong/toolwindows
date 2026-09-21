@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.74"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.75"
         Height="780" Width="1280"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
@@ -325,7 +325,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.908.74 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.908.75 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -2806,6 +2806,7 @@
                                 <WrapPanel>
                                     <Button x:Name="btnStartOnlineWindowsInstall" Content="🚀 Bắt Đầu Cài Windows Online (1-Click Deploy)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="340" Height="36" FontWeight="Bold" Padding="18,0,18,0" Margin="0,0,8,0"/>
                                     <Button x:Name="btnOpenAutoWinFolder" Content="📂 Mở Thư Mục Cài Đặt" Background="#475569" Style="{StaticResource ActionBtn}" Height="36" Padding="14,0,14,0" Margin="0,0,8,0"/>
+                                    <Button x:Name="btnEjectMountedIso" Content="⏏️ Dỡ Ổ Đĩa Ảo (Eject)" Background="#475569" Style="{StaticResource ActionBtn}" Height="36" Padding="14,0,14,0" Margin="0,0,8,0"/>
                                     <Button x:Name="btnOpenOfficialDownloadPage" Content="🌐 Trang Tải ISO Microsoft" Background="#334155" Style="{StaticResource ActionBtn}" Height="36" Padding="14,0,14,0"/>
                                 </WrapPanel>
                             </StackPanel>
@@ -3191,7 +3192,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.74" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.75" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

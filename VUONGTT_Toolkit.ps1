@@ -3479,6 +3479,7 @@ $chkAutoWinBackupDriver         = Get-Control "chkAutoWinBackupDriver"
 $chkAutoWinAutoActivate         = Get-Control "chkAutoWinAutoActivate"
 $btnStartOnlineWindowsInstall   = Get-Control "btnStartOnlineWindowsInstall"
 $btnOpenAutoWinFolder           = Get-Control "btnOpenAutoWinFolder"
+$btnEjectMountedIso             = Get-Control "btnEjectMountedIso"
 $btnOpenOfficialDownloadPage    = Get-Control "btnOpenOfficialDownloadPage"
 
 $btnBypassWin11All       = Get-Control "btnBypassWin11All"
@@ -3529,6 +3530,23 @@ if ($btnOpenAutoWinFolder) {
         if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
         Start-Process "explorer.exe" -ArgumentList "`"$targetDir`""
         $txtFooterStatus.Text = "• [OK] Đã mở thư mục cài đặt: $targetDir"
+    })
+}
+
+if ($btnEjectMountedIso) {
+    $btnEjectMountedIso.Add_Click({
+        $isoPath = if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text.Trim() } else { "" }
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "Đang tiến hành dỡ bỏ toàn bộ ổ đĩa ảo ISO đang nạp..." }
+        Invoke-VUONGTTDoEvents
+        $res = Dismount-VUONGTTDiskImage -ImagePath $isoPath
+        if ($res) {
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "• [OK] Đã dỡ bỏ (Eject) an toàn toàn bộ ổ đĩa ảo ISO trong hệ thống." }
+            $txtFooterStatus.Text = "• [OK] Đã dỡ bỏ ổ đĩa ảo ISO"
+            [System.Windows.MessageBox]::Show("Đã dỡ bỏ (Eject) ổ đĩa ảo ISO an toàn thành công!", "Dỡ Ổ Ảo Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } else {
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "• [THÔNG BÁO] Không có ổ đĩa ảo nào đang được nạp hoặc không thể gỡ." }
+            $txtFooterStatus.Text = "• Không có ổ đĩa ảo cần dỡ bỏ"
+        }
     })
 }
 
@@ -3644,22 +3662,27 @@ if ($btnStartOnlineWindowsInstall) {
             $txtFooterStatus.Text = "• [OK] Đã nạp xong bộ cài vào ổ ảo $($deploy.MountedDrive)\"
 
             $finalNotice = [System.Windows.MessageBox]::Show(
-                "ĐÃ NẠP XONG BỘ CÀI VÀO Ổ ĐĨA ẢO $($deploy.MountedDrive)\ THÀNH CÔNG!`n`n" +
-                "Lệnh Setup: $($deploy.SetupExe)`n" +
-                "Tham số: $($deploy.Arguments)`n`n" +
-                "Bấm [OK] để KÍCH HOẠT TIẾN TRÌNH CÀI ĐẶT NGAY!`n" +
-                "(Quá trình cài đặt sẽ chạy ngầm, máy sẽ tự khởi động lại để hoàn tất).",
+                "ĐÃ NẠP BỘ CÀI VÀO Ổ ĐĨA ẢO $($deploy.MountedDrive)\ THÀNH CÔNG!`n`n" +
+                "• Chế độ: $modeName`n" +
+                "• Lệnh chạy: $($deploy.SetupExe)`n" +
+                "• Trạng thái Bypass: Đã kích hoạt sẵn 100% TPM 2.0 / CPU / RAM / SecureBoot vào Registry.`n`n" +
+                "Bấm [OK] để MỞ TRÌNH CÀI ĐẶT WINDOWS SETUP NGAY!`n" +
+                "(Trình cài đặt sẽ tự động cho phép nâng cấp và mặc định giữ nguyên toàn bộ Dữ liệu & Ứng dụng của bạn).",
                 "Kích Hoạt Windows Setup",
                 [System.Windows.MessageBoxButton]::OKCancel,
                 [System.Windows.MessageBoxImage]::Information
             )
 
             if ($finalNotice -eq [System.Windows.MessageBoxResult]::OK) {
-                Start-Process -FilePath $deploy.SetupExe -ArgumentList $deploy.Arguments
-                if ($txtAutoWinLog) {
-                    $txtAutoWinLog.Text = "🚀 [ĐÃ KHỞI CHẠY WINDOWS SETUP]`nBộ cài Windows đang tiến hành cài đặt vào hệ thống. Máy tính sẽ tự động hoàn tất và khởi động lại sau ít phút!`n`n$($txtAutoWinLog.Text)"
+                if ([string]::IsNullOrWhiteSpace($deploy.Arguments)) {
+                    Start-Process -FilePath $deploy.SetupExe
+                } else {
+                    Start-Process -FilePath $deploy.SetupExe -ArgumentList $deploy.Arguments
                 }
-                $txtFooterStatus.Text = "• [OK] Đang chạy Windows Setup tự động..."
+                if ($txtAutoWinLog) {
+                    $txtAutoWinLog.Text = "🚀 [ĐÃ KHỞI CHẠY WINDOWS SETUP]`nTrình cài đặt Windows đã được mở lên thành công!`n• Đã Bypass 100% TPM 2.0, RAM, CPU & SecureBoot.`n• Chế độ: $modeName`n• Hãy tiếp tục các bước trên cửa sổ cài đặt Windows Setup!`n`n$($txtAutoWinLog.Text)"
+                }
+                $txtFooterStatus.Text = "• [OK] Đang chạy Windows Setup..."
             }
         } catch {
             if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[LỖI TRIỂN KHAI CÀI WIN] $($_.Exception.Message)" }

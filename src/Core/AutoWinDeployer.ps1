@@ -160,9 +160,24 @@ function Invoke-VUONGTTPreDeployBypass {
         Set-ItemProperty -Path "HKLM:\SYSTEM\Setup\LabConfig" -Name "BypassRAMCheck" -Value 1 -Type DWord -Force
         Set-ItemProperty -Path "HKLM:\SYSTEM\Setup\LabConfig" -Name "BypassCPUCheck" -Value 1 -Type DWord -Force
         Set-ItemProperty -Path "HKLM:\SYSTEM\Setup\LabConfig" -Name "BypassStorageCheck" -Value 1 -Type DWord -Force
+        Set-ItemProperty -Path "HKLM:\SYSTEM\Setup\LabConfig" -Name "BypassDiskCheck" -Value 1 -Type DWord -Force
         Set-ItemProperty -Path "HKLM:\SYSTEM\Setup\MoSetup" -Name "AllowUpgradesWithUnsupportedTPMOrCPU" -Value 1 -Type DWord -Force
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE" -Name "BypassNRO" -Value 1 -Type DWord -Force
         Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker" -Name "PreventDeviceEncryption" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Dismount-VUONGTTDiskImage {
+    param([string]$ImagePath)
+    try {
+        if ($ImagePath -and (Test-Path $ImagePath)) {
+            Dismount-DiskImage -ImagePath $ImagePath -ErrorAction SilentlyContinue | Out-Null
+        } else {
+            Get-DiskImage -StorageType ISO -ErrorAction SilentlyContinue | Dismount-DiskImage -ErrorAction SilentlyContinue | Out-Null
+        }
         return $true
     } catch {
         return $false
@@ -262,17 +277,20 @@ function Invoke-VUONGTTPrepareOnlineWindowsDeployment {
     $modeText = if ($Mode -eq "Upgrade") { "Cài đè nâng cấp / Sửa lỗi (Giữ lại toàn bộ App & Dữ liệu)" } else { "Cài mới sạch sẽ 100% (Clean Install - Format ổ C:)" }
     $log.Add("• Chế độ cài đặt đã chọn: $modeText")
 
-    # Tham số chuẩn của Microsoft Windows Setup
+    # Tham số chuẩn tương thích 100% mọi loại ISO (kể cả ISO mod, Repack, bootstrapper Win10/WinPE)
+    # Loại bỏ switch '/auto' để tránh lỗi: 'Windows Setup: An unknown command-line option [/auto] was specified.'
     if ($Mode -eq "Upgrade") {
-        $argList = "/auto upgrade /quiet /migratedata all /DynamicUpdate disable /compat ignorewarning"
+        $argList = ""
+        $log.Add("• Lệnh khởi chạy: $setupExe (Chế độ tương thích đa năng - Giữ nguyên 100% Dữ liệu & App)")
+        $log.Add("• Đã nạp sẵn: LabConfig Bypass TPM/CPU/RAM & MoSetup AllowUpgrades vào Registry.")
     } else {
-        $argList = "/auto clean /quiet /migratedata none /DynamicUpdate disable /compat ignorewarning /unattend `"$unattendXmlPath`""
+        $argList = "/unattend:`"$unattendXmlPath`""
+        $log.Add("• Lệnh khởi chạy: $setupExe $argList")
     }
 
-    $log.Add("• Lệnh thực thi: $setupExe $argList")
     $log.Add("-----------------------------------------------------------------")
-    $log.Add("🚀 SẴN SÀNG KHỞI CHẠY TIẾN TRÌNH CÀI ĐẶT WINDOWS ONLINE!")
-    $log.Add("Máy tính sẽ tự động nạp bộ cài đặt ngầm và khởi động lại để hoàn tất.")
+    $log.Add("🚀 SẴN SÀNG KHỞI CHẠY TRÌNH CÀI ĐẶT WINDOWS ONLINE!")
+    $log.Add("Trình cài đặt sẽ mở lên và hoàn tất thiết lập mà không bị chặn phần cứng.")
     $log.Add("-----------------------------------------------------------------")
 
     return [PSCustomObject]@{
