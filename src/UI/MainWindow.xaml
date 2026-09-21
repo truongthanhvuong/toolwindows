@@ -1,4 +1,4 @@
-﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="VUONGTT Tool Pro 2026 - v20.5.908.71"
         Height="780" Width="1280"
@@ -438,7 +438,7 @@
                         <Button x:Name="btnMenuBackupDriver" Style="{StaticResource MenuBtn}" Tag="BackupDriver">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="💾" Margin="0,0,8,0"/>
-                                <TextBlock Text="Backup Driver Thiết Bị"/>
+                                <TextBlock Text="Quản Lý &amp; Cập Nhật Driver"/>
                             </StackPanel>                        </Button>
                         <Button x:Name="btnMenuDevMgmt" Style="{StaticResource MenuBtn}" Tag="DevMgmt">
                             <StackPanel Orientation="Horizontal">
@@ -2619,42 +2619,96 @@
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
 
-                <!-- ================= PAGE 17: SAO LƯU & KHÔI PHỤC DRIVER ================= -->
+                <!-- ================= PAGE 17: QUẢN LÝ, KIỂM TRA & CẬP NHẬT DRIVER ================= -->
                 <ScrollViewer x:Name="pageBackupDriver" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
+                        <!-- Banner Header -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="💾 SAO LƯU &amp; KHÔI PHỤC DRIVER THIẾT BỊ HỆ THỐNG" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
-                                <TextBlock Text="Trích xuất toàn diện Driver phần cứng (.inf) ra thư mục sao lưu và khôi phục nhanh chóng khi cài lại Windows." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            </StackPanel>                        </Border>
+                                <TextBlock Text="💾 QUẢN LÝ, KIỂM TRA &amp; CẬP NHẬT DRIVER TOÀN DIỆN" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Tự động quét chẩn đoán phần cứng, tìm và cài đặt toàn bộ Driver qua Microsoft Update &amp; SDIO, sao lưu và khôi phục Driver siêu tốc." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
 
+                        <!-- Card 1: Kiểm Tra Máy & Chẩn Đoán Driver Phần Cứng -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="💾 CÔNG CỤ SAO LƯU DRIVER (BACKUP)" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <TextBlock Text="🔍 KIỂM TRA MÁY &amp; CHẨN ĐOÁN DRIVER PHẦN CỨNG" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <!-- Hardware Badge Grid -->
+                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="12,10,12,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="MÁY TÍNH / MODEL" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock x:Name="txtDriverMachineInfo" Text="Đang quét..." FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="TỔNG THIẾT BỊ PNP" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock x:Name="txtDriverTotalDevices" Text="--" FontSize="13" FontWeight="Bold" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="THIẾU / LỖI DRIVER (!)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock x:Name="txtDriverIssuesCount" Text="--" FontSize="13" FontWeight="Bold" Foreground="#047857" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3">
+                                            <TextBlock Text="CARD MÀN HÌNH (VGA)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock x:Name="txtDriverGpuStatus" Text="--" FontSize="13" FontWeight="SemiBold" Foreground="#047857" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
                                 <WrapPanel>
-                                    <Button x:Name="btnBackupAllDrivers" Content="💾 Sao Lưu Toàn Bộ Driver Hệ Thống" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="270" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnBackupPrinterDrivers" Content="🖨️ Sao Lưu Riêng Driver Máy In" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnExportDriverList" Content="📋 Xuất Danh Sách Driver (.TXT)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnOpenBackupFolder" Content="📂 Mở Thư Mục C:\Backup_Drivers" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnCheckAllDrivers" Content="🔍 Quét &amp; Kiểm Tra Toàn Bộ Driver" Background="#2563EB" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnViewDriverIssues" Content="⚠️ Xem Chi Tiết Thiết Bị Lỗi (!)" Background="#BE123C" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnOpenDeviceManagerDirect" Content="🛠️ Mở Device Manager (devmgmt.msc)" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0"/>
                                 </WrapPanel>
-                            </StackPanel>                        </Border>
+                            </StackPanel>
+                        </Border>
 
+                        <!-- Card 2: Tự Động Tìm & Cập Nhật Toàn Bộ Driver Cho Máy -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="🔄 KHÔI PHỤC &amp; QUẢN LÝ THIẾT BỊ (RESTORE &amp; DEVICE)" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <TextBlock Text="⚡ TỰ ĐỘNG TÌM &amp; CẬP NHẬT TOÀN BỘ DRIVER CHO MÁY" FontSize="15" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Text="Quét lại bus phần cứng, kết nối máy chủ Microsoft Update tải và cài đặt tự động mọi Driver còn thiếu hoặc phiên bản mới nhất." FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                                 <WrapPanel>
-                                    <Button x:Name="btnRestoreDrivers" Content="🔄 Khôi Phục Driver Từ Thư Mục Backup" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="280" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnCheckMissingDrivers" Content="⚠️ Quét Thiết Bị Thiếu Driver (!)" Background="#BE123C" Style="{StaticResource ActionBtn}" MinWidth="250" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnOpenDeviceManagerDirect" Content="🛠️ Mở Device Manager (devmgmt.msc)" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="270" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnAutoUpdateAllDrivers" Content="⚡ Cập Nhật Toàn Bộ Driver Tự Động (Microsoft Update)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="360" FontWeight="Bold" Padding="16,0,16,0"/>
+                                    <Button x:Name="btnLaunchSDIO" Content="🚀 Mở Bộ Cài Driver SDIO (Tự Động/Offline)" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="280" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnLaunch3DPChip" Content="💡 Cài Driver Nhanh 3DP Chip (CPU/VGA/Sound)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="290" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnOpenOEMDriverPortal" Content="🌐 Tải Driver Chính Hãng (Dell/HP/Asus/Lenovo...)" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="310" Padding="14,0,14,0"/>
                                 </WrapPanel>
-                            </StackPanel>                        </Border>
+                            </StackPanel>
+                        </Border>
 
+                        <!-- Card 3: Công Cụ Sao Lưu & Khôi Phục Driver -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="💾 SAO LƯU &amp; KHÔI PHỤC DRIVER (BACKUP &amp; RESTORE)" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <WrapPanel>
+                                    <Button x:Name="btnBackupAllDrivers" Content="💾 Sao Lưu Toàn Bộ Driver Hệ Thống" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnBackupPrinterDrivers" Content="🖨️ Sao Lưu Riêng Driver Máy In" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnRestoreDrivers" Content="🔄 Khôi Phục Driver Từ Thư Mục Backup" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="270" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnExportDriverList" Content="📋 Xuất Danh Sách Driver (.TXT)" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="14,0,14,0"/>
+                                    <Button x:Name="btnOpenBackupFolder" Content="📂 Mở Thư Mục C:\Backup_Drivers" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="14,0,14,0"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 4: Nhật Ký Thực Thi -->
                         <Border Style="{StaticResource CardBorder}">
                             <StackPanel>
-                                <TextBlock Text="📄 Nhật Ký Quá Trình Sao Lưu &amp; Khôi Phục Driver" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
-                                <TextBox x:Name="txtDriverLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="150" Text="Sẵn sàng sao lưu hoặc nạp lại Driver cho thiết bị phần cứng..."/>
-                            </StackPanel>                        </Border>
-                    </StackPanel>                </ScrollViewer>
+                                <Grid Margin="0,0,0,6">
+                                    <TextBlock Text="📄 Nhật Ký Kiểm Tra &amp; Cập Nhật Driver Hệ Thống" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <Button x:Name="btnClearDriverLog" Content="🧹 Xóa Log" Background="#64748B" Style="{StaticResource ActionBtn}" Height="26" Width="80" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <TextBox x:Name="txtDriverLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" FontSize="12.5" Height="170" Text="Sẵn sàng quét kiểm tra phần cứng và cập nhật toàn bộ Driver cho máy tính..."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <!-- ================= PAGE 18: CÀI WIN & BYPASS ================= -->
                 <ScrollViewer x:Name="pageAutoWin" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">

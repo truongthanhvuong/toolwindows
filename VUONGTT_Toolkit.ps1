@@ -1,4 +1,4 @@
-﻿<#
+<#
 ========================================================================================
    VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.908.47
    VUONGTT Tool Pro 2026 - Professional
@@ -243,7 +243,7 @@ $pageTitlesVI = @{
     "Tweaks"       = @{ Title = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"; Icon = "⚡" }
     "Config"       = @{ Title = "Cấu Hình Tính Năng & Sửa Lỗi Hệ Thống"; Icon = "🛠️" }
     "PrinterLAN"   = @{ Title = "Sửa Lỗi Máy In (87 Chức Năng)"; Icon = "🖨️" }
-    "BackupDriver" = @{ Title = "Sao Lưu & Khôi Phục Driver Thiết Bị"; Icon = "💾" }
+    "BackupDriver" = @{ Title = "Quản Lý, Kiểm Tra & Cập Nhật Driver"; Icon = "💾" }
     "DevMgmt"      = @{ Title = "Quản Lý Thiết Bị (Device Manager)"; Icon = "🛠️" }
     "Activation"   = @{ Title = "Kích Hoạt (MAS HWID)"; Icon = "🔑" }
     "BitLocker"    = @{ Title = "Quản Lý & Tắt BitLocker - EFS"; Icon = "🔒" }
@@ -269,7 +269,7 @@ $pageTitlesEN = @{
     "Tweaks"       = @{ Title = "System Cleaner & Tweaks Pro"; Icon = "⚡" }
     "Config"       = @{ Title = "Windows Config & Fixes Manager"; Icon = "🛠️" }
     "PrinterLAN"   = @{ Title = "Printer Repair (87 Tools)"; Icon = "🖨️" }
-    "BackupDriver" = @{ Title = "Backup & Restore Drivers"; Icon = "💾" }
+    "BackupDriver" = @{ Title = "Manage, Check & Update Drivers"; Icon = "💾" }
     "DevMgmt"      = @{ Title = "Open Device Manager"; Icon = "🛠️" }
     "Activation"   = @{ Title = "Activate Windows & Office"; Icon = "🔑" }
     "BitLocker"    = @{ Title = "Manage BitLocker - EFS"; Icon = "🔒" }
@@ -393,7 +393,10 @@ function Switch-Tab {
         "Cleaner"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro." }
         "Tweaks"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro." }
         "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
-        "BackupDriver" { $txtFooterStatus.Text = "• [OK] Đang ở trang Sao Lưu & Khôi Phục Driver Thiết Bị." }
+        "BackupDriver" { 
+            $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." }
+            Refresh-DriverStatusBadge
+        }
         "DevMgmt"      { 
             $txtFooterStatus.Text = "• [OK] Đã mở trình quản lý thiết bị Device Manager (devmgmt.msc)"
             Start-Process "devmgmt.msc"
@@ -465,7 +468,7 @@ function Set-ToolkitLanguage {
             "btnMenuCleaner"      = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"
             "btnMenuConfig"       = "Cấu Hình & Sửa Lỗi (Config)"
             "btnMenuPrinterLAN"   = "Sửa Lỗi Máy In (87 Chức Năng)"
-            "btnMenuBackupDriver" = "Backup Driver Thiết Bị"
+            "btnMenuBackupDriver" = "Quản Lý & Cập Nhật Driver"
             "btnMenuDevMgmt"      = "Mở Device Manager"
             "btnMenuActivation"   = "Kích Hoạt (MAS HWID)"
             "btnMenuBitLocker"    = "Tắt BitLocker - EFS"
@@ -521,7 +524,7 @@ function Set-ToolkitLanguage {
             "btnMenuCleaner"      = "System Cleaner & Tweaks Pro"
             "btnMenuConfig"       = "Windows Config & Fixes"
             "btnMenuPrinterLAN"   = "Printer Repair (87 Tools)"
-            "btnMenuBackupDriver" = "Backup & Restore Drivers"
+            "btnMenuBackupDriver" = "Manage & Update Drivers"
             "btnMenuDevMgmt"      = "Open Device Manager"
             "btnMenuActivation"   = "Activate Windows & Office"
             "btnMenuBitLocker"    = "Manage BitLocker - EFS"
@@ -3196,16 +3199,180 @@ if ($btnOpenFontFolder) {
 }
 
 # =========================================================================
-# MODULE 11: SAO LƯU & KHÔI PHỤC DRIVER
+# MODULE 11: QUẢN LÝ, KIỂM TRA & CẬP NHẬT DRIVER TOÀN DIỆN
 # =========================================================================
+$txtDriverMachineInfo        = Get-Control "txtDriverMachineInfo"
+$txtDriverTotalDevices       = Get-Control "txtDriverTotalDevices"
+$txtDriverIssuesCount        = Get-Control "txtDriverIssuesCount"
+$txtDriverGpuStatus          = Get-Control "txtDriverGpuStatus"
+
+$btnCheckAllDrivers          = Get-Control "btnCheckAllDrivers"
+$btnViewDriverIssues         = Get-Control "btnViewDriverIssues"
+$btnOpenDeviceManagerDirect  = Get-Control "btnOpenDeviceManagerDirect"
+
+$btnAutoUpdateAllDrivers     = Get-Control "btnAutoUpdateAllDrivers"
+$btnLaunchSDIO               = Get-Control "btnLaunchSDIO"
+$btnLaunch3DPChip            = Get-Control "btnLaunch3DPChip"
+$btnOpenOEMDriverPortal      = Get-Control "btnOpenOEMDriverPortal"
+
 $btnBackupAllDrivers         = Get-Control "btnBackupAllDrivers"
 $btnBackupPrinterDrivers     = Get-Control "btnBackupPrinterDrivers"
 $btnExportDriverList         = Get-Control "btnExportDriverList"
 $btnOpenBackupFolder         = Get-Control "btnOpenBackupFolder"
 $btnRestoreDrivers           = Get-Control "btnRestoreDrivers"
 $btnCheckMissingDrivers      = Get-Control "btnCheckMissingDrivers"
-$btnOpenDeviceManagerDirect  = Get-Control "btnOpenDeviceManagerDirect"
+$btnClearDriverLog           = Get-Control "btnClearDriverLog"
 $txtDriverLog                = Get-Control "txtDriverLog"
+
+function Refresh-DriverStatusBadge {
+    try {
+        $diag = Get-VUONGTTDeepDriverDiagnostic
+        if ($txtDriverMachineInfo) {
+            $txtDriverMachineInfo.Text = "$($diag.Manufacturer) $($diag.Model)"
+        }
+        if ($txtDriverTotalDevices) {
+            $txtDriverTotalDevices.Text = "$($diag.TotalDevices) Thiết bị"
+        }
+        if ($txtDriverIssuesCount) {
+            if ($diag.IssueCount -gt 0) {
+                $txtDriverIssuesCount.Text = "$($diag.IssueCount) Lỗi / Thiếu (!)"
+                $txtDriverIssuesCount.Foreground = [System.Windows.Media.Brushes]::Crimson
+            } else {
+                $txtDriverIssuesCount.Text = "0 (Tối ưu [OK])"
+                $txtDriverIssuesCount.Foreground = [System.Windows.Media.Brushes]::ForestGreen
+            }
+        }
+        if ($txtDriverGpuStatus) {
+            if ($diag.HasGpuWarning) {
+                $txtDriverGpuStatus.Text = "Cảnh báo / Thiếu VGA (!)"
+                $txtDriverGpuStatus.Foreground = [System.Windows.Media.Brushes]::Crimson
+            } else {
+                $txtDriverGpuStatus.Text = "$($diag.GpuStatus)"
+                $txtDriverGpuStatus.Foreground = [System.Windows.Media.Brushes]::ForestGreen
+            }
+        }
+    } catch {}
+}
+
+if ($btnCheckAllDrivers) {
+    $btnCheckAllDrivers.Add_Click({
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang quét sâu toàn bộ phần cứng PnP và chẩn đoán Driver..." }
+        Invoke-VUONGTTDoEvents
+        try {
+            $diag = Get-VUONGTTDeepDriverDiagnostic
+            Refresh-DriverStatusBadge
+
+            $report = @(
+                "============================================================",
+                "  BÁO CÁO CHẨN ĐOÁN DRIVER & PHẦN CỨNG MÁY TÍNH",
+                "  Thời gian kiểm tra: $(Get-Date -Format 'HH:mm:ss dd/MM/yyyy')",
+                "============================================================",
+                "• Máy tính / Model: $($diag.Manufacturer) $($diag.Model)",
+                "• Số Serial / Service Tag: $(if ($diag.SerialNumber) { $diag.SerialNumber } else { 'N/A' })",
+                "• Tổng số thiết bị phần cứng PnP: $($diag.TotalDevices) thiết bị",
+                "• Tình trạng Card đồ họa (GPU): $($diag.GpuStatus)"
+            )
+
+            if ($diag.IssueCount -gt 0) {
+                $report += "⚠️ PHÁT HIỆN $($diag.IssueCount) THIẾT BỊ THIẾU DRIVER HOẶC BỊ LỖI CHẤM THAN VÀNG (!):"
+                $idx = 0
+                foreach ($iss in $diag.IssueList) {
+                    $idx++
+                    $report += "  [$idx] $($iss.Name)"
+                    $report += "      • Hãng / Vendor: $($iss.Vendor)"
+                    $report += "      • Trạng thái lỗi: $($iss.Description)"
+                    if ($iss.HardwareID) { $report += "      • Hardware ID: $($iss.HardwareID)" }
+                    $report += "      👉 Giải pháp: $($iss.Suggestion)"
+                }
+                $report += "`n💡 Bấm 'Cập Nhật Toàn Bộ Driver Tự Động' hoặc 'Xem Chi Tiết Thiết Bị Lỗi' để khắc phục ngay."
+            } else {
+                $report += "`n🎉 KẾT QUẢ: TOÀN BỘ DRIVER HOẠT ĐỘNG HOÀN HẢO!"
+                $report += "• Không có thiết bị nào bị thiếu Driver hoặc có mã lỗi phần cứng."
+            }
+
+            if ($txtDriverLog) { $txtDriverLog.Text = ($report -join "`n") }
+            $txtFooterStatus.Text = "• [OK] Đã quét xong phần cứng: $($diag.TotalDevices) thiết bị, $($diag.IssueCount) lỗi driver."
+        } catch {
+            if ($txtDriverLog) { $txtDriverLog.Text = "[LỖI KIỂM TRA DRIVER] $($_.Exception.Message)" }
+        }
+    })
+}
+
+if ($btnViewDriverIssues) {
+    $btnViewDriverIssues.Add_Click({
+        Show-VUONGTTDriverDoctorModal
+    })
+}
+
+if ($btnAutoUpdateAllDrivers) {
+    $btnAutoUpdateAllDrivers.Add_Click({
+        if ($txtDriverLog) { 
+            $txtDriverLog.Text = "Đang kích hoạt quy trình tự động quét & cập nhật toàn bộ Driver qua Microsoft Update..." 
+        }
+        $btnAutoUpdateAllDrivers.IsEnabled = $false
+        Invoke-VUONGTTDoEvents
+
+        try {
+            $updateSummary = Invoke-VUONGTTAutoUpdateAllDrivers -OnProgress {
+                param($msg)
+                if ($txtDriverLog) {
+                    $txtDriverLog.Text = "$msg`n$($txtDriverLog.Text)"
+                }
+                Invoke-VUONGTTDoEvents
+            }
+            if ($txtDriverLog) { $txtDriverLog.Text = $updateSummary }
+            Refresh-DriverStatusBadge
+            $txtFooterStatus.Text = "• [OK] Quy trình cập nhật toàn bộ Driver đã hoàn tất!"
+            [System.Windows.MessageBox]::Show("Đã hoàn tất quy trình quét và cập nhật Driver qua Microsoft Update Catalog.`nChi tiết kết quả đã được ghi vào khung Nhật ký bên dưới.", "Cập Nhật Driver", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } catch {
+            if ($txtDriverLog) { $txtDriverLog.Text = "[LỖI CẬP NHẬT DRIVER] $($_.Exception.Message)" }
+        } finally {
+            $btnAutoUpdateAllDrivers.IsEnabled = $true
+        }
+    })
+}
+
+if ($btnLaunchSDIO) {
+    $btnLaunchSDIO.Add_Click({
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang kiểm tra và khởi chạy bộ cài Driver Snappy Driver Installer Origin (SDIO)..." }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "sdio" -OnProgress {
+            param($m)
+            if ($txtDriverLog) { $txtDriverLog.Text = "$m`n$($txtDriverLog.Text)" }
+            Invoke-VUONGTTDoEvents
+        }
+        if ($txtDriverLog) { $txtDriverLog.Text = "$res`n$($txtDriverLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] $res"
+    })
+}
+
+if ($btnLaunch3DPChip) {
+    $btnLaunch3DPChip.Add_Click({
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang kiểm tra và mở công cụ 3DP Chip..." }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "3dpchip" -OnProgress {
+            param($m)
+            if ($txtDriverLog) { $txtDriverLog.Text = "$m`n$($txtDriverLog.Text)" }
+            Invoke-VUONGTTDoEvents
+        }
+        if ($txtDriverLog) { $txtDriverLog.Text = "$res`n$($txtDriverLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] $res"
+    })
+}
+
+if ($btnOpenOEMDriverPortal) {
+    $btnOpenOEMDriverPortal.Add_Click({
+        $portal = Open-VUONGTTOfficialDriverPortal
+        if ($txtDriverLog) { 
+            $txtDriverLog.Text = "[CHÍNH HÃNG] Đã mở cổng hỗ trợ tải Driver chính hãng của hãng $($portal.Vendor):`n$($portal.Url)" 
+        }
+        $txtFooterStatus.Text = "• [OK] Đã mở trang hỗ trợ Driver $($portal.Vendor)"
+    })
+}
+
+if ($btnClearDriverLog) {
+    $btnClearDriverLog.Add_Click({
+        if ($txtDriverLog) { $txtDriverLog.Text = "" }
+    })
+}
 
 if ($btnBackupAllDrivers) {
     $btnBackupAllDrivers.Add_Click({

@@ -845,6 +845,122 @@ function Invoke-VUONGTTWindowsUpdateDriverScan {
     }
 }
 
+function Invoke-VUONGTTAutoUpdateAllDrivers {
+    param([scriptblock]$OnProgress = $null)
+
+    $log = [System.Collections.Generic.List[string]]::new()
+    $timestamp = (Get-Date).ToString("HH:mm:ss")
+    $log.Add("[$timestamp] === BẮT ĐẦU QUY TRÌNH QUÉT & CẬP NHẬT TOÀN BỘ DRIVER MÁY TÍNH ===")
+
+    # 1. Đảm bảo dịch vụ Windows Update & PnP đang chạy
+    try {
+        if ($OnProgress) { & $OnProgress "-> Đang kiểm tra và kích hoạt dịch vụ Windows Update & PnP..." }
+        Set-Service -Name "wuauserv" -StartupType Manual -ErrorAction SilentlyContinue
+        Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+    } catch {}
+
+    # 2. Ép nạp phần cứng mới cắm bằng pnputil
+    try {
+        if ($OnProgress) { & $OnProgress "-> Đang thực thi pnputil /scan-devices để nạp phần cứng mới..." }
+        & pnputil.exe /scan-devices 2>&1 | Out-Null
+        $log.Add("• [OK] Đã quét lại toàn bộ bus phần cứng Plug and Play.")
+    } catch {}
+
+    # 3. Kiểm tra chẩn đoán tình trạng Driver hiện tại
+    try {
+        if ($OnProgress) { & $OnProgress "-> Đang chẩn đoán chuyên sâu các thiết bị phần cứng..." }
+        $diag = Get-VUONGTTDeepDriverDiagnostic
+        $log.Add("• Máy tính: $($diag.Manufacturer) $($diag.Model)")
+        $log.Add("• Tổng thiết bị phần cứng PnP: $($diag.TotalDevices) thiết bị.")
+        if ($diag.IssueCount -gt 0) {
+            $log.Add("⚠️ Phát hiện $($diag.IssueCount) thiết bị chưa có Driver hoặc đang bị lỗi chấm than vàng (!):")
+            foreach ($iss in $diag.IssueList) {
+                $log.Add("   - $($iss.Name) (Hãng: $($iss.Vendor), Trạng thái: $($iss.Description))")
+            }
+        } else {
+            $log.Add("• [TỐT] Hiện không có thiết bị nào bị lỗi chấm than vàng.")
+        }
+    } catch {
+        $log.Add("• [CHÚ Ý] $($_.Exception.Message)")
+    }
+
+    # 4. Tìm kiếm Driver từ Microsoft Update Catalog
+    $updatesToInstall = $null
+    $foundCount = 0
+    try {
+        if ($OnProgress) { & $OnProgress "-> Đang kết nối Microsoft Update Catalog tìm bản cập nhật Driver..." }
+        $updateSession = New-Object -ComObject Microsoft.Update.Session
+        $updateSearcher = $updateSession.CreateUpdateSearcher()
+        $updateSearcher.ServerSelection = 2 # Microsoft Update
+        $searchResult = $updateSearcher.Search("IsInstalled=0 and Type='Driver'")
+        $foundCount = $searchResult.Updates.Count
+    } catch {
+        $log.Add("⚠️ Lỗi truy vấn dịch vụ Windows Update: $($_.Exception.Message)")
+    }
+
+    # 5. Tự động Tải và Cài đặt nếu tìm thấy Driver
+    if ($foundCount -gt 0) {
+        $log.Add("🎉 Tìm thấy $foundCount gói cập nhật Driver chính hãng từ Microsoft:")
+        for ($i = 0; $i -lt $foundCount; $i++) {
+            $upd = $searchResult.Updates.Item($i)
+            $log.Add("   [$($i+1)/$foundCount] $($upd.Title)")
+        }
+
+        # Tạo UpdateDownloader
+        try {
+            if ($OnProgress) { & $OnProgress "-> Đang tải về $foundCount gói Driver từ máy chủ Microsoft..." }
+            $downloader = $updateSession.CreateUpdateDownloader()
+            $downloader.Updates = $searchResult.Updates
+            $downloader.Priority = 3 # High priority
+            $downRes = $downloader.Download()
+            $log.Add("• [OK] Đã hoàn tất tải về các gói cài đặt Driver.")
+        } catch {
+            $log.Add("⚠️ Lỗi tải gói Driver: $($_.Exception.Message)")
+        }
+
+        # Tạo UpdateInstaller
+        try {
+            if ($OnProgress) { & $OnProgress "-> Đang tiến hành cài đặt toàn bộ Driver vào hệ điều hành..." }
+            $installer = $updateSession.CreateUpdateInstaller()
+            $installer.Updates = $searchResult.Updates
+            $installer.ForceQuiet = $true
+            $installRes = $installer.Install()
+
+            $successCount = 0
+            for ($i = 0; $i -lt $foundCount; $i++) {
+                $status = $installRes.GetUpdateResult($i)
+                $uTitle = $searchResult.Updates.Item($i).Title
+                if ($status.ResultCode -eq 2) {
+                    $log.Add("   ✔ Đã cài đặt thành công: $uTitle")
+                    $successCount++
+                } else {
+                    $log.Add("   ✖ Cài đặt không thành công ($($status.ResultCode)): $uTitle")
+                }
+            }
+
+            if ($installRes.RebootRequired) {
+                $log.Add("⚠️ [LƯU Ý] Một số Driver yêu cầu Khởi động lại máy tính để có hiệu lực hoàn toàn!")
+            }
+            $log.Add("• [HOÀN TẤT] Đã cài đặt thành công $successCount/$foundCount gói Driver!")
+        } catch {
+            $log.Add("⚠️ Lỗi cài đặt Driver: $($_.Exception.Message)")
+        }
+    } else {
+        $log.Add("• [KẾT QUẢ] Không có gói Driver mới nào đang chờ cài trên Microsoft Update.")
+        # Nếu vẫn còn thiết bị lỗi chấm than vàng (!), hướng dẫn giải pháp thay thế
+        if ($diag -and $diag.IssueCount -gt 0) {
+            $log.Add("💡 GỢI Ý XỬ LÝ: Máy vẫn còn $($diag.IssueCount) thiết bị thiếu Driver đặc thù của hãng.")
+            $log.Add("👉 Khuyến nghị: Bấm nút 'Mở Bộ Cài Driver SDIO' hoặc 'Tải Driver Chính Hãng' ở bên cạnh để cài trọn bộ.")
+        }
+    }
+
+    $log.Add("==========================================================")
+    $log.Add("🎉 HOÀN TẤT TIẾN TRÌNH KIỂM TRA & CẬP NHẬT DRIVER HỆ THỐNG")
+    $log.Add("==========================================================")
+
+    return ($log -join "`r`n")
+}
+
 function Invoke-VUONGTTLaunchDriverTool {
     param(
         [string]$ToolName,
