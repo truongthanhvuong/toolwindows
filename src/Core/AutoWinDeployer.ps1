@@ -8,11 +8,24 @@ Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.For
 if (-not ([System.Management.Automation.PSTypeName]'VUONGTT.AutoPilotHelper').Type) {
     Add-Type @"
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace VUONGTT {
     public static class AutoPilotHelper {
+        public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
         [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hWnd);
 
@@ -28,6 +41,9 @@ namespace VUONGTT {
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern int GetWindowTextLength(IntPtr hWnd);
+
         public static string GetText(IntPtr hWnd) {
             StringBuilder sb = new StringBuilder(512);
             GetWindowText(hWnd, sb, 512);
@@ -38,6 +54,37 @@ namespace VUONGTT {
             ShowWindow(hWnd, 9);
             SetForegroundWindow(hWnd);
             BringWindowToTop(hWnd);
+        }
+
+        public static IntPtr FindSetupWindow() {
+            Process[] procs = Process.GetProcesses();
+            List<int> targetPids = new List<int>();
+            foreach (var p in procs) {
+                string n = p.ProcessName.ToLower();
+                if (n == "setupprep" || n == "setuphost" || n == "setup") {
+                    targetPids.Add(p.Id);
+                    if (p.MainWindowHandle != IntPtr.Zero && IsWindowVisible(p.MainWindowHandle)) {
+                        return p.MainWindowHandle;
+                    }
+                }
+            }
+
+            IntPtr found = IntPtr.Zero;
+            EnumWindows((hWnd, lParam) => {
+                if (!IsWindowVisible(hWnd)) return true;
+                uint pid;
+                GetWindowThreadProcessId(hWnd, out pid);
+                if (targetPids.Contains((int)pid)) {
+                    int len = GetWindowTextLength(hWnd);
+                    if (len > 0) {
+                        found = hWnd;
+                        return false;
+                    }
+                }
+                return true;
+            }, IntPtr.Zero);
+
+            return found;
         }
     }
 }
@@ -205,6 +252,14 @@ function Invoke-VUONGTTPreDeployBypass {
         Set-ItemProperty -Path "HKLM:\SYSTEM\Setup\MoSetup" -Name "AllowUpgradesWithUnsupportedTPMOrCPU" -Value 1 -Type DWord -Force
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE" -Name "BypassNRO" -Value 1 -Type DWord -Force
         Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker" -Name "PreventDeviceEncryption" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        
+        # Vô hiệu hóa toàn diện tính năng Dynamic Update kết nối mạng trong Setup để không bao giờ bị đơ "Checking for updates"
+        $wuKeys = @("HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup", "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU")
+        foreach ($k in $wuKeys) {
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force | Out-Null }
+        }
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup" -Name "DynamicUpdate" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name "DoNotConnectToWindowsUpdateInternetLocations" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
         return $true
     } catch {
         return $false
@@ -406,27 +461,15 @@ function Invoke-VUONGTTAutoPilotStep {
     )
 
     try {
-        # 1. Tìm tiến trình Windows Setup đang chạy
-        $setupProcs = Get-Process -Name "setupprep", "setuphost", "setup" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }
-        $targetHwnd = [IntPtr]::Zero
+        # 1. Tìm chính xác cửa sổ Windows Setup thông qua Win32 Native API
+        $targetHwnd = [VUONGTT.AutoPilotHelper]::FindSetupWindow()
 
-        if ($setupProcs -and $setupProcs.Count -gt 0) {
-            $targetHwnd = $setupProcs[0].MainWindowHandle
-        } else {
-            # Thử tìm qua UIAutomation RootElement
-            try {
-                $root = [System.Windows.Automation.AutomationElement]::RootElement
-                if ($root) {
-                    $windows = $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
-                    foreach ($w in $windows) {
-                        $n = $w.Current.Name
-                        if ($n -match "Windows.*Setup" -or $n -match "Modern Setup Host" -or $n -match "Cài đặt Windows") {
-                            $targetHwnd = [IntPtr]$w.Current.NativeWindowHandle
-                            break
-                        }
-                    }
-                }
-            } catch {}
+        if ($targetHwnd -eq [IntPtr]::Zero) {
+            # Dự phòng qua Process MainWindowHandle
+            $setupProcs = Get-Process -Name "setupprep", "setuphost", "setup" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }
+            if ($setupProcs -and $setupProcs.Count -gt 0) {
+                $targetHwnd = $setupProcs[0].MainWindowHandle
+            }
         }
 
         if ($targetHwnd -eq [IntPtr]::Zero) { return $false }
@@ -442,39 +485,69 @@ function Invoke-VUONGTTAutoPilotStep {
             [VUONGTT.AutoPilotHelper]::ActivateWindow($targetHwnd)
         } catch {}
 
+        if (-not $setupWin) { return $false }
+
+        # Lấy toàn bộ Buttons, RadioButtons và Text trong cửa sổ
+        $allBtns = $null
+        try {
+            $allBtns = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
+                (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
+        } catch {}
+
+        # 1.5. Nếu đang ở màn hình Splash (chưa có nút bấm nào hoặc chỉ có logo Windows)
+        if (-not $allBtns -or $allBtns.Count -eq 0) {
+            # Đang ở Splash Screen nạp tài nguyên vào RAM -> Chờ đợi, tuyệt đối không gửi phím bấm sai thời điểm!
+            return $false
+        }
+
+        # 1.6. Xử lý trường hợp xuất hiện màn hình "Getting updates" hoặc "Checking for updates"
+        # Tìm liên kết/nút "Change how Setup downloads updates" hoặc "Not right now"
+        foreach ($b in $allBtns) {
+            $bName = $b.Current.Name
+            if ($bName -match "Change how Setup downloads updates" -or $bName -match "Thay đổi cách tải bản cập nhật") {
+                try {
+                    $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                    if ($inv) { $inv.Invoke() }
+                } catch {}
+                Start-Sleep -Milliseconds 500
+                break
+            }
+            if ($bName -match "^(Not right now|Không phải bây giờ)" -or $bName -match "Not right now") {
+                try {
+                    $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                    if ($inv) { $inv.Invoke() }
+                } catch {}
+                Start-Sleep -Milliseconds 400
+                [System.Windows.Forms.SendKeys]::SendWait("%{n}")
+                Start-Sleep -Milliseconds 1000
+                break
+            }
+        }
+
         # 2. Xử lý Màn hình Điều khoản bản quyền (Applicable notices and license terms)
         if (-not $State.HasClickedLicense) {
-            $foundLicenseBtn = $false
-            if ($setupWin) {
-                try {
-                    $allBtns = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
-                        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-                    foreach ($b in $allBtns) {
-                        $bName = $b.Current.Name
-                        if ($bName -match "^(Accept|Chấp nhận|Đồng ý|I accept)" -or $bName -match "Accept") {
-                            $foundLicenseBtn = $true
-                            # Thử InvokePattern
-                            try {
-                                $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
-                                if ($inv) { $inv.Invoke() }
-                            } catch {
-                                try {
-                                    $legacy = $b.GetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern)
-                                    if ($legacy) { $legacy.DoDefaultAction() }
-                                } catch {}
-                            }
-                            break
-                        }
-                    }
-                } catch {}
+            $acceptBtn = $null
+            foreach ($b in $allBtns) {
+                $bName = $b.Current.Name
+                if ($bName -match "^(Accept|Chấp nhận|Đồng ý|I accept)" -or $bName -match "Accept") {
+                    $acceptBtn = $b
+                    break
+                }
             }
 
-            # Kiểm tra tiêu đề cửa sổ hoặc nếu tìm thấy nút Accept
-            $winText = ""
-            try { $winText = [VUONGTT.AutoPilotHelper]::GetText($targetHwnd) } catch {}
+            if ($acceptBtn) {
+                # Phương pháp 1: UIAutomation Invoke
+                try {
+                    $inv = $acceptBtn.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                    if ($inv) { $inv.Invoke() }
+                } catch {
+                    try {
+                        $legacy = $acceptBtn.GetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern)
+                        if ($legacy) { $legacy.DoDefaultAction() }
+                    } catch {}
+                }
 
-            if ($foundLicenseBtn -or $winText -match "Setup|Cài đặt") {
-                # Gửi phím tắt chuẩn Windows Setup: Alt + A (Accept) và Enter
+                # Phương pháp 2: Gửi phím tắt chuẩn Windows Setup: Alt + A (Accept) và Enter
                 Start-Sleep -Milliseconds 200
                 try {
                     [System.Windows.Forms.SendKeys]::SendWait("%{a}")
@@ -483,128 +556,116 @@ function Invoke-VUONGTTAutoPilotStep {
                 } catch {}
 
                 $State.HasClickedLicense = $true
-                $State.LogMessages.Add("• [AUTO-PILOT] Đã tự động chấp thuận Điều khoản bản quyền (Accept License Terms).")
+                $State.LogMessages.Add("• [AUTO-PILOT] Đã nhận diện màn hình Điều khoản & Tự động bấm Chấp thuận (Accept).")
                 Start-Sleep -Milliseconds 1500
                 return $true
             }
         }
 
         # 3. Xử lý Màn hình Chọn nội dung cần giữ (Choose what to keep)
-        if (-not $State.HasSelectedMode -and $setupWin) {
+        if (-not $State.HasSelectedMode) {
+            $allRadios = $null
             try {
                 $allRadios = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
                     (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::RadioButton)))
-                
-                if ($allRadios.Count -gt 0) {
-                    foreach ($r in $allRadios) {
-                        $rName = $r.Current.Name
-                        if ($State.Mode -eq "Clean") {
-                            if ($rName -match "Nothing" -or $rName -match "Không giữ lại") {
-                                try {
-                                    $sp = $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
-                                    if ($sp) { $sp.Select() }
-                                } catch {}
-                                $State.HasSelectedMode = $true
-                                $State.LogMessages.Add("• [AUTO-PILOT] Đã tự động chọn: Cài mới sạch sẽ 100% (Nothing - Format ổ C).")
-                                break
-                            }
-                        } else {
-                            if ($rName -match "Keep personal files and apps" -or $rName -match "Giữ lại toàn bộ") {
-                                try {
-                                    $sp = $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
-                                    if ($sp) { $sp.Select() }
-                                } catch {}
-                                $State.HasSelectedMode = $true
-                                $State.LogMessages.Add("• [AUTO-PILOT] Đã tự động chọn: Cài đè giữ nguyên 100% App & Dữ liệu.")
-                                break
-                            }
-                        }
-                    }
+            } catch {}
 
-                    Start-Sleep -Milliseconds 300
-                    # Tìm và bấm nút Next
-                    $allBtns = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
-                        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-                    foreach ($b in $allBtns) {
-                        if ($b.Current.Name -match "^(Next|Tiếp theo|Tiếp tục)" -or $b.Current.Name -match "Next") {
+            if ($allRadios -and $allRadios.Count -gt 0) {
+                foreach ($r in $allRadios) {
+                    $rName = $r.Current.Name
+                    if ($State.Mode -eq "Clean") {
+                        if ($rName -match "Nothing" -or $rName -match "Không giữ lại") {
                             try {
-                                $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
-                                if ($inv) { $inv.Invoke() }
+                                $sp = $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
+                                if ($sp) { $sp.Select() }
                             } catch {}
+                            $State.HasSelectedMode = $true
+                            $State.LogMessages.Add("• [AUTO-PILOT] Đã tự động chọn: Cài mới sạch sẽ 100% (Nothing - Format ổ C:, ổ D/E giữ nguyên).")
+                            break
+                        }
+                    } else {
+                        if ($rName -match "Keep personal files and apps" -or $rName -match "Giữ lại toàn bộ") {
+                            try {
+                                $sp = $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
+                                if ($sp) { $sp.Select() }
+                            } catch {}
+                            $State.HasSelectedMode = $true
+                            $State.LogMessages.Add("• [AUTO-PILOT] Đã tự động chọn: Cài đè giữ nguyên 100% App & Dữ liệu.")
                             break
                         }
                     }
-                    try {
-                        [System.Windows.Forms.SendKeys]::SendWait("%{n}")
-                        Start-Sleep -Milliseconds 200
-                        [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
-                    } catch {}
-                    Start-Sleep -Milliseconds 1500
-                    return $true
                 }
-            } catch {}
-        }
 
-        # 4. Xử lý Màn hình Sẵn sàng cài đặt (Ready to Install) -> Bấm Install
-        if (-not $State.HasClickedInstall -and $setupWin) {
-            try {
-                $allBtns = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
-                    (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-                
-                $installBtn = $null
+                Start-Sleep -Milliseconds 300
+                # Tìm và bấm nút Next
                 foreach ($b in $allBtns) {
-                    $bName = $b.Current.Name
-                    if ($bName -match "^(Install|Cài đặt)" -and $bName -notmatch "Change|Thay đổi") {
-                        $installBtn = $b
-                        break
-                    }
-                }
-
-                if ($installBtn) {
-                    # Thử InvokePattern
-                    try {
-                        $inv = $installBtn.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
-                        if ($inv) { $inv.Invoke() }
-                    } catch {
-                        try {
-                            $legacy = $installBtn.GetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern)
-                            if ($legacy) { $legacy.DoDefaultAction() }
-                        } catch {}
-                    }
-
-                    # Gửi phím tắt Alt + I (Install) và Enter
-                    Start-Sleep -Milliseconds 200
-                    try {
-                        [System.Windows.Forms.SendKeys]::SendWait("%{i}")
-                        Start-Sleep -Milliseconds 200
-                        [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
-                    } catch {}
-
-                    $State.HasClickedInstall = $true
-                    $State.IsInstalled = $true
-                    $State.LogMessages.Add("🚀 [AUTO-PILOT] ĐÃ TỰ ĐỘNG BẤM CÀI ĐẶT (INSTALL)! Quá trình cài đặt đang diễn ra, máy sẽ tự động khởi động lại.")
-                    return $true
-                }
-            } catch {}
-        }
-
-        # 5. Xử lý các thông báo / cảnh báo trung gian nếu có (Dismissible prompts / Warnings)
-        if ($setupWin) {
-            try {
-                $allBtns = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
-                    (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-                foreach ($b in $allBtns) {
-                    $bName = $b.Current.Name
-                    if ($bName -match "^(Confirm|Continue|Tiếp tục|Dismiss|OK)" -and $bName -notmatch "Cancel|Hủy|Decline|Back|Quay lại") {
+                    if ($b.Current.Name -match "^(Next|Tiếp theo|Tiếp tục)" -or $b.Current.Name -match "Next") {
                         try {
                             $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
                             if ($inv) { $inv.Invoke() }
                         } catch {}
-                        try { [System.Windows.Forms.SendKeys]::SendWait("{ENTER}") } catch {}
                         break
                     }
                 }
-            } catch {}
+                try {
+                    [System.Windows.Forms.SendKeys]::SendWait("%{n}")
+                    Start-Sleep -Milliseconds 200
+                    [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
+                } catch {}
+                Start-Sleep -Milliseconds 1500
+                return $true
+            }
+        }
+
+        # 4. Xử lý Màn hình Sẵn sàng cài đặt (Ready to Install) -> Bấm Install
+        if (-not $State.HasClickedInstall) {
+            $installBtn = $null
+            foreach ($b in $allBtns) {
+                $bName = $b.Current.Name
+                if ($bName -match "^(Install|Cài đặt)" -and $bName -notmatch "Change|Thay đổi") {
+                    $installBtn = $b
+                    break
+                }
+            }
+
+            if ($installBtn) {
+                # Thử InvokePattern
+                try {
+                    $inv = $installBtn.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                    if ($inv) { $inv.Invoke() }
+                } catch {
+                    try {
+                        $legacy = $installBtn.GetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern)
+                        if ($legacy) { $legacy.DoDefaultAction() }
+                    } catch {}
+                }
+
+                # Gửi phím tắt Alt + I (Install) và Enter
+                Start-Sleep -Milliseconds 200
+                try {
+                    [System.Windows.Forms.SendKeys]::SendWait("%{i}")
+                    Start-Sleep -Milliseconds 200
+                    [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
+                } catch {}
+
+                $State.HasClickedInstall = $true
+                $State.IsInstalled = $true
+                $State.LogMessages.Add("🚀 [AUTO-PILOT] ĐÃ TỰ ĐỘNG BẤM CÀI ĐẶT (INSTALL)! Quá trình cài đặt đang diễn ra, máy sẽ tự động Reboot.")
+                return $true
+            }
+        }
+
+        # 5. Xử lý các thông báo / cảnh báo trung gian nếu có (Dismissible prompts / Warnings)
+        foreach ($b in $allBtns) {
+            $bName = $b.Current.Name
+            if ($bName -match "^(Confirm|Continue|Tiếp tục|Dismiss|OK|Chấp nhận)" -and $bName -notmatch "Cancel|Hủy|Decline|Back|Quay lại|Change") {
+                try {
+                    $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                    if ($inv) { $inv.Invoke() }
+                } catch {}
+                try { [System.Windows.Forms.SendKeys]::SendWait("{ENTER}") } catch {}
+                break
+            }
         }
     } catch {}
 
