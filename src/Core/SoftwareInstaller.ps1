@@ -167,38 +167,40 @@ function Invoke-VUONGTTProcessWithLiveLog {
             return -1
         }
 
+        $stdout = $proc.StandardOutput
+        $stderr = $proc.StandardError
         $timeoutAt = (Get-Date).AddSeconds($TimeoutSeconds)
+
         while (-not $proc.HasExited) {
-            while (-not $proc.StandardOutput.EndOfStream) {
-                $line = $proc.StandardOutput.ReadLine()
+            # Đọc non-blocking: Chỉ đọc khi có dữ liệu trong buffer, không bao giờ chặn UI thread gây đơ máy
+            while ($stdout.Peek() -ge 0) {
+                $line = $stdout.ReadLine()
                 if ($line -and $OnOutputLine) { & $OnOutputLine $line }
             }
-            while (-not $proc.StandardError.EndOfStream) {
-                $errLine = $proc.StandardError.ReadLine()
+            while ($stderr.Peek() -ge 0) {
+                $errLine = $stderr.ReadLine()
                 if ($errLine -and $OnOutputLine) { & $OnOutputLine $errLine }
             }
             Start-Sleep -Milliseconds 40
             Invoke-VUONGTTDoEvents
+
             if ((Get-Date) -gt $timeoutAt) {
                 if ($OnOutputLine) { & $OnOutputLine "[CẢNH BÁO] Quá thời gian chờ ($TimeoutSeconds giây), tự động đóng tiến trình..." }
-                $proc.Kill()
+                try { $proc.Kill() } catch {}
                 break
             }
         }
 
-        # Doc not cac dong cuoi cung
-        $tailOut = $proc.StandardOutput.ReadToEnd()
-        if ($tailOut -and $OnOutputLine) {
-            foreach ($l in ($tailOut -split "`r?`n")) {
-                if ($l.Trim()) { & $OnOutputLine $l }
-            }
+        # Đọc nốt các dòng cuối cùng còn lại sau khi tiến trình kết thúc
+        while ($stdout.Peek() -ge 0) {
+            $line = $stdout.ReadLine()
+            if ($line -and $OnOutputLine) { & $OnOutputLine $line }
         }
-        $tailErr = $proc.StandardError.ReadToEnd()
-        if ($tailErr -and $OnOutputLine) {
-            foreach ($l in ($tailErr -split "`r?`n")) {
-                if ($l.Trim()) { & $OnOutputLine $l }
-            }
+        while ($stderr.Peek() -ge 0) {
+            $errLine = $stderr.ReadLine()
+            if ($errLine -and $OnOutputLine) { & $OnOutputLine $errLine }
         }
+        Invoke-VUONGTTDoEvents
 
         return $proc.ExitCode
     } catch {
@@ -435,7 +437,34 @@ function Install-VUONGTTApp {
     try {
         $wc = New-Object System.Net.WebClient
         $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
-        $wc.DownloadFile($app.Url, $destFile)
+        
+        $script:dlIsDone = $false
+        $script:dlLastReport = 0
+
+        $wc.add_DownloadProgressChanged({
+            param($s, $e)
+            if ($e.ProgressPercentage -ge ($script:dlLastReport + 10) -or $e.ProgressPercentage -eq 100) {
+                $script:dlLastReport = $e.ProgressPercentage
+                $mbRec = [Math]::Round($e.BytesReceived / 1MB, 1)
+                $mbTot = [Math]::Round($e.TotalBytesToReceive / 1MB, 1)
+                if ($OnProgress) { & $OnProgress "  -> Đang tải: $($e.ProgressPercentage)% ($mbRec MB / $mbTot MB)..." }
+            }
+            Invoke-VUONGTTDoEvents
+        })
+        $wc.add_DownloadFileCompleted({
+            param($s, $e)
+            $script:dlIsDone = $true
+        })
+
+        $script:dlIsDone = $false
+        $wc.DownloadFileAsync((New-Object System.Uri($app.Url)), $destFile)
+
+        $dlTimeout = (Get-Date).AddMinutes(10)
+        while (-not $script:dlIsDone -and (Get-Date) -lt $dlTimeout) {
+            Start-Sleep -Milliseconds 60
+            Invoke-VUONGTTDoEvents
+        }
+
         if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
     } catch {}
 
@@ -676,8 +705,12 @@ function Invoke-VUONGTTUninstallSoftware {
                 $guid = $matches[0]
                 Write-LogMsg "• Phát hiện gói Windows Installer (MSI): $guid. Đang gọi MsiExec..."
                 $msiArgs = "/X$guid /passive /norestart"
-                $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
-                Write-LogMsg "• MsiExec hoàn tất với mã thoát: $($proc.ExitCode)"
+                $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                    Start-VUONGTTProcessResponsive -FilePath "msiexec.exe" -ArgumentList $msiArgs -TimeoutSeconds 600 -NoNewWindow $false
+                } else {
+                    (Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru).ExitCode
+                }
+                Write-LogMsg "• MsiExec hoàn tất với mã thoát: $exitCode"
             } else {
                 # Xử lý lệnh tệp thực thi EXE thông thường
                 $exePath = ""
@@ -694,12 +727,20 @@ function Invoke-VUONGTTUninstallSoftware {
 
                 if (Test-Path $exePath -ErrorAction SilentlyContinue) {
                     Write-LogMsg "• Đang khởi chạy uninstaller gốc: $exePath $argList"
-                    $proc = Start-Process -FilePath $exePath -ArgumentList $argList -Wait -PassThru
-                    Write-LogMsg "• Trình gỡ cài đặt kết thúc với mã thoát: $($proc.ExitCode)"
+                    $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                        Start-VUONGTTProcessResponsive -FilePath $exePath -ArgumentList $argList -TimeoutSeconds 600 -NoNewWindow $false
+                    } else {
+                        (Start-Process -FilePath $exePath -ArgumentList $argList -Wait -PassThru).ExitCode
+                    }
+                    Write-LogMsg "• Trình gỡ cài đặt kết thúc với mã thoát: $exitCode"
                 } else {
                     Write-LogMsg "⚠️ Không thể chạy trực tiếp: $exePath. Thực thi qua cmd.exe..."
-                    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$uninstCmd`"" -Wait -PassThru
-                    Write-LogMsg "• Lệnh kết thúc với mã thoát: $($proc.ExitCode)"
+                    $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                        Start-VUONGTTProcessResponsive -FilePath "cmd.exe" -ArgumentList "/c `"$uninstCmd`"" -TimeoutSeconds 600 -NoNewWindow $true
+                    } else {
+                        (Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$uninstCmd`"" -Wait -PassThru).ExitCode
+                    }
+                    Write-LogMsg "• Lệnh kết thúc với mã thoát: $exitCode"
                 }
             }
         } catch {

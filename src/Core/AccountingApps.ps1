@@ -150,8 +150,57 @@ function Invoke-VUONGTTDownloadWithLog {
         $client = New-Object System.Net.WebClient
         $client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
         
-        # Download truc tiep
-        $client.DownloadFile($Url, $DestPath)
+        $script:VUONGTT_DlPct = 0
+        $script:VUONGTT_DlBytes = 0
+        $script:VUONGTT_DlTotal = 0
+        $script:VUONGTT_DlCompleted = $false
+        $script:VUONGTT_DlError = $null
+
+        Register-ObjectEvent -InputObject $client -EventName "DownloadProgressChanged" -Action {
+            $script:VUONGTT_DlPct = $EventArgs.ProgressPercentage
+            $script:VUONGTT_DlBytes = $EventArgs.BytesReceived
+            $script:VUONGTT_DlTotal = $EventArgs.TotalBytesToReceive
+        } | Out-Null
+
+        Register-ObjectEvent -InputObject $client -EventName "DownloadFileCompleted" -Action {
+            $script:VUONGTT_DlCompleted = $true
+            if ($EventArgs.Error) { $script:VUONGTT_DlError = $EventArgs.Error }
+        } | Out-Null
+
+        $client.DownloadFileAsync((New-Object System.Uri($Url)), $DestPath)
+
+        $lastReport = 0
+        $lastMb = 0
+        while (-not $script:VUONGTT_DlCompleted) {
+            Start-Sleep -Milliseconds 60
+            if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
+                Invoke-VUONGTTDoEvents
+            }
+            $now = [Environment]::TickCount
+            if ($now - $lastReport -ge 1500) {
+                $lastReport = $now
+                $mbRecv = [math]::Round($script:VUONGTT_DlBytes / 1MB, 1)
+                if ($script:VUONGTT_DlTotal -gt 0) {
+                    $mbTot = [math]::Round($script:VUONGTT_DlTotal / 1MB, 1)
+                    if ($OnProgress -and $mbRecv -ne $lastMb) {
+                        & $OnProgress "  -> [Đang tải] $mbRecv MB / $mbTot MB ($($script:VUONGTT_DlPct)%)..."
+                        $lastMb = $mbRecv
+                    }
+                } elseif ($mbRecv -gt 0 -and $mbRecv -ne $lastMb) {
+                    if ($OnProgress) {
+                        & $OnProgress "  -> [Đang tải] $mbRecv MB..."
+                        $lastMb = $mbRecv
+                    }
+                }
+            }
+        }
+
+        Get-EventSubscriber | Where-Object { $_.SourceObject -eq $client } | Unregister-Event -Force -ErrorAction SilentlyContinue
+        $client.Dispose()
+
+        if ($script:VUONGTT_DlError) {
+            throw $script:VUONGTT_DlError
+        }
         
         if (Test-Path $DestPath) {
             $len = (Get-Item $DestPath).Length
@@ -194,9 +243,14 @@ function Install-VUONGTTAccountingApp {
             if ($OnProgress) { & $OnProgress "  -> Đang kiểm tra và cập nhật phiên bản mới nhất qua Winget ($($app.WingetId))..." }
             try {
                 $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --force"
-                $p = Start-Process -FilePath "winget.exe" -ArgumentList $arg -Wait -PassThru -NoNewWindow
+                $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                    Start-VUONGTTProcessResponsive -FilePath "winget.exe" -ArgumentList $arg -TimeoutSeconds 600 -NoNewWindow $true
+                } else {
+                    $p = Start-Process -FilePath "winget.exe" -ArgumentList $arg -Wait -PassThru -NoNewWindow
+                    $p.ExitCode
+                }
                 $wingetOkCodes = @(0, -1978335189, -1978335215, -1978335188, 3010, 1641, 2316632065)
-                if ($p.ExitCode -in $wingetOkCodes) {
+                if ($exitCode -in $wingetOkCodes) {
                     if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Đã cài đặt/cập nhật $($app.Name) qua Winget!" }
                     if ($AutoLaunch -and (Get-Command Start-VUONGTTInstalledApp -ErrorAction SilentlyContinue)) {
                         Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
@@ -238,7 +292,12 @@ function Install-VUONGTTAccountingApp {
             $setupExe = Get-ChildItem -Path $extractDir -Filter "Setup.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($setupExe) {
                 if ($OnProgress) { & $OnProgress "  -> Đang khởi chạy trình cài đặt tự động: $($setupExe.FullName)..." }
-                $p = Start-Process -FilePath $setupExe.FullName -ArgumentList $app.SilentArgs -Wait -PassThru -NoNewWindow
+                $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                    Start-VUONGTTProcessResponsive -FilePath $setupExe.FullName -ArgumentList $app.SilentArgs -TimeoutSeconds 900 -NoNewWindow $true
+                } else {
+                    $p = Start-Process -FilePath $setupExe.FullName -ArgumentList $app.SilentArgs -Wait -PassThru -NoNewWindow
+                    $p.ExitCode
+                }
                 if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Quá trình cài đặt $($app.Name) đã hoàn tất!" }
                 if ($AutoLaunch -and (Get-Command Start-VUONGTTInstalledApp -ErrorAction SilentlyContinue)) {
                     Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
@@ -254,8 +313,13 @@ function Install-VUONGTTAccountingApp {
     } else {
         if ($OnProgress) { & $OnProgress "  -> Đang tự động cài đặt ngầm $($app.Name) với tham số '$($app.SilentArgs)'..." }
         try {
-            $p = Start-Process -FilePath $destFile -ArgumentList $app.SilentArgs -Wait -PassThru
-            if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Cài đặt $($app.Name) hoàn tất với mã trả về: $($p.ExitCode)!" }
+            $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                Start-VUONGTTProcessResponsive -FilePath $destFile -ArgumentList $app.SilentArgs -TimeoutSeconds 900 -NoNewWindow $false
+            } else {
+                $p = Start-Process -FilePath $destFile -ArgumentList $app.SilentArgs -Wait -PassThru
+                $p.ExitCode
+            }
+            if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Cài đặt $($app.Name) hoàn tất với mã trả về: $exitCode!" }
             if ($AutoLaunch -and (Get-Command Start-VUONGTTInstalledApp -ErrorAction SilentlyContinue)) {
                 Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
             }

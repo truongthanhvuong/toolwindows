@@ -434,8 +434,12 @@ function Invoke-VUONGTTRepairSystemFiles {
     # 1. SFC /scannow
     try {
         $log += "[1/2] Đang quét toàn bộ file hệ thống bằng công cụ SFC (sfc /scannow)..."
-        $p1 = Start-Process -FilePath "sfc.exe" -ArgumentList "/scannow" -Wait -PassThru -NoNewWindow
-        if ($p1.ExitCode -eq 0) {
+        $exit1 = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "sfc.exe" -ArgumentList "/scannow" -TimeoutSeconds 900
+        } else {
+            (Start-Process -FilePath "sfc.exe" -ArgumentList "/scannow" -Wait -PassThru -NoNewWindow).ExitCode
+        }
+        if ($exit1 -eq 0) {
             $log += "[OK] Quá trình quét SFC hoàn tất: Không phát hiện lỗi cấu trúc hệ thống!"
         } else {
             $log += "[OK] Quá trình quét SFC hoàn tất: Các file hỏng nếu có đã được khôi phục tự động."
@@ -447,11 +451,15 @@ function Invoke-VUONGTTRepairSystemFiles {
     # 2. DISM RestoreHealth
     try {
         $log += "[2/2] Đang phục hồi kho ảnh Windows bằng DISM RestoreHealth..."
-        $p2 = Start-Process -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /restorehealth" -Wait -PassThru -NoNewWindow
-        if ($p2.ExitCode -eq 0) {
+        $exit2 = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /restorehealth" -TimeoutSeconds 900
+        } else {
+            (Start-Process -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /restorehealth" -Wait -PassThru -NoNewWindow).ExitCode
+        }
+        if ($exit2 -eq 0) {
             $log += "[OK] DISM RestoreHealth hoàn tất thành công 100%!"
         } else {
-            $log += "[THÔNG BÁO] DISM kết thúc với mã: $($p2.ExitCode)"
+            $log += "[THÔNG BÁO] DISM kết thúc với mã: $exit2"
         }
     } catch {
         $log += "[CHÚ Ý DISM] $($_.Exception.Message)"

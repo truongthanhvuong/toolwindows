@@ -36,12 +36,55 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
 function Invoke-VUONGTTDoEvents {
     try {
         if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher) {
-            [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
+            $frame = New-Object System.Windows.Threading.DispatcherFrame
+            [System.Windows.Threading.Dispatcher]::CurrentDispatcher.BeginInvoke(
+                [System.Windows.Threading.DispatcherPriority]::Background,
+                [System.Windows.Threading.DispatcherOperationCallback]{
+                    param($f)
+                    $f.Continue = $false
+                    return $null
+                },
+                $frame
+            ) | Out-Null
+            [System.Windows.Threading.Dispatcher]::PushFrame($frame)
         }
     } catch {}
     try {
         [System.Windows.Forms.Application]::DoEvents()
     } catch {}
+}
+
+function Start-VUONGTTProcessResponsive {
+    param(
+        [string]$FilePath,
+        [string]$ArgumentList = "",
+        [int]$TimeoutSeconds = 600,
+        [bool]$NoNewWindow = $true
+    )
+
+    try {
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $FilePath
+        $psi.Arguments = $ArgumentList
+        $psi.UseShellExecute = $false
+        if ($NoNewWindow) { $psi.CreateNoWindow = $true }
+        
+        $proc = [System.Diagnostics.Process]::Start($psi)
+        if (-not $proc) { return -1 }
+
+        $timeout = (Get-Date).AddSeconds($TimeoutSeconds)
+        while (-not $proc.HasExited) {
+            Start-Sleep -Milliseconds 50
+            Invoke-VUONGTTDoEvents
+            if ((Get-Date) -gt $timeout) {
+                try { $proc.Kill() } catch {}
+                break
+            }
+        }
+        return $proc.ExitCode
+    } catch {
+        return -1
+    }
 }
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
