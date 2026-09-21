@@ -3759,10 +3759,11 @@ if ($btnStartOnlineWindowsInstall) {
                 $watcher = Start-VUONGTTAutoPilotWatcher -Mode $mode
 
                 # 2. Khởi chạy Windows Setup
+                $setupWorkDir = Split-Path -Parent $deploy.SetupExe
                 if ([string]::IsNullOrWhiteSpace($deploy.Arguments)) {
-                    Start-Process -FilePath $deploy.SetupExe
+                    Start-Process -FilePath $deploy.SetupExe -WorkingDirectory $setupWorkDir
                 } else {
-                    Start-Process -FilePath $deploy.SetupExe -ArgumentList $deploy.Arguments
+                    Start-Process -FilePath $deploy.SetupExe -ArgumentList $deploy.Arguments -WorkingDirectory $setupWorkDir
                 }
 
                 if ($txtAutoWinLog) {
@@ -3770,11 +3771,18 @@ if ($btnStartOnlineWindowsInstall) {
                 }
                 $txtFooterStatus.Text = "• [OK] Auto-Pilot đang tự động hóa cài đặt Windows..."
 
-                # 3. Tạo DispatcherTimer cập nhật thông báo từ Watcher lên UI
+                # 3. Tạo DispatcherTimer cập nhật thông báo từ Watcher lên UI và làm Watchdog thứ 2
                 $syncTimer = New-Object System.Windows.Threading.DispatcherTimer
-                $syncTimer.Interval = [TimeSpan]::FromSeconds(2)
+                $syncTimer.Interval = [TimeSpan]::FromSeconds(1)
                 $syncTimer.Add_Tick({
                     if ($watcher -and $watcher.Sync) {
+                        # STA UI Watchdog song hành cùng background thread
+                        if (-not $watcher.Sync.IsInstalled) {
+                            try {
+                                Invoke-VUONGTTAutoPilotStep -State $watcher.Sync | Out-Null
+                            } catch {}
+                        }
+
                         while ($watcher.Sync.LogMessages.Count -gt 0) {
                             $msg = $watcher.Sync.LogMessages[0]
                             $watcher.Sync.LogMessages.RemoveAt(0)
@@ -3783,7 +3791,7 @@ if ($btnStartOnlineWindowsInstall) {
                             }
                         }
                         if ($watcher.Sync.IsInstalled) {
-                            $txtFooterStatus.Text = "• [HOÀN TẤT] Đã kích hoạt cài đặt tự động thành công!"
+                            $txtFooterStatus.Text = "• [HOÀN TẤT] Đã tự động kích hoạt cài đặt thành công!"
                             $syncTimer.Stop()
                         }
                     }
