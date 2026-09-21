@@ -576,7 +576,23 @@ function Invoke-VUONGTTFixSketchUpOpenGL {
             $log += "  -> Đã đăng ký GPU High Performance cho các đường dẫn SketchUp mặc định."
         }
 
-        $log += "[3/5] Kích hoạt Gia Tốc Đồ Họa Phần Cứng cho UltraViewer / Remote Desktop (RDP)..."
+        $log += "[3/6] Làm mới tệp cấu hình đồ họa PrivatePreferences.json của SketchUp..."
+        $skAppDataDirs = Get-ChildItem -Path "$env:LOCALAPPDATA\SketchUp" -Directory -ErrorAction SilentlyContinue
+        $refreshedCount = 0
+        foreach ($d in $skAppDataDirs) {
+            $prefJson = Join-Path $d.FullName "SketchUp\PrivatePreferences.json"
+            if (Test-Path $prefJson) {
+                Copy-Item -Path $prefJson -Destination "$prefJson.bak" -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $prefJson -Force -ErrorAction SilentlyContinue
+                $refreshedCount++
+                $log += "  -> Đã làm mới cache cấu hình đồ họa: $($d.Name)"
+            }
+        }
+        if ($refreshedCount -eq 0) {
+            $log += "  -> Không phát hiện tệp PrivatePreferences.json bị lỗi cần xóa."
+        }
+
+        $log += "[4/6] Kích hoạt Gia Tốc Đồ Họa Phần Cứng cho UltraViewer / Remote Desktop (RDP)..."
         $tsKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
         if (!(Test-Path $tsKey)) {
             New-Item -Path $tsKey -Force -ErrorAction SilentlyContinue | Out-Null
@@ -588,7 +604,7 @@ function Invoke-VUONGTTFixSketchUpOpenGL {
             $log += "  -> Đã mở khóa OpenGL phần cứng cho session UltraViewer / RDP."
         }
 
-        $log += "[4/5] Kích hoạt Hardware Acceleration hệ thống & Hardware GPU Scheduling..."
+        $log += "[5/6] Kích hoạt Hardware Acceleration hệ thống & Hardware GPU Scheduling..."
         $avalonKey = "HKCU:\Software\Microsoft\Avalon.Graphics"
         if (!(Test-Path $avalonKey)) {
             New-Item -Path $avalonKey -Force -ErrorAction SilentlyContinue | Out-Null
@@ -602,9 +618,20 @@ function Invoke-VUONGTTFixSketchUpOpenGL {
         }
         $log += "  -> Đã bật Hardware Acceleration hệ thống & HwSchMode = 2."
 
-        $log += "[5/5] Hoàn tất khôi phục cấu hình đồ họa SketchUp!"
-        $log += "[OK] ĐÃ SỬA LỖI SKETCHUP HARDWARE ACCELERATION & OPENGL THÀNH CÔNG!"
-        $log += "Lưu ý: Hãy khởi chạy lại SketchUp. Nếu máy vừa cập nhật Driver VGA, nên khởi động lại máy để có hiệu năng tốt nhất."
+        $log += "[6/6] Khởi động lại Windows DWM để áp dụng thay đổi đồ họa..."
+        Stop-Process -Name "dwm" -Force -ErrorAction SilentlyContinue
+
+        $log += "=========================================================="
+        $log += "[OK] ĐÃ CẤU HÌNH GIA TỐC PHẦN CỨNG SKETCHUP THÀNH CÔNG!"
+        $log += "=========================================================="
+        $log += "⚠ 3 NGUYÊN NHÂN CỐT TỬ CẦN XỬ LÝ TRÊN MÁY KHÁCH HÀNG:"
+        $log += "1. ĐANG BẬT ULTRAVIEWER / TEAMVIEWER:"
+        $log += "   -> UltraViewer ngắt tạm thời OpenGL phần cứng khi đang kết nối."
+        $log += "   -> Hãy tắt UltraViewer rồi mở SketchUp trực tiếp trên máy thật, HOẶC khởi động lại máy tính, mở SketchUp trước rồi mới bật UltraViewer!"
+        $log += "2. CẮM NHẦM DÂY MÀN HÌNH VÀO CỔNG MAINBOARD:"
+        $log += "   -> Máy có card rời NVIDIA: Đảm bảo dây HDMI/DP cắm vào CỔNG DƯỚI CARD NVIDIA, không cắm vào cổng bo mạch chủ phía trên."
+        $log += "3. CHƯA CÀI ĐỦ DRIVER NVIDIA GEFORCE:"
+        $log += "   -> Vào tab 'Cập Nhật Driver' trên Tool -> Bấm 'Tải Driver NVIDIA GeForce' để cài đặt driver mới nhất."
     } catch {
         $log += "[LỖI] $($_.Exception.Message)"
     }
