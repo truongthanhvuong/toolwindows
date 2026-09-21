@@ -3916,6 +3916,27 @@ if ($btnStartOnlineWindowsInstall) {
             }
         }
 
+        # Tự động phát hiện trường hợp Hạ Cấp (Downgrade) từ Windows 11 xuống Windows 10
+        $currentOsBuild = [System.Environment]::OSVersion.Version.Build
+        $isDowngradeToWin10 = ($currentOsBuild -ge 22000 -and ($isoPath -match "Win10|Windows10|Windows 10" -or ($cmbAutoWinEdition -and $cmbAutoWinEdition.SelectedIndex -in @(5,6,7,8))))
+        if ($isDowngradeToWin10 -and $mode -eq "Upgrade") {
+            [System.Windows.MessageBox]::Show(
+                "PHÁT HIỆN HẠ CẤP TỪ WINDOWS 11 XUỐNG WINDOWS 10:`n`n" +
+                "• Máy tính của bạn đang chạy Windows 11 (Build $currentOsBuild).`n" +
+                "• Bạn đang chọn cài đặt: Windows 10.`n`n" +
+                "QUY TẮC CỐT TỬ CỦA MICROSOFT:`n" +
+                "Microsoft KHÔNG hỗ trợ cài đè giữ nguyên ứng dụng khi hạ cấp từ Win 11 xuống Win 10 (Sẽ gây lỗi màn hình xanh 0xC1900101 - 0x20017 tại giai đoạn SAFE_OS BOOT).`n`n" +
+                "-> Tool đã TỰ ĐỘNG CHUYỂN sang chế độ 'Cài Mới Sạch Sẽ (Clean Install - Format ổ C)'.`n" +
+                "Toàn bộ dữ liệu của bạn trên ổ D, E, F... vẫn được bảo toàn nguyên vẹn 100%!",
+                "Tự Động Chuyển Sang Cài Mới Sạch Sẽ",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Warning
+            ) | Out-Null
+            $mode = "Clean"
+            $modeName = "Cài mới sạch sẽ (Clean Install - Format ổ C)"
+            if ($rbAutoWinClean) { $rbAutoWinClean.IsChecked = $true }
+        }
+
         # Nếu đã có file ISO hợp lệ -> Khởi động triển khai
         $doBypass = if ($chkAutoWinBypass) { [bool]$chkAutoWinBypass.IsChecked } else { $true }
         $doNoMsa = if ($chkAutoWinNoMSA) { [bool]$chkAutoWinNoMSA.IsChecked } else { $true }

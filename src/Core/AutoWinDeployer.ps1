@@ -1065,9 +1065,14 @@ function Invoke-VUONGTTPrepareOnlineWindowsDeployment {
         $log.Add("• [OK] Đã cài đặt kịch bản SetupComplete.cmd tự động nạp Driver & Bản quyền sau Reboot.")
     }
 
-    # Dọn dẹp các tiến trình setup cũ bị kẹt nếu có
+    # Dọn dẹp các tiến trình setup cũ và các thư mục cache boot cũ (Tránh triệt để lỗi 0xC1900101 - 0x20017 ở SAFE_OS BOOT)
     Get-Process -Name "setup", "setuphost", "setupprep" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "C:\$GetCurrent" -Recurse -Force -ErrorAction SilentlyContinue
+    $setupCaches = @("C:\`$WINDOWS.~BT", "C:\`$Windows.~WS", "C:\`$GetCurrent")
+    foreach ($sc in $setupCaches) {
+        if (Test-Path $sc) {
+            Remove-Item -Path $sc -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 
     # 6. Xây dựng lệnh cài đặt tự động (Ưu tiên gọi trực tiếp setupprep.exe để bỏ qua màn hình Splash bị kẹt)
     $setupExe = "$mountedDrive\setup.exe"
@@ -1077,15 +1082,16 @@ function Invoke-VUONGTTPrepareOnlineWindowsDeployment {
     $modeText = if ($Mode -eq "Upgrade") { "Cài đè nâng cấp / Sửa lỗi (Giữ lại toàn bộ App & Dữ liệu)" } else { "Cài mới sạch sẽ 100% (Clean Install - Format ổ C:)" }
     $log.Add("• Chế độ cài đặt đã chọn: $modeText")
 
-    # Tham số chuẩn tương thích 100% mọi loại ISO (kể cả ISO mod, Repack, bootstrapper Win10/WinPE)
+    # Tham số chuẩn tương thích 100% mọi loại ISO và chống lỗi crash driver SAFE_OS (/MigrateDrivers none)
     # Loại bỏ switch '/auto' để tránh lỗi: 'Windows Setup: An unknown command-line option [/auto] was specified.'
+    # Bổ sung '/MigrateDrivers none' ngăn Windows Setup mang driver Win 11 cũ sang nhân Win 10 gây sập boot 0xC1900101
     if ($Mode -eq "Upgrade") {
-        $argList = "/DynamicUpdate disable /compat ignorewarning"
-        $log.Add("• Động cơ thực thi: $setupExe $argList (Nạp trực tiếp Modern Setup Host - Bỏ qua cập nhật mạng)")
+        $argList = "/DynamicUpdate disable /compat ignorewarning /MigrateDrivers none"
+        $log.Add("• Động cơ thực thi: $setupExe $argList (Nạp trực tiếp Modern Setup Host - Chống lỗi Driver di trú)")
         $log.Add("• Đã nạp sẵn: LabConfig Bypass TPM/CPU/RAM & MoSetup AllowUpgrades vào Registry.")
     } else {
-        $argList = "/unattend:`"$unattendXmlPath`" /DynamicUpdate disable /compat ignorewarning"
-        $log.Add("• Động cơ thực thi: $setupExe $argList")
+        $argList = "/unattend:`"$unattendXmlPath`" /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none"
+        $log.Add("• Động cơ thực thi: $setupExe $argList (Tự động hóa hoàn toàn & Chống xung đột Driver SAFE_OS)")
     }
 
     $log.Add("-----------------------------------------------------------------")
