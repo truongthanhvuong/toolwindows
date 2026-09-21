@@ -4772,7 +4772,9 @@ $fixCheckBoxNames = @(
     "chk_FixSystemFiles", "chk_FixWindowsUpdate", "chk_FixNetwork", "chk_FixPrintSpooler",
     "chk_FixExplorer", "chk_FixSearch", "chk_FixStore", "chk_FixAudio", "chk_FixNtp",
     "chk_FixTempFiles", "chk_FixWinGet", "chk_FixFirewall", "chk_FixHostsFile", "chk_FixAutoLogon",
-    "chk_FixClassicContextMenu"
+    "chk_FixClassicContextMenu", "chk_FixDefender", "chk_FixWinInstaller", "chk_FixIconCache",
+    "chk_FixBluetooth", "chk_FixLanDiscovery", "chk_FixSleepPower", "chk_FixWmiRepo",
+    "chk_FixSketchUpOpenGL", "chk_FixHighPerfGpu"
 )
 
 $btnSelectAllFixes   = Get-Control "btnSelectAllFixes"
@@ -4943,9 +4945,81 @@ if ($btnRunSelectedFixes) {
             # 15. Classic Context Menu Win 10
             $chkClassicCtx = Get-Control "chk_FixClassicContextMenu"
             if ($chkClassicCtx -and $chkClassicCtx.IsChecked) {
-                & $onLiveLog "▶ [15/15] Đang bật Menu Chuột Phải Windows 10 cổ điển..."
+                & $onLiveLog "▶ [15/24] Đang bật Menu Chuột Phải Windows 10 cổ điển..."
                 $resMenu = Set-VUONGTTClassicContextMenu -Enable $true
                 & $onLiveLog "✔ $resMenu`r`n"
+            }
+
+            # 16. Windows Defender
+            $chkDef = Get-Control "chk_FixDefender"
+            if ($chkDef -and $chkDef.IsChecked) {
+                & $onLiveLog "▶ [16/24] Đang khôi phục các chính sách Windows Defender..."
+                $res = Invoke-VUONGTTFixDefender
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 17. Windows Installer (.msi)
+            $chkMsi = Get-Control "chk_FixWinInstaller"
+            if ($chkMsi -and $chkMsi.IsChecked) {
+                & $onLiveLog "▶ [17/24] Đang đăng ký lại Windows Installer Engine..."
+                $res = Invoke-VUONGTTFixWindowsInstaller
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 18. Icon & Thumbnail Cache
+            $chkIcon = Get-Control "chk_FixIconCache"
+            if ($chkIcon -and $chkIcon.IsChecked) {
+                & $onLiveLog "▶ [18/24] Đang xây dựng lại bộ nhớ đệm Icon & Thumbnail..."
+                $res = Invoke-VUONGTTFixIconAndThumbnailCache
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 19. Bluetooth Service
+            $chkBt = Get-Control "chk_FixBluetooth"
+            if ($chkBt -and $chkBt.IsChecked) {
+                & $onLiveLog "▶ [19/24] Đang khởi động lại toàn bộ dịch vụ Bluetooth..."
+                $res = Invoke-VUONGTTFixBluetoothService
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 20. LAN Discovery & File Sharing
+            $chkLan = Get-Control "chk_FixLanDiscovery"
+            if ($chkLan -and $chkLan.IsChecked) {
+                & $onLiveLog "▶ [20/24] Đang sửa lỗi mạng LAN, dò tìm Network Discovery & SMB..."
+                $res = Invoke-VUONGTTFixLanSharingNetworkDiscovery
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 21. Sleep & Power
+            $chkSleep = Get-Control "chk_FixSleepPower"
+            if ($chkSleep -and $chkSleep.IsChecked) {
+                & $onLiveLog "▶ [21/24] Đang sửa lỗi treo máy khi Sleep và khôi phục Power Schemes..."
+                $res = Invoke-VUONGTTFixPowerSleepHibernate
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 22. WMI Repository
+            $chkWmi = Get-Control "chk_FixWmiRepo"
+            if ($chkWmi -and $chkWmi.IsChecked) {
+                & $onLiveLog "▶ [22/24] Đang kiểm tra và sửa lỗi WMI Repository..."
+                $res = Invoke-VUONGTTFixWmiRepository
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 23. SketchUp & OpenGL Hardware Acceleration
+            $chkSketchUp = Get-Control "chk_FixSketchUpOpenGL"
+            if ($chkSketchUp -and $chkSketchUp.IsChecked) {
+                & $onLiveLog "▶ [23/24] Đang sửa triệt để lỗi SketchUp Hardware Acceleration & OpenGL..."
+                $res = Invoke-VUONGTTFixSketchUpOpenGL
+                & $onLiveLog "$res`r`n"
+            }
+
+            # 24. High Performance GPU
+            $chkHighGpu = Get-Control "chk_FixHighPerfGpu"
+            if ($chkHighGpu -and $chkHighGpu.IsChecked) {
+                & $onLiveLog "▶ [24/24] Đang quét và ép các ứng dụng đồ họa kỹ thuật chạy GPU rời..."
+                $res = Invoke-VUONGTTFixHighPerfGpu
+                & $onLiveLog "$res`r`n"
             }
 
             & $onLiveLog "=========================================================="

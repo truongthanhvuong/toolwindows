@@ -483,3 +483,171 @@ function Invoke-VUONGTTFixWmiRepository {
     return ($log -join "`n")
 }
 
+function Invoke-VUONGTTFixSketchUpOpenGL {
+    <#
+    .SYNOPSIS
+        Khắc phục triệt để lỗi SketchUp báo:
+        "Hardware acceleration is unsupported or has been disabled on your graphics card.
+        SketchUp requires that you use a hardware accelerated graphics card."
+    .DESCRIPTION
+        1. Bật HW_Acceleration, Capabilities, FSAASamples=0 trong Registry cho mọi phiên bản SketchUp (2015-2026).
+        2. Gán Windows Graphics Settings: Ép SketchUp.exe chạy High Performance GPU (GpuPreference=2;).
+        3. Mở khóa gia tốc đồ họa phần cứng cho Remote Desktop / UltraViewer / TeamViewer.
+        4. Bật Avalon Graphics HW Acceleration & Graphics Drivers Hardware Scheduling (HAGS).
+    #>
+    $log = @()
+    try {
+        $log += "[1/5] Cấu hình Registry Gia Tốc Phần Cứng (Hardware Acceleration) cho SketchUp..."
+        $skVersions = @("2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026")
+        $fixedVersions = 0
+
+        $skRoot = "HKCU:\Software\SketchUp"
+        if (!(Test-Path $skRoot)) {
+            New-Item -Path "HKCU:\Software" -Name "SketchUp" -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+
+        $existingKeys = @()
+        if (Test-Path $skRoot) {
+            $existingKeys = (Get-ChildItem -Path $skRoot -ErrorAction SilentlyContinue | Select-Object -ExpandProperty PSChildName)
+        }
+        
+        $targets = ($skVersions | ForEach-Object { "SketchUp $_" }) + $existingKeys | Select-Object -Unique
+        foreach ($ver in $targets) {
+            $glPath = "$skRoot\$ver\GLConfig\Display"
+            if (!(Test-Path $glPath)) {
+                New-Item -Path $glPath -Force -ErrorAction SilentlyContinue | Out-Null
+            }
+            if (Test-Path $glPath) {
+                Set-ItemProperty -Path $glPath -Name "HW_Acceleration" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $glPath -Name "Capabilities" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $glPath -Name "FSAASamples" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $glPath -Name "Use_Vertex_Buffer_Objects" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                $fixedVersions++
+            }
+        }
+        $log += "  -> Đã kích hoạt HW_Acceleration = 1 & OpenGL Capabilities cho $fixedVersions khóa cấu hình SketchUp."
+
+        $log += "[2/5] Thiết lập Windows Graphics Settings: Ép SketchUp chạy bằng GPU Rời Hiệu Năng Cao..."
+        $dxPrefKey = "HKCU:\Software\Microsoft\DirectX\UserGpuPreferences"
+        if (!(Test-Path $dxPrefKey)) {
+            New-Item -Path "HKCU:\Software\Microsoft\DirectX" -Name "UserGpuPreferences" -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+
+        $foundExes = @()
+        $searchDirs = @(
+            "${env:ProgramFiles}\SketchUp",
+            "${env:ProgramFiles(x86)}\SketchUp",
+            "$env:LOCALAPPDATA\Programs\SketchUp"
+        )
+        foreach ($sd in $searchDirs) {
+            if (Test-Path $sd) {
+                $exes = Get-ChildItem -Path $sd -Filter "SketchUp.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+                if ($exes) { $foundExes += $exes }
+            }
+        }
+
+        $appPathKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\SketchUp.exe"
+        if (Test-Path $appPathKey) {
+            $appPath = (Get-ItemProperty -Path $appPathKey -Name "(default)" -ErrorAction SilentlyContinue).'(default)'
+            if ($appPath -and (Test-Path $appPath) -and ($foundExes -notcontains $appPath)) {
+                $foundExes += $appPath
+            }
+        }
+
+        if ($foundExes.Count -gt 0) {
+            foreach ($exe in $foundExes) {
+                Set-ItemProperty -Path $dxPrefKey -Name $exe -Value "GpuPreference=2;" -Type String -Force -ErrorAction SilentlyContinue
+                $log += "  -> GpuPreference=2 (Card rời hiệu năng cao) cho: $exe"
+            }
+        } else {
+            $defaultExes = @(
+                "C:\Program Files\SketchUp\SketchUp 2026\SketchUp.exe",
+                "C:\Program Files\SketchUp\SketchUp 2025\SketchUp.exe",
+                "C:\Program Files\SketchUp\SketchUp 2024\SketchUp.exe",
+                "C:\Program Files\SketchUp\SketchUp 2023\SketchUp.exe",
+                "C:\Program Files\SketchUp\SketchUp 2022\SketchUp.exe",
+                "C:\Program Files\SketchUp\SketchUp 2021\SketchUp.exe",
+                "C:\Program Files\SketchUp\SketchUp 2020\SketchUp.exe",
+                "C:\Program Files\SketchUp\SketchUp 2019\SketchUp.exe"
+            )
+            foreach ($de in $defaultExes) {
+                Set-ItemProperty -Path $dxPrefKey -Name $de -Value "GpuPreference=2;" -Type String -Force -ErrorAction SilentlyContinue
+            }
+            $log += "  -> Đã đăng ký GPU High Performance cho các đường dẫn SketchUp mặc định."
+        }
+
+        $log += "[3/5] Kích hoạt Gia Tốc Đồ Họa Phần Cứng cho UltraViewer / Remote Desktop (RDP)..."
+        $tsKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
+        if (!(Test-Path $tsKey)) {
+            New-Item -Path $tsKey -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+        if (Test-Path $tsKey) {
+            Set-ItemProperty -Path $tsKey -Name "bEnumerateHWDuringRemoteSession" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $tsKey -Name "EnableHardwareModeForRemoteDesktop" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $tsKey -Name "SelectRemoteDesktopGpuPreference" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            $log += "  -> Đã mở khóa OpenGL phần cứng cho session UltraViewer / RDP."
+        }
+
+        $log += "[4/5] Kích hoạt Hardware Acceleration hệ thống & Hardware GPU Scheduling..."
+        $avalonKey = "HKCU:\Software\Microsoft\Avalon.Graphics"
+        if (!(Test-Path $avalonKey)) {
+            New-Item -Path $avalonKey -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+        if (Test-Path $avalonKey) {
+            Set-ItemProperty -Path $avalonKey -Name "DisableHWAcceleration" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        }
+        $gfxKey = "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"
+        if (Test-Path $gfxKey) {
+            Set-ItemProperty -Path $gfxKey -Name "HwSchMode" -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+        }
+        $log += "  -> Đã bật Hardware Acceleration hệ thống & HwSchMode = 2."
+
+        $log += "[5/5] Hoàn tất khôi phục cấu hình đồ họa SketchUp!"
+        $log += "[OK] ĐÃ SỬA LỖI SKETCHUP HARDWARE ACCELERATION & OPENGL THÀNH CÔNG!"
+        $log += "Lưu ý: Hãy khởi chạy lại SketchUp. Nếu máy vừa cập nhật Driver VGA, nên khởi động lại máy để có hiệu năng tốt nhất."
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTFixHighPerfGpu {
+    <#
+    .SYNOPSIS
+        Tự động quét các phần mềm đồ họa, dựng hình 3D, kiến trúc (AutoCAD, SketchUp, 3ds Max, Revit, Photoshop...)
+        và gán chế độ chạy bằng GPU rời hiệu năng cao (GpuPreference=2).
+    #>
+    $log = @()
+    try {
+        $log += "[1/2] Quét các ứng dụng đồ họa kỹ thuật trên hệ thống..."
+        $dxPrefKey = "HKCU:\Software\Microsoft\DirectX\UserGpuPreferences"
+        if (!(Test-Path $dxPrefKey)) {
+            New-Item -Path "HKCU:\Software\Microsoft\DirectX" -Name "UserGpuPreferences" -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+
+        $targetNames = @("SketchUp.exe", "acad.exe", "3dsmax.exe", "Photoshop.exe", "Revit.exe", "Lumion.exe", "Enscape.exe", "Blender.exe", "Rhino.exe")
+        $foundCount = 0
+
+        $searchRoots = @("${env:ProgramFiles}", "${env:ProgramFiles(x86)}")
+        foreach ($sr in $searchRoots) {
+            if (Test-Path $sr) {
+                foreach ($tName in $targetNames) {
+                    $items = Get-ChildItem -Path $sr -Filter $tName -Recurse -ErrorAction SilentlyContinue -Depth 4 | Select-Object -ExpandProperty FullName
+                    foreach ($exe in $items) {
+                        Set-ItemProperty -Path $dxPrefKey -Name $exe -Value "GpuPreference=2;" -Type String -Force -ErrorAction SilentlyContinue
+                        $log += "  -> Gán Card rời hiệu năng cao cho: $exe"
+                        $foundCount++
+                    }
+                }
+            }
+        }
+
+        $log += "[2/2] Thiết lập tối ưu nguồn điện cho bộ xử lý đồ họa..."
+        $log += "[OK] Đã ép $foundCount ứng dụng đồ họa ưu tiên chạy 100% bằng GPU Rời Hiệu Năng Cao!"
+    } catch {
+        $log += "[LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+

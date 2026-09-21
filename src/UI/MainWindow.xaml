@@ -2337,6 +2337,8 @@
                                             <CheckBox x:Name="chk_FixLanDiscovery" Content="🔌 Sửa Mất Mạng LAN &amp; Discovery" Margin="0,3,4,3"/>
                                             <CheckBox x:Name="chk_FixSleepPower" Content="⚡ Sửa Lỗi Treo Máy Khi Sleep" Margin="0,3,4,3"/>
                                             <CheckBox x:Name="chk_FixWmiRepo" Content="🧩 Sửa Lỗi WMI Repository" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixSketchUpOpenGL" Content="🎨 Sửa Lỗi SketchUp &amp; OpenGL" Margin="0,3,4,3" ToolTip="Sửa triệt để lỗi SketchUp báo Hardware acceleration is unsupported on your graphics card hoặc không mở được qua UltraViewer"/>
+                                            <CheckBox x:Name="chk_FixHighPerfGpu" Content="🎮 Ép Chạy GPU Rời (High Performance)" Margin="0,3,4,3" ToolTip="Ép toàn bộ ứng dụng đồ họa kỹ thuật (AutoCAD, SketchUp, 3ds Max...) chạy card rời NVIDIA/AMD thay vì card Onboard"/>
                                         </UniformGrid>
                                         <Button x:Name="btnRunSelectedFixes" Content="🚀 Chạy Sửa Lỗi Đã Chọn (Run Selected Fixes)" Background="#BE123C" Style="{StaticResource ActionBtn}" Height="36" FontWeight="Bold" FontSize="13.5"/>
                                     </StackPanel>
