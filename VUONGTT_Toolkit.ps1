@@ -3675,6 +3675,9 @@ $btnAutoWinCreateRescueNow      = Get-Control "btnAutoWinCreateRescueNow"
 $btnOpenAutoWinFolder           = Get-Control "btnOpenAutoWinFolder"
 $btnEjectMountedIso             = Get-Control "btnEjectMountedIso"
 $btnOpenOfficialDownloadPage    = Get-Control "btnOpenOfficialDownloadPage"
+$panelDetectedEditions          = Get-Control "panelDetectedEditions"
+$cmbDetectedEditions            = Get-Control "cmbDetectedEditions"
+$lblDetectedEditionsHint        = Get-Control "lblDetectedEditionsHint"
 
 $btnBypassWin11All       = Get-Control "btnBypassWin11All"
 $btnBypassOOBEMSA        = Get-Control "btnBypassOOBEMSA"
@@ -3686,18 +3689,65 @@ $btnDownloadVentoy       = Get-Control "btnDownloadVentoy"
 $btnPostInstallTweak     = Get-Control "btnPostInstallTweak"
 $txtAutoWinLog           = Get-Control "txtAutoWinLog"
 
+function Update-VUONGTTIsoEditionsUi {
+    param([string]$FilePath)
+    if (-not $FilePath -or -not (Test-Path $FilePath)) {
+        if ($panelDetectedEditions) { $panelDetectedEditions.Visibility = [System.Windows.Visibility]::Collapsed }
+        return
+    }
+
+    if ($panelDetectedEditions -and $cmbDetectedEditions) {
+        $cmbDetectedEditions.Items.Clear()
+        $editions = Get-VUONGTTIsoEditions -IsoPath $FilePath
+        if ($editions -and $editions.Count -gt 0) {
+            $selectedIdx = 0
+            for ($i = 0; $i -lt $editions.Count; $i++) {
+                $ed = $editions[$i]
+                $itemText = "[$($ed.Index)] $($ed.Name) ($($ed.Architecture), $($ed.SizeGB) GB)"
+                [void]$cmbDetectedEditions.Items.Add($itemText)
+                if ($ed.Name -match "Pro|Professional" -and $selectedIdx -eq 0) {
+                    $selectedIdx = $i
+                }
+            }
+            $cmbDetectedEditions.SelectedIndex = $selectedIdx
+            $panelDetectedEditions.Visibility = [System.Windows.Visibility]::Visible
+            if ($lblDetectedEditionsHint) {
+                $lblDetectedEditionsHint.Text = "* Đã tự động đọc toàn bộ $($editions.Count) phiên bản Windows có trong tệp tin cài đặt."
+            }
+            if ($txtAutoWinLog) {
+                $txtAutoWinLog.Text = "[PHÂN TÍCH ISO THÀNH CÔNG] Đã phát hiện $($editions.Count) phiên bản Windows:`n" + (($editions | ForEach-Object { "  • Index $($_.Index): $($_.Name) ($($_.Architecture))" }) -join "`n") + "`n`n$($txtAutoWinLog.Text)"
+            }
+        } else {
+            $panelDetectedEditions.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }
+}
+
 if ($cmbAutoWinEdition) {
     $cmbAutoWinEdition.Add_SelectionChanged({
         $idx = $cmbAutoWinEdition.SelectedIndex
         switch ($idx) {
-            0 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 Pro 24H2 (Sẵn sàng tải hoặc nạp ISO)..." } }
-            1 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 IoT Enterprise LTSC 2024 (Siêu nhẹ mượt)..." } }
-            2 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 10 Pro 22H2 (Ổn định tối đa)..." } }
-            3 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 10 Enterprise LTSC 2021 (Doanh nghiệp)..." } }
-            4 { 
+            0  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 Pro 24H2 (Bản mới nhất 2026, chuẩn IT)..." } }
+            1  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 IoT Enterprise LTSC 2024 (Siêu nhẹ mượt, không rác)..." } }
+            2  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 Enterprise (Bản 24H2 Doanh nghiệp & Bảo mật)..." } }
+            3  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 Home (Bản 24H2 Gia đình tiêu chuẩn)..." } }
+            4  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 Pro (Bản 23H2 Ổn định cao)..." } }
+            5  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 10 Pro (Bản 22H2 Ổn định tối đa mọi dòng máy)..." } }
+            6  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 10 Home (Bản 22H2 Tiêu chuẩn cá nhân)..." } }
+            7  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 10 Enterprise LTSC 2021 (Hỗ trợ dài hạn đến 2027)..." } }
+            8  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 10 Enterprise LTSC 2019 (Siêu nhẹ cho máy yếu)..." } }
+            9  { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows Server 2025 (Standard / Datacenter thế hệ mới)..." } }
+            10 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows Server 2022 (Standard / Datacenter doanh nghiệp)..." } }
+            11 { 
                 if ($txtAutoWinIsoPath -and ($txtAutoWinIsoPath.Text -match "^Đang chọn gói:")) {
                     $txtAutoWinIsoPath.Text = ""
                 }
+            }
+        }
+        if ($panelDetectedEditions -and $idx -lt 11) {
+            $curPath = if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text.Trim() } else { "" }
+            if (-not (Test-Path $curPath -PathType Leaf)) {
+                $panelDetectedEditions.Visibility = [System.Windows.Visibility]::Collapsed
             }
         }
     })
@@ -3710,9 +3760,10 @@ if ($btnAutoWinBrowseISO) {
         $dlg.Title = "Chọn tệp tin ISO bộ cài đặt Windows"
         if ($dlg.ShowDialog() -eq $true) {
             if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = $dlg.FileName }
-            if ($cmbAutoWinEdition) { $cmbAutoWinEdition.SelectedIndex = 4 }
-            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[CHỌN FILE] Đã chọn file ISO thành công:`n$($dlg.FileName)`nSẵn sàng triển khai cài đặt ngay!" }
+            if ($cmbAutoWinEdition) { $cmbAutoWinEdition.SelectedIndex = 11 }
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[CHỌN FILE] Đã chọn file ISO thành công:`n$($dlg.FileName)`nĐang phân tích cấu trúc các phiên bản bên trong..." }
             $txtFooterStatus.Text = "• [OK] Đã chọn file ISO: $([System.IO.Path]::GetFileName($dlg.FileName))"
+            Update-VUONGTTIsoEditionsUi -FilePath $dlg.FileName
         }
     })
 }
@@ -3794,8 +3845,15 @@ if ($btnOpenOfficialDownloadPage) {
         $url = switch ($idx) {
             0 { "https://www.microsoft.com/software-download/windows11" }
             1 { "https://www.microsoft.com/evalcenter/evaluate-windows-11-enterprise" }
-            2 { "https://www.microsoft.com/software-download/windows10" }
-            3 { "https://www.microsoft.com/evalcenter/evaluate-windows-10-enterprise" }
+            2 { "https://www.microsoft.com/evalcenter/evaluate-windows-11-enterprise" }
+            3 { "https://www.microsoft.com/software-download/windows11" }
+            4 { "https://www.microsoft.com/software-download/windows11" }
+            5 { "https://www.microsoft.com/software-download/windows10" }
+            6 { "https://www.microsoft.com/software-download/windows10" }
+            7 { "https://www.microsoft.com/evalcenter/evaluate-windows-10-enterprise" }
+            8 { "https://www.microsoft.com/evalcenter/evaluate-windows-10-enterprise" }
+            9 { "https://www.microsoft.com/evalcenter/evaluate-windows-server-2025" }
+            10 { "https://www.microsoft.com/evalcenter/evaluate-windows-server-2022" }
             default { "https://www.microsoft.com/software-download/" }
         }
         Start-Process $url

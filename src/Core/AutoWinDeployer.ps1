@@ -95,55 +95,199 @@ function Get-VUONGTTAutoWinEditions {
     return @(
         [PSCustomObject]@{
             Id          = "Win11_24H2_Pro"
-            Name        = "Windows 11 Pro (Bản 24H2 Mới Nhất 2026)"
-            Tag         = "Win11-24H2"
+            Name        = "🚀 Windows 11 Pro (Bản 24H2 Mới Nhất 2026)"
+            Tag         = "Win11-24H2-Pro"
             Type        = "Windows 11"
             SizeGB      = 5.4
-            Desc        = "Bản cài đặt Windows 11 chính hãng Microsoft, mượt mà, hỗ trợ Copilot & tính năng AI."
+            Desc        = "Bản cài đặt Windows 11 Pro 24H2 chính hãng Microsoft, mượt mà, hỗ trợ đầy đủ Copilot & tính năng AI."
+            DownloadUrl = "https://software.download.prss.microsoft.com/dbazure/Win11_24H2_English_x64.iso"
+            PortalUrl   = "https://www.microsoft.com/software-download/windows11"
+        },
+        [PSCustomObject]@{
+            Id          = "Win11_24H2_Home"
+            Name        = "🏠 Windows 11 Home (Bản 24H2 Cho Cá Nhân / Gia Đình)"
+            Tag         = "Win11-24H2-Home"
+            Type        = "Windows 11"
+            SizeGB      = 5.4
+            Desc        = "Bản Windows 11 Home 24H2 tiêu chuẩn cho laptop người dùng gia đình, tối ưu pin và giải trí."
             DownloadUrl = "https://software.download.prss.microsoft.com/dbazure/Win11_24H2_English_x64.iso"
             PortalUrl   = "https://www.microsoft.com/software-download/windows11"
         },
         [PSCustomObject]@{
             Id          = "Win11_IoT_LTSC_2024"
-            Name        = "Windows 11 IoT Enterprise LTSC 2024 (Siêu Nhẹ, Không Rác)"
-            Tag         = "Win11-LTSC"
+            Name        = "⚡ Windows 11 IoT Enterprise LTSC 2024 (Siêu Nhẹ, Không Rác - 10 Năm)"
+            Tag         = "Win11-LTSC-2024"
             Type        = "Windows 11 LTSC"
             SizeGB      = 4.6
-            Desc        = "Bản Doanh nghiệp đặc biệt được lược bỏ 100% bloatware, nhẹ mượt, hỗ trợ cập nhật 10 năm."
+            Desc        = "Bản Doanh nghiệp đặc biệt được lược bỏ 100% bloatware, nhẹ mượt, hỗ trợ cập nhật bảo mật 10 năm."
             DownloadUrl = "https://software.download.prss.microsoft.com/dbazure/Windows11_IoT_Enterprise_LTSC_2024_x64.iso"
             PortalUrl   = "https://www.microsoft.com/evalcenter/evaluate-windows-11-enterprise"
         },
         [PSCustomObject]@{
+            Id          = "Win11_Enterprise"
+            Name        = "🏢 Windows 11 Enterprise (Bản Doanh Nghiệp Toàn Diện)"
+            Tag         = "Win11-Enterprise"
+            Type        = "Windows 11"
+            SizeGB      = 5.2
+            Desc        = "Bản Windows 11 Enterprise đầy đủ tính năng quản trị Domain, DirectAccess và BitLocker cao cấp."
+            DownloadUrl = ""
+            PortalUrl   = "https://www.microsoft.com/evalcenter/evaluate-windows-11-enterprise"
+        },
+        [PSCustomObject]@{
+            Id          = "Win11_23H2_Pro"
+            Name        = "🌟 Windows 11 Pro (Bản 23H2 Cực Kỳ Ổn Định)"
+            Tag         = "Win11-23H2"
+            Type        = "Windows 11"
+            SizeGB      = 5.1
+            Desc        = "Bản Windows 11 23H2 có độ tương thích cao, tương thích tốt với các phần mềm đồ họa và kỹ thuật."
+            DownloadUrl = ""
+            PortalUrl   = "https://www.microsoft.com/software-download/windows11"
+        },
+        [PSCustomObject]@{
             Id          = "Win10_22H2_Pro"
-            Name        = "Windows 10 Pro (Bản 22H2 Ổn Định Nhất Cho Mọi Máy)"
-            Tag         = "Win10-22H2"
+            Name        = "🌟 Windows 10 Pro (Bản 22H2 Ổn Định Nhất Cho Mọi Máy & Kế Toán)"
+            Tag         = "Win10-22H2-Pro"
             Type        = "Windows 10"
             SizeGB      = 4.8
-            Desc        = "Bản Windows 10 tương thích tốt nhất cho máy văn phòng, laptop đời cũ và máy in/kế toán."
+            Desc        = "Bản Windows 10 Pro tương thích tốt nhất cho máy văn phòng, laptop đời cũ, máy in LAN và phần mềm kế toán."
             DownloadUrl = "https://software.download.prss.microsoft.com/dbazure/Win10_22H2_English_x64.iso"
             PortalUrl   = "https://www.microsoft.com/software-download/windows10"
         },
         [PSCustomObject]@{
+            Id          = "Win10_22H2_Home"
+            Name        = "🏠 Windows 10 Home (Bản 22H2 Tiêu Chuẩn)"
+            Tag         = "Win10-22H2-Home"
+            Type        = "Windows 10"
+            SizeGB      = 4.7
+            Desc        = "Bản Windows 10 Home tiêu chuẩn nhẹ nhàng, ổn định cao."
+            DownloadUrl = ""
+            PortalUrl   = "https://www.microsoft.com/software-download/windows10"
+        },
+        [PSCustomObject]@{
             Id          = "Win10_LTSC_2021"
-            Name        = "Windows 10 Enterprise LTSC 2021 (Hỗ Trợ Dài Hạn)"
-            Tag         = "Win10-LTSC"
+            Name        = "💼 Windows 10 Enterprise LTSC 2021 (Bản Doanh Nghiệp Mượt Nhẹ)"
+            Tag         = "Win10-LTSC-2021"
             Type        = "Windows 10 LTSC"
             SizeGB      = 4.3
-            Desc        = "Bản Windows 10 LTSC siêu ổn định, mượt mà cho máy cấu hình yếu hoặc thiết bị doanh nghiệp."
+            Desc        = "Bản Windows 10 LTSC siêu ổn định, không có Cortana/Store rác, mượt mà cho mọi thiết bị."
             DownloadUrl = ""
             PortalUrl   = "https://www.microsoft.com/evalcenter/evaluate-windows-10-enterprise"
         },
         [PSCustomObject]@{
+            Id          = "Win10_LTSC_2019"
+            Name        = "🛡️ Windows 10 Enterprise LTSC 2019 (Siêu Nhẹ Cho Máy Cấu Hình Yếu)"
+            Tag         = "Win10-LTSC-2019"
+            Type        = "Windows 10 LTSC"
+            SizeGB      = 3.8
+            Desc        = "Bản Windows 10 LTSC 1809 cực nhẹ, chuyên trị các dòng máy tính RAM 4GB hoặc CPU đời cũ."
+            DownloadUrl = ""
+            PortalUrl   = "https://www.microsoft.com/evalcenter/evaluate-windows-10-enterprise"
+        },
+        [PSCustomObject]@{
+            Id          = "WinServer_2025"
+            Name        = "🖥️ Windows Server 2025 (Bản Máy Chủ Mới Nhất)"
+            Tag         = "WinServer-2025"
+            Type        = "Windows Server"
+            SizeGB      = 5.3
+            Desc        = "Hệ điều hành Windows Server 2025 chính thức mới nhất, hỗ trợ ảo hóa Hyper-V và lưu trữ đám mây."
+            DownloadUrl = ""
+            PortalUrl   = "https://www.microsoft.com/evalcenter/evaluate-windows-server-2025"
+        },
+        [PSCustomObject]@{
+            Id          = "WinServer_2022"
+            Name        = "🖥️ Windows Server 2022 (Standard / Datacenter)"
+            Tag         = "WinServer-2022"
+            Type        = "Windows Server"
+            SizeGB      = 5.0
+            Desc        = "Windows Server 2022 tiêu chuẩn cho máy chủ nội bộ công ty, domain controller và file server."
+            DownloadUrl = ""
+            PortalUrl   = "https://www.microsoft.com/evalcenter/evaluate-windows-server-2022"
+        },
+        [PSCustomObject]@{
             Id          = "Custom_ISO"
-            Name        = "📁 Tự chọn file ISO / ESD có sẵn trong máy tính..."
+            Name        = "📁 [TỰ ĐỘNG PHÂN TÍCH] Tự chọn file ISO / WIM / ESD bất kỳ trong máy..."
             Tag         = "Custom"
             Type        = "Custom"
             SizeGB      = 0
-            Desc        = "Sử dụng bất kỳ file ISO / ESD Windows nào bạn đã tải về sẵn trên ổ đĩa D, E..."
+            Desc        = "Hỗ trợ 100% mọi file ISO / WIM / ESD Windows bất kỳ (Kể cả bộ cài All-In-One AIO, Ghost ISO, Win mod...). Tool sẽ tự động quét và phân tích sâu toàn bộ các phiên bản có bên trong!"
             DownloadUrl = ""
             PortalUrl   = ""
         }
     )
+}
+
+function Get-VUONGTTIsoEditions {
+    param([string]$IsoPath)
+
+    $results = @()
+    if (-not $IsoPath -or -not (Test-Path $IsoPath)) { return $results }
+
+    $ext = [System.IO.Path]::GetExtension($IsoPath).ToLowerInvariant()
+    $wimFile = $null
+    $needDismount = $false
+
+    try {
+        if ($ext -eq ".iso") {
+            $mountRes = Mount-DiskImage -ImagePath $IsoPath -StorageType ISO -PassThru -ErrorAction SilentlyContinue
+            if ($mountRes) {
+                $needDismount = $true
+                $vol = $mountRes | Get-Volume -ErrorAction SilentlyContinue
+                if ($vol -and $vol.DriveLetter) {
+                    $mDrive = "$($vol.DriveLetter):"
+                    if (Test-Path "$mDrive\sources\install.wim") { $wimFile = "$mDrive\sources\install.wim" }
+                    elseif (Test-Path "$mDrive\sources\install.esd") { $wimFile = "$mDrive\sources\install.esd" }
+                    elseif (Test-Path "$mDrive\sources\install.swm") { $wimFile = "$mDrive\sources\install.swm" }
+                }
+            }
+        } elseif ($ext -in @(".wim", ".esd", ".swm")) {
+            $wimFile = $IsoPath
+        }
+
+        if ($wimFile -and (Test-Path $wimFile)) {
+            try {
+                $images = Get-WindowsImage -ImagePath $wimFile -ErrorAction Stop
+                foreach ($img in $images) {
+                    $results += [PSCustomObject]@{
+                        Index        = $img.ImageIndex
+                        Name         = if ($img.ImageName) { $img.ImageName.Trim() } else { "Windows Edition $($img.ImageIndex)" }
+                        Description  = if ($img.ImageDescription) { $img.ImageDescription.Trim() } else { "" }
+                        SizeGB       = [math]::Round($img.ImageSize / 1GB, 2)
+                        Architecture = if ($img.Architecture) { $img.Architecture.ToString() } else { "x64" }
+                        Version      = if ($img.Version) { $img.Version.ToString() } else { "10.0" }
+                    }
+                }
+            } catch {
+                $dismOutput = & dism.exe /Get-WimInfo /WimFile:"$wimFile" 2>&1
+                $curIdx = $null
+                $curName = ""
+                foreach ($line in ($dismOutput -split "`r?`n")) {
+                    if ($line -match "Index\s*:\s*(\d+)") {
+                        $curIdx = [int]$matches[1]
+                    } elseif ($line -match "Name\s*:\s*(.+)") {
+                        $curName = $matches[1].Trim()
+                        if ($curIdx -ne $null) {
+                            $results += [PSCustomObject]@{
+                                Index        = $curIdx
+                                Name         = $curName
+                                Description  = $curName
+                                SizeGB       = 4.5
+                                Architecture = "x64"
+                                Version      = "Windows"
+                            }
+                            $curIdx = $null
+                        }
+                    }
+                }
+            }
+        }
+    } catch {
+    } finally {
+        if ($needDismount) {
+            try { Dismount-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue | Out-Null } catch {}
+        }
+    }
+
+    return $results
 }
 
 function New-VUONGTTAutoUnattendXml {
@@ -454,36 +598,80 @@ function Initialize-VUONGTTPostInstallPayload {
         }
 
         # 3. Tạo SetupComplete.cmd - Kịch bản tối cao được Windows Setup tự động chạy dưới quyền SYSTEM
+        # 3. Tạo SetupComplete.cmd - Kịch bản chạy dưới quyền SYSTEM trước khi vào Desktop
+        # NGUYÊN TẮC VÀNG: SetupComplete.cmd PHẢI chạy siêu tốc (< 0.5s) và exit 0 ngay lập tức.
+        # TUYỆT ĐỐI KHÔNG chạy tác vụ mạng (irm MAS) hoặc quét hàng nghìn file INF đồng bộ ở đây vì sẽ bị kẹt logo máy tính (Dell, HP, Asus...) xoay vòng tròn!
         $scriptsDir = "$env:SystemRoot\Setup\Scripts"
         if (-not (Test-Path $scriptsDir)) { New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null }
         $setupCompletePath = "$scriptsDir\SetupComplete.cmd"
+        $firstBootPath = "$scriptsDir\VUONGTT_FirstBoot.cmd"
 
+        # 3.1. Kịch bản chạy ngầm FirstBoot (Thực thi khi ĐÃ VÀO DESKTOP qua RunOnce)
+        $firstBootLines = @(
+            "@echo off",
+            "chcp 65001 >nul",
+            "title VUONGTT Post-Install Optimization",
+            "echo ====================================================",
+            "echo [VUONGTT] DANG HOAN TAT CAI DAT HE THONG SAU KHI VAO DESKTOP...",
+            "echo ====================================================",
+            "",
+            ":: 1. Nap Driver mang va DriverStore an toan trong che do chay nen (Khong chan giao dien Desktop)",
+            "if exist `"$safeDrive\Backup_Drivers`" (",
+            "    start `"`" /b pnputil.exe /add-driver `"$safeDrive\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
+            "    start `"`" /b pnputil.exe /add-driver `"$safeDrive\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
+            ")",
+            "if exist `"C:\Backup_Drivers`" (",
+            "    start `"`" /b pnputil.exe /add-driver `"C:\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
+            "    start `"`" /b pnputil.exe /add-driver `"C:\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
+            ")",
+            "if exist `"C:\Windows.old\Backup_Drivers`" (",
+            "    start `"`" /b pnputil.exe /add-driver `"C:\Windows.old\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
+            "    start `"`" /b pnputil.exe /add-driver `"C:\Windows.old\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
+            ")"
+        )
+
+        if ($AutoActivate) {
+            $firstBootLines += @(
+                "",
+                ":: 2. Kich hoat ban quyen so vinh vien MAS HWID (Co kiem tra ket noi mang truoc, tranh treo vo han)",
+                "echo [VUONGTT] Dang kiem tra ket noi Internet de kich hoat ban quyen...",
+                "set HAS_NET=0",
+                "for /L %%i in (1,1,5) do (",
+                "    ping -n 1 8.8.8.8 >nul 2>&1 && (set HAS_NET=1 & goto :DoActivate)",
+                "    ping -n 1 1.1.1.1 >nul 2>&1 && (set HAS_NET=1 & goto :DoActivate)",
+                "    timeout /t 3 /nobreak >nul",
+                ")",
+                ":DoActivate",
+                "if `"%HAS_NET%`"==`"1`" (",
+                "    echo [VUONGTT] Phat hien Internet, dang kich hoat ban quyen so...",
+                "    start `"`" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -Command `"irm https://get.activated.win | iex`" >nul 2>&1",
+                ") else (",
+                "    echo [VUONGTT] Chua co Internet, bo qua kich hoat ban quyen.",
+                ")"
+            )
+        }
+
+        $firstBootLines += @(
+            "",
+            ":: 3. Khoi dong VUONGTT Toolkit de chao don nguoi dung",
+            "if exist `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" (",
+            "    start `"`" `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`"",
+            ")",
+            "",
+            "exit 0"
+        )
+
+        # 3.2. File SetupComplete.cmd siêu nhẹ - chạy trong < 0.2s
         $cmdLines = @(
             "@echo off",
             "chcp 65001 >nul",
-            "echo [VUONGTT POST-INSTALL AUTOMATION] Starting system restore...",
-            "",
             ":: 1. Thiet lap an toan chong crash man hinh den do hoa & Winlogon Shell",
             "reg add `"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers`" /v `"TdrDelay`" /t REG_DWORD /d 10 /f >nul 2>&1",
             "reg add `"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers`" /v `"TdrDdiDelay`" /t REG_DWORD /d 10 /f >nul 2>&1",
             "reg add `"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon`" /v `"Shell`" /t REG_SZ /d `"explorer.exe`" /f >nul 2>&1",
             "reg add `"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon`" /v `"AutoRestartShell`" /t REG_DWORD /d 1 /f >nul 2>&1",
             "",
-            ":: 2. Tu dong nap Driver Mang (LAN/WiFi) va nap DriverStore an toan (KHONG ep /install VGA de tranh sap DWM)",
-            "if exist `"$safeDrive\Backup_Drivers`" (",
-            "    pnputil.exe /add-driver `"$safeDrive\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
-            "    pnputil.exe /add-driver `"$safeDrive\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
-            ")",
-            "if exist `"C:\Backup_Drivers`" (",
-            "    pnputil.exe /add-driver `"C:\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
-            "    pnputil.exe /add-driver `"C:\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
-            ")",
-            "if exist `"C:\Windows.old\Backup_Drivers`" (",
-            "    pnputil.exe /add-driver `"C:\Windows.old\Backup_Drivers\net*.inf`" /subdirs /install >nul 2>&1",
-            "    pnputil.exe /add-driver `"C:\Windows.old\Backup_Drivers\*.inf`" /subdirs >nul 2>&1",
-            ")",
-            "",
-            ":: 2. Tu dong khoi phuc VUONGTT Toolkit len Public Desktop (Ke ca khi may chi co o C)",
+            ":: 2. Sao chep VUONGTT Toolkit len Desktop chung (Public Desktop)",
             "if exist `"$appBackupDir\VUONGTT_Toolkit.exe`" (",
             "    copy /y `"$appBackupDir\VUONGTT_Toolkit.exe`" `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" >nul 2>&1",
             ") else if exist `"C:\Windows.old\VUONGTT_Windows_Setup\VUONGTT_Toolkit.exe`" (",
@@ -491,27 +679,19 @@ function Initialize-VUONGTTPostInstallPayload {
             ") else if exist `"C:\VUONGTT_Windows_Setup\VUONGTT_Toolkit.exe`" (",
             "    copy /y `"C:\VUONGTT_Windows_Setup\VUONGTT_Toolkit.exe`" `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" >nul 2>&1",
             ")",
-            "if exist `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" (",
-            "    reg add `"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce`" /v `"VUONGTT_Welcome`" /t REG_SZ /d `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" /f >nul 2>&1",
-            ")"
-        )
-
-        if ($AutoActivate) {
-            $cmdLines += @(
-                "",
-                ":: 3. Tu dong kich hoat ban quyen so vinh vien MAS HWID",
-                "powershell -NoProfile -ExecutionPolicy Bypass -Command `"irm https://get.activated.win | iex`" >nul 2>&1"
-            )
-        }
-
-        $cmdLines += @(
             "",
+            ":: 3. Dang ky VUONGTT_FirstBoot vao RunOnce de thuc thi khi da vao Desktop an toan",
+            "reg add `"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce`" /v `"VUONGTT_PostInstall`" /t REG_SZ /d `"%SystemRoot%\Setup\Scripts\VUONGTT_FirstBoot.cmd`" /f >nul 2>&1",
+            "",
+            ":: 4. Thoat ngay lap tuc de Windows boot thang vao Desktop khong bi treo",
             "exit 0"
         )
 
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllLines($setupCompletePath, $cmdLines, $utf8NoBom)
+        [System.IO.File]::WriteAllLines($firstBootPath, $firstBootLines, $utf8NoBom)
         [System.IO.File]::WriteAllLines("$appBackupDir\SetupComplete.cmd", $cmdLines, $utf8NoBom)
+        [System.IO.File]::WriteAllLines("$appBackupDir\VUONGTT_FirstBoot.cmd", $firstBootLines, $utf8NoBom)
 
         return [PSCustomObject]@{
             Success       = $true

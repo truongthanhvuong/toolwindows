@@ -2811,19 +2811,38 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <ComboBox x:Name="cmbAutoWinEdition" Height="30" VerticalContentAlignment="Center" FontSize="12.5" Margin="0,0,6,0">
-                                                <ComboBoxItem Content="🚀 Windows 11 Pro (Bản 24H2 Mới Nhất 2026)" IsSelected="True"/>
-                                                <ComboBoxItem Content="⚡ Windows 11 IoT Enterprise LTSC 2024 (Siêu Nhẹ, Không Rác)"/>
-                                                <ComboBoxItem Content="🌟 Windows 10 Pro (Bản 22H2 Ổn Định Nhất Cho Mọi Máy)"/>
-                                                <ComboBoxItem Content="💼 Windows 10 Enterprise LTSC 2021 (Hỗ Trợ Dài Hạn)"/>
-                                                <ComboBoxItem Content="📁 Tự chọn file ISO / ESD có sẵn trong máy tính..."/>
-                                            </ComboBox>
-                                            <Button x:Name="btnAutoWinBrowseISO" Grid.Column="1" Content="📂 Chọn File ISO..." Background="#334155" Style="{StaticResource ActionBtn}" Height="30" Padding="12,0,12,0"/>
+                                             <ComboBox x:Name="cmbAutoWinEdition" Height="30" VerticalContentAlignment="Center" FontSize="12.5" Margin="0,0,6,0">
+                                                 <ComboBoxItem Content="🚀 Windows 11 Pro (Bản 24H2 Mới Nhất 2026 - Chuẩn IT)" IsSelected="True"/>
+                                                 <ComboBoxItem Content="⚡ Windows 11 IoT Enterprise LTSC 2024 (Siêu Nhẹ, Không Rác)"/>
+                                                 <ComboBoxItem Content="🏢 Windows 11 Enterprise (Bản 24H2 Doanh Nghiệp)"/>
+                                                 <ComboBoxItem Content="🏠 Windows 11 Home (Bản 24H2 Gia Đình Tiêu Chuẩn)"/>
+                                                 <ComboBoxItem Content="🛡️ Windows 11 Pro (Bản 23H2 Ổn Định Cao)"/>
+                                                 <ComboBoxItem Content="🌟 Windows 10 Pro (Bản 22H2 Ổn Định Tối Đa Mọi Dòng Máy)"/>
+                                                 <ComboBoxItem Content="🏠 Windows 10 Home (Bản 22H2 Gia Đình Tiêu Chuẩn)"/>
+                                                 <ComboBoxItem Content="💼 Windows 10 Enterprise LTSC 2021 (Hỗ Trợ Dài Hạn Đến 2027)"/>
+                                                 <ComboBoxItem Content="⚡ Windows 10 Enterprise LTSC 2019 (Siêu Nhẹ Cho Máy Yếu)"/>
+                                                 <ComboBoxItem Content="🖥️ Windows Server 2025 (Standard / Datacenter Thế Hệ Mới)"/>
+                                                 <ComboBoxItem Content="🖥️ Windows Server 2022 (Standard / Datacenter Doanh Nghiệp)"/>
+                                                 <ComboBoxItem Content="📁 Tự chọn file ISO / WIM / ESD bất kỳ có sẵn trong máy..."/>
+                                             </ComboBox>
+                                             <Button x:Name="btnAutoWinBrowseISO" Grid.Column="1" Content="📂 Chọn File ISO..." Background="#334155" Style="{StaticResource ActionBtn}" Height="30" Padding="12,0,12,0"/>
                                         </Grid>
-                                        <DockPanel>
-                                            <TextBlock Text="Đường dẫn file ISO:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                            <TextBox x:Name="txtAutoWinIsoPath" Height="26" VerticalContentAlignment="Center" FontSize="12" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" Text="Đang chọn gói: Windows 11 Pro 24H2 (Sẵn sàng tải hoặc mount)..." IsReadOnly="True"/>
-                                        </DockPanel>
+                                         <DockPanel Margin="0,0,0,6">
+                                             <TextBlock Text="Đường dẫn file ISO:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                             <TextBox x:Name="txtAutoWinIsoPath" Height="26" VerticalContentAlignment="Center" FontSize="12" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" Text="Đang chọn gói: Windows 11 Pro 24H2 (Sẵn sàng tải hoặc mount)..." IsReadOnly="True"/>
+                                         </DockPanel>
+                                         <!-- Panel hiển thị các phiên bản (Editions) phát hiện trong file ISO/WIM/ESD -->
+                                         <StackPanel x:Name="panelDetectedEditions" Visibility="Collapsed" Margin="0,2,0,0">
+                                             <Grid>
+                                                 <Grid.ColumnDefinitions>
+                                                     <ColumnDefinition Width="Auto"/>
+                                                     <ColumnDefinition Width="*"/>
+                                                 </Grid.ColumnDefinitions>
+                                                 <TextBlock Text="🎯 Phiên bản cài đặt trong ISO:" FontSize="11.5" FontWeight="SemiBold" Foreground="#10B981" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                 <ComboBox x:Name="cmbDetectedEditions" Grid.Column="1" Height="28" VerticalContentAlignment="Center" FontSize="12"/>
+                                             </Grid>
+                                             <TextBlock x:Name="lblDetectedEditionsHint" Text="* Đã tự động đọc toàn bộ các bản Windows có trong file ISO để bạn tùy ý chọn." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
 
