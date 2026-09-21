@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
@@ -15,8 +15,8 @@ using System.Drawing;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.908.47")]
-[assembly: AssemblyFileVersion("20.5.908.47")]
+[assembly: AssemblyVersion("20.5.908.72")]
+[assembly: AssemblyFileVersion("20.5.908.72")]
 
 namespace VUONGTT
 {
@@ -58,7 +58,7 @@ namespace VUONGTT
                     pb.Location = new Point(22, 78);
 
                     Label lblVer = new Label();
-                    lblVer.Text = "v20.5.908.71 • Professional Standalone (All-in-One)";
+                    lblVer.Text = "v20.5.908.72 • Professional Standalone (All-in-One)";
                     lblVer.ForeColor = Color.FromArgb(148, 163, 184);
                     lblVer.Font = new Font("Segoe UI", 7.5f, FontStyle.Regular);
                     lblVer.Location = new Point(22, 98);
@@ -226,10 +226,16 @@ namespace VUONGTT
                 psi.UseShellExecute = false;
                 psi.EnvironmentVariables["VUONGTT_ORIGINAL_EXE"] = currentExe;
 
-                Process.Start(psi);
+                Process proc = Process.Start(psi);
 
                 // Giữ Splash Screen trong khoảng 1.8 giây cho đến khi cửa sổ chính WPF sẵn sàng
                 Thread.Sleep(1800);
+                if (proc != null && proc.HasExited && proc.ExitCode != 0)
+                {
+                    CloseSplash();
+                    MessageBox.Show("Khởi chạy hệ thống không thành công (PowerShell ExitCode: " + proc.ExitCode + "). Vui lòng đảm bảo máy có PowerShell 5.1 trở lên và cấp quyền Administrator.", "Cảnh Báo Khởi Động", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 CloseSplash();
             }
             catch (Exception ex)

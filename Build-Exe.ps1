@@ -1,4 +1,4 @@
-# =========================================================================
+﻿# =========================================================================
 #   VUONGTT TOOLKIT 2026 - EXE COMPILER SCRIPT
 #   Bien dich toan bo ma nguon thanh 1 file VUONGTT_Toolkit.exe duy nhat
 # =========================================================================
@@ -19,6 +19,19 @@ if (-not (Test-Path $cscPath)) {
 }
 
 Write-Host ">>> Trinh bien dich C#: $cscPath" -ForegroundColor Cyan
+
+# Dam bao 100% cac file ma nguon ps1, xaml, json deu co UTF-8 BOM tranh loi font/ky tu tieng Viet trong PowerShell
+$utf8Bom = New-Object System.Text.UTF8Encoding($true)
+$textFilesToEnforce = Get-ChildItem -Path $RootDir -Recurse -Include "*.ps1", "*.xaml", "*.json" -File | Where-Object { $_.FullName -notmatch "\\\.git\\" }
+foreach ($tf in $textFilesToEnforce) {
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($tf.FullName)
+        if ($bytes.Length -lt 3 -or $bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
+            $content = [System.IO.File]::ReadAllText($tf.FullName, [System.Text.Encoding]::UTF8)
+            [System.IO.File]::WriteAllText($tf.FullName, $content, $utf8Bom)
+        }
+    } catch {}
+}
 
 $outputExe = Join-Path $RootDir "VUONGTT_Toolkit.exe"
 $programCs = Join-Path $RootDir "src\Program.cs"
