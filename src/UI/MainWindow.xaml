@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.73"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.74"
         Height="780" Width="1280"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
@@ -325,7 +325,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.908.73 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.908.74 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -2733,12 +2733,85 @@
                 <!-- ================= PAGE 18: CÀI WIN & BYPASS ================= -->
                 <ScrollViewer x:Name="pageAutoWin" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
+                        <!-- Banner Header -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
                             <StackPanel>
                                 <TextBlock Text="🚀 BỘ CÔNG CỤ CÀI WIN &amp; BYPASS WINDOWS 11 / 10" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
-                                <TextBlock Text="1-Click Bypass phần cứng TPM 2.0 / SecureBoot / RAM 4GB, Bypass tài khoản Microsoft (OOBE/MSA), tải ISO gốc và Rufus." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            </StackPanel>                        </Border>
+                                <TextBlock Text="Cài Windows Online trực tiếp không cần USB Boot, 1-Click Bypass phần cứng TPM 2.0 / SecureBoot, Bypass tài khoản Microsoft (OOBE/MSA), tải ISO gốc và Rufus." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
 
+                        <!-- CARD 1: CÀI WINDOWS ONLINE TỰ ĐỘNG (DIRECT DEPLOY) -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBlock Text="🌐 CÀI WINDOWS ONLINE TỰ ĐỘNG (DIRECT DEPLOY - KHÔNG CẦN USB BOOT)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <Border Background="#10B981" CornerRadius="4" Padding="6,2,6,2" HorizontalAlignment="Right">
+                                        <TextBlock Text="⚡ 1-Click Native Setup" FontSize="11" FontWeight="Bold" Foreground="White"/>
+                                    </Border>
+                                </DockPanel>
+                                <TextBlock Text="Cài đặt hoặc nâng cấp Windows 11 / 10 trực tiếp từ ổ cứng mà không cần cắm USB Boot. Tự động Bypass TPM 2.0, bỏ qua tài khoản Microsoft và sao lưu Driver." FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10"/>
+
+                                <!-- Step 1: Chọn Phiên Bản & Nguồn Cài Đặt -->
+                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="12,10,12,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="1. CHỌN PHIÊN BẢN WINDOWS &amp; TỆP TIN CÀI ĐẶT (.ISO)" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,6"/>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox x:Name="cmbAutoWinEdition" Height="30" VerticalContentAlignment="Center" FontSize="12.5" Margin="0,0,6,0">
+                                                <ComboBoxItem Content="🚀 Windows 11 Pro (Bản 24H2 Mới Nhất 2026)" IsSelected="True"/>
+                                                <ComboBoxItem Content="⚡ Windows 11 IoT Enterprise LTSC 2024 (Siêu Nhẹ, Không Rác)"/>
+                                                <ComboBoxItem Content="🌟 Windows 10 Pro (Bản 22H2 Ổn Định Nhất Cho Mọi Máy)"/>
+                                                <ComboBoxItem Content="💼 Windows 10 Enterprise LTSC 2021 (Hỗ Trợ Dài Hạn)"/>
+                                                <ComboBoxItem Content="📁 Tự chọn file ISO / ESD có sẵn trong máy tính..."/>
+                                            </ComboBox>
+                                            <Button x:Name="btnAutoWinBrowseISO" Grid.Column="1" Content="📂 Chọn File ISO..." Background="#334155" Style="{StaticResource ActionBtn}" Height="30" Padding="12,0,12,0"/>
+                                        </Grid>
+                                        <DockPanel>
+                                            <TextBlock Text="Đường dẫn file ISO:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBox x:Name="txtAutoWinIsoPath" Height="26" VerticalContentAlignment="Center" FontSize="12" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" Text="Đang chọn gói: Windows 11 Pro 24H2 (Sẵn sàng tải hoặc mount)..." IsReadOnly="True"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Step 2: Chọn Chế Độ Cài Đặt -->
+                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="12,10,12,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="2. CHỌN CHẾ ĐỘ CÀI ĐẶT (DEPLOYMENT MODE)" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,6"/>
+                                        <WrapPanel Margin="0,2,0,4">
+                                            <RadioButton x:Name="rbAutoWinUpgrade" GroupName="AutoWinMode" Content="🔄 Cài Đè / Nâng Cấp (Giữ nguyên 100% Dữ liệu &amp; Ứng dụng)" IsChecked="True" FontWeight="SemiBold" Margin="0,0,24,0" ToolTip="Khuyên dùng: Nâng cấp lên Win 11 hoặc sửa lỗi Win hỏng mà không mất bất kỳ file hay ứng dụng nào."/>
+                                            <RadioButton x:Name="rbAutoWinClean" GroupName="AutoWinMode" Content="✨ Cài Mới Hoàn Toàn (Clean Install - Chỉ xóa ổ C:, ổ D/E giữ nguyên)" FontWeight="SemiBold" ToolTip="Cài mới tinh khôi, format sạch sẽ phân vùng Windows ổ C:. Dữ liệu ổ D, E, F... vẫn nguyên vẹn 100%."/>
+                                        </WrapPanel>
+                                        <TextBlock Text="* Chú thích: Chế độ Cài Đè giúp sửa triệt để lỗi Windows, chế độ Cài Mới giúp máy nhẹ mượt như mới xuất xưởng." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Step 3: Tùy Chọn Tự Động Hóa Thông Minh -->
+                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="12,10,12,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="3. TÙY CHỌN TỰ ĐỘNG HÓA THÔNG MINH (UNATTENDED AUTOMATION)" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,6"/>
+                                        <WrapPanel>
+                                            <CheckBox x:Name="chkAutoWinBypass" Content="🛡️ Bypass TPM 2.0 / SecureBoot / RAM" IsChecked="True" Margin="0,0,20,4" ToolTip="Cài đặt được Windows 11 trên mọi dòng PC/Laptop không phân biệt cấu hình cũ hay mới."/>
+                                            <CheckBox x:Name="chkAutoWinNoMSA" Content="👤 Bỏ qua tài khoản Microsoft (Tạo user Local Admin)" IsChecked="True" Margin="0,0,20,4" ToolTip="Tự động vượt qua màn hình OOBE bắt buộc đăng nhập tài khoản Microsoft, tạo sẵn tài khoản Admin cục bộ."/>
+                                            <CheckBox x:Name="chkAutoWinBackupDriver" Content="💾 Tự sao lưu Driver hiện tại vào D:\Backup_Drivers" IsChecked="True" Margin="0,0,20,4" ToolTip="Tự động sao lưu toàn bộ Driver phần cứng (VGA, Wi-Fi, Sound) sang ổ D trước khi cài."/>
+                                            <CheckBox x:Name="chkAutoWinAutoActivate" Content="🔑 Kích hoạt bản quyền số vĩnh viễn (MAS HWID)" IsChecked="True" Margin="0,0,20,4" ToolTip="Tự động kích hoạt bản quyền số vĩnh viễn gắn liền bo mạch chủ sau khi cài đặt xong."/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Nút Thực Thi 1-Click -->
+                                <WrapPanel>
+                                    <Button x:Name="btnStartOnlineWindowsInstall" Content="🚀 Bắt Đầu Cài Windows Online (1-Click Deploy)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="340" Height="36" FontWeight="Bold" Padding="18,0,18,0" Margin="0,0,8,0"/>
+                                    <Button x:Name="btnOpenAutoWinFolder" Content="📂 Mở Thư Mục Cài Đặt" Background="#475569" Style="{StaticResource ActionBtn}" Height="36" Padding="14,0,14,0" Margin="0,0,8,0"/>
+                                    <Button x:Name="btnOpenOfficialDownloadPage" Content="🌐 Trang Tải ISO Microsoft" Background="#334155" Style="{StaticResource ActionBtn}" Height="36" Padding="14,0,14,0"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- CARD 2: 1-CLICK BYPASS CÀI ĐẶT WINDOWS 11 -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
                             <StackPanel>
                                 <TextBlock Text="🛡️ 1-CLICK BYPASS CÀI ĐẶT WINDOWS 11" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
@@ -3118,7 +3191,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.73" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.74" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

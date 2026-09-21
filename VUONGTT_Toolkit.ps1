@@ -74,6 +74,7 @@ $corePath = Join-Path $ScriptDir "src\Core"
 . (Join-Path $corePath "IpScanner.ps1")
 . (Join-Path $corePath "ConfigManager.ps1")
 . (Join-Path $corePath "DiskHealthManager.ps1")
+. (Join-Path $corePath "AutoWinDeployer.ps1")
 
 # Load Main UI XAML
 $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
@@ -3465,8 +3466,21 @@ if ($btnOpenDeviceManagerDirect) {
 }
 
 # =========================================================================
-# MODULE 12: CÀI WIN & BYPASS TOÀN DIỆN
+# MODULE 12: CÀI WIN ONLINE & BYPASS TOÀN DIỆN
 # =========================================================================
+$cmbAutoWinEdition              = Get-Control "cmbAutoWinEdition"
+$btnAutoWinBrowseISO            = Get-Control "btnAutoWinBrowseISO"
+$txtAutoWinIsoPath              = Get-Control "txtAutoWinIsoPath"
+$rbAutoWinUpgrade               = Get-Control "rbAutoWinUpgrade"
+$rbAutoWinClean                 = Get-Control "rbAutoWinClean"
+$chkAutoWinBypass               = Get-Control "chkAutoWinBypass"
+$chkAutoWinNoMSA                = Get-Control "chkAutoWinNoMSA"
+$chkAutoWinBackupDriver         = Get-Control "chkAutoWinBackupDriver"
+$chkAutoWinAutoActivate         = Get-Control "chkAutoWinAutoActivate"
+$btnStartOnlineWindowsInstall   = Get-Control "btnStartOnlineWindowsInstall"
+$btnOpenAutoWinFolder           = Get-Control "btnOpenAutoWinFolder"
+$btnOpenOfficialDownloadPage    = Get-Control "btnOpenOfficialDownloadPage"
+
 $btnBypassWin11All       = Get-Control "btnBypassWin11All"
 $btnBypassOOBEMSA        = Get-Control "btnBypassOOBEMSA"
 $btnDisableBitLockerSetup = Get-Control "btnDisableBitLockerSetup"
@@ -3476,6 +3490,184 @@ $btnDownloadRufus        = Get-Control "btnDownloadRufus"
 $btnDownloadVentoy       = Get-Control "btnDownloadVentoy"
 $btnPostInstallTweak     = Get-Control "btnPostInstallTweak"
 $txtAutoWinLog           = Get-Control "txtAutoWinLog"
+
+if ($cmbAutoWinEdition) {
+    $cmbAutoWinEdition.Add_SelectionChanged({
+        $idx = $cmbAutoWinEdition.SelectedIndex
+        switch ($idx) {
+            0 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 Pro 24H2 (Sẵn sàng tải hoặc nạp ISO)..." } }
+            1 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 11 IoT Enterprise LTSC 2024 (Siêu nhẹ mượt)..." } }
+            2 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 10 Pro 22H2 (Ổn định tối đa)..." } }
+            3 { if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = "Đang chọn gói: Windows 10 Enterprise LTSC 2021 (Doanh nghiệp)..." } }
+            4 { 
+                if ($txtAutoWinIsoPath -and ($txtAutoWinIsoPath.Text -match "^Đang chọn gói:")) {
+                    $txtAutoWinIsoPath.Text = ""
+                }
+            }
+        }
+    })
+}
+
+if ($btnAutoWinBrowseISO) {
+    $btnAutoWinBrowseISO.Add_Click({
+        $dlg = New-Object Microsoft.Win32.OpenFileDialog
+        $dlg.Filter = "Tệp Cài Windows (*.iso;*.esd;*.wim)|*.iso;*.esd;*.wim|Tất cả tệp (*.*)|*.*"
+        $dlg.Title = "Chọn tệp tin ISO bộ cài đặt Windows"
+        if ($dlg.ShowDialog() -eq $true) {
+            if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = $dlg.FileName }
+            if ($cmbAutoWinEdition) { $cmbAutoWinEdition.SelectedIndex = 4 }
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[CHỌN FILE] Đã chọn file ISO thành công:`n$($dlg.FileName)`nSẵn sàng triển khai cài đặt ngay!" }
+            $txtFooterStatus.Text = "• [OK] Đã chọn file ISO: $([System.IO.Path]::GetFileName($dlg.FileName))"
+        }
+    })
+}
+
+if ($btnOpenAutoWinFolder) {
+    $btnOpenAutoWinFolder.Add_Click({
+        $targetDir = "D:\VUONGTT_Windows_Setup"
+        if (-not (Test-Path "D:\")) { $targetDir = "C:\VUONGTT_Windows_Setup" }
+        if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
+        Start-Process "explorer.exe" -ArgumentList "`"$targetDir`""
+        $txtFooterStatus.Text = "• [OK] Đã mở thư mục cài đặt: $targetDir"
+    })
+}
+
+if ($btnOpenOfficialDownloadPage) {
+    $btnOpenOfficialDownloadPage.Add_Click({
+        $idx = if ($cmbAutoWinEdition) { $cmbAutoWinEdition.SelectedIndex } else { 0 }
+        $url = switch ($idx) {
+            0 { "https://www.microsoft.com/software-download/windows11" }
+            1 { "https://www.microsoft.com/evalcenter/evaluate-windows-11-enterprise" }
+            2 { "https://www.microsoft.com/software-download/windows10" }
+            3 { "https://www.microsoft.com/evalcenter/evaluate-windows-10-enterprise" }
+            default { "https://www.microsoft.com/software-download/" }
+        }
+        Start-Process $url
+        $txtFooterStatus.Text = "• [OK] Đã mở trang tải ISO chính hãng Microsoft"
+    })
+}
+
+if ($btnStartOnlineWindowsInstall) {
+    $btnStartOnlineWindowsInstall.Add_Click({
+        $isoPath = if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text.Trim() } else { "" }
+        $mode = if ($rbAutoWinClean -and $rbAutoWinClean.IsChecked) { "Clean" } else { "Upgrade" }
+        $modeName = if ($mode -eq "Clean") { "Cài mới sạch sẽ (Clean Install - Format ổ C)" } else { "Cài đè nâng cấp / Sửa lỗi (Giữ nguyên toàn bộ dữ liệu & App)" }
+
+        # Kiểm tra nếu chưa chọn file ISO thực tế
+        if (-not (Test-Path $isoPath -PathType Leaf)) {
+            $candidates = @(
+                "D:\VUONGTT_Windows_Setup\*.iso",
+                "C:\VUONGTT_Windows_Setup\*.iso",
+                "D:\*.iso",
+                "$env:USERPROFILE\Downloads\*.iso"
+            )
+            $foundIso = $null
+            foreach ($cand in $candidates) {
+                $found = Get-ChildItem -Path $cand -File -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($found) { $foundIso = $found.FullName; break }
+            }
+
+            if ($foundIso) {
+                $isoPath = $foundIso
+                if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = $isoPath }
+            } else {
+                $selEdition = if ($cmbAutoWinEdition) { $cmbAutoWinEdition.Text } else { "Windows" }
+                $ask = [System.Windows.MessageBox]::Show(
+                    "Bạn đang chọn triển khai: $selEdition`nChế độ: $modeName`n`n" +
+                    "Hiện chưa có file ISO nào được chọn trực tiếp.`n" +
+                    "• Bấm [YES] để Duyệt chọn file ISO / ESD có sẵn trên máy tính.`n" +
+                    "• Bấm [NO] để Mở trang tải ISO gốc tốc độ cao chính hãng từ Microsoft.",
+                    "Xác Nhận File Cài Đặt Windows",
+                    [System.Windows.MessageBoxButton]::YesNoCancel,
+                    [System.Windows.MessageBoxImage]::Question
+                )
+                if ($ask -eq [System.Windows.MessageBoxResult]::Yes) {
+                    if ($btnAutoWinBrowseISO) {
+                        $dlg = New-Object Microsoft.Win32.OpenFileDialog
+                        $dlg.Filter = "Tệp Cài Windows (*.iso;*.esd;*.wim)|*.iso;*.esd;*.wim|Tất cả tệp (*.*)|*.*"
+                        $dlg.Title = "Chọn tệp tin ISO bộ cài đặt Windows"
+                        if ($dlg.ShowDialog() -eq $true) {
+                            $isoPath = $dlg.FileName
+                            if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = $isoPath }
+                        } else { return }
+                    }
+                } elseif ($ask -eq [System.Windows.MessageBoxResult]::No) {
+                    if ($btnOpenOfficialDownloadPage) {
+                        Start-Process "https://www.microsoft.com/software-download/windows11"
+                    }
+                    return
+                } else {
+                    return
+                }
+            }
+        }
+
+        # Nếu đã có file ISO hợp lệ -> Khởi động triển khai
+        $doBypass = if ($chkAutoWinBypass) { [bool]$chkAutoWinBypass.IsChecked } else { $true }
+        $doNoMsa = if ($chkAutoWinNoMSA) { [bool]$chkAutoWinNoMSA.IsChecked } else { $true }
+        $doBackupDrv = if ($chkAutoWinBackupDriver) { [bool]$chkAutoWinBackupDriver.IsChecked } else { $true }
+        $doActivate = if ($chkAutoWinAutoActivate) { [bool]$chkAutoWinAutoActivate.IsChecked } else { $true }
+
+        $confirm = [System.Windows.MessageBox]::Show(
+            "XÁC NHẬN BẮT ĐẦU TRIỂN KHAI CÀI WINDOWS ONLINE:`n`n" +
+            "• Tệp tin ISO: $isoPath`n" +
+            "• Chế độ cài đặt: $modeName`n" +
+            "• Tự động Bypass TPM 2.0 / CPU / RAM: $(if ($doBypass) {'BẬT'} else {'TẮT'})`n" +
+            "• Tự động bỏ qua tài khoản Microsoft (Tạo user Admin): $(if ($doNoMsa) {'BẬT'} else {'TẮT'})`n" +
+            "• Tự động sao lưu Driver hiện tại sang ổ D: $(if ($doBackupDrv) {'BẬT'} else {'TẮT'})`n`n" +
+            "Bấm [OK] để Tool tự động nạp ổ ảo, cấu hình autounattend.xml và kích hoạt bộ cài ngay lập tức!",
+            "Bắt Đầu Cài Windows Online",
+            [System.Windows.MessageBoxButton]::OKCancel,
+            [System.Windows.MessageBoxImage]::Warning
+        )
+        if ($confirm -ne [System.Windows.MessageBoxResult]::OK) { return }
+
+        $btnStartOnlineWindowsInstall.IsEnabled = $false
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "Bắt đầu tiến trình triển khai cài Windows Online... Vui lòng đợi trong giây lát!" }
+        Invoke-VUONGTTDoEvents
+
+        try {
+            $deploy = Invoke-VUONGTTPrepareOnlineWindowsDeployment `
+                -IsoPath $isoPath `
+                -Mode $mode `
+                -BackupDrivers $doBackupDrv `
+                -BypassHardware $doBypass `
+                -NoMSA $doNoMsa `
+                -AutoActivate $doActivate `
+                -OnProgress {
+                    param($m)
+                    if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$m`n$($txtAutoWinLog.Text)" }
+                    Invoke-VUONGTTDoEvents
+                }
+
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = $deploy.SummaryLog }
+            $txtFooterStatus.Text = "• [OK] Đã nạp xong bộ cài vào ổ ảo $($deploy.MountedDrive)\"
+
+            $finalNotice = [System.Windows.MessageBox]::Show(
+                "ĐÃ NẠP XONG BỘ CÀI VÀO Ổ ĐĨA ẢO $($deploy.MountedDrive)\ THÀNH CÔNG!`n`n" +
+                "Lệnh Setup: $($deploy.SetupExe)`n" +
+                "Tham số: $($deploy.Arguments)`n`n" +
+                "Bấm [OK] để KÍCH HOẠT TIẾN TRÌNH CÀI ĐẶT NGAY!`n" +
+                "(Quá trình cài đặt sẽ chạy ngầm, máy sẽ tự khởi động lại để hoàn tất).",
+                "Kích Hoạt Windows Setup",
+                [System.Windows.MessageBoxButton]::OKCancel,
+                [System.Windows.MessageBoxImage]::Information
+            )
+
+            if ($finalNotice -eq [System.Windows.MessageBoxResult]::OK) {
+                Start-Process -FilePath $deploy.SetupExe -ArgumentList $deploy.Arguments
+                if ($txtAutoWinLog) {
+                    $txtAutoWinLog.Text = "🚀 [ĐÃ KHỞI CHẠY WINDOWS SETUP]`nBộ cài Windows đang tiến hành cài đặt vào hệ thống. Máy tính sẽ tự động hoàn tất và khởi động lại sau ít phút!`n`n$($txtAutoWinLog.Text)"
+                }
+                $txtFooterStatus.Text = "• [OK] Đang chạy Windows Setup tự động..."
+            }
+        } catch {
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[LỖI TRIỂN KHAI CÀI WIN] $($_.Exception.Message)" }
+        } finally {
+            $btnStartOnlineWindowsInstall.IsEnabled = $true
+        }
+    })
+}
 
 if ($btnBypassWin11All) {
     $btnBypassWin11All.Add_Click({
