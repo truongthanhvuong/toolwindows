@@ -100,6 +100,18 @@ git commit -m $commitMsg
 git push origin main
 
 if ($LASTEXITCODE -eq 0) {
+    # 6. Purge cache CDN toan cau de tat ca may khach nhan dien tuc thi trong 1s
+    try {
+        Write-Host "`n>>> [4/5] Dang lam moi (Purge) cache CDN toan cau..." -ForegroundColor Yellow
+        $purgeUrl = "https://purge.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/version.json"
+        $wc = New-Object System.Net.WebClient
+        $wc.Headers.Add("User-Agent", "VUONGTT-Release-Publisher/2026")
+        $pRes = $wc.DownloadString($purgeUrl)
+        Write-Host " -> Da lam moi cache CDN toan cau thanh cong (0s Latency)!" -ForegroundColor Green
+    } catch {
+        Write-Host " [!] Bo qua lam moi CDN: $($_.Exception.Message)" -ForegroundColor Gray
+    }
+
     Write-Host "`n==========================================================" -ForegroundColor Green
     Write-Host " [THANH CONG RUC RO] DA PHAT HANH BAN v$targetVer LEN GITHUB!" -ForegroundColor Green
     Write-Host " Tat ca cac may khach hang chi can bam 'Cap Nhat Tool'" -ForegroundColor Yellow
