@@ -207,7 +207,11 @@ function Get-VUONGTTOfficeDeploymentTool {
     # Kỹ thuật 2 (Fallback): Gọi trực tiếp tiến trình giải nén nếu Kỹ thuật 1 chưa tạo ra setup.exe
     if (-not (Test-Path $setupExe)) {
         try {
-            Start-Process -FilePath $installer -ArgumentList "/quiet /extract:`"$DestinationDir`"" -Wait -NoNewWindow
+            if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                Start-VUONGTTProcessResponsive -FilePath $installer -ArgumentList "/quiet /extract:`"$DestinationDir`"" -TimeoutSeconds 120 -NoNewWindow $true
+            } else {
+                Start-Process -FilePath $installer -ArgumentList "/quiet /extract:`"$DestinationDir`"" -Wait -NoNewWindow
+            }
         } catch {}
     }
 

@@ -8,11 +8,15 @@ function Enable-VUONGTTOptionalFeature {
     $log = @()
     try {
         $log += "[BẮT ĐẦU] Đang bật tính năng Windows: $FeatureName ..."
-        $proc = Start-Process -FilePath "dism.exe" -ArgumentList "/online /enable-feature /featurename:$FeatureName /all /norestart" -Wait -PassThru -NoNewWindow
-        if ($proc.ExitCode -eq 0 -or $proc.ExitCode -eq 3010) {
+        $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "dism.exe" -ArgumentList "/online /enable-feature /featurename:$FeatureName /all /norestart" -TimeoutSeconds 600 -NoNewWindow $true
+        } else {
+            (Start-Process -FilePath "dism.exe" -ArgumentList "/online /enable-feature /featurename:$FeatureName /all /norestart" -Wait -PassThru -NoNewWindow).ExitCode
+        }
+        if ($exitCode -eq 0 -or $exitCode -eq 3010) {
             $log += "[OK] Đã bật thành công tính năng: $FeatureName (Khởi động lại nếu cần)."
         } else {
-            $log += "[CẢNH BÁO] DISM hoàn tất với mã trả về: $($proc.ExitCode)"
+            $log += "[CẢNH BÁO] DISM hoàn tất với mã trả về: $exitCode"
         }
     } catch {
         $log += "[LỖI] $($_.Exception.Message)"
@@ -206,8 +210,11 @@ function Invoke-VUONGTTFixWindowsSearch {
 function Invoke-VUONGTTFixMicrosoftStore {
     $log = @()
     try {
-        $log += "[1/2] Đang xóa bộ nhớ đệm Microsoft Store Cache (wsreset)..."
-        Start-Process -FilePath "wsreset.exe" -ArgumentList "-i" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+        if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "wsreset.exe" -ArgumentList "-i" -TimeoutSeconds 120 -NoNewWindow $true
+        } else {
+            Start-Process -FilePath "wsreset.exe" -ArgumentList "-i" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+        }
         
         $log += "[2/2] Đăng ký lại gói cài đặt Microsoft Windows Store..."
         Get-AppxPackage -AllUsers *WindowsStore* -ErrorAction SilentlyContinue | ForEach-Object {

@@ -1933,6 +1933,7 @@ function Update-VUONGTTAppSelectionCount {
         $txtSelectedAppsCount.Text = "Đã chọn: $cCount ứng dụng"
     }
 }
+Update-VUONGTTAppSelectionCount
 
 $btnSelectAllApps.Add_Click({
     foreach ($item in $script:appControlObjects) {
@@ -2060,8 +2061,10 @@ if ($btnUninstallApps) {
             foreach ($appId in $selected) {
                 $appObj = $script:VUONGTT_APPS | Where-Object { $_.Id -eq $appId }
                 if ($appObj -and $appObj.WingetId) {
-                    Start-Process "winget.exe" -ArgumentList "uninstall --id $($appObj.WingetId) --silent" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                    Invoke-VUONGTTDoEvents
+                    Start-VUONGTTProcessResponsive -FilePath "winget.exe" -ArgumentList "uninstall --id $($appObj.WingetId) --silent" -TimeoutSeconds 300 -NoNewWindow $true
                     if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("[OK] Đã gửi lệnh gỡ: $($appObj.Name)`r`n") }
+                    Invoke-VUONGTTDoEvents
                 }
             }
         }
@@ -3977,11 +3980,13 @@ if ($btnRunSilentInstall) {
         if ($txtCustomAppLog) { $txtCustomAppLog.Text = "Đang khởi chạy cài đặt tự động ngầm: $path..." }
         try {
             $ext = [System.IO.Path]::GetExtension($path).ToLower()
+            Invoke-VUONGTTDoEvents
             if ($ext -eq ".msi") {
-                Start-Process "msiexec.exe" -ArgumentList "/i `"$path`" /qn /norestart" -Wait
+                Start-VUONGTTProcessResponsive -FilePath "msiexec.exe" -ArgumentList "/i `"$path`" /qn /norestart" -TimeoutSeconds 600 -NoNewWindow $true
             } else {
-                Start-Process -FilePath $path -ArgumentList "/silent /verysilent /s /qn" -Wait
+                Start-VUONGTTProcessResponsive -FilePath $path -ArgumentList "/silent /verysilent /s /qn" -TimeoutSeconds 600 -NoNewWindow $true
             }
+            Invoke-VUONGTTDoEvents
             if ($txtCustomAppLog) { $txtCustomAppLog.Text = "[HOÀN TẤT] Đã thực thi cài đặt silent xong cho tệp tin: $path" }
             $txtFooterStatus.Text = "• [OK] Đã cài đặt silent xong: $([System.IO.Path]::GetFileName($path))"
         } catch {
@@ -4788,6 +4793,188 @@ $btnExecuteSplit       = Get-Control "btnExecuteSplit"
 $panelDisksContainer   = Get-Control "panelDisksContainer"
 $txtPartitionLog       = Get-Control "txtPartitionLog"
 $btnClearPartitionLog  = Get-Control "btnClearPartitionLog"
+$btnRefreshDisksMap    = Get-Control "btnRefreshDisksMap"
+$btnApplyPartitionOps  = Get-Control "btnApplyPartitionOps"
+$btnCancelPartitionOps = Get-Control "btnCancelPartitionOps"
+$cardPendingOps        = Get-Control "cardPendingOps"
+$panelPendingOpsList   = Get-Control "panelPendingOpsList"
+$txtPendingOpsCount    = Get-Control "txtPendingOpsCount"
+
+# Danh sách thao tác phân vùng đang chờ Áp Dụng (MiniTool Partition Wizard / AOMEI Style)
+$script:pendingPartitionOps = [System.Collections.Generic.List[hashtable]]::new()
+
+function Update-PendingPartitionOpsUI {
+    if (-not $cardPendingOps -or -not $panelPendingOpsList) { return }
+    $panelPendingOpsList.Children.Clear()
+    $count = $script:pendingPartitionOps.Count
+    if ($txtPendingOpsCount) {
+        $txtPendingOpsCount.Text = "$count thao tác"
+    }
+
+    if ($count -gt 0) {
+        $cardPendingOps.Visibility = [System.Windows.Visibility]::Visible
+        if ($btnApplyPartitionOps) { $btnApplyPartitionOps.Visibility = [System.Windows.Visibility]::Visible }
+        if ($btnCancelPartitionOps) { $btnCancelPartitionOps.Visibility = [System.Windows.Visibility]::Visible }
+
+        $bc = [System.Windows.Media.BrushConverter]::new()
+        for ($i = 0; $i -lt $count; $i++) {
+            $op = $script:pendingPartitionOps[$i]
+            $opIndex = $i
+
+            $rowBorder = New-Object System.Windows.Controls.Border
+            $rowBorder.Background = $bc.ConvertFromString("#FEF3C7")
+            $rowBorder.BorderBrush = $bc.ConvertFromString("#FDE68A")
+            $rowBorder.BorderThickness = [System.Windows.Thickness]::new(1)
+            $rowBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
+            $rowBorder.Padding = [System.Windows.Thickness]::new(8, 6, 8, 6)
+            $rowBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 4)
+
+            $rowGrid = New-Object System.Windows.Controls.Grid
+            $c1 = New-Object System.Windows.Controls.ColumnDefinition
+            $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+            $c2 = New-Object System.Windows.Controls.ColumnDefinition
+            $c2.Width = [System.Windows.GridLength]::Auto
+            $rowGrid.ColumnDefinitions.Add($c1)
+            $rowGrid.ColumnDefinitions.Add($c2)
+
+            $txtDesc = New-Object System.Windows.Controls.TextBlock
+            $txtDesc.Text = "$($i + 1). $($op.Icon) $($op.Desc)"
+            $txtDesc.FontWeight = [System.Windows.FontWeights]::SemiBold
+            $txtDesc.FontSize = 12
+            $txtDesc.Foreground = $bc.ConvertFromString("#92400E")
+            $txtDesc.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+            [System.Windows.Controls.Grid]::SetColumn($txtDesc, 0)
+            $rowGrid.Children.Add($txtDesc) | Out-Null
+
+            $btnRemoveOp = New-Object System.Windows.Controls.Button
+            $btnRemoveOp.Content = "✕ Hủy mục này"
+            $btnRemoveOp.Background = $bc.ConvertFromString("#EF4444")
+            $btnRemoveOp.Foreground = [System.Windows.Media.Brushes]::White
+            $btnRemoveOp.FontSize = 11
+            $btnRemoveOp.FontWeight = [System.Windows.FontWeights]::Bold
+            $btnRemoveOp.Height = 24
+            $btnRemoveOp.Padding = [System.Windows.Thickness]::new(8, 0, 8, 0)
+            $btnRemoveOp.BorderThickness = [System.Windows.Thickness]::new(0)
+            $btnRemoveOp.Cursor = [System.Windows.Input.Cursors]::Hand
+            $btnRemoveOp.Add_Click({
+                param($s, $e)
+                $script:pendingPartitionOps.RemoveAt($opIndex)
+                Update-PendingPartitionOpsUI
+                Refresh-DiskPartitionDisplay
+            }.GetNewClosure())
+
+            [System.Windows.Controls.Grid]::SetColumn($btnRemoveOp, 1)
+            $rowGrid.Children.Add($btnRemoveOp) | Out-Null
+
+            $rowBorder.Child = $rowGrid
+            $panelPendingOpsList.Children.Add($rowBorder) | Out-Null
+        }
+    } else {
+        $cardPendingOps.Visibility = [System.Windows.Visibility]::Collapsed
+        if ($btnApplyPartitionOps) { $btnApplyPartitionOps.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($btnCancelPartitionOps) { $btnCancelPartitionOps.Visibility = [System.Windows.Visibility]::Collapsed }
+    }
+}
+
+function Add-VUONGTTPendingPartitionOp {
+    param([hashtable]$Op)
+    $script:pendingPartitionOps.Add($Op)
+    Update-PendingPartitionOpsUI
+    if ($txtPartitionLog) {
+        $txtPartitionLog.Text = "[CHỜ ÁP DỤNG] Đã thêm: $($Op.Desc)`r`n" + $txtPartitionLog.Text
+    }
+    Refresh-DiskPartitionDisplay
+}
+
+function Show-VUONGTTSelectPartitionToMergeDialog {
+    param(
+        [string]$TargetDrive,
+        [array]$Candidates,
+        [int]$DiskNumber
+    )
+
+    $dlg = New-Object System.Windows.Window
+    $dlg.Title = "Chọn Phân Vùng Để Gộp Vào Ổ $TargetDrive"
+    $dlg.Width = 480
+    $dlg.Height = 280
+    $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+    $dlg.Owner = $window
+    $dlg.ResizeMode = [System.Windows.ResizeMode]::NoResize
+    $dlg.Background = [System.Windows.Media.Brushes]::White
+
+    $spDlg = New-Object System.Windows.Controls.StackPanel
+    $spDlg.Margin = [System.Windows.Thickness]::new(20)
+
+    $t1 = New-Object System.Windows.Controls.TextBlock
+    $t1.Text = "🔀 GỘP PHÂN VÙNG (MERGE PARTITIONS)"
+    $t1.FontWeight = [System.Windows.FontWeights]::Bold
+    $t1.FontSize = 15
+    $t1.Foreground = [System.Windows.Media.Brushes]::Navy
+    $spDlg.Children.Add($t1) | Out-Null
+
+    $t2 = New-Object System.Windows.Controls.TextBlock
+    $t2.Text = "Chọn phân vùng nguồn trên Ổ Đĩa $DiskNumber cần gộp vào ổ đích $TargetDrive :"
+    $t2.Margin = [System.Windows.Thickness]::new(0, 8, 0, 8)
+    $t2.FontSize = 12.5
+    $spDlg.Children.Add($t2) | Out-Null
+
+    $cmb = New-Object System.Windows.Controls.ComboBox
+    $cmb.Height = 34
+    $cmb.FontSize = 13
+    $cmb.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    foreach ($c in $Candidates) {
+        $cmb.Items.Add("Phân vùng $($c.DriveLetter) - $($c.Label) ($($c.TotalGB) GB)") | Out-Null
+    }
+    $cmb.SelectedIndex = 0
+    $spDlg.Children.Add($cmb) | Out-Null
+
+    $t3 = New-Object System.Windows.Controls.TextBlock
+    $t3.Text = "💡 Lưu ý: Dữ liệu từ ổ nguồn sẽ được tự động chuyển sang thư mục trên ổ $TargetDrive trước khi phân vùng nguồn được giải phóng."
+    $t3.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
+    $t3.FontSize = 11.5
+    $t3.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    $t3.Margin = [System.Windows.Thickness]::new(0, 8, 0, 14)
+    $spDlg.Children.Add($t3) | Out-Null
+
+    $spBtns = New-Object System.Windows.Controls.StackPanel
+    $spBtns.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $spBtns.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+
+    $btnOk = New-Object System.Windows.Controls.Button
+    $btnOk.Content = "✓ Xác Nhận Thêm Chờ Áp Dụng"
+    $btnOk.Background = [System.Windows.Media.Brushes]::ForestGreen
+    $btnOk.Foreground = [System.Windows.Media.Brushes]::White
+    $btnOk.FontWeight = [System.Windows.FontWeights]::Bold
+    $btnOk.Height = 32
+    $btnOk.Padding = [System.Windows.Thickness]::new(14, 0, 14, 0)
+    $btnOk.Margin = [System.Windows.Thickness]::new(0, 0, 10, 0)
+
+    $btnCancel = New-Object System.Windows.Controls.Button
+    $btnCancel.Content = "✕ Hủy"
+    $btnCancel.Height = 32
+    $btnCancel.Padding = [System.Windows.Thickness]::new(14, 0, 14, 0)
+
+    $script:mergeSelected = $null
+    $btnOk.Add_Click({
+        $idx = $cmb.SelectedIndex
+        if ($idx -ge 0 -and $idx -lt $Candidates.Count) {
+            $script:mergeSelected = $Candidates[$idx]
+        }
+        $dlg.Close()
+    })
+    $btnCancel.Add_Click({
+        $script:mergeSelected = $null
+        $dlg.Close()
+    })
+
+    $spBtns.Children.Add($btnOk) | Out-Null
+    $spBtns.Children.Add($btnCancel) | Out-Null
+    $spDlg.Children.Add($spBtns) | Out-Null
+
+    $dlg.Content = $spDlg
+    $dlg.ShowDialog() | Out-Null
+    return $script:mergeSelected
+}
 
 function Refresh-DiskPartitionDisplay {
     if (-not $panelDisksContainer) { return }
@@ -4881,6 +5068,24 @@ function Refresh-DiskPartitionDisplay {
                 $partBorder.CornerRadius = [System.Windows.CornerRadius]::new(6)
                 $partBorder.Padding = [System.Windows.Thickness]::new(10, 8, 10, 8)
                 $partBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 6)
+                $partBorder.Cursor = [System.Windows.Input.Cursors]::Hand
+                $partBorder.ToolTip = "💡 Bấm chuột phải để: Xóa phân vùng, Mở Rộng (Extend), Gộp (Merge)..."
+
+                $labelStr = if ($p.Label) { $p.Label } else { "Local Disk" }
+
+                # Kiểm tra xem phân vùng này có thao tác đang chờ áp dụng không
+                $pendingForThis = $null
+                foreach ($item in $script:pendingPartitionOps) {
+                    if ($item.DiskNumber -eq $disk.Number) {
+                        if (($item.PartitionNumber -and $item.PartitionNumber -eq $p.PartitionNumber) -or
+                            ($item.DriveLetter -and $item.DriveLetter -eq $p.DriveLetter) -or
+                            ($item.TargetDrive -and $item.TargetDrive -eq $p.DriveLetter) -or
+                            ($item.SourceDrive -and $item.SourceDrive -eq $p.DriveLetter)) {
+                            $pendingForThis = $item
+                            break
+                        }
+                    }
+                }
 
                 $partGrid = New-Object System.Windows.Controls.Grid
                 $col1 = New-Object System.Windows.Controls.ColumnDefinition
@@ -4888,14 +5093,13 @@ function Refresh-DiskPartitionDisplay {
                 $col2 = New-Object System.Windows.Controls.ColumnDefinition
                 $col2.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
                 $col3 = New-Object System.Windows.Controls.ColumnDefinition
-                $col3.Width = [System.Windows.GridLength]::new(140)
+                $col3.Width = [System.Windows.GridLength]::new(170)
                 $partGrid.ColumnDefinitions.Add($col1)
                 $partGrid.ColumnDefinitions.Add($col2)
                 $partGrid.ColumnDefinitions.Add($col3)
 
                 $spCol1 = New-Object System.Windows.Controls.StackPanel
                 $txtPartName = New-Object System.Windows.Controls.TextBlock
-                $labelStr = if ($p.Label) { $p.Label } else { "Local Disk" }
                 $txtPartName.Text = "📁 $($p.DriveLetter) $labelStr"
                 $txtPartName.FontWeight = [System.Windows.FontWeights]::Bold
                 $txtPartName.FontSize = 13
@@ -4937,14 +5141,38 @@ function Refresh-DiskPartitionDisplay {
                 $spCol3.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
                 $badge = New-Object System.Windows.Controls.Border
-                $badge.Background = $bc.ConvertFromString("#F1F5F9")
                 $badge.CornerRadius = [System.Windows.CornerRadius]::new(4)
                 $badge.Padding = [System.Windows.Thickness]::new(6, 2, 6, 2)
                 $tBadge = New-Object System.Windows.Controls.TextBlock
-                $tBadge.Text = if ($p.IsBoot) { "⭐ System Boot" } else { "Khỏe mạnh" }
                 $tBadge.FontSize = 11
                 $tBadge.FontWeight = [System.Windows.FontWeights]::SemiBold
-                $tBadge.Foreground = $bc.ConvertFromString("#334155")
+
+                if ($pendingForThis) {
+                    if ($pendingForThis.Type -eq "Delete" -or ($pendingForThis.Type -eq "Merge" -and $pendingForThis.SourceDrive -eq $p.DriveLetter)) {
+                        $partBorder.BorderBrush = [System.Windows.Media.Brushes]::Red
+                        $partBorder.Background = $bc.ConvertFromString("#FEF2F2")
+                        $badge.Background = $bc.ConvertFromString("#FEE2E2")
+                        $tBadge.Text = if ($pendingForThis.Type -eq "Delete") { "⚠️ Sẽ Xóa (Chờ Apply)" } else { "🔀 Nguồn Gộp (Sẽ Xóa)" }
+                        $tBadge.Foreground = [System.Windows.Media.Brushes]::Red
+                    } elseif ($pendingForThis.Type -eq "Extend") {
+                        $partBorder.BorderBrush = [System.Windows.Media.Brushes]::Green
+                        $partBorder.Background = $bc.ConvertFromString("#F0FDF4")
+                        $badge.Background = $bc.ConvertFromString("#DCFCE7")
+                        $tBadge.Text = "↔️ Sẽ Mở Rộng (Chờ Apply)"
+                        $tBadge.Foreground = [System.Windows.Media.Brushes]::DarkGreen
+                    } elseif ($pendingForThis.Type -eq "Merge" -and $pendingForThis.TargetDrive -eq $p.DriveLetter) {
+                        $partBorder.BorderBrush = [System.Windows.Media.Brushes]::DodgerBlue
+                        $partBorder.Background = $bc.ConvertFromString("#EFF6FF")
+                        $badge.Background = $bc.ConvertFromString("#DBEAFE")
+                        $tBadge.Text = "🔀 Đích Gộp (Chờ Apply)"
+                        $tBadge.Foreground = [System.Windows.Media.Brushes]::Navy
+                    }
+                } else {
+                    $badge.Background = $bc.ConvertFromString("#F1F5F9")
+                    $tBadge.Text = if ($p.IsBoot) { "⭐ System Boot" } else { "Khỏe mạnh" }
+                    $tBadge.Foreground = $bc.ConvertFromString("#334155")
+                }
+
                 $badge.Child = $tBadge
                 $spCol3.Children.Add($badge) | Out-Null
 
@@ -4952,6 +5180,167 @@ function Refresh-DiskPartitionDisplay {
                 $partGrid.Children.Add($spCol3) | Out-Null
 
                 $partBorder.Child = $partGrid
+
+                # --- GẮN CONTEXT MENU CHUỘT PHẢI VÀO PHÂN VÙNG ---
+                $cm = New-Object System.Windows.Controls.ContextMenu
+                $cm.FontSize = 12.5
+
+                # 1. Xóa phân vùng
+                $miDelete = New-Object System.Windows.Controls.MenuItem
+                $miDelete.Header = "🗑️ Xóa Phân Vùng ($($p.DriveLetter))"
+                $currentP = $p
+                $currentDisk = $disk
+                $currentLabel = $labelStr
+
+                $miDelete.Add_Click({
+                    param($s, $e)
+                    if ($currentP.IsBoot -or $currentP.IsSystem -or $currentP.DriveLetter -eq "C:") {
+                        [System.Windows.MessageBox]::Show(
+                            "⚠️ BẢO VỆ AN TOÀN HỆ THỐNG:`n`nKhông thể xóa phân vùng $($currentP.DriveLetter) vì đây là phân vùng chứa hệ điều hành Windows (System / Boot)! Việc xóa sẽ phá hủy hệ điều hành.",
+                            "Từ chối thao tác nguy hiểm",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        return
+                    }
+
+                    $c = [System.Windows.MessageBox]::Show(
+                        "Bạn có muốn thêm thao tác XÓA PHÂN VÙNG $($currentP.DriveLetter) ($currentLabel - $($currentP.TotalGB) GB) vào danh sách chờ Áp Dụng không?`n`nLƯU Ý: Toàn bộ dữ liệu trên phân vùng này sẽ bị xóa sạch khi bạn bấm nút '🚀 Áp Dụng (Apply)'.",
+                        "Xác nhận thêm tác vụ Xóa",
+                        [System.Windows.MessageBoxButton]::YesNo,
+                        [System.Windows.MessageBoxImage]::Question
+                    )
+                    if ($c -eq [System.Windows.MessageBoxResult]::Yes) {
+                        Add-VUONGTTPendingPartitionOp -Op @{
+                            Type            = "Delete"
+                            Icon            = "🗑️"
+                            DiskNumber      = $currentDisk.Number
+                            PartitionNumber = $currentP.PartitionNumber
+                            DriveLetter     = $currentP.DriveLetter
+                            Label           = $currentLabel
+                            SizeGB          = $currentP.TotalGB
+                            Desc            = "Xóa phân vùng $($currentP.DriveLetter) ($currentLabel - $($currentP.TotalGB) GB) trên Ổ Đĩa $($currentDisk.Number)"
+                        }
+                    }
+                }.GetNewClosure())
+                $cm.Items.Add($miDelete) | Out-Null
+
+                # 2. Mở rộng phân vùng (Extend)
+                $miExtend = New-Object System.Windows.Controls.MenuItem
+                $miExtend.Header = "↔️ Mở Rộng Phân Vùng ($($p.DriveLetter) - Extend)"
+                $miExtend.Add_Click({
+                    param($s, $e)
+                    $c = [System.Windows.MessageBox]::Show(
+                        "Bạn có muốn thêm thao tác MỞ RỘNG PHÂN VÙNG $($currentP.DriveLetter) ($currentLabel) lên kích thước tối đa (lấy toàn bộ Unallocated Space liền kề) vào danh sách chờ Áp Dụng không?",
+                        "Xác nhận thêm tác vụ Mở Rộng",
+                        [System.Windows.MessageBoxButton]::YesNo,
+                        [System.Windows.MessageBoxImage]::Question
+                    )
+                    if ($c -eq [System.Windows.MessageBoxResult]::Yes) {
+                        Add-VUONGTTPendingPartitionOp -Op @{
+                            Type            = "Extend"
+                            Icon            = "↔️"
+                            DiskNumber      = $currentDisk.Number
+                            PartitionNumber = $currentP.PartitionNumber
+                            DriveLetter     = $currentP.DriveLetter
+                            Label           = $currentLabel
+                            SizeGB          = $currentP.TotalGB
+                            Desc            = "Mở rộng phân vùng $($currentP.DriveLetter) ($currentLabel) tối đa trên Ổ Đĩa $($currentDisk.Number)"
+                        }
+                    }
+                }.GetNewClosure())
+                $cm.Items.Add($miExtend) | Out-Null
+
+                # 3. Gộp phân vùng (Merge)
+                $miMerge = New-Object System.Windows.Controls.MenuItem
+                $miMerge.Header = "🔀 Gộp Phân Vùng Vào Ổ Này ($($p.DriveLetter) - Merge)"
+                $miMerge.Add_Click({
+                    param($s, $e)
+                    $candidates = $currentDisk.Partitions | Where-Object { 
+                        $_.PartitionNumber -ne $currentP.PartitionNumber -and 
+                        $_.DriveLetter -ne "-" -and 
+                        $_.DriveLetter -ne "C:" -and
+                        (-not $_.IsBoot) -and 
+                        (-not $_.IsSystem)
+                    }
+
+                    if (-not $candidates -or $candidates.Count -eq 0) {
+                        [System.Windows.MessageBox]::Show(
+                            "Không tìm thấy phân vùng dữ liệu hợp lệ nào khác trên Ổ Đĩa $($currentDisk.Number) để gộp vào ổ $($currentP.DriveLetter).`n`n(Lưu ý: Không thể gộp phân vùng Boot/Hệ thống hoặc ổ thuộc đĩa vật lý khác).",
+                            "Không có phân vùng phù hợp",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+                        return
+                    }
+
+                    $selectedCandidate = Show-VUONGTTSelectPartitionToMergeDialog -TargetDrive $currentP.DriveLetter -Candidates $candidates -DiskNumber $currentDisk.Number
+                    if ($selectedCandidate) {
+                        Add-VUONGTTPendingPartitionOp -Op @{
+                            Type            = "Merge"
+                            Icon            = "🔀"
+                            DiskNumber      = $currentDisk.Number
+                            TargetDrive     = $currentP.DriveLetter
+                            TargetPart      = $currentP.PartitionNumber
+                            SourceDrive     = $selectedCandidate.DriveLetter
+                            SourcePart      = $selectedCandidate.PartitionNumber
+                            SourceSize      = $selectedCandidate.TotalGB
+                            SourceLabel     = $selectedCandidate.Label
+                            Desc            = "Gộp phân vùng $($selectedCandidate.DriveLetter) ($($selectedCandidate.TotalGB) GB) vào phân vùng $($currentP.DriveLetter) trên Ổ Đĩa $($currentDisk.Number)"
+                        }
+                    }
+                }.GetNewClosure())
+                $cm.Items.Add($miMerge) | Out-Null
+
+                # Separator
+                $cm.Items.Add((New-Object System.Windows.Controls.Separator)) | Out-Null
+
+                # 4. Đổi tên nhãn
+                if ($p.DriveLetter -ne "-") {
+                    $miRename = New-Object System.Windows.Controls.MenuItem
+                    $miRename.Header = "🏷️ Đổi Tên Nhãn Ổ ($($p.DriveLetter))"
+                    $miRename.Add_Click({
+                        param($s, $e)
+                        if ($txtNewVolumeLabel -and $cmbPartitionDrives) {
+                            $cmbPartitionDrives.SelectedItem = $currentP.DriveLetter
+                            $txtNewVolumeLabel.Focus()
+                        }
+                    }.GetNewClosure())
+                    $cm.Items.Add($miRename) | Out-Null
+                }
+
+                # 5. Đổi ký tự ổ
+                if ($p.DriveLetter -ne "-" -and $p.DriveLetter -ne "C:") {
+                    $miLetter = New-Object System.Windows.Controls.MenuItem
+                    $miLetter.Header = "🔤 Đổi Ký Tự Ổ ($($p.DriveLetter))"
+                    $miLetter.Add_Click({
+                        param($s, $e)
+                        if ($txtNewDriveLetter -and $cmbPartitionDrives) {
+                            $cmbPartitionDrives.SelectedItem = $currentP.DriveLetter
+                            $txtNewDriveLetter.Focus()
+                        }
+                    }.GetNewClosure())
+                    $cm.Items.Add($miLetter) | Out-Null
+                }
+
+                # 6. Quét Chkdsk
+                if ($p.DriveLetter -ne "-") {
+                    $miScan = New-Object System.Windows.Controls.MenuItem
+                    $miScan.Header = "🔍 Quét Lỗi Bề Mặt (Chkdsk $($p.DriveLetter))"
+                    $miScan.Add_Click({
+                        param($s, $e)
+                        if ($txtPartitionLog) {
+                            $txtPartitionLog.Text = "=== ĐANG QUÉT BỀ MẶT PHÂN VÙNG $($currentP.DriveLetter) ===`r`n" + $txtPartitionLog.Text
+                        }
+                        $res = Invoke-VUONGTTDiskSurfaceCheck -DriveLetter $currentP.DriveLetter
+                        if ($txtPartitionLog) {
+                            $txtPartitionLog.Text = "$res`r`n`r`n" + $txtPartitionLog.Text
+                        }
+                    }.GetNewClosure())
+                    $cm.Items.Add($miScan) | Out-Null
+                }
+
+                $partBorder.ContextMenu = $cm
                 $sp.Children.Add($partBorder) | Out-Null
             }
         }
@@ -4987,6 +5376,93 @@ function Refresh-DiskPartitionDisplay {
 
 if ($btnRefreshDisks) {
     $btnRefreshDisks.Add_Click({ Refresh-DiskPartitionDisplay })
+}
+
+if ($btnRefreshDisksMap) {
+    $btnRefreshDisksMap.Add_Click({ Refresh-DiskPartitionDisplay })
+}
+
+# --- XỬ LÝ NÚT APPLY (ÁP DỤNG THAY ĐỔI) ---
+if ($btnApplyPartitionOps) {
+    $btnApplyPartitionOps.Add_Click({
+        if ($script:pendingPartitionOps.Count -eq 0) { return }
+
+        $opList = ($script:pendingPartitionOps | ForEach-Object { "• $($_.Desc)" }) -join "`n"
+        $confirm = [System.Windows.MessageBox]::Show(
+            "⚠️ XÁC NHẬN ÁP DỤNG CÁC THAY ĐỔI Ổ ĐĨA`n`nBạn có chắc chắn muốn thực hiện $($script:pendingPartitionOps.Count) thao tác phân vùng sau đây:`n`n$opList`n`nLưu ý: Quá trình này sẽ trực tiếp thay đổi bảng phân vùng và cấu trúc ổ đĩa. Hãy đảm bảo dữ liệu quan trọng đã được lưu trữ an toàn!",
+            "Xác nhận Áp Dụng Thay Đổi Phân Vùng",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Warning
+        )
+        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+        $btnApplyPartitionOps.IsEnabled = $false
+        if ($btnCancelPartitionOps) { $btnCancelPartitionOps.IsEnabled = $false }
+        $txtFooterStatus.Text = "• [Đang xử lý] Đang áp dụng các thao tác phân vùng ổ đĩa..."
+
+        $logBlock = {
+            param($msg)
+            if ($txtPartitionLog) {
+                $txtPartitionLog.Text = "$msg`r`n" + $txtPartitionLog.Text
+            }
+            Invoke-VUONGTTDoEvents
+        }
+
+        & $logBlock "================================================================================"
+        & $logBlock "           BẮT ĐẦU ÁP DỤNG $($script:pendingPartitionOps.Count) THAO TÁC PHÂN VÙNG Ổ CỨNG"
+        & $logBlock "================================================================================"
+
+        $successCount = 0
+        foreach ($op in $script:pendingPartitionOps) {
+            & $logBlock "`n--- ĐANG THỰC HIỆN: $($op.Desc) ---"
+            $ok = $false
+            switch ($op.Type) {
+                "Delete" {
+                    $ok = Remove-VUONGTTPartition -DiskNumber $op.DiskNumber -PartitionNumber $op.PartitionNumber -DriveLetter $op.DriveLetter -OnProgress $logBlock
+                }
+                "Extend" {
+                    $ok = Invoke-VUONGTTExtendPartition -DiskNumber $op.DiskNumber -PartitionNumber $op.PartitionNumber -DriveLetter $op.DriveLetter -OnProgress $logBlock
+                }
+                "Merge" {
+                    $ok = Invoke-VUONGTTMergePartitions -DiskNumber $op.DiskNumber -TargetDrive $op.TargetDrive -SourceDrive $op.SourceDrive -TargetPart $op.TargetPart -SourcePart $op.SourcePart -MoveFiles $true -OnProgress $logBlock
+                }
+            }
+            if ($ok) { $successCount++ }
+            Start-Sleep -Milliseconds 500
+        }
+
+        & $logBlock "================================================================================"
+        & $logBlock "🎉 [HOÀN TẤT] Đã áp dụng xong: $successCount / $($script:pendingPartitionOps.Count) thao tác thành công!"
+        & $logBlock "================================================================================"
+
+        $script:pendingPartitionOps.Clear()
+        Update-PendingPartitionOpsUI
+        $btnApplyPartitionOps.IsEnabled = $true
+        if ($btnCancelPartitionOps) { $btnCancelPartitionOps.IsEnabled = $true }
+        $txtFooterStatus.Text = "• [OK] Đã áp dụng các thay đổi phân vùng thành công!"
+
+        Refresh-DiskPartitionDisplay
+
+        [System.Windows.MessageBox]::Show(
+            "ĐÃ HOÀN TẤT ÁP DỤNG THAY ĐỔI PHÂN VÙNG!`n`nĐã thực thi thành công $successCount thao tác. Sơ đồ ổ đĩa vật lý đã được cập nhật.",
+            "Áp Dụng Thành Công",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Information
+        )
+    })
+}
+
+# --- XỬ LÝ NÚT CANCEL (HỦY BỎ HÀNG ĐỢI) ---
+if ($btnCancelPartitionOps) {
+    $btnCancelPartitionOps.Add_Click({
+        $script:pendingPartitionOps.Clear()
+        Update-PendingPartitionOpsUI
+        Refresh-DiskPartitionDisplay
+        if ($txtPartitionLog) {
+            $txtPartitionLog.Text = "[ĐÃ HỦY] Đã xóa toàn bộ hàng đợi thao tác phân vùng chưa áp dụng.`r`n" + $txtPartitionLog.Text
+        }
+        $txtFooterStatus.Text = "• [OK] Đã hủy bỏ các thao tác chưa áp dụng."
+    })
 }
 
 if ($btnOpenDiskMgmt) {

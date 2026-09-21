@@ -115,11 +115,16 @@ function Invoke-VUONGTTDiskSurfaceCheck {
 
     try {
         $log += "[Đang xử lý] Đang chạy chkdsk ${dl}: /scan (Quét trực tiếp không cần ngắt kết nối ổ)..."
-        $p = Start-Process -FilePath "chkdsk.exe" -ArgumentList "${dl}: /scan" -Wait -PassThru -NoNewWindow
-        if ($p.ExitCode -eq 0) {
+        $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "chkdsk.exe" -ArgumentList "${dl}: /scan" -TimeoutSeconds 600 -NoNewWindow $true
+        } else {
+            $p = Start-Process -FilePath "chkdsk.exe" -ArgumentList "${dl}: /scan" -Wait -PassThru -NoNewWindow
+            $p.ExitCode
+        }
+        if ($exitCode -eq 0) {
             $log += "[OK] Quá trình quét hoàn tất: Phân vùng ${dl}: hoạt động hoàn hảo, không có lỗi cấu trúc hoặc Bad Sector!"
         } else {
-            $log += "[CHÚ Ý] Kết quả kiểm tra trả về mã: $($p.ExitCode). Vui lòng lên lịch quét khi khởi động nếu phát hiện lỗi."
+            $log += "[CHÚ Ý] Kết quả kiểm tra trả về mã: $exitCode. Vui lòng lên lịch quét khi khởi động nếu phát hiện lỗi."
         }
     } catch {
         $log += "[LỖI] $($_.Exception.Message)"
@@ -134,11 +139,16 @@ function Invoke-VUONGTTMbr2GptCheck {
 
     try {
         $log += "[Đang xử lý] Đang kiểm tra cấu trúc đĩa hệ thống với mbr2gpt.exe /validate /allowFullOS..."
-        $p = Start-Process -FilePath "mbr2gpt.exe" -ArgumentList "/validate /allowFullOS" -Wait -PassThru -NoNewWindow
-        if ($p.ExitCode -eq 0) {
+        $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "mbr2gpt.exe" -ArgumentList "/validate /allowFullOS" -TimeoutSeconds 180 -NoNewWindow $true
+        } else {
+            $p = Start-Process -FilePath "mbr2gpt.exe" -ArgumentList "/validate /allowFullOS" -Wait -PassThru -NoNewWindow
+            $p.ExitCode
+        }
+        if ($exitCode -eq 0) {
             $log += "[OK] Đĩa hệ thống hoàn toàn đủ điều kiện chuyển đổi sang chuẩn GPT/UEFI mà không mất dữ liệu!"
         } else {
-            $log += "[THÔNG BÁO] Kiểm tra MBR2GPT kết thúc với mã $($p.ExitCode). (Nếu đĩa đã là GPT thì không cần chuyển đổi)."
+            $log += "[THÔNG BÁO] Kiểm tra MBR2GPT kết thúc với mã $exitCode. (Nếu đĩa đã là GPT thì không cần chuyển đổi)."
         }
     } catch {
         $log += "[CHÚ Ý] $($_.Exception.Message)"
@@ -349,13 +359,18 @@ exit
 "@
             $dpFile = [System.IO.Path]::GetTempFileName()
             Set-Content -Path $dpFile -Value $dpScript -Encoding ASCII
-            $p = Start-Process -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile`"" -Wait -PassThru -NoNewWindow
+            $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                Start-VUONGTTProcessResponsive -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile`"" -TimeoutSeconds 180 -NoNewWindow $true
+            } else {
+                $p = Start-Process -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile`"" -Wait -PassThru -NoNewWindow
+                $p.ExitCode
+            }
             Remove-Item -Path $dpFile -Force -ErrorAction SilentlyContinue
-            if ($p.ExitCode -eq 0) {
+            if ($exitCode -eq 0) {
                 $resizeOk = $true
                 $log += "[OK] DiskPart thu nhỏ thành công!"
             } else {
-                $log += "[LỖI] Không thể thu nhỏ ổ ${srcClean}: qua DiskPart (ExitCode: $($p.ExitCode)). Có thể file hệ thống bị khóa hoặc phân mảnh."
+                $log += "[LỖI] Không thể thu nhỏ ổ ${srcClean}: qua DiskPart (ExitCode: $exitCode). Có thể file hệ thống bị khóa hoặc phân mảnh."
                 return ($log -join "`n")
             }
         }
@@ -382,9 +397,14 @@ exit
 "@
             $dpFile2 = [System.IO.Path]::GetTempFileName()
             Set-Content -Path $dpFile2 -Value $dpScript2 -Encoding ASCII
-            $p2 = Start-Process -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile2`"" -Wait -PassThru -NoNewWindow
+            $exitCode2 = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                Start-VUONGTTProcessResponsive -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile2`"" -TimeoutSeconds 180 -NoNewWindow $true
+            } else {
+                $p2 = Start-Process -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile2`"" -Wait -PassThru -NoNewWindow
+                $p2.ExitCode
+            }
             Remove-Item -Path $dpFile2 -Force -ErrorAction SilentlyContinue
-            if ($p2.ExitCode -eq 0) {
+            if ($exitCode2 -eq 0) {
                 $log += "[OK] DiskPart đã tạo và định dạng phân vùng ${newClean}: thành công!"
             } else {
                 $log += "[LỖI] Không thể tạo phân vùng mới: $($_.Exception.Message)"
@@ -398,3 +418,221 @@ exit
 
     return ($log -join "`n")
 }
+
+# =========================================================================
+# XÓA PHÂN VÙNG AN TOÀN (DELETE PARTITION / VOLUME)
+# =========================================================================
+function Remove-VUONGTTPartition {
+    param(
+        [int]$DiskNumber,
+        [int]$PartitionNumber,
+        [string]$DriveLetter = "",
+        [scriptblock]$OnProgress = $null
+    )
+
+    $dlClean = if ($DriveLetter) { $DriveLetter.Trim().TrimEnd(':') } else { "" }
+    if ($OnProgress) { & $OnProgress "• [XÓA PHÂN VÙNG] Bắt đầu xóa phân vùng #$PartitionNumber trên Ổ Đĩa $DiskNumber (Ký tự: $dlClean)..." }
+
+    # BẢO VỆ TUYỆT ĐỐI HỆ ĐIỀU HÀNH
+    if ($dlClean -eq "C") {
+        if ($OnProgress) { & $OnProgress "  -> [TỪ CHỐI NGUY HIỂM] Không thể xóa phân vùng C: (Hệ điều hành Windows)!" }
+        return $false
+    }
+
+    # Kiểm tra cờ IsBoot/IsSystem qua PowerShell
+    try {
+        if ($dlClean) {
+            $pCheck = Get-Partition -DriveLetter $dlClean -ErrorAction SilentlyContinue
+        } else {
+            $pCheck = Get-Partition -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber -ErrorAction SilentlyContinue
+        }
+        if ($pCheck -and ($pCheck.IsBoot -or $pCheck.IsSystem)) {
+            if ($OnProgress) { & $OnProgress "  -> [TỪ CHỐI] Phân vùng này chứa tệp khởi động hệ thống (Boot/System), không thể xóa!" }
+            return $false
+        }
+    } catch {}
+
+    # 1. Thử xóa bằng PowerShell Cmdlet
+    try {
+        if ($dlClean) {
+            Remove-Partition -DriveLetter $dlClean -Confirm:$false -ErrorAction Stop
+        } else {
+            Remove-Partition -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber -Confirm:$false -ErrorAction Stop
+        }
+        if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Đã xóa phân vùng thành công qua PowerShell!" }
+        return $true
+    } catch {
+        if ($OnProgress) { & $OnProgress "  -> [CHUYỂN HƯỚNG] PowerShell báo: $($_.Exception.Message). Đang dùng DiskPart..." }
+    }
+
+    # 2. Fallback qua DiskPart Override
+    try {
+        $dpScript = if ($dlClean) {
+            "select volume $dlClean`ndelete volume override`nexit`n"
+        } else {
+            "select disk $DiskNumber`nselect partition $PartitionNumber`ndelete partition override`nexit`n"
+        }
+        $dpFile = [System.IO.Path]::GetTempFileName()
+        Set-Content -Path $dpFile -Value $dpScript -Encoding ASCII
+        $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile`"" -TimeoutSeconds 120 -NoNewWindow $true
+        } else {
+            $proc = Start-Process -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile`"" -Wait -PassThru -NoNewWindow
+            $proc.ExitCode
+        }
+        Remove-Item -Path $dpFile -Force -ErrorAction SilentlyContinue
+        if ($exitCode -eq 0) {
+            if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] DiskPart đã xóa sạch phân vùng thành công!" }
+            return $true
+        } else {
+            if ($OnProgress) { & $OnProgress "  -> [LỖI] DiskPart không thể xóa phân vùng (Mã trả về: $exitCode)." }
+            return $false
+        }
+    } catch {
+        if ($OnProgress) { & $OnProgress "  -> [LỖI] Ngoại lệ khi chạy DiskPart: $($_.Exception.Message)" }
+        return $false
+    }
+}
+
+# =========================================================================
+# MỞ RỘNG PHÂN VÙNG TỐI ĐA (EXTEND PARTITION)
+# =========================================================================
+function Invoke-VUONGTTExtendPartition {
+    param(
+        [int]$DiskNumber,
+        [int]$PartitionNumber,
+        [string]$DriveLetter = "",
+        [scriptblock]$OnProgress = $null
+    )
+
+    $dlClean = if ($DriveLetter) { $DriveLetter.Trim().TrimEnd(':') } else { "" }
+    if ($OnProgress) { & $OnProgress "• [MỞ RỘNG PHÂN VÙNG] Bắt đầu mở rộng phân vùng #$PartitionNumber trên Ổ Đĩa $DiskNumber ($dlClean)..." }
+
+    # 1. Thử mở rộng qua PowerShell Resize-Partition với SizeMax
+    try {
+        if ($dlClean) {
+            $supp = Get-PartitionSupportedSize -DriveLetter $dlClean -ErrorAction Stop
+            $curPart = Get-Partition -DriveLetter $dlClean -ErrorAction Stop
+            if ($supp.SizeMax -gt $curPart.Size) {
+                Resize-Partition -DriveLetter $dlClean -Size $supp.SizeMax -ErrorAction Stop
+                $maxGB = [math]::Round($supp.SizeMax / 1GB, 2)
+                if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Đã mở rộng phân vùng ${dlClean}: lên $maxGB GB qua PowerShell!" }
+                return $true
+            } else {
+                if ($OnProgress) { & $OnProgress "  -> [THÔNG BÁO] Phân vùng ${dlClean}: đã đạt kích thước tối đa theo cấu trúc hiện tại." }
+            }
+        } else {
+            $supp = Get-PartitionSupportedSize -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber -ErrorAction Stop
+            $curPart = Get-Partition -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber -ErrorAction Stop
+            if ($supp.SizeMax -gt $curPart.Size) {
+                Resize-Partition -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber -Size $supp.SizeMax -ErrorAction Stop
+                $maxGB = [math]::Round($supp.SizeMax / 1GB, 2)
+                if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] Đã mở rộng phân vùng #$PartitionNumber lên $maxGB GB qua PowerShell!" }
+                return $true
+            }
+        }
+    } catch {
+        if ($OnProgress) { & $OnProgress "  -> [CHÚ Ý] Resize-Partition báo: $($_.Exception.Message). Đang dùng DiskPart extend..." }
+    }
+
+    # 2. Fallback qua DiskPart Extend
+    try {
+        $dpScript = if ($dlClean) {
+            "select volume $dlClean`nextend`nexit`n"
+        } else {
+            "select disk $DiskNumber`nselect partition $PartitionNumber`nextend`nexit`n"
+        }
+        $dpFile = [System.IO.Path]::GetTempFileName()
+        Set-Content -Path $dpFile -Value $dpScript -Encoding ASCII
+        $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile`"" -TimeoutSeconds 180 -NoNewWindow $true
+        } else {
+            $proc = Start-Process -FilePath "diskpart.exe" -ArgumentList "/s `"$dpFile`"" -Wait -PassThru -NoNewWindow
+            $proc.ExitCode
+        }
+        Remove-Item -Path $dpFile -Force -ErrorAction SilentlyContinue
+        if ($exitCode -eq 0) {
+            if ($OnProgress) { & $OnProgress "  -> [THÀNH CÔNG] DiskPart đã mở rộng phân vùng để lấy toàn bộ dung lượng trống liền kề!" }
+            return $true
+        } else {
+            if ($OnProgress) { & $OnProgress "  -> [CHÚ Ý] Không còn khoảng trống chưa cấp phát (Unallocated Space) liền kề bên phải để mở rộng." }
+            return $false
+        }
+    } catch {
+        if ($OnProgress) { & $OnProgress "  -> [LỖI] Ngoại lệ khi mở rộng DiskPart: $($_.Exception.Message)" }
+        return $false
+    }
+}
+
+# =========================================================================
+# GỘP PHÂN VÙNG AN TOÀN (MERGE PARTITIONS)
+# =========================================================================
+function Invoke-VUONGTTMergePartitions {
+    param(
+        [int]$DiskNumber,
+        [string]$TargetDrive,
+        [string]$SourceDrive,
+        [int]$TargetPart = 0,
+        [int]$SourcePart = 0,
+        [bool]$MoveFiles = $true,
+        [scriptblock]$OnProgress = $null
+    )
+
+    $tgt = $TargetDrive.Trim().TrimEnd(':')
+    $src = $SourceDrive.Trim().TrimEnd(':')
+
+    if ($OnProgress) { & $OnProgress "• [BẮT ĐẦU GỘP PHÂN VÙNG] Gộp ổ ${src}: vào ổ đích ${tgt}: trên Ổ Đĩa $DiskNumber..." }
+
+    if ($tgt -eq $src) {
+        if ($OnProgress) { & $OnProgress "  -> [LỖI] Ổ nguồn và ổ đích trùng nhau!" }
+        return $false
+    }
+    if ($src -eq "C") {
+        if ($OnProgress) { & $OnProgress "  -> [TỪ CHỐI] Không thể gộp ổ C: (Hệ điều hành) vào ổ khác để tránh phá hủy Windows!" }
+        return $false
+    }
+
+    # BƯỚC 1: Di chuyển dữ liệu từ ổ nguồn sang thư mục trên ổ đích nếu bật MoveFiles
+    if ($MoveFiles) {
+        $srcRoot = "${src}:\"
+        $backupDir = "${tgt}:\Du_Lieu_Gop_Tu_O_${src}"
+        if ($OnProgress) { & $OnProgress "  -> [Bước 1/3] Đang chuyển toàn bộ dữ liệu từ ${src}: sang thư mục '$backupDir'..." }
+        try {
+            if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
+            $items = Get-ChildItem -Path $srcRoot -Force -ErrorAction SilentlyContinue | Where-Object { 
+                $_.Name -notmatch "^\$RECYCLE\.BIN|System Volume Information|pagefile\.sys|hiberfil\.sys|dumpstack\.log$" 
+            }
+            $countMoved = 0
+            foreach ($item in $items) {
+                try {
+                    Copy-Item -Path $item.FullName -Destination $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+                    $countMoved++
+                } catch {}
+            }
+            if ($OnProgress) { & $OnProgress "  -> [OK] Đã chuyển xong $countMoved tệp/thư mục an toàn sang ổ ${tgt}:!" }
+        } catch {
+            if ($OnProgress) { & $OnProgress "  -> [CẢNH BÁO] Sao chép dữ liệu có ngoại lệ: $($_.Exception.Message)" }
+        }
+    }
+
+    # BƯỚC 2: Xóa phân vùng nguồn để chuyển thành khoảng trống chưa cấp phát
+    if ($OnProgress) { & $OnProgress "  -> [Bước 2/3] Đang giải phóng phân vùng nguồn ${src}:..." }
+    $delOk = Remove-VUONGTTPartition -DiskNumber $DiskNumber -PartitionNumber $SourcePart -DriveLetter $src -OnProgress $OnProgress
+    if (-not $delOk) {
+        if ($OnProgress) { & $OnProgress "  -> [DỪNG LẠI] Không thể xóa ổ ${src}:. Dừng quá trình gộp để bảo vệ dữ liệu." }
+        return $false
+    }
+
+    # BƯỚC 3: Mở rộng phân vùng đích để chiếm toàn bộ không gian vừa giải phóng
+    if ($OnProgress) { & $OnProgress "  -> [Bước 3/3] Đang mở rộng phân vùng ${tgt}: để lấy toàn bộ dung lượng mới..." }
+    Start-Sleep -Milliseconds 1000
+    $extOk = Invoke-VUONGTTExtendPartition -DiskNumber $DiskNumber -PartitionNumber $TargetPart -DriveLetter $tgt -OnProgress $OnProgress
+    if ($extOk) {
+        if ($OnProgress) { & $OnProgress "🎉 [HOÀN TẤT XUẤT SẮC] Đã gộp hoàn chỉnh ổ ${src}: vào ổ ${tgt}:! Dung lượng ổ đích đã được mở rộng tối đa." }
+        return $true
+    } else {
+        if ($OnProgress) { & $OnProgress "⚠️ Dung lượng ổ ${src}: đã trở thành Unallocated Space. Bạn có thể bấm chuột phải vào ${tgt}: chọn Mở Rộng bất kỳ lúc nào." }
+        return $true
+    }
+}
+

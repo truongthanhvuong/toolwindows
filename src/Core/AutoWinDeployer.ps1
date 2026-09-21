@@ -267,14 +267,54 @@ function Invoke-VUONGTTPreDeployBypass {
 }
 
 function Dismount-VUONGTTDiskImage {
-    param([string]$ImagePath)
+    param([string]$ImagePath = "")
+    $dismountedCount = 0
     try {
-        if ($ImagePath -and (Test-Path $ImagePath)) {
-            Dismount-DiskImage -ImagePath $ImagePath -ErrorAction SilentlyContinue | Out-Null
-        } else {
-            Get-DiskImage -StorageType ISO -ErrorAction SilentlyContinue | Dismount-DiskImage -ErrorAction SilentlyContinue | Out-Null
+        # 1. Nếu có ImagePath cụ thể và tồn tại
+        if ($ImagePath -and (Test-Path $ImagePath -PathType Leaf)) {
+            try {
+                Dismount-DiskImage -ImagePath $ImagePath -ErrorAction SilentlyContinue | Out-Null
+                $dismountedCount++
+            } catch {}
         }
-        return $true
+
+        # 2. Truy vấn tất cả Virtual Disk Images đang mount qua CIM (KHÔNG BAO GIỜ bị hỏi STDIN gây đơ UI)
+        try {
+            $mountedImages = Get-CimInstance -Namespace "ROOT/Microsoft/Windows/Storage" -ClassName "MSFT_DiskImage" -ErrorAction SilentlyContinue
+            if ($mountedImages) {
+                foreach ($img in $mountedImages) {
+                    if ($img.ImagePath) {
+                        try {
+                            Dismount-DiskImage -ImagePath $img.ImagePath -ErrorAction SilentlyContinue | Out-Null
+                            $dismountedCount++
+                        } catch {}
+                    }
+                }
+            }
+        } catch {}
+
+        # 3. Quét các ổ đĩa ảo CD-ROM và gọi Eject an toàn qua Shell COM
+        try {
+            $cdVols = Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.DriveType -eq 'CD-ROM' -and $_.DriveLetter }
+            if ($cdVols) {
+                $sa = New-Object -ComObject Shell.Application
+                foreach ($cv in $cdVols) {
+                    $dl = "$($cv.DriveLetter):"
+                    try {
+                        $targetItem = $sa.Namespace(17).ParseName($dl)
+                        if ($targetItem) {
+                            $ejectVerb = $targetItem.Verbs() | Where-Object { ($_.Name -replace '&', '') -match "^(Eject|Dỡ|Ngắt|Tháo)" } | Select-Object -First 1
+                            if ($ejectVerb) {
+                                $ejectVerb.DoIt()
+                                $dismountedCount++
+                            }
+                        }
+                    } catch {}
+                }
+            }
+        } catch {}
+
+        return ($dismountedCount -gt 0)
     } catch {
         return $false
     }

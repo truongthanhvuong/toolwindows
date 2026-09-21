@@ -294,11 +294,16 @@ function Invoke-VUONGTTCleanWinUpdate {
     # 3. Dọn WinSxS Backup files bằng DISM
     try {
         $log += "[Đang xử lý] Đang chạy DISM Component Cleanup dọn sạch WinSxS (Có thể mất 1-2 phút)..."
-        $p = Start-Process -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /startcomponentcleanup /resetbase" -Wait -PassThru -NoNewWindow
-        if ($p.ExitCode -eq 0) {
+        $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /startcomponentcleanup /resetbase" -TimeoutSeconds 900 -NoNewWindow $true
+        } else {
+            $p = Start-Process -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /startcomponentcleanup /resetbase" -Wait -PassThru -NoNewWindow
+            $p.ExitCode
+        }
+        if ($exitCode -eq 0) {
             $log += "[OK] Đã tối ưu hóa và nén sạch kho WinSxS giải phóng dung lượng lớn ổ C!"
         } else {
-            $log += "[THÔNG BÁO] DISM hoàn tất với mã trả về: $($p.ExitCode)"
+            $log += "[THÔNG BÁO] DISM hoàn tất với mã trả về: $exitCode"
         }
     } catch {
         $log += "[CHÚ Ý] $($_.Exception.Message)"
@@ -345,11 +350,16 @@ function Invoke-VUONGTTCompactOS {
 
     try {
         $log += "[Đang xử lý] Đang tiến hành nén nhị phân file hệ thống Windows (Không ảnh hưởng tốc độ máy)..."
-        $p = Start-Process -FilePath "compact.exe" -ArgumentList "/CompactOS:always" -Wait -PassThru -NoNewWindow
-        if ($p.ExitCode -eq 0) {
+        $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "compact.exe" -ArgumentList "/CompactOS:always" -TimeoutSeconds 900 -NoNewWindow $true
+        } else {
+            $p = Start-Process -FilePath "compact.exe" -ArgumentList "/CompactOS:always" -Wait -PassThru -NoNewWindow
+            $p.ExitCode
+        }
+        if ($exitCode -eq 0) {
             $log += "[OK] Đã kích hoạt nén hệ thống Compact OS thành công! Giải phóng ~3GB - 6GB dung lượng ổ C."
         } else {
-            $log += "[THÔNG BÁO] Compact OS hoàn tất với mã: $($p.ExitCode)"
+            $log += "[THÔNG BÁO] Compact OS hoàn tất với mã: $exitCode"
         }
     } catch {
         $log += "[LỖI] $($_.Exception.Message)"
