@@ -3447,6 +3447,7 @@ function Refresh-DriverStatusBadge {
                 $txtDriverGpuStatus.Text = "$($diag.GpuStatus)"
                 $txtDriverGpuStatus.Foreground = [System.Windows.Media.Brushes]::ForestGreen
             }
+            $txtDriverGpuStatus.ToolTip = "$($diag.GpuStatus)"
         }
     } catch {}
 }

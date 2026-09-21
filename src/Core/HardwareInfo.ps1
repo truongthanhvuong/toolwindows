@@ -756,25 +756,90 @@ function Get-VUONGTTDeepDriverDiagnostic {
             }
         }
 
-        # 3. Kiem tra card man hinh co chay Microsoft Basic Display Adapter khong
+        # 3. Kiem tra chuyen sau Card man hinh (GPU & Display Drivers)
         $gpus = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue
+        $signedDisplays = Get-CimInstance Win32_PnPSignedDriver -ErrorAction SilentlyContinue | Where-Object { $_.DeviceClass -eq 'DISPLAY' }
+        
+        # Kiem tra xem co thiet bi Display / 3D Video nao dang bao loi trong danh sach $items khong
+        $pnpGpuIssues = $items | Where-Object { 
+            $_.Class -eq "Display" -or $_.Name -like "*Display*" -or $_.Name -like "*Video*" -or $_.Name -like "*VGA*" -or $_.Name -like "*3D Video*" -or $_.Vendor -like "*Card Đồ Họa*"
+        }
+
         $gpuStatus = "Tối ưu [OK]"
         $gpuWarning = $false
+        $gpuDetails = @()
+
+        if ($pnpGpuIssues -and $pnpGpuIssues.Count -gt 0) {
+            $gpuWarning = $true
+            $gpuStatus = "CẢNH BÁO: Thiếu Driver Card Đồ Họa ($($pnpGpuIssues[0].Name))!"
+        }
+
         if ($gpus) {
-            foreach ($g in $gpus) {
-                if ($g.Name -like "*Microsoft Basic Display*" -or $g.Name -like "*Standard VGA*") {
-                    $gpuStatus = "CẢNH BÁO: Đang chạy Basic Display Adapter (Chưa có Driver Card Màn Hình)!"
+            # Loc cac GPU thuc te (bo qua Microsoft Remote Display Adapter neu co GPU vat ly)
+            $physicalGpus = @($gpus | Where-Object { $_.Name -notlike "*Remote Display*" })
+            if ($physicalGpus.Count -eq 0) { $physicalGpus = @($gpus) }
+
+            foreach ($g in $physicalGpus) {
+                $gName = if ($g.Name) { $g.Name.Trim() } else { "Card Màn Hình" }
+                $gDate = $g.DriverDate
+                $gVer  = if ($g.DriverVersion) { $g.DriverVersion.Trim() } else { "" }
+                $gYear = if ($gDate -is [DateTime]) { $gDate.Year } else { 0 }
+                
+                # Tim thong tin signed driver tuong ung neu co
+                $matchingSigned = $null
+                if ($signedDisplays) {
+                    $matchingSigned = $signedDisplays | Where-Object { 
+                        ($g.PNPDeviceID -and $_.HardWareID -and $_.HardWareID -eq $g.PNPDeviceID) -or 
+                        ($_.DeviceName -and $_.DeviceName -eq $gName) 
+                    } | Select-Object -First 1
+                }
+                $provider = if ($matchingSigned -and $matchingSigned.DriverProviderName) { $matchingSigned.DriverProviderName } else { "" }
+                if ($gYear -eq 0 -and $matchingSigned -and $matchingSigned.DriverDate -is [DateTime]) {
+                    $gYear = $matchingSigned.DriverDate.Year
+                    $gDate = $matchingSigned.DriverDate
+                }
+                if (-not $gVer -and $matchingSigned -and $matchingSigned.DriverVersion) {
+                    $gVer = $matchingSigned.DriverVersion
+                }
+
+                $isGenericOrBasic = ($gName -like "*Microsoft Basic Display*" -or $gName -like "*Standard VGA*" -or $gName -like "*Basic Render*")
+                $isWindows2006Fallback = ($gYear -eq 2006 -or ($provider -eq "Microsoft" -and $gYear -le 2006))
+
+                if ($isGenericOrBasic -or $isWindows2006Fallback) {
                     $gpuWarning = $true
-                    $items += [PSCustomObject]@{
-                        Name        = $g.Name
-                        Vendor      = "Microsoft Generic / Chưa cài Driver GPU"
-                        ErrorCode   = 28
-                        Description = "Màn hình đang chạy độ phân giải cơ bản, thiếu tăng tốc đồ họa 3D và gây lag giật."
-                        HardwareID  = $g.PNPDeviceID
-                        Class       = "Display"
-                        Suggestion  = "Bấm nút 'Driver Hãng' hoặc chạy 'Snappy Driver' để cài driver VGA chuẩn ngay."
-                        IsWarning   = $true
+                    $gpuStatus = "CẢNH BÁO: Đang dùng Driver gốc Windows ($gName - 2006)!"
+                    
+                    # Kiem tra xem da co trong danh sach items chua, neu chua thi them vao
+                    $alreadyInItems = $items | Where-Object { 
+                        ($g.PNPDeviceID -and $_.HardwareID -and $_.HardwareID -eq $g.PNPDeviceID) -or ($_.Name -eq $gName)
                     }
+                    if (-not $alreadyInItems) {
+                        $items += [PSCustomObject]@{
+                            Name        = $gName
+                            Vendor      = if ($provider) { "$provider (Generic Windows)" } else { "Microsoft Fallback Driver" }
+                            ErrorCode   = 28
+                            Description = "Card đang chạy Driver gốc mặc định của Windows (2006), chưa có Driver chuyên dụng từ hãng. Thiếu OpenGL/DirectX, gây giật lag hoặc lỗi SketchUp, Lumion, AutoCAD."
+                            HardwareID  = $g.PNPDeviceID
+                            Class       = "Display"
+                            Suggestion  = "Bấm 'Driver Hãng' hoặc chạy 'Snappy Driver' / 3DP Chip để cập nhật Driver Card Màn Hình mới nhất từ NVIDIA / AMD / Intel."
+                            IsWarning   = $true
+                        }
+                    }
+                } elseif ($g.ConfigManagerErrorCode -and $g.ConfigManagerErrorCode -ne 0) {
+                    $gpuWarning = $true
+                    $gpuStatus = "CẢNH BÁO: Lỗi Driver Card Màn Hình ($gName - Code $($g.ConfigManagerErrorCode))!"
+                } else {
+                    $dateStr = if ($gDate -is [DateTime]) { $gDate.ToString("MM/yyyy") } else { "" }
+                    $info = if ($dateStr) { "$gName ($dateStr)" } else { $gName }
+                    $gpuDetails += $info
+                }
+            }
+
+            if (-not $gpuWarning) {
+                if ($gpuDetails.Count -gt 0) {
+                    $gpuStatus = ($gpuDetails -join " | ")
+                } else {
+                    $gpuStatus = "Tối ưu [OK]"
                 }
             }
         }
@@ -1155,12 +1220,16 @@ function Get-VUONGTTPostWinDriverStatus {
         $status.MissingCount = if ($missing) { $missing.Count } else { 0 }
 
         # GPU
-        $gpu = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($gpu) {
-            if ($gpu.Name -like "*Microsoft Basic Display*") {
-                $status.GpuStatus = "⚠️ Basic Display (Chưa có Driver)"
+        $gpus = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue
+        if ($gpus) {
+            $physicalGpu = @($gpus | Where-Object { $_.Name -notlike "*Remote Display*" }) | Select-Object -First 1
+            if (-not $physicalGpu) { $physicalGpu = $gpus | Select-Object -First 1 }
+            
+            $gYear = if ($physicalGpu.DriverDate -is [DateTime]) { $physicalGpu.DriverDate.Year } else { 0 }
+            if ($physicalGpu.Name -like "*Microsoft Basic Display*" -or $physicalGpu.Name -like "*Standard VGA*" -or $gYear -eq 2006) {
+                $status.GpuStatus = "⚠️ Basic/2006 (Chưa có Driver hãng)"
             } else {
-                $status.GpuStatus = "✅ $($gpu.Name)"
+                $status.GpuStatus = "✅ $($physicalGpu.Name)"
             }
         }
     } catch {}
