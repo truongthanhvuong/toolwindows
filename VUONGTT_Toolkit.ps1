@@ -3406,6 +3406,9 @@ $btnOpenDeviceManagerDirect  = Get-Control "btnOpenDeviceManagerDirect"
 $btnAutoUpdateAllDrivers     = Get-Control "btnAutoUpdateAllDrivers"
 $btnLaunchSDIO               = Get-Control "btnLaunchSDIO"
 $btnLaunch3DPChip            = Get-Control "btnLaunch3DPChip"
+$btnDownloadNvidiaDriver     = Get-Control "btnDownloadNvidiaDriver"
+$btnDownloadAmdDriver        = Get-Control "btnDownloadAmdDriver"
+$btnDownloadIntelArcDriver   = Get-Control "btnDownloadIntelArcDriver"
 $btnOpenOEMDriverPortal      = Get-Control "btnOpenOEMDriverPortal"
 
 $btnBackupAllDrivers         = Get-Control "btnBackupAllDrivers"
@@ -3549,6 +3552,30 @@ if ($btnLaunch3DPChip) {
         }
         if ($txtDriverLog) { $txtDriverLog.Text = "$res`n$($txtDriverLog.Text)" }
         $txtFooterStatus.Text = "• [OK] $res"
+    })
+}
+
+if ($btnDownloadNvidiaDriver) {
+    $btnDownloadNvidiaDriver.Add_Click({
+        Start-Process "https://www.nvidia.com/vi-vn/geforce/drivers/"
+        if ($txtDriverLog) { $txtDriverLog.Text = "[VGA RỜI] Đã mở cổng tải Driver NVIDIA GeForce chính hãng (Hỗ trợ GTX, RTX, Game Ready & Studio Driver).`n$($txtDriverLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] Đã mở trang tải Driver NVIDIA GeForce"
+    })
+}
+
+if ($btnDownloadAmdDriver) {
+    $btnDownloadAmdDriver.Add_Click({
+        Start-Process "https://www.amd.com/en/support/download/drivers.html"
+        if ($txtDriverLog) { $txtDriverLog.Text = "[VGA RỜI] Đã mở cổng tải Driver AMD Radeon Adrenalin chính hãng (Hỗ trợ RX Series & Vega).`n$($txtDriverLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] Đã mở trang tải Driver AMD Radeon"
+    })
+}
+
+if ($btnDownloadIntelArcDriver) {
+    $btnDownloadIntelArcDriver.Add_Click({
+        Start-Process "https://www.intel.com/content/www/us/en/download/785597/intel-arc-iris-xe-graphics-windows.html"
+        if ($txtDriverLog) { $txtDriverLog.Text = "[VGA ĐỒ HỌA] Đã mở cổng tải Driver Intel Arc & Iris Xe Graphics mới nhất từ Intel.`n$($txtDriverLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] Đã mở trang tải Driver Intel Arc & Iris Xe"
     })
 }
 
