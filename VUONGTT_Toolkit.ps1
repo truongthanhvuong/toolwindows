@@ -3475,9 +3475,16 @@ $rbAutoWinUpgrade               = Get-Control "rbAutoWinUpgrade"
 $rbAutoWinClean                 = Get-Control "rbAutoWinClean"
 $chkAutoWinBypass               = Get-Control "chkAutoWinBypass"
 $chkAutoWinNoMSA                = Get-Control "chkAutoWinNoMSA"
+$chkAutoWinDisableBitLocker     = Get-Control "chkAutoWinDisableBitLocker"
 $chkAutoWinBackupDriver         = Get-Control "chkAutoWinBackupDriver"
+$chkAutoWinCreateRescueDrive    = Get-Control "chkAutoWinCreateRescueDrive"
+$chkAutoWinRestoreTool          = Get-Control "chkAutoWinRestoreTool"
 $chkAutoWinAutoActivate         = Get-Control "chkAutoWinAutoActivate"
+$chkAutoWinPostTweak            = Get-Control "chkAutoWinPostTweak"
+$chkAutoWinFastOffline          = Get-Control "chkAutoWinFastOffline"
+
 $btnStartOnlineWindowsInstall   = Get-Control "btnStartOnlineWindowsInstall"
+$btnAutoWinCreateRescueNow      = Get-Control "btnAutoWinCreateRescueNow"
 $btnOpenAutoWinFolder           = Get-Control "btnOpenAutoWinFolder"
 $btnEjectMountedIso             = Get-Control "btnEjectMountedIso"
 $btnOpenOfficialDownloadPage    = Get-Control "btnOpenOfficialDownloadPage"
@@ -3523,10 +3530,54 @@ if ($btnAutoWinBrowseISO) {
     })
 }
 
+if ($btnAutoWinCreateRescueNow) {
+    $btnAutoWinCreateRescueNow.Add_Click({
+        $ask = [System.Windows.MessageBox]::Show(
+            "BẠN CÓ MUỐN TÁCH PHÂN VÙNG CỨU HỘ ĐỘC LẬP Z:\ (VUONGTT_RESCUE) NGAY?`n`n" +
+            "• Dung lượng: 15 GB (Được co từ ổ C: mà KHÔNG mất dữ liệu).`n" +
+            "• Tên phân vùng: Z:\ (VUONGTT_RESCUE).`n" +
+            "• Mục đích: Lưu trữ an toàn Toolkit và toàn bộ Driver phần cứng vĩnh viễn.`n`n" +
+            "Bấm [OK] để Tool tự động co ổ C: và tạo phân vùng Z:\ ngay bây giờ!",
+            "Xác Nhận Tạo Phân Vùng Cứu Hộ Z:\",
+            [System.Windows.MessageBoxButton]::OKCancel,
+            [System.Windows.MessageBoxImage]::Question
+        )
+        if ($ask -ne [System.Windows.MessageBoxResult]::OK) { return }
+
+        $btnAutoWinCreateRescueNow.IsEnabled = $false
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "Đang tiến hành co ổ C: và tạo phân vùng cứu hộ Z:\ (VUONGTT_RESCUE)... Vui lòng đợi trong giây lát!" }
+        Invoke-VUONGTTDoEvents
+
+        try {
+            $res = New-VUONGTTRescuePartition -DriveLetter "Z" -SizeGB 15 -OnProgress {
+                param($m)
+                if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$m`n$($txtAutoWinLog.Text)" }
+                Invoke-VUONGTTDoEvents
+            }
+            if ($res.Success) {
+                $dest = "Z:\VUONGTT_Windows_Setup"
+                if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | Out-Null }
+                $srcExe = "E:\toolwindows\VUONGTT_Toolkit.exe"
+                if (Test-Path $srcExe) { Copy-Item $srcExe "$dest\VUONGTT_Toolkit.exe" -Force -ErrorAction SilentlyContinue }
+                if ($txtAutoWinLog) { $txtAutoWinLog.Text = "🎉 [THÀNH CÔNG] $($res.Message)`n• Đã lưu sẵn bộ chạy Toolkit vào: Z:\VUONGTT_Windows_Setup\VUONGTT_Toolkit.exe`n`n$($txtAutoWinLog.Text)" }
+                $txtFooterStatus.Text = "• [OK] Đã tạo thành công phân vùng cứu hộ Z:\"
+                [System.Windows.MessageBox]::Show("Đã tạo thành công phân vùng cứu hộ độc lập Z:\ (VUONGTT_RESCUE)!`n`nToàn bộ dữ liệu của bạn đã được bảo vệ an toàn.", "Tạo Ổ Z:\ Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            } else {
+                [System.Windows.MessageBox]::Show("Không thể tạo phân vùng Z:\: $($res.Message)", "Thông Báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            }
+        } catch {
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[LỖI] $($_.Exception.Message)" }
+        } finally {
+            $btnAutoWinCreateRescueNow.IsEnabled = $true
+        }
+    })
+}
+
 if ($btnOpenAutoWinFolder) {
     $btnOpenAutoWinFolder.Add_Click({
-        $targetDir = "D:\VUONGTT_Windows_Setup"
-        if (-not (Test-Path "D:\")) { $targetDir = "C:\VUONGTT_Windows_Setup" }
+        $targetDir = "Z:\VUONGTT_Windows_Setup"
+        if (-not (Test-Path "Z:\")) { $targetDir = "D:\VUONGTT_Windows_Setup" }
+        if (-not (Test-Path $targetDir)) { $targetDir = "C:\VUONGTT_Windows_Setup" }
         if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
         Start-Process "explorer.exe" -ArgumentList "`"$targetDir`""
         $txtFooterStatus.Text = "• [OK] Đã mở thư mục cài đặt: $targetDir"
@@ -3623,28 +3674,57 @@ if ($btnStartOnlineWindowsInstall) {
         # Nếu đã có file ISO hợp lệ -> Khởi động triển khai
         $doBypass = if ($chkAutoWinBypass) { [bool]$chkAutoWinBypass.IsChecked } else { $true }
         $doNoMsa = if ($chkAutoWinNoMSA) { [bool]$chkAutoWinNoMSA.IsChecked } else { $true }
+        $doBitLocker = if ($chkAutoWinDisableBitLocker) { [bool]$chkAutoWinDisableBitLocker.IsChecked } else { $true }
         $doBackupDrv = if ($chkAutoWinBackupDriver) { [bool]$chkAutoWinBackupDriver.IsChecked } else { $true }
+        $doCreateZ = if ($chkAutoWinCreateRescueDrive) { [bool]$chkAutoWinCreateRescueDrive.IsChecked } else { $true }
+        $doRestoreTool = if ($chkAutoWinRestoreTool) { [bool]$chkAutoWinRestoreTool.IsChecked } else { $true }
         $doActivate = if ($chkAutoWinAutoActivate) { [bool]$chkAutoWinAutoActivate.IsChecked } else { $true }
+        $doPostTweak = if ($chkAutoWinPostTweak) { [bool]$chkAutoWinPostTweak.IsChecked } else { $true }
+        $doFastOffline = if ($chkAutoWinFastOffline) { [bool]$chkAutoWinFastOffline.IsChecked } else { $true }
 
         $confirm = [System.Windows.MessageBox]::Show(
-            "XÁC NHẬN BẮT ĐẦU TRIỂN KHAI CÀI WINDOWS ONLINE:`n`n" +
+            "XÁC NHẬN BẮT ĐẦU CÀI WINDOWS ONLINE TỰ ĐỘNG HÓA TỪ A-Z:`n`n" +
             "• Tệp tin ISO: $isoPath`n" +
-            "• Chế độ cài đặt: $modeName`n" +
-            "• Tự động Bypass TPM 2.0 / CPU / RAM: $(if ($doBypass) {'BẬT'} else {'TẮT'})`n" +
-            "• Tự động bỏ qua tài khoản Microsoft (Tạo user Admin): $(if ($doNoMsa) {'BẬT'} else {'TẮT'})`n" +
-            "• Tự động sao lưu Driver hiện tại sang ổ D: $(if ($doBackupDrv) {'BẬT'} else {'TẮT'})`n`n" +
-            "Bấm [OK] để Tool tự động nạp ổ ảo, cấu hình autounattend.xml và kích hoạt bộ cài ngay lập tức!",
-            "Bắt Đầu Cài Windows Online",
+            "• Chế độ cài đặt: $modeName`n`n" +
+            "DANH SÁCH TÙY CHỌN TỰ ĐỘNG HÓA ĐÃ CHỌN:`n" +
+            "• Bypass TPM 2.0 / CPU / RAM: $(if ($doBypass) {'[BẬT]'} else {'[TẮT]'})`n" +
+            "• Bỏ qua tài khoản Microsoft (Tạo Local Admin): $(if ($doNoMsa) {'[BẬT]'} else {'[TẮT]'})`n" +
+            "• Tắt tự động mã hóa BitLocker: $(if ($doBitLocker) {'[BẬT]'} else {'[TẮT]'})`n" +
+            "• Sao lưu toàn bộ Driver phần cứng: $(if ($doBackupDrv) {'[BẬT]'} else {'[TẮT]'})`n" +
+            "• Tạo phân vùng cứu hộ Z:\ (VUONGTT_RESCUE): $(if ($doCreateZ) {'[BẬT]'} else {'[TẮT]'})`n" +
+            "• Tự động khôi phục Tool ra Desktop Win mới: $(if ($doRestoreTool) {'[BẬT]'} else {'[TẮT]'})`n" +
+            "• Kích hoạt bản quyền số vĩnh viễn (MAS HWID): $(if ($doActivate) {'[BẬT]'} else {'[TẮT]'})`n" +
+            "• 1-Click Tối ưu gỡ Bloatware sau cài: $(if ($doPostTweak) {'[BẬT]'} else {'[TẮT]'})`n" +
+            "• Cài đặt siêu tốc (Bỏ qua tải cập nhật mạng): $(if ($doFastOffline) {'[BẬT]'} else {'[TẮT]'})`n`n" +
+            "Bấm [OK] để Tool tự động thực thi từ A-Z cho đến khi hoàn tất và khởi động lại vào Win mới!",
+            "Bắt Đầu Cài Windows Online Auto-Pilot",
             [System.Windows.MessageBoxButton]::OKCancel,
-            [System.Windows.MessageBoxImage]::Warning
+            [System.Windows.MessageBoxImage]::Information
         )
         if ($confirm -ne [System.Windows.MessageBoxResult]::OK) { return }
 
         $btnStartOnlineWindowsInstall.IsEnabled = $false
-        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "Bắt đầu tiến trình triển khai cài Windows Online... Vui lòng đợi trong giây lát!" }
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "Khởi động tiến trình triển khai cài Windows Online tự động từ A-Z... Vui lòng đợi trong giây lát!" }
         Invoke-VUONGTTDoEvents
 
         try {
+            # 1. Tự động tạo phân vùng cứu hộ Z:\ nếu được tích và máy chưa có
+            if ($doCreateZ -and (-not (Test-Path "Z:\"))) {
+                if ($txtAutoWinLog) { $txtAutoWinLog.Text = "-> Đang tự động tách phân vùng cứu hộ độc lập Z:\ (15GB)...`n$($txtAutoWinLog.Text)" }
+                Invoke-VUONGTTDoEvents
+                New-VUONGTTRescuePartition -DriveLetter "Z" -SizeGB 15 -OnProgress {
+                    param($m)
+                    if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$m`n$($txtAutoWinLog.Text)" }
+                    Invoke-VUONGTTDoEvents
+                } | Out-Null
+            }
+
+            # 2. Tắt BitLocker nếu được chọn
+            if ($doBitLocker) {
+                Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker" -Name "PreventDeviceEncryption" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            }
+
+            # 3. Chuẩn bị triển khai Windows
             $deploy = Invoke-VUONGTTPrepareOnlineWindowsDeployment `
                 -IsoPath $isoPath `
                 -Mode $mode `
@@ -3662,27 +3742,53 @@ if ($btnStartOnlineWindowsInstall) {
             $txtFooterStatus.Text = "• [OK] Đã nạp xong bộ cài vào ổ ảo $($deploy.MountedDrive)\"
 
             $finalNotice = [System.Windows.MessageBox]::Show(
-                "ĐÃ NẠP BỘ CÀI VÀO Ổ ĐĨA ẢO $($deploy.MountedDrive)\ THÀNH CÔNG!`n`n" +
-                "• Chế độ: $modeName`n" +
-                "• Lệnh chạy: $($deploy.SetupExe)`n" +
-                "• Trạng thái Bypass: Đã kích hoạt sẵn 100% TPM 2.0 / CPU / RAM / SecureBoot vào Registry.`n`n" +
-                "Bấm [OK] để MỞ TRÌNH CÀI ĐẶT WINDOWS SETUP NGAY!`n" +
-                "(Trình cài đặt sẽ tự động cho phép nâng cấp và mặc định giữ nguyên toàn bộ Dữ liệu & Ứng dụng của bạn).",
-                "Kích Hoạt Windows Setup",
+                "ĐÃ SẴN SÀNG TRIỂN KHAI CÀI ĐẶT WINDOWS TỰ ĐỘNG HÓA 100%!`n`n" +
+                "• Chế độ đã chọn: $modeName`n" +
+                "• Bảo toàn Tool: Đã tự động sao lưu Toolkit sang ổ đĩa dữ liệu an toàn.`n" +
+                "• Tự phục hồi sau cài: Đã cấu hình SetupComplete.cmd tự nạp Driver & Bản quyền sau Reboot.`n" +
+                "• Auto-Pilot 1-Click: Hệ thống sẽ tự động chấp nhận điều khoản, tự chọn chế độ và tự bấm Install!`n`n" +
+                "Bấm [OK] để KÍCH HOẠT TIẾN TRÌNH AUTO-PILOT NGAY!`n" +
+                "(Bạn hoàn toàn không cần thao tác gì thêm, máy sẽ tự động chạy đến khi Reboot vào Win mới).",
+                "Kích Hoạt Cài Windows Auto-Pilot 100%",
                 [System.Windows.MessageBoxButton]::OKCancel,
                 [System.Windows.MessageBoxImage]::Information
             )
 
             if ($finalNotice -eq [System.Windows.MessageBoxResult]::OK) {
+                # 1. Kích hoạt Auto-Pilot Watcher ngầm
+                $watcher = Start-VUONGTTAutoPilotWatcher -Mode $mode
+
+                # 2. Khởi chạy Windows Setup
                 if ([string]::IsNullOrWhiteSpace($deploy.Arguments)) {
                     Start-Process -FilePath $deploy.SetupExe
                 } else {
                     Start-Process -FilePath $deploy.SetupExe -ArgumentList $deploy.Arguments
                 }
+
                 if ($txtAutoWinLog) {
-                    $txtAutoWinLog.Text = "🚀 [ĐÃ KHỞI CHẠY WINDOWS SETUP]`nTrình cài đặt Windows đã được mở lên thành công!`n• Đã Bypass 100% TPM 2.0, RAM, CPU & SecureBoot.`n• Chế độ: $modeName`n• Hãy tiếp tục các bước trên cửa sổ cài đặt Windows Setup!`n`n$($txtAutoWinLog.Text)"
+                    $txtAutoWinLog.Text = "🚀 [AUTO-PILOT ĐANG HOẠT ĐỘNG]`nTrình cài đặt Windows đã được khởi động!`n• Auto-Pilot Watcher đang tự động điều khiển các bước cài đặt ngầm...`n• Máy tính sẽ tự động chấp nhận điều khoản, chọn chế độ '$modeName' và bấm Cài đặt.`n• Bạn chỉ việc đợi máy tính tự hoàn tất và Reboot vào Windows mới!`n`n$($txtAutoWinLog.Text)"
                 }
-                $txtFooterStatus.Text = "• [OK] Đang chạy Windows Setup..."
+                $txtFooterStatus.Text = "• [OK] Auto-Pilot đang tự động hóa cài đặt Windows..."
+
+                # 3. Tạo DispatcherTimer cập nhật thông báo từ Watcher lên UI
+                $syncTimer = New-Object System.Windows.Threading.DispatcherTimer
+                $syncTimer.Interval = [TimeSpan]::FromSeconds(2)
+                $syncTimer.Add_Tick({
+                    if ($watcher -and $watcher.Sync) {
+                        while ($watcher.Sync.LogMessages.Count -gt 0) {
+                            $msg = $watcher.Sync.LogMessages[0]
+                            $watcher.Sync.LogMessages.RemoveAt(0)
+                            if ($txtAutoWinLog) {
+                                $txtAutoWinLog.Text = "$msg`n$($txtAutoWinLog.Text)"
+                            }
+                        }
+                        if ($watcher.Sync.IsInstalled) {
+                            $txtFooterStatus.Text = "• [HOÀN TẤT] Đã kích hoạt cài đặt tự động thành công!"
+                            $syncTimer.Stop()
+                        }
+                    }
+                })
+                $syncTimer.Start()
             }
         } catch {
             if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[LỖI TRIỂN KHAI CÀI WIN] $($_.Exception.Message)" }

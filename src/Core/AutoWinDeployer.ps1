@@ -184,6 +184,317 @@ function Dismount-VUONGTTDiskImage {
     }
 }
 
+function New-VUONGTTRescuePartition {
+    param(
+        [string]$DriveLetter = "Z",
+        [int]$SizeGB = 15,
+        [scriptblock]$OnProgress = $null
+    )
+
+    try {
+        # 1. Kiểm tra nếu ký tự ổ đĩa đã tồn tại
+        if (Test-Path "$($DriveLetter):") {
+            if ($OnProgress) { & $OnProgress "• [OK] Ổ đĩa $($DriveLetter):\ đã sẵn sàng trong hệ thống." }
+            return [PSCustomObject]@{
+                Success     = $true
+                DriveLetter = "$($DriveLetter):"
+                Created     = $false
+                Message     = "Phân vùng $($DriveLetter):\ đã tồn tại và sẵn sàng sử dụng."
+            }
+        }
+
+        if ($OnProgress) { & $OnProgress "-> Đang kiểm tra dung lượng ổ C: để chuẩn bị tách phân vùng $($DriveLetter):\ ($SizeGB GB)..." }
+        $cDrive = Get-PSDrive -Name "C" -PSProvider FileSystem -ErrorAction SilentlyContinue
+        if (-not $cDrive) { throw "Không tìm thấy ổ đĩa C: trong hệ thống!" }
+
+        $freeGB = [Math]::Round($cDrive.Free / 1GB, 2)
+        $requiredFreeGB = $SizeGB + 10 # Cần dư thêm ít nhất 10GB cho Windows chạy mượt mà
+        if ($freeGB -lt $requiredFreeGB) {
+            throw "Ổ C: chỉ còn trống $freeGB GB (Cần trống tối thiểu $requiredFreeGB GB để tách phân vùng cứu hộ $SizeGB GB an toàn)!"
+        }
+
+        # 2. Lấy phân vùng ổ C:
+        $partC = Get-Partition -DriveLetter C -ErrorAction SilentlyContinue
+        if (-not $partC) { throw "Không thể truy vấn thông tin phân vùng ổ C:!" }
+
+        $shrinkBytes = [int64]$SizeGB * 1024 * 1024 * 1024
+        $newCSizeBytes = $partC.Size - $shrinkBytes
+
+        if ($OnProgress) { & $OnProgress "-> Đang thực hiện co ổ C: (Shrink) để giải phóng $SizeGB GB không gian trống..." }
+        Resize-Partition -DiskNumber $partC.DiskNumber -PartitionNumber $partC.PartitionNumber -Size $newCSizeBytes -ErrorAction Stop
+
+        Start-Sleep -Milliseconds 800
+
+        if ($OnProgress) { & $OnProgress "-> Đang tạo phân vùng mới $($DriveLetter):\ (VUONGTT_RESCUE)..." }
+        $newPart = New-Partition -DiskNumber $partC.DiskNumber -UseMaximumSize -DriveLetter $DriveLetter -ErrorAction Stop
+
+        Start-Sleep -Milliseconds 800
+
+        if ($OnProgress) { & $OnProgress "-> Đang định dạng phân vùng $($DriveLetter):\ với chuẩn NTFS..." }
+        Format-Volume -DriveLetter $DriveLetter -FileSystem NTFS -NewFileSystemLabel "VUONGTT_RESCUE" -Confirm:$false -ErrorAction Stop | Out-Null
+
+        if ($OnProgress) { & $OnProgress "• [OK] ĐÃ TẠO THÀNH CÔNG PHÂN VÙNG CỨU HỘ ĐỘC LẬP $($DriveLetter):\ (VUONGTT_RESCUE - $SizeGB GB)!" }
+
+        return [PSCustomObject]@{
+            Success     = $true
+            DriveLetter = "$($DriveLetter):"
+            Created     = $true
+            Message     = "Đã tạo thành công phân vùng cứu hộ độc lập $($DriveLetter):\ (VUONGTT_RESCUE) dung lượng $SizeGB GB."
+        }
+    } catch {
+        if ($OnProgress) { & $OnProgress "• [CẢNH BÁO TÁCH PHÂN VÙNG] $($_.Exception.Message)" }
+        return [PSCustomObject]@{
+            Success     = $false
+            DriveLetter = $null
+            Created     = $false
+            Message     = $_.Exception.Message
+        }
+    }
+}
+
+function Initialize-VUONGTTPostInstallPayload {
+    param(
+        [bool]$RestoreDrivers = $true,
+        [bool]$AutoActivate = $true,
+        [string]$TargetDataDrive = "D:"
+    )
+
+    try {
+        # 1. Xác định ổ đĩa an toàn (Ưu tiên Z:, D:, E:, sau đó C:)
+        $safeDrive = $TargetDataDrive
+        if (Test-Path "Z:\") {
+            $safeDrive = "Z:"
+        } elseif (-not (Test-Path "$safeDrive\")) {
+            $fixed = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Free -gt 5GB -and $_.Name -ne "C" } | Select-Object -First 1
+            if ($fixed) { $safeDrive = "$($fixed.Name):" } else { $safeDrive = "C:" }
+        }
+
+        $appBackupDir = "$safeDrive\VUONGTT_Windows_Setup"
+        if (-not (Test-Path $appBackupDir)) { New-Item -ItemType Directory -Path $appBackupDir -Force | Out-Null }
+
+        # 2. Sao chép VUONGTT_Toolkit.exe hiện tại sang ổ an toàn để không bao giờ bị mất
+        $runningExe = $null
+        try {
+            $runningExe = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+        } catch {}
+
+        if ($runningExe -and (Test-Path $runningExe) -and $runningExe.EndsWith(".exe", [System.StringComparison]::OrdinalIgnoreCase)) {
+            Copy-Item -Path $runningExe -Destination "$appBackupDir\VUONGTT_Toolkit.exe" -Force -ErrorAction SilentlyContinue
+        } else {
+            $candidateExes = @(
+                "E:\toolwindows\VUONGTT_Toolkit.exe",
+                "$PSScriptRoot\..\..\VUONGTT_Toolkit.exe",
+                "C:\toolwindows\VUONGTT_Toolkit.exe"
+            )
+            foreach ($cand in $candidateExes) {
+                if (Test-Path $cand) {
+                    Copy-Item -Path $cand -Destination "$appBackupDir\VUONGTT_Toolkit.exe" -Force -ErrorAction SilentlyContinue
+                    break
+                }
+            }
+        }
+
+        # 3. Tạo SetupComplete.cmd - Kịch bản tối cao được Windows Setup tự động chạy dưới quyền SYSTEM
+        $scriptsDir = "$env:SystemRoot\Setup\Scripts"
+        if (-not (Test-Path $scriptsDir)) { New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null }
+        $setupCompletePath = "$scriptsDir\SetupComplete.cmd"
+
+        $cmdLines = @(
+            "@echo off",
+            "chcp 65001 >nul",
+            "echo [VUONGTT POST-INSTALL AUTOMATION] Starting system restore...",
+            "",
+            ":: 1. Tu dong nap lai toan bo Driver phan cung tu moi nguon (D, C hoac Windows.old)",
+            "if exist `"$safeDrive\Backup_Drivers`" (",
+            "    pnputil.exe /add-driver `"$safeDrive\Backup_Drivers\*.inf`" /subdirs /install >nul 2>&1",
+            ")",
+            "if exist `"C:\Backup_Drivers`" (",
+            "    pnputil.exe /add-driver `"C:\Backup_Drivers\*.inf`" /subdirs /install >nul 2>&1",
+            ")",
+            "if exist `"C:\Windows.old\Backup_Drivers`" (",
+            "    pnputil.exe /add-driver `"C:\Windows.old\Backup_Drivers\*.inf`" /subdirs /install >nul 2>&1",
+            ")",
+            "",
+            ":: 2. Tu dong khoi phuc VUONGTT Toolkit len Public Desktop (Ke ca khi may chi co o C)",
+            "if exist `"$appBackupDir\VUONGTT_Toolkit.exe`" (",
+            "    copy /y `"$appBackupDir\VUONGTT_Toolkit.exe`" `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" >nul 2>&1",
+            ") else if exist `"C:\Windows.old\VUONGTT_Windows_Setup\VUONGTT_Toolkit.exe`" (",
+            "    copy /y `"C:\Windows.old\VUONGTT_Windows_Setup\VUONGTT_Toolkit.exe`" `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" >nul 2>&1",
+            ") else if exist `"C:\VUONGTT_Windows_Setup\VUONGTT_Toolkit.exe`" (",
+            "    copy /y `"C:\VUONGTT_Windows_Setup\VUONGTT_Toolkit.exe`" `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" >nul 2>&1",
+            ")",
+            "if exist `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" (",
+            "    reg add `"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce`" /v `"VUONGTT_Welcome`" /t REG_SZ /d `"%PUBLIC%\Desktop\VUONGTT_Toolkit.exe`" /f >nul 2>&1",
+            ")"
+        )
+
+        if ($AutoActivate) {
+            $cmdLines += @(
+                "",
+                ":: 3. Tu dong kich hoat ban quyen so vinh vien MAS HWID",
+                "powershell -NoProfile -ExecutionPolicy Bypass -Command `"irm https://get.activated.win | iex`" >nul 2>&1"
+            )
+        }
+
+        $cmdLines += @(
+            "",
+            "exit 0"
+        )
+
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllLines($setupCompletePath, $cmdLines, $utf8NoBom)
+        [System.IO.File]::WriteAllLines("$appBackupDir\SetupComplete.cmd", $cmdLines, $utf8NoBom)
+
+        return [PSCustomObject]@{
+            Success       = $true
+            SafeDrive     = $safeDrive
+            AppBackupPath = "$appBackupDir\VUONGTT_Toolkit.exe"
+            ScriptPath    = $setupCompletePath
+        }
+    } catch {
+        return [PSCustomObject]@{
+            Success = $false
+            Error   = $_.Exception.Message
+        }
+    }
+}
+
+function Start-VUONGTTAutoPilotWatcher {
+    param(
+        [ValidateSet("Upgrade", "Clean")][string]$Mode = "Upgrade"
+    )
+
+    $syncObj = [hashtable]::Synchronized(@{
+        Mode        = $Mode
+        IsInstalled = $false
+        LogMessages = [System.Collections.Generic.List[string]]::new()
+        Stop        = $false
+    })
+
+    $rs = [runspacefactory]::CreateRunspace()
+    $rs.Open()
+    $rs.SessionStateProxy.SetVariable("Sync", $syncObj)
+
+    $ps = [powershell]::Create()
+    $ps.Runspace = $rs
+    $ps.AddScript({
+        Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes -ErrorAction SilentlyContinue
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
+
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $hasClickedLicense = $false
+        $hasSelectedMode = $false
+        $hasClickedInstall = $false
+
+        while ($stopwatch.Elapsed.TotalSeconds -lt 900 -and -not $Sync.Stop -and -not $hasClickedInstall) {
+            Start-Sleep -Milliseconds 1200
+            
+            try {
+                $root = [System.Windows.Automation.AutomationElement]::RootElement
+                $windows = $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
+                
+                $setupWin = $null
+                foreach ($w in $windows) {
+                    $name = $w.Current.Name
+                    if ($name -match "Windows 11 Setup" -or $name -match "Windows Setup" -or $name -match "Modern Setup Host") {
+                        $setupWin = $w
+                        break
+                    }
+                }
+
+                if (-not $setupWin) { continue }
+
+                # 1. Nhận diện và tự động xử lý nút Accept (Chấp nhận điều khoản bản quyền)
+                if (-not $hasClickedLicense) {
+                    $allBtns = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
+                        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
+                    foreach ($b in $allBtns) {
+                        $bName = $b.Current.Name
+                        if ($bName -match "Accept" -or $bName -match "Chấp nhận" -or $bName -match "Đồng ý") {
+                            $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                            if ($inv) {
+                                $inv.Invoke()
+                                $hasClickedLicense = $true
+                                $Sync.LogMessages.Add("• [AUTO-PILOT] Đã tự động chấp thuận Điều khoản bản quyền (Accept License Terms).")
+                                Start-Sleep -Milliseconds 1500
+                                break
+                            }
+                        }
+                    }
+                }
+
+                # 2. Nhận diện và tự động chọn chế độ cài đặt (Choose what to keep)
+                if (-not $hasSelectedMode) {
+                    $allRadios = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
+                        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::RadioButton)))
+                    
+                    if ($allRadios.Count -gt 0) {
+                        foreach ($r in $allRadios) {
+                            $rName = $r.Current.Name
+                            if ($Sync.Mode -eq "Clean") {
+                                if ($rName -match "Nothing" -or $rName -match "Không giữ lại") {
+                                    $sp = $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
+                                    if ($sp) { $sp.Select() }
+                                    $hasSelectedMode = $true
+                                    $Sync.LogMessages.Add("• [AUTO-PILOT] Đã tự động chọn: Cài mới sạch sẽ 100% (Nothing - Format ổ C:, ổ D/E giữ nguyên).")
+                                    break
+                                }
+                            } else {
+                                if ($rName -match "Keep personal files and apps" -or $rName -match "Giữ lại") {
+                                    $sp = $r.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
+                                    if ($sp) { $sp.Select() }
+                                    $hasSelectedMode = $true
+                                    $Sync.LogMessages.Add("• [AUTO-PILOT] Đã tự động chọn: Cài đè giữ nguyên 100% App & Dữ liệu (Keep personal files and apps).")
+                                    break
+                                }
+                            }
+                        }
+
+                        if ($hasSelectedMode) {
+                            Start-Sleep -Milliseconds 800
+                            $allBtns = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
+                                (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
+                            foreach ($b in $allBtns) {
+                                if ($b.Current.Name -match "Next" -or $b.Current.Name -match "Tiếp theo") {
+                                    $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                                    if ($inv) { $inv.Invoke(); break }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                # 3. Nhận diện và tự động bấm nút Install (Cài đặt)
+                $allBtns = $setupWin.FindAll([System.Windows.Automation.TreeScope]::Descendants, 
+                    (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
+                foreach ($b in $allBtns) {
+                    $bName = $b.Current.Name
+                    if ($bName -match "Install" -or $bName -match "Cài đặt") {
+                        if ($bName -notmatch "Change") {
+                            $inv = $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+                            if ($inv) {
+                                $inv.Invoke()
+                                $hasClickedInstall = $true
+                                $Sync.IsInstalled = $true
+                                $Sync.LogMessages.Add("🚀 [AUTO-PILOT] ĐÃ TỰ ĐỘNG BẤM CÀI ĐẶT (INSTALL)! Máy tính đang nạp hệ điều hành mới và sẽ tự động khởi động lại.")
+                                break
+                            }
+                        }
+                    }
+                }
+            } catch {}
+        }
+    }) | Out-Null
+
+    $asyncHandle = $ps.BeginInvoke()
+    return [PSCustomObject]@{
+        Runspace    = $rs
+        PowerShell  = $ps
+        AsyncHandle = $asyncHandle
+        Sync        = $syncObj
+    }
+}
+
 function Invoke-VUONGTTPrepareOnlineWindowsDeployment {
     param(
         [string]$IsoPath,
@@ -272,6 +583,14 @@ function Invoke-VUONGTTPrepareOnlineWindowsDeployment {
     New-VUONGTTAutoUnattendXml -DestinationPath $unattendXmlPath -Mode $Mode -BypassHardware $BypassHardware -SkipOOBE $NoMSA -AdminUsername "Admin" | Out-Null
     $log.Add("• [OK] Đã sinh file cấu hình tự động hóa: $unattendXmlPath")
 
+    # 5.5. Khởi tạo Payload tự phục hồi sau cài đặt (Post-Install)
+    if ($OnProgress) { & $OnProgress "-> Đang bảo lưu VUONGTT Toolkit sang ổ an toàn & thiết lập SetupComplete.cmd..." }
+    $postPayload = Initialize-VUONGTTPostInstallPayload -RestoreDrivers $BackupDrivers -AutoActivate $AutoActivate
+    if ($postPayload.Success) {
+        $log.Add("• [OK] Đã bảo lưu bộ chạy Toolkit vào ổ dữ liệu an toàn: $($postPayload.AppBackupPath)")
+        $log.Add("• [OK] Đã cài đặt kịch bản SetupComplete.cmd tự động nạp Driver & Bản quyền sau Reboot.")
+    }
+
     # 6. Xây dựng lệnh cài đặt tự động
     $setupExe = "$mountedDrive\setup.exe"
     $modeText = if ($Mode -eq "Upgrade") { "Cài đè nâng cấp / Sửa lỗi (Giữ lại toàn bộ App & Dữ liệu)" } else { "Cài mới sạch sẽ 100% (Clean Install - Format ổ C:)" }
@@ -290,7 +609,7 @@ function Invoke-VUONGTTPrepareOnlineWindowsDeployment {
 
     $log.Add("-----------------------------------------------------------------")
     $log.Add("🚀 SẴN SÀNG KHỞI CHẠY TRÌNH CÀI ĐẶT WINDOWS ONLINE!")
-    $log.Add("Trình cài đặt sẽ mở lên và hoàn tất thiết lập mà không bị chặn phần cứng.")
+    $log.Add("Auto-Pilot Watcher sẽ tự động điều khiển tiến trình cho đến khi máy tự Reboot.")
     $log.Add("-----------------------------------------------------------------")
 
     return [PSCustomObject]@{
@@ -300,6 +619,7 @@ function Invoke-VUONGTTPrepareOnlineWindowsDeployment {
         Arguments        = $argList
         UnattendPath     = $unattendXmlPath
         Mode             = $Mode
+        PostPayload      = $postPayload
         SummaryLog       = ($log -join "`r`n")
     }
 }

@@ -58,7 +58,7 @@ namespace VUONGTT
                     pb.Location = new Point(22, 78);
 
                     Label lblVer = new Label();
-                    lblVer.Text = "v20.5.908.75 • Professional Standalone (All-in-One)";
+                    lblVer.Text = "v20.5.908.76 • Professional Standalone (All-in-One)";
                     lblVer.ForeColor = Color.FromArgb(148, 163, 184);
                     lblVer.Font = new Font("Segoe UI", 7.5f, FontStyle.Regular);
                     lblVer.Location = new Point(22, 98);

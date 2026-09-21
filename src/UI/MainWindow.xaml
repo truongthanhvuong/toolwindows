@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.908.75"
+        Title="VUONGTT Tool Pro 2026 - v20.5.908.76"
         Height="780" Width="1280"
         MinHeight="720" MinWidth="1100"
         WindowStartupLocation="CenterScreen"
@@ -325,7 +325,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.908.75 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.908.76 — Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -2789,58 +2789,64 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Step 3: Tùy Chọn Tự Động Hóa Thông Minh -->
-                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="12,10,12,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <!-- Step 3: BẢNG ĐIỀU KHIỂN TÙY CHỌN CÀI ĐẶT TỰ ĐỘNG (OPTIONS MATRIX) -->
+                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="12,10,12,10" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="3. TÙY CHỌN TỰ ĐỘNG HÓA THÔNG MINH (UNATTENDED AUTOMATION)" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,6"/>
-                                        <WrapPanel>
-                                            <CheckBox x:Name="chkAutoWinBypass" Content="🛡️ Bypass TPM 2.0 / SecureBoot / RAM" IsChecked="True" Margin="0,0,20,4" ToolTip="Cài đặt được Windows 11 trên mọi dòng PC/Laptop không phân biệt cấu hình cũ hay mới."/>
-                                            <CheckBox x:Name="chkAutoWinNoMSA" Content="👤 Bỏ qua tài khoản Microsoft (Tạo user Local Admin)" IsChecked="True" Margin="0,0,20,4" ToolTip="Tự động vượt qua màn hình OOBE bắt buộc đăng nhập tài khoản Microsoft, tạo sẵn tài khoản Admin cục bộ."/>
-                                            <CheckBox x:Name="chkAutoWinBackupDriver" Content="💾 Tự sao lưu Driver hiện tại vào D:\Backup_Drivers" IsChecked="True" Margin="0,0,20,4" ToolTip="Tự động sao lưu toàn bộ Driver phần cứng (VGA, Wi-Fi, Sound) sang ổ D trước khi cài."/>
-                                            <CheckBox x:Name="chkAutoWinAutoActivate" Content="🔑 Kích hoạt bản quyền số vĩnh viễn (MAS HWID)" IsChecked="True" Margin="0,0,20,4" ToolTip="Tự động kích hoạt bản quyền số vĩnh viễn gắn liền bo mạch chủ sau khi cài đặt xong."/>
-                                        </WrapPanel>
+                                        <DockPanel Margin="0,0,0,8">
+                                            <TextBlock Text="3. BẢNG TÙY CHỌN TỰ ĐỘNG HÓA CÀI ĐẶT (TÍCH CHỌN TRƯỚC KHI BẤM CÀI)" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="* Tự động hoàn tất 100% không cần thao tác chuột" FontSize="11" Foreground="#10B981" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                        </DockPanel>
+
+                                        <Grid Margin="0,2,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- CỘT 1: BYPASS & CẤU HÌNH -->
+                                            <Border Grid.Column="0" Background="{DynamicResource CardBgBrush}" CornerRadius="6" Padding="10,8,10,8" Margin="0,0,6,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                                <StackPanel>
+                                                    <TextBlock Text="🛡️ BYPASS &amp; TƯƠNG THÍCH" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,6"/>
+                                                    <CheckBox x:Name="chkAutoWinBypass" Content="Bypass TPM 2.0 / CPU / RAM" IsChecked="True" Margin="0,0,0,6" ToolTip="Cài được Windows 11 trên mọi dòng máy tính không phân biệt cũ hay mới."/>
+                                                    <CheckBox x:Name="chkAutoWinNoMSA" Content="Bỏ qua tài khoản Microsoft (OOBE)" IsChecked="True" Margin="0,0,0,6" ToolTip="Tự tạo sẵn tài khoản Local Admin, không bắt buộc đăng nhập tài khoản Microsoft."/>
+                                                    <CheckBox x:Name="chkAutoWinDisableBitLocker" Content="Tắt tự động mã hóa BitLocker" IsChecked="True" ToolTip="Tránh tình trạng bị khóa phân vùng hoặc hỏi mã Recovery Key sau khi cài đặt."/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- CỘT 2: BẢO TOÀN DỮ LIỆU & PHÂN VÙNG Z: -->
+                                            <Border Grid.Column="1" Background="{DynamicResource CardBgBrush}" CornerRadius="6" Padding="10,8,10,8" Margin="0,0,6,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                                <StackPanel>
+                                                    <TextBlock Text="💾 DỮ LIỆU &amp; PHÂN VÙNG CỨU HỘ" FontWeight="Bold" FontSize="12" Foreground="#10B981" Margin="0,0,0,6"/>
+                                                    <CheckBox x:Name="chkAutoWinBackupDriver" Content="Tự động sao lưu toàn bộ Driver" IsChecked="True" Margin="0,0,0,6" ToolTip="Sao lưu driver VGA, Wi-Fi, Âm thanh... trước khi cài."/>
+                                                    <CheckBox x:Name="chkAutoWinCreateRescueDrive" Content="Tự tạo ổ cứu hộ Z:\ (15GB độc lập)" IsChecked="True" Margin="0,0,0,6" ToolTip="Dành cho máy chỉ có ổ C: Tự động co ổ C lấy 15GB tạo phân vùng Z: độc lập để lưu Tool &amp; Driver vĩnh viễn không bị xóa!"/>
+                                                    <CheckBox x:Name="chkAutoWinRestoreTool" Content="Tự phục hồi Tool ra Desktop Win mới" IsChecked="True" ToolTip="Tự động copy VUONGTT Toolkit ra màn hình Desktop và tự mở lên chào đón bạn sau khi vào Win mới."/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- CỘT 3: TỐI ƯU & BẢN QUYỀN -->
+                                            <Border Grid.Column="2" Background="{DynamicResource CardBgBrush}" CornerRadius="6" Padding="10,8,10,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                                <StackPanel>
+                                                    <TextBlock Text="⚡ TỐI ƯU &amp; BẢN QUYỀN HỆ THỐNG" FontWeight="Bold" FontSize="12" Foreground="#F59E0B" Margin="0,0,0,6"/>
+                                                    <CheckBox x:Name="chkAutoWinAutoActivate" Content="Kích hoạt bản quyền số (MAS HWID)" IsChecked="True" Margin="0,0,0,6" ToolTip="Tự động kích hoạt bản quyền số vĩnh viễn gắn liền mainboard sau khi cài xong."/>
+                                                    <CheckBox x:Name="chkAutoWinPostTweak" Content="1-Click Tối ưu gỡ Bloatware sau cài" IsChecked="True" Margin="0,0,0,6" ToolTip="Tự động gỡ các app rác, tắt quảng cáo và telemetry giúp Windows mới nhẹ mượt tối đa."/>
+                                                    <CheckBox x:Name="chkAutoWinFastOffline" Content="Cài siêu tốc (Bỏ qua tải mạng)" IsChecked="True" ToolTip="Bỏ qua bước 'Getting updates' rườm rà qua Internet, tăng tốc độ cài đặt gấp 3 lần."/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Nút Thực Thi 1-Click -->
-                                <WrapPanel>
-                                    <Button x:Name="btnStartOnlineWindowsInstall" Content="🚀 Bắt Đầu Cài Windows Online (1-Click Deploy)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="340" Height="36" FontWeight="Bold" Padding="18,0,18,0" Margin="0,0,8,0"/>
-                                    <Button x:Name="btnOpenAutoWinFolder" Content="📂 Mở Thư Mục Cài Đặt" Background="#475569" Style="{StaticResource ActionBtn}" Height="36" Padding="14,0,14,0" Margin="0,0,8,0"/>
-                                    <Button x:Name="btnEjectMountedIso" Content="⏏️ Dỡ Ổ Đĩa Ảo (Eject)" Background="#475569" Style="{StaticResource ActionBtn}" Height="36" Padding="14,0,14,0" Margin="0,0,8,0"/>
-                                    <Button x:Name="btnOpenOfficialDownloadPage" Content="🌐 Trang Tải ISO Microsoft" Background="#334155" Style="{StaticResource ActionBtn}" Height="36" Padding="14,0,14,0"/>
+                                <!-- Nút Thực Thi 1-Click Duy Nhất & Công Cụ Hỗ Trợ -->
+                                <WrapPanel Margin="0,0,0,4">
+                                    <Button x:Name="btnStartOnlineWindowsInstall" Content="🚀 BẮT ĐẦU CÀI WINDOWS ONLINE (TỰ ĐỘNG HÓA TỪ A-Z 1-CLICK)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="440" Height="40" FontSize="13" FontWeight="Bold" Padding="20,0,20,0" Margin="0,0,8,6"/>
+                                    <Button x:Name="btnAutoWinCreateRescueNow" Content="💾 Tạo Ổ Cứu Hộ Z:\ Ngay" Background="#2563EB" Style="{StaticResource ActionBtn}" Height="40" Padding="14,0,14,0" Margin="0,0,8,6" ToolTip="Tách ngay 15GB từ ổ C: để tạo phân vùng Z:\ (VUONGTT_RESCUE) lưu trữ Tool và Driver ngay lập tức mà không cần cài Win."/>
+                                    <Button x:Name="btnOpenAutoWinFolder" Content="📂 Mở Thư Mục Cài Đặt" Background="#475569" Style="{StaticResource ActionBtn}" Height="40" Padding="14,0,14,0" Margin="0,0,8,6"/>
+                                    <Button x:Name="btnEjectMountedIso" Content="⏏️ Dỡ Ổ Đĩa Ảo (Eject)" Background="#475569" Style="{StaticResource ActionBtn}" Height="40" Padding="14,0,14,0" Margin="0,0,8,6"/>
+                                    <Button x:Name="btnOpenOfficialDownloadPage" Content="🌐 Trang Tải ISO Microsoft" Background="#334155" Style="{StaticResource ActionBtn}" Height="40" Padding="14,0,14,0" Margin="0,0,0,6"/>
                                 </WrapPanel>
                             </StackPanel>
                         </Border>
-
-                        <!-- CARD 2: 1-CLICK BYPASS CÀI ĐẶT WINDOWS 11 -->
-                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="🛡️ 1-CLICK BYPASS CÀI ĐẶT WINDOWS 11" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
-                                <WrapPanel>
-                                    <Button x:Name="btnBypassWin11All" Content="⚡ 1-Click Bypass Tất Cả (TPM + RAM + CPU)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="290" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnBypassOOBEMSA" Content="👤 Bypass Tài Khoản Microsoft (OOBE\BYPASSNRO)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="310" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnDisableBitLockerSetup" Content="🔓 Tắt Tự Động Mã Hóa BitLocker Khi Cài Win" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="290" Padding="14,0,14,0"/>
-                                </WrapPanel>
-                            </StackPanel>                        </Border>
-
-                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="📥 TẢI BỘ CÀI WINDOWS &amp; CÔNG CỤ TẠO USB BOOT" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
-                                <WrapPanel>
-                                    <Button x:Name="btnDownloadWin11ISO" Content="📥 Tải Windows 11 Chính Hãng (Microsoft)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="280" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnDownloadWin10ISO" Content="📥 Tải Windows 10 Chính Hãng (Microsoft)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="280" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnDownloadRufus" Content="💾 Tải Rufus Mới Nhất (Tạo USB Cài Win)" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="270" Padding="14,0,14,0"/>
-                                    <Button x:Name="btnDownloadVentoy" Content="📀 Tải Ventoy Mới Nhất (USB Multi-Boot)" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="270" Padding="14,0,14,0"/>
-                                </WrapPanel>
-                            </StackPanel>                        </Border>
-
-                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="🛠️ TỐI ƯU HÓA HỆ THỐNG SAU CÀI WIN (POST-INSTALL)" FontSize="15" FontWeight="Bold" Margin="0,0,0,10"/>
-                                <WrapPanel>
-                                    <Button x:Name="btnPostInstallTweak" Content="⚡ 1-Click Tối Ưu Sau Cài Win (Gỡ Bloatware &amp; Quảng Cáo)" Background="#BE123C" Style="{StaticResource ActionBtn}" MinWidth="380" Padding="14,0,14,0"/>
-                                </WrapPanel>
-                            </StackPanel>                        </Border>
 
                         <Border Style="{StaticResource CardBorder}">
                             <StackPanel>
@@ -3192,7 +3198,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.75" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.908.76" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>
