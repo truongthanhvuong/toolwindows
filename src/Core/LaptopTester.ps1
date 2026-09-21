@@ -1,13 +1,19 @@
 ﻿# VUONGTT Toolkit 2026 - Laptop & Hardware Testing Module
 # Encoding: UTF-8 with BOM
 
+$script:cachedBatteryHealth = $null
+
 function Get-LaptopBatteryHealth {
     [CmdletBinding()]
-    param()
+    param([switch]$ForceRefresh)
+
+    if ($script:cachedBatteryHealth -and -not $ForceRefresh) {
+        return $script:cachedBatteryHealth
+    }
 
     $battery = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $battery) {
-        return [PSCustomObject]@{
+        $noBat = [PSCustomObject]@{
             HasBattery        = $false
             DesignCapacity    = "Không có pin (Máy để bàn Desktop)"
             FullChargeCapacity = "N/A"
@@ -17,6 +23,8 @@ function Get-LaptopBatteryHealth {
             EstimatedChargeRemaining = "N/A"
             BatteryStatus     = "Cắm nguồn AC trực tiếp"
         }
+        $script:cachedBatteryHealth = $noBat
+        return $noBat
     }
 
     $designCap = 0
@@ -57,7 +65,7 @@ function Get-LaptopBatteryHealth {
         default { "Bình thường" }
     }
 
-    return [PSCustomObject]@{
+    $batObj = [PSCustomObject]@{
         HasBattery        = $true
         DesignCapacity    = "$designCap mWh"
         FullChargeCapacity = "$fullCap mWh"
@@ -67,6 +75,8 @@ function Get-LaptopBatteryHealth {
         EstimatedChargeRemaining = "$($battery.EstimatedChargeRemaining)%"
         BatteryStatus     = $statusStr
     }
+    $script:cachedBatteryHealth = $batObj
+    return $batObj
 }
 
 function Export-BatteryReport {

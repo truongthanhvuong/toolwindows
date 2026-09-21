@@ -1,8 +1,28 @@
 ﻿# VUONGTT Toolkit 2026 - Partition & Storage Management Module (MiniTool Partition Pro Style)
 
+$script:cachedDiskPartitionMap = $null
+
 function Get-VUONGTTDiskPartitionMap {
+    [CmdletBinding()]
+    param([switch]$ForceRefresh)
+
+    if ($script:cachedDiskPartitionMap -and -not $ForceRefresh) {
+        return $script:cachedDiskPartitionMap
+    }
+
     $results = @()
     try {
+        # Pre-fetch toàn bộ volumes trong 1 lần truy vấn nhanh duy nhất, tránh gọi Get-Volume trong vòng lặp lồng
+        $allVols = Get-Volume -ErrorAction SilentlyContinue
+        $volByLetter = @{}
+        if ($allVols) {
+            foreach ($v in $allVols) {
+                if ($v.DriveLetter) {
+                    $volByLetter["$($v.DriveLetter)".ToUpper()] = $v
+                }
+            }
+        }
+
         $disks = Get-Disk | Sort-Object Number
         foreach ($d in $disks) {
             $diskObj = [PSCustomObject]@{
@@ -20,10 +40,8 @@ function Get-VUONGTTDiskPartitionMap {
                 $parts = Get-Partition -DiskNumber $d.Number -ErrorAction SilentlyContinue | Sort-Object PartitionNumber
                 foreach ($p in $parts) {
                     $vol = $null
-                    if ($p.DriveLetter) {
-                        $vol = Get-Volume -DriveLetter $p.DriveLetter -ErrorAction SilentlyContinue
-                    } elseif ($p.AccessPaths -and $p.AccessPaths.Count -gt 0) {
-                        $vol = Get-Volume -FilePath $p.AccessPaths[0] -ErrorAction SilentlyContinue
+                    if ($p.DriveLetter -and $volByLetter.ContainsKey("$($p.DriveLetter)".ToUpper())) {
+                        $vol = $volByLetter["$($p.DriveLetter)".ToUpper()]
                     }
 
                     $totalGB = [math]::Round($p.Size / 1GB, 2)
@@ -61,6 +79,7 @@ function Get-VUONGTTDiskPartitionMap {
 
             $results += $diskObj
         }
+        $script:cachedDiskPartitionMap = $results
     } catch {
         Write-Warning "Lỗi khi truy xuất dữ liệu đĩa: $($_.Exception.Message)"
     }

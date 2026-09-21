@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-function Invoke-VUONGTTDoEvents {
+function global:Invoke-VUONGTTDoEvents {
     try {
         if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher) {
             $frame = New-Object System.Windows.Threading.DispatcherFrame
@@ -54,7 +54,7 @@ function Invoke-VUONGTTDoEvents {
     } catch {}
 }
 
-function Start-VUONGTTProcessResponsive {
+function global:Start-VUONGTTProcessResponsive {
     param(
         [string]$FilePath,
         [string]$ArgumentList = "",
@@ -73,14 +73,14 @@ function Start-VUONGTTProcessResponsive {
         if (-not $proc) { return -1 }
 
         $timeout = (Get-Date).AddSeconds($TimeoutSeconds)
-        while (-not $proc.HasExited) {
-            Start-Sleep -Milliseconds 50
+        while (-not $proc.WaitForExit(50)) {
             Invoke-VUONGTTDoEvents
             if ((Get-Date) -gt $timeout) {
                 try { $proc.Kill() } catch {}
                 break
             }
         }
+        Invoke-VUONGTTDoEvents
         return $proc.ExitCode
     } catch {
         return -1
@@ -329,6 +329,8 @@ $script:CurrentTheme    = "Default"
 
 $script:currentTab = "SysInfo"
 
+$script:loadedTabs = @{}
+
 # Switch Tab Function
 function Switch-Tab {
     param([string]$TargetTag, [switch]$SkipRefresh = $false)
@@ -395,68 +397,97 @@ function Switch-Tab {
 
     if ($SkipRefresh) { return }
 
-    # Module specific lazy refresh
-    switch ($TargetTag) {
-        "AdminPortal"  {
-            $txtFooterStatus.Text = "• [ADMIN] Đang mở Trang Quản Trị Viên & tự động đồng bộ Cloud..."
-            Render-VUONGTTAdminPolicies
-            Render-VUONGTTAdminKeys
-            try {
-                [System.Windows.Threading.Dispatcher]::CurrentDispatcher.BeginInvoke([action]{
-                    $cRes = Sync-VUONGTTCloudAdminData -ForceApi
-                    if ($cRes -and $cRes.Success) {
-                        Render-VUONGTTAdminPolicies
-                        Render-VUONGTTAdminKeys
-                        $txtFooterStatus.Text = "• [ADMIN CLOUD] Đã đồng bộ với Cloud! Kho: $($cRes.TotalKeys) keys."
-                    }
-                }) | Out-Null
-            } catch {}
-        }
-        "SysInfo"      { Refresh-SysInfoDisplay }
-        "Benchmark"    {
-            Refresh-VUONGTTDiskHealthUI
-            $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & S.M.A.R.T diagnostic ready." } else { "• [OK] Sẵn sàng chẩn đoán sức khỏe ổ cứng S.M.A.R.T & đo hiệu năng." }
-        }
-        "Customize"    { Refresh-CustomizeDisplay }
-        "Users"        { Refresh-UsersList }
-        "CpuMain"      { Search-CpuInfo }
-        "LaptopCheck"  { 
-            Refresh-BatteryDisplay
-            $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Laptop, hardware & peripheral test ready." } else { "• [OK] Bộ chẩn đoán Laptop, phần cứng & ngoại vi sẵn sàng." }
-        }
-        "Office"       { Refresh-OfficeStatusBadge }
-        "Software"     { $txtFooterStatus.Text = "• [OK] Kho 26 phần mềm thiết yếu sẵn sàng." }
-        "CustomApp"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt ứng dụng tùy chỉnh hoặc file cài đặt silent." }
-        "Uninstaller"  {
-            $txtFooterStatus.Text = "• [OK] Đang ở trang Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)."
-            if (-not $script:allInstalledApps -or $script:allInstalledApps.Count -eq 0) {
-                Refresh-InstalledAppsGrid
+    # CƠ CHẾ SESSION LAZY CACHE SIÊU TỐC (ZERO-LAG TAB SWITCHING):
+    # - Chỉ nạp WMI/CIM/Phần cứng trong LẦN ĐẦU TIÊN mở tab trong phiên làm việc.
+    # - Khi người dùng chuyển qua lại giữa các tab, phản hồi NGAY LẬP TỨC (0ms), không giật lag, không freeze UI!
+    # - Người dùng có thể chủ động bấm nút "Làm Mới / Quét Lại" trên từng trang bất cứ khi nào muốn cập nhật thông số tươi.
+    $isFirstLoad = -not $script:loadedTabs.ContainsKey($TargetTag)
+    $script:loadedTabs[$TargetTag] = $true
+
+    if ($isFirstLoad) {
+        Invoke-VUONGTTDoEvents
+        switch ($TargetTag) {
+            "AdminPortal"  {
+                $txtFooterStatus.Text = "• [ADMIN] Đang mở Trang Quản Trị Viên & tự động đồng bộ Cloud..."
+                Render-VUONGTTAdminPolicies
+                Render-VUONGTTAdminKeys
+                try {
+                    [System.Windows.Threading.Dispatcher]::CurrentDispatcher.BeginInvoke([action]{
+                        $cRes = Sync-VUONGTTCloudAdminData -ForceApi
+                        if ($cRes -and $cRes.Success) {
+                            Render-VUONGTTAdminPolicies
+                            Render-VUONGTTAdminKeys
+                            $txtFooterStatus.Text = "• [ADMIN CLOUD] Đã đồng bộ với Cloud! Kho: $($cRes.TotalKeys) keys."
+                        }
+                    }) | Out-Null
+                } catch {}
             }
+            "SysInfo"      { Refresh-SysInfoDisplay }
+            "Benchmark"    {
+                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [Loading] Scanning disk health & S.M.A.R.T..." } else { "• [Đang nạp] Chẩn đoán sức khỏe ổ cứng & S.M.A.R.T..." }
+                Invoke-VUONGTTDoEvents
+                Refresh-VUONGTTDiskHealthUI
+                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & S.M.A.R.T diagnostic ready." } else { "• [OK] Sẵn sàng chẩn đoán sức khỏe ổ cứng S.M.A.R.T & đo hiệu năng." }
+            }
+            "Customize"    { Refresh-CustomizeDisplay }
+            "Users"        { Refresh-UsersList }
+            "CpuMain"      { Search-CpuInfo }
+            "LaptopCheck"  { 
+                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [Loading] Checking laptop battery & hardware..." } else { "• [Đang nạp] Kiểm tra thông tin Pin & phần cứng ngoại vi..." }
+                Invoke-VUONGTTDoEvents
+                Refresh-BatteryDisplay
+                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Laptop, hardware & peripheral test ready." } else { "• [OK] Bộ chẩn đoán Laptop, phần cứng & ngoại vi sẵn sàng." }
+            }
+            "Office"       { Refresh-OfficeStatusBadge }
+            "Software"     { $txtFooterStatus.Text = "• [OK] Kho 26 phần mềm thiết yếu sẵn sàng." }
+            "CustomApp"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt ứng dụng tùy chỉnh hoặc file cài đặt silent." }
+            "Uninstaller"  {
+                $txtFooterStatus.Text = "• [OK] Đang ở trang Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)."
+                if (-not $script:allInstalledApps -or $script:allInstalledApps.Count -eq 0) {
+                    Refresh-InstalledAppsGrid
+                }
+            }
+            "Fonts"        { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt trọn bộ Font tiếng Việt VNI, TCVN3, Unicode." }
+            "Cleaner"      { 
+                $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
+                Refresh-PowerPlanBadge
+            }
+            "Tweaks"       { 
+                $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
+                Refresh-PowerPlanBadge
+            }
+            "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
+            "BackupDriver" { 
+                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [Loading] Scanning PnP device drivers..." } else { "• [Đang nạp] Chẩn đoán Driver và danh sách thiết bị PnP..." }
+                Invoke-VUONGTTDoEvents
+                Refresh-DriverStatusBadge
+                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." }
+            }
+            "DevMgmt"      { 
+                $txtFooterStatus.Text = "• [OK] Mở Device Manager từ danh mục Backup Driver hoặc quản lý phần cứng."
+            }
+            "Activation"   { $txtFooterStatus.Text = "• [OK] Sẵn sàng kích hoạt bản quyền số vĩnh viễn MAS HWID." }
+            "BitLocker"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng quản lý mã hóa BitLocker & trích xuất Recovery Key." }
+            "AutoWin"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass và tải ISO cài Win." }
+            "Partition"    { 
+                $txtFooterStatus.Text = "• [Đang nạp] Đang nạp danh sách phân vùng và ổ đĩa hệ thống..."
+                Invoke-VUONGTTDoEvents
+                Refresh-DiskPartitionDisplay
+                $txtFooterStatus.Text = "• [OK] Quản lý phân vùng đĩa & Storage Engine sẵn sàng."
+            }
+            "IpScanner"    { $txtFooterStatus.Text = "• [OK] Advanced IP Scanner sẵn sàng dò quét mạng nội bộ LAN." }
         }
-        "Fonts"        { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt trọn bộ Font tiếng Việt VNI, TCVN3, Unicode." }
-        "Cleaner"      { 
-            $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
-            Refresh-PowerPlanBadge
-        }
-        "Tweaks"       { 
-            $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
-            Refresh-PowerPlanBadge
-        }
-        "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
-        "BackupDriver" { 
-            $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." }
-            Refresh-DriverStatusBadge
-        }
-        "DevMgmt"      { 
-            $txtFooterStatus.Text = "• [OK] Đã mở trình quản lý thiết bị Device Manager (devmgmt.msc)"
-            Start-Process "devmgmt.msc"
-        }
-        "Activation"   { $txtFooterStatus.Text = "• [OK] Sẵn sàng kích hoạt bản quyền số vĩnh viễn MAS HWID." }
-        "BitLocker"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng quản lý mã hóa BitLocker & trích xuất Recovery Key." }
-        "AutoWin"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass và tải ISO cài Win." }
-        "Partition"    { 
-            $txtFooterStatus.Text = "• [OK] Quản lý phân vùng đĩa & Storage Engine sẵn sàng."
-            Refresh-DiskPartitionDisplay
+    } else {
+        # Đã nạp trong phiên: Phản hồi 0ms
+        switch ($TargetTag) {
+            "Benchmark"    { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & S.M.A.R.T diagnostic ready." } else { "• [OK] Sẵn sàng chẩn đoán sức khỏe ổ cứng S.M.A.R.T & đo hiệu năng." } }
+            "LaptopCheck"  { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Laptop, hardware & peripheral test ready." } else { "• [OK] Bộ chẩn đoán Laptop, phần cứng & ngoại vi sẵn sàng." } }
+            "BackupDriver" { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." } }
+            "Partition"    { $txtFooterStatus.Text = "• [OK] Quản lý phân vùng đĩa & Storage Engine sẵn sàng." }
+            "Office"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt và cấu hình Microsoft Office." }
+            "Users"        { $txtFooterStatus.Text = "• [OK] Danh sách tài khoản người dùng đã sẵn sàng." }
+            "Customize"    { $txtFooterStatus.Text = "• [OK] Thông tin tùy chỉnh OEM đã sẵn sàng." }
+            "SysInfo"      { $txtFooterStatus.Text = "• [OK] Xem cấu hình máy tính & thông số phần cứng thời gian thực." }
         }
     }
 }
@@ -1026,6 +1057,7 @@ $btnExportCsv.Add_Click($exportAction)
 $btnExportExcel.Add_Click($exportAction)
 
 function Show-VUONGTTDriverDoctorModal {
+    param([switch]$ForceRefresh)
     if (-not $modalDriverDoctor) { return }
     $modalDriverDoctor.Visibility = [System.Windows.Visibility]::Visible
     if ($prgDriverDoctor) { $prgDriverDoctor.Value = 15 }
@@ -1035,7 +1067,7 @@ function Show-VUONGTTDriverDoctorModal {
     Invoke-VUONGTTDoEvents
 
     try {
-        $diag = Get-VUONGTTDeepDriverDiagnostic
+        $diag = Get-VUONGTTDeepDriverDiagnostic -ForceRefresh:$ForceRefresh
         if ($lblDriverDoctorTotal) { $lblDriverDoctorTotal.Text = "$($diag.TotalDevices)" }
         if ($lblDriverDoctorIssues) { 
             $lblDriverDoctorIssues.Text = "$($diag.IssueCount) Lỗi"
@@ -1097,7 +1129,7 @@ if ($btnModalDriverDoctorDone) {
     $btnModalDriverDoctorDone.Add_Click({ $modalDriverDoctor.Visibility = [System.Windows.Visibility]::Collapsed })
 }
 if ($btnDriverDoctorRescan) {
-    $btnDriverDoctorRescan.Add_Click({ Show-VUONGTTDriverDoctorModal })
+    $btnDriverDoctorRescan.Add_Click({ Show-VUONGTTDriverDoctorModal -ForceRefresh })
 }
 
 if ($btnDriverAutoWinUpdate) {
@@ -2634,7 +2666,8 @@ $btnRunRepairAudit      = Get-Control "btnRunRepairAudit"
 $txtRepairAuditLog      = Get-Control "txtRepairAuditLog"
 
 function Refresh-BatteryDisplay {
-    $bat = Get-LaptopBatteryHealth
+    param([switch]$ForceRefresh)
+    $bat = Get-LaptopBatteryHealth -ForceRefresh:$ForceRefresh
     if ($bat.HasBattery) {
         $lblBatteryStatus.Text    = "Tình trạng: $($bat.BatteryStatus) ($($bat.EstimatedChargeRemaining))"
         $lblBatteryDesignCap.Text = "Dung lượng thiết kế: $($bat.DesignCapacity)"
@@ -2648,7 +2681,10 @@ function Refresh-BatteryDisplay {
     }
 }
 
-$btnRefreshBattery.Add_Click({ Refresh-BatteryDisplay })
+$btnRefreshBattery.Add_Click({
+    Invoke-VUONGTTDoEvents
+    Refresh-BatteryDisplay -ForceRefresh
+})
 $btnExportBatteryHtml.Add_Click({
     $res = Export-BatteryReport
     [System.Windows.MessageBox]::Show($res, "Báo Cáo Pin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
@@ -2990,7 +3026,8 @@ function Select-VUONGTTDiskIndex {
 }
 
 function Refresh-VUONGTTDiskHealthUI {
-    $script:cachedDiskHealthList = Get-VUONGTTDiskHealthList
+    param([switch]$ForceRefresh)
+    $script:cachedDiskHealthList = Get-VUONGTTDiskHealthList -ForceRefresh:$ForceRefresh
     if ($cmbDiskSelect) {
         $cmbDiskSelect.Items.Clear()
         foreach ($d in $script:cachedDiskHealthList) {
@@ -3014,7 +3051,8 @@ if ($cmbDiskSelect) {
 if ($btnRefreshDiskHealth) {
     $btnRefreshDiskHealth.Add_Click({
         $txtFooterStatus.Text = "• [SCAN] Đang quét lại thông tin sức khỏe và S.M.A.R.T ổ cứng..."
-        Refresh-VUONGTTDiskHealthUI
+        Invoke-VUONGTTDoEvents
+        Refresh-VUONGTTDiskHealthUI -ForceRefresh
         $txtFooterStatus.Text = "• [OK] Đã cập nhật xong tình trạng sức khỏe ổ đĩa!"
     })
 }
@@ -3278,8 +3316,9 @@ $btnClearDriverLog           = Get-Control "btnClearDriverLog"
 $txtDriverLog                = Get-Control "txtDriverLog"
 
 function Refresh-DriverStatusBadge {
+    param([switch]$ForceRefresh)
     try {
-        $diag = Get-VUONGTTDeepDriverDiagnostic
+        $diag = Get-VUONGTTDeepDriverDiagnostic -ForceRefresh:$ForceRefresh
         if ($txtDriverMachineInfo) {
             $txtDriverMachineInfo.Text = "$($diag.Manufacturer) $($diag.Model)"
         }
@@ -3312,8 +3351,8 @@ if ($btnCheckAllDrivers) {
         if ($txtDriverLog) { $txtDriverLog.Text = "Đang quét sâu toàn bộ phần cứng PnP và chẩn đoán Driver..." }
         Invoke-VUONGTTDoEvents
         try {
-            $diag = Get-VUONGTTDeepDriverDiagnostic
-            Refresh-DriverStatusBadge
+            $diag = Get-VUONGTTDeepDriverDiagnostic -ForceRefresh
+            Refresh-DriverStatusBadge -ForceRefresh
 
             $report = @(
                 "============================================================",
@@ -4977,6 +5016,7 @@ function Show-VUONGTTSelectPartitionToMergeDialog {
 }
 
 function Refresh-DiskPartitionDisplay {
+    param([switch]$ForceRefresh)
     if (-not $panelDisksContainer) { return }
     $panelDisksContainer.Children.Clear()
     if ($cmbPartitionDrives) { $cmbPartitionDrives.Items.Clear() }
@@ -4984,7 +5024,8 @@ function Refresh-DiskPartitionDisplay {
     if ($cmbSplitNewLetter) { $cmbSplitNewLetter.Items.Clear() }
 
     $txtFooterStatus.Text = "• [Đang xử lý] Đang nạp danh sách ổ đĩa và phân vùng hệ thống..."
-    $diskMap = Get-VUONGTTDiskPartitionMap
+    Invoke-VUONGTTDoEvents
+    $diskMap = Get-VUONGTTDiskPartitionMap -ForceRefresh:$ForceRefresh
 
     if (-not $diskMap -or $diskMap.Count -eq 0) {
         $tb = New-Object System.Windows.Controls.TextBlock
@@ -5375,11 +5416,11 @@ function Refresh-DiskPartitionDisplay {
 }
 
 if ($btnRefreshDisks) {
-    $btnRefreshDisks.Add_Click({ Refresh-DiskPartitionDisplay })
+    $btnRefreshDisks.Add_Click({ Refresh-DiskPartitionDisplay -ForceRefresh })
 }
 
 if ($btnRefreshDisksMap) {
-    $btnRefreshDisksMap.Add_Click({ Refresh-DiskPartitionDisplay })
+    $btnRefreshDisksMap.Add_Click({ Refresh-DiskPartitionDisplay -ForceRefresh })
 }
 
 # --- XỬ LÝ NÚT APPLY (ÁP DỤNG THAY ĐỔI) ---
@@ -5441,7 +5482,7 @@ if ($btnApplyPartitionOps) {
         if ($btnCancelPartitionOps) { $btnCancelPartitionOps.IsEnabled = $true }
         $txtFooterStatus.Text = "• [OK] Đã áp dụng các thay đổi phân vùng thành công!"
 
-        Refresh-DiskPartitionDisplay
+        Refresh-DiskPartitionDisplay -ForceRefresh
 
         [System.Windows.MessageBox]::Show(
             "ĐÃ HOÀN TẤT ÁP DỤNG THAY ĐỔI PHÂN VÙNG!`n`nĐã thực thi thành công $successCount thao tác. Sơ đồ ổ đĩa vật lý đã được cập nhật.",
@@ -5529,7 +5570,7 @@ if ($btnChangeLabel) {
         $res = Set-VUONGTTVolumeLabel -DriveLetter $drive -NewLabel $newLabel
         $txtPartitionLog.Text = "$res`n$($txtPartitionLog.Text)"
         $txtFooterStatus.Text = "• [OK] Đổi tên nhãn đĩa thành công!"
-        Refresh-DiskPartitionDisplay
+        Refresh-DiskPartitionDisplay -ForceRefresh
     })
 }
 
@@ -5544,7 +5585,7 @@ if ($btnChangeDriveLetter) {
         $res = Set-VUONGTTDriveLetter -OldLetter $oldDrive -NewLetter $newDrive
         $txtPartitionLog.Text = "$res`n$($txtPartitionLog.Text)"
         $txtFooterStatus.Text = "• [OK] Đổi ký tự ổ đĩa thành công!"
-        Refresh-DiskPartitionDisplay
+        Refresh-DiskPartitionDisplay -ForceRefresh
     })
 }
 
@@ -5582,7 +5623,7 @@ if ($btnExecuteSplit) {
         $res = Invoke-VUONGTTSplitPartition -SourceDriveLetter $srcDrive -SplitSizeGB $splitSize -NewDriveLetter $newLetter -NewVolumeLabel $newLabel
         $txtPartitionLog.Text = "$res`n`n$($txtPartitionLog.Text)"
         $txtFooterStatus.Text = "• [OK] Đã hoàn tất chia phân vùng ổ đĩa!"
-        Refresh-DiskPartitionDisplay
+        Refresh-DiskPartitionDisplay -ForceRefresh
     })
 }
 
@@ -6673,7 +6714,7 @@ $window.Add_ContentRendered({
     }
 
     $syncWorkerTimer = New-Object System.Windows.Threading.DispatcherTimer
-    $syncWorkerTimer.Interval = [TimeSpan]::FromSeconds(3)
+    $syncWorkerTimer.Interval = [TimeSpan]::FromSeconds(10)
     $syncWorkerTimer.Add_Tick({
         # 1. Kiểm tra nếu tác vụ ngầm đã có kết quả
         if ($script:bgSyncState.IsBusy) {
@@ -6738,6 +6779,8 @@ $window.Add_ContentRendered({
                             }
                             $txtFooterStatus.Text = "• [AUTO-SYNC] Đã tự động đồng bộ kho License Key từ Cloud!"
                         }
+
+                        [System.GC]::Collect()
                     }
                 } catch {
                     $script:bgSyncState.IsBusy = $false
@@ -6746,9 +6789,9 @@ $window.Add_ContentRendered({
             return
         }
 
-        # 2. Kích hoạt lượt đồng bộ mới nếu đã đủ chu kỳ 20 giây (hoặc ngay lần đầu)
+        # 2. Kích hoạt lượt đồng bộ mới nếu đã đủ chu kỳ 900 giây (15 phút) hoặc ngay lần đầu khởi động
         $elapsed = ([DateTime]::UtcNow - $script:lastSyncTime).TotalSeconds
-        if ($elapsed -ge 20) {
+        if ($elapsed -ge 900) {
             $script:bgSyncState.IsBusy = $true
             try {
                 $ps = [System.Management.Automation.PowerShell]::Create()

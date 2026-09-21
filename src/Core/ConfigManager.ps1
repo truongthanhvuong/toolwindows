@@ -63,7 +63,11 @@ function Enable-VUONGTTOpenSSHServer {
         $cap = Get-WindowsCapability -Online | Where-Object { $_.Name -like "OpenSSH.Server*" } | Select-Object -First 1
         if ($cap -and $cap.State -ne "Installed") {
             $log += "[2/3] Đang tải và cài đặt OpenSSH.Server..."
-            Add-WindowsCapability -Online -Name $cap.Name -ErrorAction SilentlyContinue | Out-Null
+            if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                Start-VUONGTTProcessResponsive -FilePath "dism.exe" -ArgumentList "/Online /Add-Capability /CapabilityName:$($cap.Name)" -TimeoutSeconds 600 -NoNewWindow $true | Out-Null
+            } else {
+                Add-WindowsCapability -Online -Name $cap.Name -ErrorAction SilentlyContinue | Out-Null
+            }
         }
         $log += "[3/3] Khởi động và thiết lập dịch vụ sshd tự động..."
         Start-Service sshd -ErrorAction SilentlyContinue

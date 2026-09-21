@@ -671,9 +671,15 @@ function Export-HardwareInfoToCsv {
 # BÁC SĨ DRIVER & TRUNG TÂM CÀI ĐẶT DRIVER THIẾU (DRIVER DOCTOR PRO)
 # =========================================================================
 
+$script:cachedDriverDiagnostic = $null
+
 function Get-VUONGTTDeepDriverDiagnostic {
     [CmdletBinding()]
-    param()
+    param([switch]$ForceRefresh)
+
+    if ($script:cachedDriverDiagnostic -and -not $ForceRefresh) {
+        return $script:cachedDriverDiagnostic
+    }
 
     try {
         # 1. Quet toan bo PnP Entity
@@ -780,7 +786,7 @@ function Get-VUONGTTDeepDriverDiagnostic {
         $model = if ($cs.Model) { $cs.Model.Trim() } else { "PC Desktop / Laptop" }
         $serial = if ($bios.SerialNumber) { $bios.SerialNumber.Trim() } else { "" }
 
-        return [PSCustomObject]@{
+        $diagObj = [PSCustomObject]@{
             TotalDevices      = $totalCount
             IssueCount        = $items.Count
             Manufacturer      = $manufacturer
@@ -790,6 +796,8 @@ function Get-VUONGTTDeepDriverDiagnostic {
             HasGpuWarning     = $gpuWarning
             IssueList         = $items
         }
+        $script:cachedDriverDiagnostic = $diagObj
+        return $diagObj
     } catch {
         return [PSCustomObject]@{
             TotalDevices      = 0

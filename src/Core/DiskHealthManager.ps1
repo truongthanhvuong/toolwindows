@@ -132,7 +132,16 @@ public class DiskSmartNativeHelper {
 "@ -ErrorAction SilentlyContinue
 }
 
+$script:cachedSystemBootDiag = $null
+
 function Get-VUONGTTSystemBootDiagnostics {
+    [CmdletBinding()]
+    param([switch]$ForceRefresh)
+
+    if ($script:cachedSystemBootDiag -and -not $ForceRefresh) {
+        return $script:cachedSystemBootDiag
+    }
+
     try {
         $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
         $lastBoot = if ($os.LastBootUpTime) { $os.LastBootUpTime } else { [DateTime]::Now.AddHours(-4) }
@@ -168,7 +177,7 @@ function Get-VUONGTTSystemBootDiagnostics {
             }
         } catch {}
 
-        return [PSCustomObject]@{
+        $diagRes = [PSCustomObject]@{
             LastBoot             = $lastBoot
             CurrentUptime        = $uptime
             UptimeText           = $uptimeStr
@@ -178,8 +187,10 @@ function Get-VUONGTTSystemBootDiagnostics {
             EstimatedPowerCycles = $estPowerCycles
             RecentEvents         = $recentEvents
         }
+        $script:cachedSystemBootDiag = $diagRes
+        return $diagRes
     } catch {
-        return [PSCustomObject]@{
+        $fallbackRes = [PSCustomObject]@{
             LastBoot             = [DateTime]::Now.AddHours(-4)
             CurrentUptime        = [TimeSpan]::FromHours(4)
             UptimeText           = "4 giờ 15 phút"
@@ -189,12 +200,23 @@ function Get-VUONGTTSystemBootDiagnostics {
             EstimatedPowerCycles = 288
             RecentEvents         = @()
         }
+        $script:cachedSystemBootDiag = $fallbackRes
+        return $fallbackRes
     }
 }
 
+$script:cachedDiskHealthList = $null
+
 function Get-VUONGTTDiskHealthList {
+    [CmdletBinding()]
+    param([switch]$ForceRefresh)
+
+    if ($script:cachedDiskHealthList -and -not $ForceRefresh) {
+        return $script:cachedDiskHealthList
+    }
+
     $results = @()
-    $bootDiag = Get-VUONGTTSystemBootDiagnostics
+    $bootDiag = Get-VUONGTTSystemBootDiagnostics -ForceRefresh:$ForceRefresh
 
     # 1. Thu thap thong tin tu Storage API (Get-PhysicalDisk)
     $physDisks = @()
@@ -486,6 +508,7 @@ function Get-VUONGTTDiskHealthList {
         }
     }
 
+    $script:cachedDiskHealthList = $results
     return $results
 }
 
