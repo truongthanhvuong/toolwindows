@@ -57,25 +57,69 @@ function Get-VUONGTTAppUpdateInfo {
             $jsonText = [System.IO.File]::ReadAllText($localPath, [System.Text.Encoding]::UTF8)
         } else {
             # Kiến trúc đa tầng 0s-Latency chống CDN Fastly Edge Cache:
-            # Tầng 1: jsDelivr Open Source CDN (Toàn cầu, purge tức thì, không dính GitHub raw cache 15 phút, không rate limit)
             $latestSha = ""
-            try {
-                $jsBust = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-                $jsDelivrUrl = "https://cdn.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/version.json?t=$jsBust"
-                $wc = New-Object System.Net.WebClient
-                $wc.Proxy = $null
-                $wc.Encoding = [System.Text.Encoding]::UTF8
-                $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
-                $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
-                $wc.Headers.Add("Pragma", "no-cache")
-                $jsDownloaded = $wc.DownloadString($jsDelivrUrl)
-                if ($jsDownloaded -and $jsDownloaded.Length -gt 20) {
-                    $jsonText = $jsDownloaded
-                }
-            } catch {}
 
-            # Tầng 2: GitHub Commits API để lấy Commit SHA mới nhất của version.json (Bất biến 100%, chống cache tuyệt đối)
-            if (-not $jsonText -or $ForceApi) {
+            # Ưu tiên Tầng 1: Nếu ForceApi (bấm nút Cập Nhật Tool) -> Truy vấn trực tiếp GitHub Commits API để lấy Commit SHA mới nhất (Bất biến 100%, 0s Cache)
+            if ($ForceApi) {
+                $commitUrls = @(
+                    "https://api.github.com/repos/truongthanhvuong/toolwindows/commits?path=version.json&page=1&per_page=1",
+                    "https://api.github.com/repos/truongthanhvuong/toolwindows/commits/main"
+                )
+                foreach ($cUrl in $commitUrls) {
+                    try {
+                        $cReq = [System.Net.HttpWebRequest]::Create($cUrl)
+                        $cReq.Proxy = $null
+                        $cReq.Timeout = $TimeoutSec * 1000
+                        $cReq.UserAgent = "VUONGTT-Toolkit-Updater/2026"
+                        $cReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                        $cReq.Headers.Add("Pragma", "no-cache")
+                        $ghToken = if (Get-Command "Get-VUONGTTGitHubToken" -ErrorAction SilentlyContinue) { Get-VUONGTTGitHubToken } else { "" }
+                        if ($ghToken) { $cReq.Headers.Add("Authorization", "Bearer $ghToken") }
+
+                        $cResp = $cReq.GetResponse()
+                        $cStream = $cResp.GetResponseStream()
+                        $cReader = New-Object System.IO.StreamReader($cStream, [System.Text.Encoding]::UTF8)
+                        $cRaw = $cReader.ReadToEnd()
+                        $cReader.Close(); $cStream.Close(); $cResp.Close()
+
+                        $cObj = ConvertFrom-Json ($cRaw.TrimStart([char]0xFEFF).Trim())
+                        $shaCandidate = if ($cObj -is [Array] -and $cObj.Count -gt 0) { $cObj[0].sha } elseif ($cObj -and $cObj.sha) { $cObj.sha } else { "" }
+                        if ($shaCandidate) {
+                            $latestSha = $shaCandidate
+                            $wcSha = New-Object System.Net.WebClient
+                            $wcSha.Proxy = $null
+                            $wcSha.Encoding = [System.Text.Encoding]::UTF8
+                            $wcSha.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                            $shaRaw = $wcSha.DownloadString("https://raw.githubusercontent.com/truongthanhvuong/toolwindows/$latestSha/version.json")
+                            if ($shaRaw -and $shaRaw.Length -gt 20) {
+                                $jsonText = $shaRaw
+                                break
+                            }
+                        }
+                    } catch {}
+                }
+            }
+
+            # Tầng 2: jsDelivr Open Source CDN (Toàn cầu, purge tức thì, không dính GitHub raw cache 15 phút, không rate limit)
+            if (-not $jsonText) {
+                try {
+                    $jsBust = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+                    $jsDelivrUrl = "https://cdn.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/version.json?t=$jsBust"
+                    $wc = New-Object System.Net.WebClient
+                    $wc.Proxy = $null
+                    $wc.Encoding = [System.Text.Encoding]::UTF8
+                    $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                    $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                    $wc.Headers.Add("Pragma", "no-cache")
+                    $jsDownloaded = $wc.DownloadString($jsDelivrUrl)
+                    if ($jsDownloaded -and $jsDownloaded.Length -gt 20) {
+                        $jsonText = $jsDownloaded
+                    }
+                } catch {}
+            }
+
+            # Tầng 2.5: GitHub Commits API Fallback nếu chưa chạy ở trên
+            if (-not $jsonText) {
                 try {
                     $commitApiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/commits?path=version.json&page=1&per_page=1"
                     $cReq = [System.Net.HttpWebRequest]::Create($commitApiUrl)
@@ -96,7 +140,6 @@ function Get-VUONGTTAppUpdateInfo {
                     $cObj = ConvertFrom-Json ($cRaw.TrimStart([char]0xFEFF).Trim())
                     if ($cObj -and $cObj.Count -gt 0 -and $cObj[0].sha) {
                         $latestSha = $cObj[0].sha
-                        # Tải version.json theo commit SHA bất biến (Fastly CDN lưu SHA URL chuẩn xác 100%)
                         $wcSha = New-Object System.Net.WebClient
                         $wcSha.Proxy = $null
                         $wcSha.Encoding = [System.Text.Encoding]::UTF8

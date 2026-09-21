@@ -6036,18 +6036,30 @@ if ($btnCheckAppUpdate) {
             $msg = @"
 BẠN ĐANG SỬ DỤNG PHIÊN BẢN MỚI NHẤT!
 =====================================================
-• Phiên bản hiện tại:  v$($info.CurrentVersion) (Mới nhất)
-• Ngày phát hành:      $($info.ReleaseDate)
-• Trạng thái kết nối:  Trực tuyến (GitHub Verified)
+• Phiên bản trên máy hiện tại:  v$($info.CurrentVersion)
+• Phiên bản máy chủ GitHub:     v$($info.LatestVersion)
+• Ngày phát hành:               $($info.ReleaseDate)
+• Trạng thái kết nối:           Trực tuyến (GitHub Verified)
 
 BẢNG NÂNG CẤP & ĐIỂM MỚI TRONG BẢN NÀY:
 • $changeText
 
 =====================================================
-Hệ thống không tìm thấy bản cập nhật nào mới hơn.
-Toàn bộ tính năng mới đã sẵn sàng phục vụ!
+GỢI Ý TÙY CHỌN:
+Bạn có muốn TẢI LẠI VÀ CÀI ĐẶT ĐÈ BẢN MỚI NHẤT từ GitHub ngay bây giờ không?
+(Bấm 'Yes' để cưỡng chế tải đè file EXE mới nhất từ GitHub, hoặc 'No' để đóng).
 "@
-            [System.Windows.MessageBox]::Show($msg, "Bảng Nâng Cấp & Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            $ask = [System.Windows.MessageBox]::Show($msg, "Bảng Nâng Cấp & Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
+            if ($ask -eq [System.Windows.MessageBoxResult]::Yes) {
+                $txtFooterStatus.Text = "• [FORCE-UPDATE] Đang tải lại bản mới nhất từ GitHub..."
+                Invoke-VUONGTTDoEvents
+                $res = Invoke-VUONGTTAppSelfUpdate -DownloadUrl $info.DownloadUrl -NewVersion $info.LatestVersion -OnProgress {
+                    param($m)
+                    $txtFooterStatus.Text = "• [UPDATE] $m"
+                    Invoke-VUONGTTDoEvents
+                }
+                [System.Windows.MessageBox]::Show($res, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            }
         }
     })
 }
