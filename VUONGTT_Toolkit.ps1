@@ -2370,7 +2370,7 @@ $btnUpdateAllApps.Add_Click({
 
 if ($btnInstallAccountingOnly) {
     $btnInstallAccountingOnly.Add_Click({
-        $acctIds = @("htkk", "itaxviewer", "misasme", "meinvoice", "kbhxh", "javatax")
+        $acctIds = @("htkk", "itaxviewer", "misasme", "meinvoice", "kbhxh", "javatax", "dvcplugin", "vietteltoken", "vnpttoken", "misakyso", "esigner")
         $selectedAcct = @()
         foreach ($id in $acctIds) {
             $chk = Get-Control "app_$id"
@@ -2425,7 +2425,7 @@ if ($btnInstallAccountingOnly) {
 
 if ($btnUpdateAccounting) {
     $btnUpdateAccounting.Add_Click({
-        $acctIds = @("htkk", "itaxviewer", "misasme", "meinvoice", "kbhxh", "javatax")
+        $acctIds = @("htkk", "itaxviewer", "misasme", "meinvoice", "kbhxh", "javatax", "dvcplugin", "vietteltoken", "vnpttoken", "misakyso", "esigner")
         $selectedAcct = @()
         foreach ($id in $acctIds) {
             $chk = Get-Control "app_$id"

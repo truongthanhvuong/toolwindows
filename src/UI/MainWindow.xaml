@@ -1940,6 +1940,11 @@
                                             <CheckBox x:Name="app_meinvoice" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\meinvoice.png" Content="MISA meInvoice (Hóa Đơn Điện Tử)"/>
                                             <CheckBox x:Name="app_kbhxh" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\kbhxh.png" Content="KBHXH (Bảo Hiểm Xã Hội)"/>
                                             <CheckBox x:Name="app_javatax" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\javatax.png" Content="Java Token Ký Số"/>
+                                            <CheckBox x:Name="app_dvcplugin" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\dvcplugin.png" Content="Plugin Ký Số DVC Quốc Gia"/>
+                                            <CheckBox x:Name="app_vietteltoken" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\vietteltoken.png" Content="Viettel-CA Token Manager v2"/>
+                                            <CheckBox x:Name="app_vnpttoken" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\vnpttoken.png" Content="VNPT-CA Token Manager AN"/>
+                                            <CheckBox x:Name="app_misakyso" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\misakyso.png" Content="MISA Ký Số (Thuế &amp; DVC)"/>
+                                            <CheckBox x:Name="app_esigner" Style="{StaticResource AppStoreCard}" Tag="src\Assets\AppIcons\esigner.png" Content="eSigner TCT (Ký Thuế Điện Tử)"/>
                                         </WrapPanel>
                                     </StackPanel>
 

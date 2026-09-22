@@ -87,6 +87,75 @@ $script:VUONGTT_ACCOUNTING_APPS = @(
         ExeName     = "jre_setup.exe"
         SilentArgs  = "/s"
         DetectPath  = "C:\Program Files (x86)\Java\jre*\bin\java.exe"
+    },
+    [PSCustomObject]@{
+        Id          = "dvcplugin"
+        Name        = "Plugin Ký Số Cổng Dịch Vụ Công Quốc Gia"
+        Publisher   = "Cổng Dịch Vụ Công Quốc Gia (dichvucong.gov.vn)"
+        HomeUrl     = "https://dichvucong.gov.vn"
+        Urls        = @(
+            "https://dichvucong.gov.vn/pki/VNPT_Plugin.exe"
+        )
+        IsZip       = $false
+        ExeName     = "VNPT_Plugin.exe"
+        SilentArgs  = "/VERYSILENT /NORESTART /SP-"
+        DetectPath  = "C:\Program Files (x86)\VNPT\VNPT Plugin\VNPT_Plugin.exe"
+    },
+    [PSCustomObject]@{
+        Id          = "vietteltoken"
+        Name        = "Viettel-CA Token Manager v2 (Ký Số Nhà Nước & Thuế)"
+        Publisher   = "Tập đoàn Viễn thông Quân đội (Viettel)"
+        HomeUrl     = "https://viettel-ca.vn"
+        Urls        = @(
+            "https://viettel-ca.vn/download/Viettel-CA_v2_setup.exe",
+            "https://viettel-ca.vn/download/viettel-ca_v2.exe"
+        )
+        IsZip       = $false
+        ExeName     = "Viettel-CA_v2_setup.exe"
+        SilentArgs  = "/S"
+        DetectPath  = "C:\Program Files (x86)\Viettel-CA\Viettel-CA Token Manager v2\Viettel-CA_v2.exe"
+    },
+    [PSCustomObject]@{
+        Id          = "vnpttoken"
+        Name        = "VNPT-CA Token Manager AN (Ký Số Thuế, BHXH, DVC)"
+        Publisher   = "Tập đoàn Bưu chính Viễn thông Việt Nam (VNPT)"
+        HomeUrl     = "https://vnpt-ca.vn"
+        Urls        = @(
+            "https://vnpt-ca.vn:443/documents/download?fileNameDownload=documents/15012026160533.exe",
+            "https://vnpt-ca.vn/download/VNPT-CA_Plugin.exe"
+        )
+        IsZip       = $false
+        ExeName     = "VNPT_Token_Manager_Setup.exe"
+        SilentArgs  = "/S"
+        DetectPath  = "C:\Program Files (x86)\VNPT-CA\VNPT-CA Token Manager\vnpt-ca_cl.exe"
+    },
+    [PSCustomObject]@{
+        Id          = "misakyso"
+        Name        = "MISA Ký Số (Hóa Đơn, Thuế & Dịch Vụ Công)"
+        Publisher   = "Công ty Cổ phần MISA"
+        HomeUrl     = "https://esign.misa.vn"
+        Urls        = @(
+            "https://product.misa.vn/misasoftware/MISAKyso/MISA.KySo_Setup_latest.exe",
+            "https://product.misa.com.vn/misasoftware/misaca/remote/misa_esign_setup.exe"
+        )
+        IsZip       = $false
+        ExeName     = "MISA.KySo_Setup_latest.exe"
+        SilentArgs  = "/silent"
+        DetectPath  = "C:\Program Files (x86)\MISA JSC\MISA KySo\MISA.KySo.exe"
+    },
+    [PSCustomObject]@{
+        Id          = "esigner"
+        Name        = "eSigner TCT (Ký Số Thuế Điện Tử Tổng Cục Thuế)"
+        Publisher   = "Tổng cục Thuế Việt Nam"
+        HomeUrl     = "https://thuedientu.gdt.gov.vn"
+        Urls        = @(
+            "https://thuedientu.gdt.gov.vn/download/eSigner_1.0.8_setup.exe",
+            "https://thuedientu.gdt.gov.vn"
+        )
+        IsZip       = $false
+        ExeName     = "eSigner_setup.exe"
+        SilentArgs  = "/VERYSILENT /NORESTART /SP-"
+        DetectPath  = "C:\Program Files (x86)\eSigner\eSigner.exe"
     }
 )
 

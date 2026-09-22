@@ -121,6 +121,61 @@
         "Icon":  "src\\Assets\\AppIcons\\javatax.png"
     },
     {
+        "Id":  "dvcplugin",
+        "Name":  "Plugin Ký Số Cổng Dịch Vụ Công Quốc Gia",
+        "Category":  "Accounting",
+        "WingetId":  "",
+        "Link":  "https://dichvucong.gov.vn",
+        "DirectUrl":  "https://dichvucong.gov.vn/pki/VNPT_Plugin.exe",
+        "Silent":  "/VERYSILENT /NORESTART /SP-",
+        "IsZip":  false,
+        "Icon":  "src\\Assets\\AppIcons\\dvcplugin.png"
+    },
+    {
+        "Id":  "vietteltoken",
+        "Name":  "Viettel-CA Token Manager v2 (Ký Số Nhà Nước & Thuế)",
+        "Category":  "Accounting",
+        "WingetId":  "",
+        "Link":  "https://viettel-ca.vn",
+        "DirectUrl":  "https://viettel-ca.vn/download/Viettel-CA_v2_setup.exe",
+        "Silent":  "/S",
+        "IsZip":  false,
+        "Icon":  "src\\Assets\\AppIcons\\vietteltoken.png"
+    },
+    {
+        "Id":  "vnpttoken",
+        "Name":  "VNPT-CA Token Manager AN (Ký Số Thuế, BHXH, DVC)",
+        "Category":  "Accounting",
+        "WingetId":  "",
+        "Link":  "https://vnpt-ca.vn",
+        "DirectUrl":  "https://vnpt-ca.vn:443/documents/download?fileNameDownload=documents/15012026160533.exe",
+        "Silent":  "/S",
+        "IsZip":  false,
+        "Icon":  "src\\Assets\\AppIcons\\vnpttoken.png"
+    },
+    {
+        "Id":  "misakyso",
+        "Name":  "MISA Ký Số (Hóa Đơn, Thuế & Dịch Vụ Công)",
+        "Category":  "Accounting",
+        "WingetId":  "",
+        "Link":  "https://esign.misa.vn",
+        "DirectUrl":  "https://product.misa.vn/misasoftware/MISAKyso/MISA.KySo_Setup_latest.exe",
+        "Silent":  "/silent",
+        "IsZip":  false,
+        "Icon":  "src\\Assets\\AppIcons\\misakyso.png"
+    },
+    {
+        "Id":  "esigner",
+        "Name":  "eSigner TCT (Ký Số Thuế Điện Tử)",
+        "Category":  "Accounting",
+        "WingetId":  "",
+        "Link":  "https://thuedientu.gdt.gov.vn",
+        "DirectUrl":  "https://thuedientu.gdt.gov.vn/download/eSigner_1.0.8_setup.exe",
+        "Silent":  "/VERYSILENT /NORESTART /SP-",
+        "IsZip":  false,
+        "Icon":  "src\\Assets\\AppIcons\\esigner.png"
+    },
+    {
         "Id":  "1password",
         "Name":  "1Password",
         "Category":  "Utilities",

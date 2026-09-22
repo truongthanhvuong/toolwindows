@@ -68,7 +68,12 @@ $script:VUONGTT_APPS = @(
     [PSCustomObject]@{ Id="misasme";     Name="MISA SME (Kế Toán Doanh Nghiệp)";     Category="Kế toán"; WingetId=""; Url="https://sme.misa.vn/download/"; Silent="/silent" },
     [PSCustomObject]@{ Id="meinvoice";   Name="MISA meInvoice (Hóa Đơn Điện Tử)";    Category="Kế toán"; WingetId=""; Url="https://meinvoice.vn/tai-ve/"; Silent="/silent" },
     [PSCustomObject]@{ Id="kbhxh";       Name="KBHXH (Bảo Hiểm Xã Hội Điện Tử)";    Category="Kế toán"; WingetId=""; Url="https://gddt.baohiemxahoi.gov.vn/Download/KBHXH_Setup.exe"; Silent="/VERYSILENT /NORESTART" },
-    [PSCustomObject]@{ Id="javatax";     Name="Java Token JRE (Ký Số Thuế Điện Tử)"; Category="Kế toán"; WingetId="Oracle.JavaRuntimeEnvironment"; Url="https://javadl.oracle.com/webapps/download/AutoDL?BundleId=249553_4d245f9418eb4ec4978736adb133d549"; Silent="/s" }
+    [PSCustomObject]@{ Id="javatax";     Name="Java Token JRE (Ký Số Thuế Điện Tử)"; Category="Kế toán"; WingetId="Oracle.JavaRuntimeEnvironment"; Url="https://javadl.oracle.com/webapps/download/AutoDL?BundleId=249553_4d245f9418eb4ec4978736adb133d549"; Silent="/s" },
+    [PSCustomObject]@{ Id="dvcplugin";   Name="Plugin Ký Số Cổng Dịch Vụ Công Quốc Gia"; Category="Kế toán"; WingetId=""; Url="https://dichvucong.gov.vn/pki/VNPT_Plugin.exe"; Silent="/VERYSILENT /NORESTART /SP-" },
+    [PSCustomObject]@{ Id="vietteltoken";Name="Viettel-CA Token Manager v2 (Ký Số Nhà Nước & Thuế)"; Category="Kế toán"; WingetId=""; Url="https://viettel-ca.vn/download/Viettel-CA_v2_setup.exe"; Silent="/S" },
+    [PSCustomObject]@{ Id="vnpttoken";   Name="VNPT-CA Token Manager AN (Ký Số Thuế, BHXH, DVC)"; Category="Kế toán"; WingetId=""; Url="https://vnpt-ca.vn:443/documents/download?fileNameDownload=documents/15012026160533.exe"; Silent="/S" },
+    [PSCustomObject]@{ Id="misakyso";    Name="MISA Ký Số (Hóa Đơn, Thuế & Dịch Vụ Công)"; Category="Kế toán"; WingetId=""; Url="https://product.misa.vn/misasoftware/MISAKyso/MISA.KySo_Setup_latest.exe"; Silent="/silent" },
+    [PSCustomObject]@{ Id="esigner";     Name="eSigner TCT (Ký Số Thuế Điện Tử Tổng Cục Thuế)"; Category="Kế toán"; WingetId=""; Url="https://thuedientu.gdt.gov.vn/download/eSigner_1.0.8_setup.exe"; Silent="/VERYSILENT /NORESTART /SP-" }
 )
 
 # Load Complete 240+ Software Database from JSON if available
@@ -127,6 +132,11 @@ $script:APP_EXEC_MAP = @{
     "misasme"         = @{ Exe = "MISA.SME.Client.exe"; ProcessName = "MISA.SME.Client"; CommonPaths = @("$env:ProgramFiles\MISA JSC\MISA SME\Bin\MISA.SME.Client.exe", "${env:ProgramFiles(x86)}\MISA JSC\MISA SME\Bin\MISA.SME.Client.exe") }
     "meinvoice"       = @{ Exe = "meInvoice.exe"; ProcessName = "meInvoice"; CommonPaths = @("$env:ProgramFiles\MISA JSC\meInvoice\meInvoice.exe", "${env:ProgramFiles(x86)}\MISA JSC\meInvoice\meInvoice.exe") }
     "kbhxh"           = @{ Exe = "KBHXH.exe"; ProcessName = "KBHXH"; CommonPaths = @("$env:ProgramFiles\KBHXH\KBHXH.exe", "${env:ProgramFiles(x86)}\KBHXH\KBHXH.exe") }
+    "dvcplugin"       = @{ Exe = "VNPT_Plugin.exe"; ProcessName = "VNPT_Plugin"; CommonPaths = @("${env:ProgramFiles(x86)}\VNPT\VNPT Plugin\VNPT_Plugin.exe", "$env:ProgramFiles\VNPT\VNPT Plugin\VNPT_Plugin.exe") }
+    "vietteltoken"    = @{ Exe = "Viettel-CA_v2.exe"; ProcessName = "Viettel-CA_v2"; CommonPaths = @("${env:ProgramFiles(x86)}\Viettel-CA\Viettel-CA Token Manager v2\Viettel-CA_v2.exe", "$env:ProgramFiles\Viettel-CA\Viettel-CA Token Manager v2\Viettel-CA_v2.exe") }
+    "vnpttoken"       = @{ Exe = "vnpt-ca_cl.exe"; ProcessName = "vnpt-ca_cl"; CommonPaths = @("${env:ProgramFiles(x86)}\VNPT-CA\VNPT-CA Token Manager\vnpt-ca_cl.exe", "$env:ProgramFiles\VNPT-CA\VNPT-CA Token Manager\vnpt-ca_cl.exe") }
+    "misakyso"        = @{ Exe = "MISA.KySo.exe"; ProcessName = "MISA.KySo"; CommonPaths = @("${env:ProgramFiles(x86)}\MISA JSC\MISA KySo\MISA.KySo.exe", "$env:ProgramFiles\MISA JSC\MISA KySo\MISA.KySo.exe") }
+    "esigner"         = @{ Exe = "eSigner.exe"; ProcessName = "eSigner"; CommonPaths = @("${env:ProgramFiles(x86)}\eSigner\eSigner.exe", "$env:ProgramFiles\eSigner\eSigner.exe", "${env:ProgramFiles(x86)}\eSigner Java\eSigner.exe") }
 }
 
 function Get-VUONGTTAppList {
@@ -368,7 +378,7 @@ function Install-VUONGTTApp {
         [switch]$AutoLaunch = $true
     )
 
-    if ($AppId -in @("htkk", "itaxviewer", "misasme", "meinvoice", "kbhxh", "javatax")) {
+    if ($AppId -in @("htkk", "itaxviewer", "misasme", "meinvoice", "kbhxh", "javatax", "dvcplugin", "vietteltoken", "vnpttoken", "misakyso", "esigner")) {
         if ([bool](Get-Command "Install-VUONGTTAccountingApp" -ErrorAction SilentlyContinue)) {
             $res = Install-VUONGTTAccountingApp -AppId $AppId -OnProgress $OnProgress
             if ($AutoLaunch) {
