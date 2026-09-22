@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "20.5.909.01",
+    "version":  "20.5.909.02",
     "releaseDate":  "22/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
-                      "Nâng cấp bộ đếm hiệu năng thời gian thực 2 giây siêu tốc (< 2ms) cho 6 thẻ Gauge phần cứng (Tải hệ thống, CPU Turbo/Temp, RAM GB/%, GPU 3D/VRAM, Tốc độ mạng KB-MB/s và Ổ đĩa %/Dung lượng trống), tích hợp tra cứu CPU + Mainboard online và đối đầu so sánh CPU.",
+                      "Nâng cấp bộ đếm hiệu năng thời gian thực 2 giây siêu tốc (\u003c 2ms) cho 6 thẻ Gauge phần cứng (Tải hệ thống, CPU Turbo/Temp, RAM GB/%, GPU 3D/VRAM, Tốc độ mạng KB-MB/s và Ổ đĩa %/Dung lượng trống), tích hợp tra cứu CPU + Mainboard online và đối đầu so sánh CPU.",
                       "Nâng cấp toàn diện Phân Hệ Quản Lý, Kiểm Tra \u0026 Cập Nhật Toàn Bộ Driver: Tự động quét chẩn đoán sâu bus phần cứng PnP, phát hiện thiết bị thiếu driver/chấm than vàng Code 28, 43, 10, hiển thị Hardware Badge trực quan, tích hợp động cơ tự động tìm và cài đặt Driver chính hãng mới nhất qua Microsoft Update Catalog API (Microsoft.Update.Session), kèm bộ công cụ mở nhanh SDIO, 3DP Chip và cổng tải Driver OEM theo Model máy.",
                       "Bản Cập Nhật Hotfix v20.5.908.70: Khắc phục triệt để 100% lỗi tải Office (\u0027The underlying connection was closed: An unexpected error occurred on a send\u0027) bằng động cơ Fallback ODT đa tầng, tích hợp sẵn setup.exe trong Assets, giải nén không cần UAC và tái cấu trúc layout form Office căn chỉnh cột chuẩn mực chống đè chữ.",
                       "Toi uu hoa he thong dong bo Cloud License Keys 2 chieu thoi gian thuc: Hop nhat danh sach key giua cac may, tu dong loai bo key rac, uu tien trang thai da kich hoat va cap nhat tuc thi qua GitHub REST API 0s latency.",

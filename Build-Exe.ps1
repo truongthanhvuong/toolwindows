@@ -2,11 +2,89 @@
 #   VUONGTT TOOLKIT 2026 - EXE COMPILER SCRIPT
 #   Bien dich toan bo ma nguon thanh 1 file VUONGTT_Toolkit.exe duy nhat
 # =========================================================================
+param(
+    [switch]$NoBump = $false,
+    [string]$TargetVersion = ""
+)
 
 $ErrorActionPreference = "Stop"
 
 $RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $RootDir) { $RootDir = "E:\toolwindows" }
+
+# =========================================================================
+# TU DONG NANG PHIEN BAN (+1 BUILD) DONG BO KHI BUILD LOCAL
+# =========================================================================
+if (-not $NoBump) {
+    $verJsonPath = Join-Path $RootDir "version.json"
+    $curVer = "20.5.909.01"
+    if (Test-Path $verJsonPath) {
+        try {
+            $vObj = Get-Content -Path $verJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($vObj -and $vObj.version) { $curVer = $vObj.version.Trim() }
+        } catch {}
+    }
+
+    $newVer = ""
+    if ($TargetVersion) {
+        $newVer = $TargetVersion.Trim()
+    } else {
+        $parts = $curVer.Split('.')
+        if ($parts.Count -ge 4) {
+            $buildNum = 0
+            [int]::TryParse($parts[3], [ref]$buildNum) | Out-Null
+            $nextBuild = $buildNum + 1
+            $nextBuildStr = if ($nextBuild -lt 10) { "0$nextBuild" } else { "$nextBuild" }
+            $newVer = "$($parts[0]).$($parts[1]).$($parts[2]).$nextBuildStr"
+        } else {
+            $newVer = "$curVer.1"
+        }
+    }
+
+    Write-Host ">>> [VERSION BUMP] Tu dong nang phien ban: v$curVer -> v$newVer" -ForegroundColor Green
+
+    # 1. version.json
+    try {
+        $vObj = Get-Content -Path $verJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $vObj.version = $newVer
+        $vObj.releaseDate = (Get-Date).ToString("dd/MM/yyyy")
+        $vObj | ConvertTo-Json -Depth 5 | Set-Content -Path $verJsonPath -Encoding UTF8
+    } catch {}
+
+    # 2. AppUpdater.ps1
+    $updFile = Join-Path $RootDir "src\Core\AppUpdater.ps1"
+    if (Test-Path $updFile) {
+        $txt = [System.IO.File]::ReadAllText($updFile, [System.Text.Encoding]::UTF8)
+        $txt = $txt -replace '\$script:APP_CURRENT_VERSION\s*=\s*"[^"]+"', "`$script:APP_CURRENT_VERSION = `"$newVer`""
+        [System.IO.File]::WriteAllText($updFile, $txt, (New-Object System.Text.UTF8Encoding($true)))
+    }
+
+    # 3. Program.cs
+    $csFile = Join-Path $RootDir "src\Program.cs"
+    if (Test-Path $csFile) {
+        $txt = [System.IO.File]::ReadAllText($csFile, [System.Text.Encoding]::UTF8)
+        $txt = $txt -replace 'v\d+\.\d+\.\d+\.\d+', "v$newVer"
+        $txt = $txt -replace 'AssemblyVersion\("[^"]+"\)', "AssemblyVersion(`"$newVer`")"
+        $txt = $txt -replace 'AssemblyFileVersion\("[^"]+"\)', "AssemblyFileVersion(`"$newVer`")"
+        [System.IO.File]::WriteAllText($csFile, $txt, (New-Object System.Text.UTF8Encoding($true)))
+    }
+
+    # 4. MainWindow.xaml
+    $xamlFile = Join-Path $RootDir "src\UI\MainWindow.xaml"
+    if (Test-Path $xamlFile) {
+        $txt = [System.IO.File]::ReadAllText($xamlFile, [System.Text.Encoding]::UTF8)
+        $txt = $txt -replace 'v\d+\.\d+\.\d+\.\d+', "v$newVer"
+        [System.IO.File]::WriteAllText($xamlFile, $txt, (New-Object System.Text.UTF8Encoding($true)))
+    }
+
+    # 5. VUONGTT_Toolkit.ps1
+    $mainPs1 = Join-Path $RootDir "VUONGTT_Toolkit.ps1"
+    if (Test-Path $mainPs1) {
+        $txt = [System.IO.File]::ReadAllText($mainPs1, [System.Text.Encoding]::UTF8)
+        $txt = $txt -replace 'VER\s+\d+\.\d+\.\d+\.\d+', "VER $newVer"
+        [System.IO.File]::WriteAllText($mainPs1, $txt, (New-Object System.Text.UTF8Encoding($true)))
+    }
+}
 
 $cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 if (-not (Test-Path $cscPath)) {

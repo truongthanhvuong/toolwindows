@@ -105,7 +105,7 @@ if (Test-Path $xamlFile) {
 # 4. Bien dich lai file EXE
 Write-Host "`n>>> [2/6] Dang bien dich VUONGTT_Toolkit.exe..." -ForegroundColor Yellow
 $buildScript = Join-Path $rootDir "Build-Exe.ps1"
-& powershell -ExecutionPolicy Bypass -File $buildScript
+& powershell -ExecutionPolicy Bypass -File $buildScript -NoBump
 $exePath = Join-Path $rootDir "VUONGTT_Toolkit.exe"
 if (-not (Test-Path $exePath)) {
     Write-Host "[THAT BAI] Khong tao duoc file EXE!" -ForegroundColor Red
