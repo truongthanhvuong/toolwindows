@@ -95,6 +95,8 @@ if (-not $ScriptDir -or -not (Test-Path (Join-Path $ScriptDir "src\UI\MainWindow
         $ScriptDir = "$env:TEMP\VUONGTT_Toolkit_Runtime"
     }
 }
+$global:ScriptDir  = $ScriptDir
+$script:appRootDir = $ScriptDir
 
 # Import Core Modules
 $corePath = Join-Path $ScriptDir "src\Core"
@@ -2829,6 +2831,17 @@ $btnTestAudioRight      = Get-Control "btnTestAudioRight"
 $btnRunRepairAudit      = Get-Control "btnRunRepairAudit"
 $btnCopyRepairAudit     = Get-Control "btnCopyRepairAudit"
 $txtRepairAuditLog      = Get-Control "txtRepairAuditLog"
+$txtHardwareTestLog     = Get-Control "txtHardwareTestLog"
+
+function Set-HardwareDiagnosticLog([string]$msg) {
+    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text = $msg }
+    elseif ($txtRepairAuditLog) { $txtRepairAuditLog.Text = $msg }
+}
+
+function Append-HardwareDiagnosticLog([string]$msg) {
+    if ($txtHardwareTestLog) { $txtHardwareTestLog.Text += "`n" + $msg }
+    elseif ($txtRepairAuditLog) { $txtRepairAuditLog.Text += "`n" + $msg }
+}
 
 function Refresh-BatteryDisplay {
     param([switch]$ForceRefresh)
@@ -2902,7 +2915,7 @@ $btnTestSpeakerStereo  = Get-Control "btnTestSpeakerStereo"
 if ($btnTestKeyboardVisual) {
     $btnTestKeyboardVisual.Add_Click({
         $txtFooterStatus.Text = "• [OK] Đang chạy bộ test bàn phím trực quan Offline..."
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đang mở trình kiểm tra bàn phím trực quan Offline (không cần Internet)..." }
+        Set-HardwareDiagnosticLog "[OK] Đang mở trình kiểm tra bàn phím trực quan Offline (không cần Internet)..."
         Start-VisualKeyboardTest
     })
 }
@@ -2912,7 +2925,7 @@ if ($btnTestKeyboard) {
     $btnTestKeyboard.Add_Click({
         Start-Process "https://en.key-test.com/"
         $txtFooterStatus.Text = "• [OK] Đã mở trình kiểm tra bàn phím trực tuyến (Key Test)."
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đang mở trình kiểm tra bàn phím trực quan trên trình duyệt..." }
+        Set-HardwareDiagnosticLog "[OK] Đang mở trình kiểm tra bàn phím trực quan trên trình duyệt..."
     })
 }
 
@@ -2926,15 +2939,15 @@ if ($btnTestCpuStress) {
             [System.Windows.MessageBoxImage]::Warning
         )
         if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
-            if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🔥 Đang kích hoạt Stress Test 100% CPU trên tất cả các luồng trong 15 giây... Đang theo dõi nhiệt độ & quạt..." }
+            Set-HardwareDiagnosticLog "🔥 Đang kích hoạt Stress Test 100% CPU trên tất cả các luồng trong 15 giây... Đang theo dõi nhiệt độ & quạt..."
             $txtFooterStatus.Text = "• [TEST] Đang kích hoạt 100% tải CPU..."
             $stressRes = Start-CpuBurnInTest -DurationSeconds 15
             if ($stressRes.Success) {
-                if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🔥 [ĐANG CHẠY] $($stressRes.Message)`nQuá trình sẽ tự ngắt an toàn sau 15 giây..." }
+                Set-HardwareDiagnosticLog "🔥 [ĐANG CHẠY] $($stressRes.Message)`nQuá trình sẽ tự ngắt an toàn sau 15 giây..."
                 Start-Sleep -Seconds 1
-                if ($txtRepairAuditLog) { $txtRepairAuditLog.Text += "`n[OK] Tiến trình tính toán tải nặng đang chạy trên $($stressRes.Cores) luồng." }
+                Append-HardwareDiagnosticLog "[OK] Tiến trình tính toán tải nặng đang chạy trên $($stressRes.Cores) luồng."
             } else {
-                if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "❌ $($stressRes.Message)" }
+                Set-HardwareDiagnosticLog "❌ $($stressRes.Message)"
             }
         }
     })
@@ -2943,10 +2956,10 @@ if ($btnTestCpuStress) {
 # 4. Network Ping & Wi-Fi Stability Tester
 if ($btnTestNetworkPing) {
     $btnTestNetworkPing.Add_Click({
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🌐 Đang kiểm tra độ trễ mạng (Ping) tới Gateway, Google DNS và Cloudflare..." }
+        Set-HardwareDiagnosticLog "🌐 Đang kiểm tra độ trễ mạng (Ping) tới Gateway, Google DNS và Cloudflare..."
         $txtFooterStatus.Text = "• [TEST] Đang đo độ trễ và kiểm tra card mạng..."
         $res = Start-NetworkPingTest
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "================ KẾT QUẢ ĐO ĐỘ TRỄ MẠNG (PING) ================`n$res`n==============================================================" }
+        Set-HardwareDiagnosticLog "================ KẾT QUẢ ĐO ĐỘ TRỄ MẠNG (PING) ================`n$res`n=============================================================="
         $txtFooterStatus.Text = "• [OK] Đã hoàn thành kiểm tra độ trễ mạng"
     })
 }
@@ -2954,18 +2967,18 @@ if ($btnTestNetworkPing) {
 # 5. Audio Frequency (Bass / Treble)
 if ($btnTestAudioBass) {
     $btnTestAudioBass.Add_Click({
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🎵 Đang phát chuỗi tần số Siêu Trầm (Bass 120-200Hz) qua loa..." }
+        Set-HardwareDiagnosticLog "🎵 Đang phát chuỗi tần số Siêu Trầm (Bass 120-200Hz) qua loa..."
         $res = Test-AudioFrequency -Type "Bass"
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = $res }
+        Set-HardwareDiagnosticLog $res
         $txtFooterStatus.Text = "• [OK] Đã phát tần số Bass"
     })
 }
 
 if ($btnTestAudioTreble) {
     $btnTestAudioTreble.Add_Click({
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "🎵 Đang phát chuỗi tần số Cao (Treble 2500-4500Hz) qua loa..." }
+        Set-HardwareDiagnosticLog "🎵 Đang phát chuỗi tần số Cao (Treble 2500-4500Hz) qua loa..."
         $res = Test-AudioFrequency -Type "Treble"
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = $res }
+        Set-HardwareDiagnosticLog $res
         $txtFooterStatus.Text = "• [OK] Đã phát tần số Treble"
     })
 }
@@ -2979,7 +2992,7 @@ if ($btnTestMic) {
             Start-Process "mmsys.cpl"
         }
         $txtFooterStatus.Text = "• [OK] Đã mở trình kiểm tra Microphone."
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đã kích hoạt công cụ ghi âm và kiểm tra tín hiệu Microphone." }
+        Set-HardwareDiagnosticLog "[OK] Đã kích hoạt công cụ ghi âm và kiểm tra tín hiệu Microphone."
     })
 }
 
@@ -2991,37 +3004,37 @@ if ($btnTestCam) {
             Start-Process "https://webcamtests.com/"
         }
         $txtFooterStatus.Text = "• [OK] Đã mở ứng dụng Camera / Webcam."
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đã khởi động ứng dụng Camera để kiểm tra hình ảnh và cảm biến." }
+        Set-HardwareDiagnosticLog "[OK] Đã khởi động ứng dụng Camera để kiểm tra hình ảnh và cảm biến."
     })
 }
 
 # 7. Audio Stereo & Screen Dead Pixel Handlers
 if ($btnTestSpeakerLeft) {
     $btnTestSpeakerLeft.Add_Click({
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "Đang phát tín hiệu âm thanh kiểm tra Loa Trái (Left Channel 800Hz)..." }
+        Set-HardwareDiagnosticLog "Đang phát tín hiệu âm thanh kiểm tra Loa Trái (Left Channel 800Hz)..."
         [System.Console]::Beep(800, 600)
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đã phát xong tín hiệu tần số 800Hz trên Loa Trái." }
+        Set-HardwareDiagnosticLog "[OK] Đã phát xong tín hiệu tần số 800Hz trên Loa Trái."
         $txtFooterStatus.Text = "• [OK] Đã test Loa Trái"
     })
 }
 
 if ($btnTestSpeakerRight) {
     $btnTestSpeakerRight.Add_Click({
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "Đang phát tín hiệu âm thanh kiểm tra Loa Phải (Right Channel 1200Hz)..." }
+        Set-HardwareDiagnosticLog "Đang phát tín hiệu âm thanh kiểm tra Loa Phải (Right Channel 1200Hz)..."
         [System.Console]::Beep(1200, 600)
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Đã phát xong tín hiệu tần số 1200Hz trên Loa Phải." }
+        Set-HardwareDiagnosticLog "[OK] Đã phát xong tín hiệu tần số 1200Hz trên Loa Phải."
         $txtFooterStatus.Text = "• [OK] Đã test Loa Phải"
     })
 }
 
 if ($btnTestSpeakerStereo) {
     $btnTestSpeakerStereo.Add_Click({
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "Đang phát chuỗi âm thanh Stereo đa tần số qua 2 loa..." }
+        Set-HardwareDiagnosticLog "Đang phát chuỗi âm thanh Stereo đa tần số qua 2 loa..."
         [System.Console]::Beep(523, 200)
         [System.Console]::Beep(659, 200)
         [System.Console]::Beep(784, 200)
         [System.Console]::Beep(1046, 350)
-        if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "[OK] Cả 2 kênh Loa Stereo đã phát chuỗi âm thanh rõ ràng, không rè." }
+        Set-HardwareDiagnosticLog "[OK] Cả 2 kênh Loa Stereo đã phát chuỗi âm thanh rõ ràng, không rè."
         $txtFooterStatus.Text = "• [OK] Đã test Loa Stereo hoàn tất"
     })
 }
@@ -7069,16 +7082,72 @@ $window.Add_ContentRendered({
     Update-VUONGTTLicenseUI
     $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng phục vụ!"
 
-    # ================= REALTIME BACKGROUND 2-WAY CLOUD AUTO-SYNC WORKER =================
-    # Tự động đồng bộ chính sách phân quyền (Free/PRO), kho license keys và kiểm tra bản update
-    # Chạy ngầm trong background runspace mỗi 20s, hoàn toàn không gây gián đoạn hay đơ giao diện WPF.
+    $script:appRootDir = if ($global:ScriptDir) { $global:ScriptDir } elseif ($ScriptDir) { $ScriptDir } else { (Get-Location).Path }
+
+    # ================= 1. REALTIME STARTUP AUTO-UPDATE ENGINE =================
+    # Kiểm tra cập nhật NGAY LẬP TỨC KHI VỪA MỞ TOOL nếu có kết nối mạng Internet
+    $startupUpdateTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $startupUpdateTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+    $startupUpdateTimer.Add_Tick({
+        $startupUpdateTimer.Stop()
+
+        $hasNet = [System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()
+        if (-not $hasNet) {
+            $txtFooterStatus.Text = "• [OFFLINE] VUONGTT Tool Pro 2026 sẵn sàng (Chế độ ngoại tuyến - Không có kết nối mạng)."
+            return
+        }
+
+        # Có mạng Internet -> Kiểm tra bản cập nhật ngầm không làm đơ giao diện
+        $txtFooterStatus.Text = "• [Đang kiểm tra] Đang kiểm tra bản cập nhật mới nhất từ GitHub..."
+        [System.Threading.ThreadPool]::QueueUserWorkItem([System.Threading.WaitCallback]{
+            try {
+                $uInfo = Get-VUONGTTAppUpdateInfo -TimeoutSec 4
+                $window.Dispatcher.BeginInvoke([action]{
+                    if ($uInfo -and $uInfo.HasUpdate) {
+                        if ($btnCheckAppUpdate) {
+                            $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
+                            $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                            $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
+                        }
+
+                        $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
+                        if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdate) {
+                            $script:hasTriggeredAutoUpdate = $true
+                            $txtFooterStatus.Text = "• [AUTO-UPDATE] Tác giả vừa cập nhật bản mới v$($uInfo.LatestVersion)! Đang tự động nâng cấp sau 2 giây..."
+
+                            $autoUpdTimer = New-Object System.Windows.Threading.DispatcherTimer
+                            $autoUpdTimer.Interval = [TimeSpan]::FromSeconds(2)
+                            $autoUpdTimer.Add_Tick({
+                                $autoUpdTimer.Stop()
+                                $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang tải bản v$($uInfo.LatestVersion) từ GitHub..."
+                                Invoke-VUONGTTDoEvents
+                                Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -OnProgress {
+                                    param($m)
+                                    $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
+                                    Invoke-VUONGTTDoEvents
+                                }
+                            })
+                            $autoUpdTimer.Start()
+                        } elseif ($isDevSourceRepo) {
+                            $txtFooterStatus.Text = "• [CHÚ Ý] Đã có bản cập nhật mới v$($uInfo.LatestVersion) trên GitHub! Bấm 'Có Bản Mới' ở trên để nâng cấp."
+                        }
+                    } elseif ($uInfo -and $uInfo.IsOnline) {
+                        $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng! Bạn đang dùng bản mới nhất (v$($uInfo.CurrentVersion))."
+                    }
+                }) | Out-Null
+            } catch {}
+        }) | Out-Null
+    })
+    $startupUpdateTimer.Start()
+
+    # ================= 2. REALTIME BACKGROUND 2-WAY CLOUD AUTO-SYNC WORKER =================
+    # Tự động đồng bộ chính sách phân quyền (Free/PRO), kho license keys và định kỳ kiểm tra bản update
     $script:bgSyncState = @{
         IsBusy      = $false
         PowerShell  = $null
         AsyncHandle = $null
     }
-    $script:lastSyncTime = [DateTime]::MinValue
-    $script:appRootDir   = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+    $script:lastSyncTime = [DateTime]::UtcNow
 
     $bgWorkerScript = {
         param($appRoot)
@@ -7103,7 +7172,7 @@ $window.Add_ContentRendered({
     }
 
     $syncWorkerTimer = New-Object System.Windows.Threading.DispatcherTimer
-    $syncWorkerTimer.Interval = [TimeSpan]::FromSeconds(10)
+    $syncWorkerTimer.Interval = [TimeSpan]::FromSeconds(15)
     $syncWorkerTimer.Add_Tick({
         # 1. Kiểm tra nếu tác vụ ngầm đã có kết quả
         if ($script:bgSyncState.IsBusy) {
@@ -7128,14 +7197,14 @@ $window.Add_ContentRendered({
                                 $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
                             }
 
-                            # Tự động nâng cấp cho 1000 máy khách hàng (Auto-Yes Hot-Update):
+                            # Tự động nâng cấp cho các máy khách hàng (Auto Hot-Update)
                             $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
                             if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdate) {
                                 $script:hasTriggeredAutoUpdate = $true
-                                $txtFooterStatus.Text = "• [AUTO-UPDATE] Tác giả vừa cập nhật bản mới v$($uInfo.LatestVersion)! Tự động nâng cấp sau 3 giây..."
+                                $txtFooterStatus.Text = "• [AUTO-UPDATE] Tác giả vừa cập nhật bản mới v$($uInfo.LatestVersion)! Tự động nâng cấp sau 2 giây..."
 
                                 $autoUpdTimer = New-Object System.Windows.Threading.DispatcherTimer
-                                $autoUpdTimer.Interval = [TimeSpan]::FromSeconds(3)
+                                $autoUpdTimer.Interval = [TimeSpan]::FromSeconds(2)
                                 $autoUpdTimer.Add_Tick({
                                     $autoUpdTimer.Stop()
                                     $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang tải bản v$($uInfo.LatestVersion) từ GitHub..."
@@ -7178,7 +7247,7 @@ $window.Add_ContentRendered({
             return
         }
 
-        # 2. Kích hoạt lượt đồng bộ mới nếu đã đủ chu kỳ 900 giây (15 phút) hoặc ngay lần đầu khởi động
+        # 2. Kích hoạt lượt đồng bộ mới nếu đã đủ chu kỳ 900 giây (15 phút)
         $elapsed = ([DateTime]::UtcNow - $script:lastSyncTime).TotalSeconds
         if ($elapsed -ge 900) {
             $script:bgSyncState.IsBusy = $true

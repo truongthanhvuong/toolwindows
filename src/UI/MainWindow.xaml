@@ -2193,7 +2193,7 @@
                         <Border Style="{StaticResource CardBorder}">
                             <StackPanel>
                                 <TextBlock Text="📄 NHẬT KÝ KIỂM TRA &amp; CHẨN ĐOÁN THIẾT BỊ" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
-                                <TextBox x:Name="txtRepairAuditLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="170" Text="Sẵn sàng kiểm tra. Nhấn các nút chức năng ở trên để chẩn đoán thiết bị..."/>
+                                <TextBox x:Name="txtHardwareTestLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="170" Text="Sẵn sàng kiểm tra. Nhấn các nút chức năng ở trên để chẩn đoán thiết bị..."/>
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
 

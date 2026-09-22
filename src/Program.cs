@@ -179,6 +179,7 @@ namespace VUONGTT
                         else if (name.Contains("DiskHealthManager.ps1")) relPath = Path.Combine("src", "Core", "DiskHealthManager.ps1");
                         else if (name.Contains("AutoWinDeployer.ps1")) relPath = Path.Combine("src", "Core", "AutoWinDeployer.ps1");
                         else if (name.Contains("licenses_vault.json")) relPath = Path.Combine("src", "Config", "licenses_vault.json");
+                        else if (name.Contains("feature_policy.json")) relPath = Path.Combine("src", "Config", "feature_policy.json");
                         else if (name.Contains("SoftwareDatabase.json")) relPath = Path.Combine("src", "Data", "SoftwareDatabase.json");
                         else if (name.Contains("version.json")) relPath = "version.json";
                         else if (name.StartsWith("VUONGTT.AppIcons."))
