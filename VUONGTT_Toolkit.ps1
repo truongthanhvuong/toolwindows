@@ -465,7 +465,11 @@ function Switch-Tab {
             }
             "Activation"   { $txtFooterStatus.Text = "• [OK] Sẵn sàng kích hoạt bản quyền số vĩnh viễn MAS HWID." }
             "BitLocker"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng quản lý mã hóa BitLocker & trích xuất Recovery Key." }
-            "AutoWin"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass và tải ISO cài Win." }
+            "AutoWin"      { 
+                $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass và tải ISO cài Win." 
+                Invoke-VUONGTTDoEvents
+                Refresh-PostWinDriverStatusBadge
+            }
             "Partition"    { 
                 $txtFooterStatus.Text = "• [Đang nạp] Đang nạp danh sách phân vùng và ổ đĩa hệ thống..."
                 Invoke-VUONGTTDoEvents
@@ -480,6 +484,10 @@ function Switch-Tab {
             "Benchmark"    { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & S.M.A.R.T diagnostic ready." } else { "• [OK] Sẵn sàng chẩn đoán sức khỏe ổ cứng S.M.A.R.T & đo hiệu năng." } }
             "LaptopCheck"  { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Laptop, hardware & peripheral test ready." } else { "• [OK] Bộ chẩn đoán Laptop, phần cứng & ngoại vi sẵn sàng." } }
             "BackupDriver" { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." } }
+            "AutoWin"      { 
+                $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass và tải ISO cài Win." 
+                Refresh-PostWinDriverStatusBadge
+            }
             "Partition"    { $txtFooterStatus.Text = "• [OK] Quản lý phân vùng đĩa & Storage Engine sẵn sàng." }
             "Office"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt và cấu hình Microsoft Office." }
             "Users"        { $txtFooterStatus.Text = "• [OK] Danh sách tài khoản người dùng đã sẵn sàng." }
@@ -4043,6 +4051,44 @@ $btnDownloadVentoy       = Get-Control "btnDownloadVentoy"
 $btnPostInstallTweak     = Get-Control "btnPostInstallTweak"
 $txtAutoWinLog           = Get-Control "txtAutoWinLog"
 
+$txtPostWinMachineModel       = Get-Control "txtPostWinMachineModel"
+$txtPostWinNetworkStatus      = Get-Control "txtPostWinNetworkStatus"
+$txtPostWinMissingCount       = Get-Control "txtPostWinMissingCount"
+$btnPostWinAutoInstallDrivers = Get-Control "btnPostWinAutoInstallDrivers"
+$btnPostWinInstall3DPNet      = Get-Control "btnPostWinInstall3DPNet"
+$btnPostWinLaunch3DPChip      = Get-Control "btnPostWinLaunch3DPChip"
+$btnPostWinOpenOEMPortal      = Get-Control "btnPostWinOpenOEMPortal"
+$btnPostWinGoToDriverTab      = Get-Control "btnPostWinGoToDriverTab"
+
+function Refresh-PostWinDriverStatusBadge {
+    param([switch]$ForceRefresh)
+    try {
+        $st = Get-VUONGTTPostWinDriverStatus
+        if ($txtPostWinMachineModel -and $st.MachineModel) {
+            $txtPostWinMachineModel.Text = $st.MachineModel
+        }
+        if ($txtPostWinNetworkStatus) {
+            $txtPostWinNetworkStatus.Text = $st.NetworkStatus
+            if ($st.HasInternet) {
+                $txtPostWinNetworkStatus.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#10B981")
+            } elseif ($st.NetworkStatus -like "*MẤT*") {
+                $txtPostWinNetworkStatus.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+            } else {
+                $txtPostWinNetworkStatus.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F59E0B")
+            }
+        }
+        if ($txtPostWinMissingCount) {
+            if ($st.MissingCount -gt 0) {
+                $txtPostWinMissingCount.Text = "$($st.MissingCount) Lỗi / Thiếu (!)"
+                $txtPostWinMissingCount.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+            } else {
+                $txtPostWinMissingCount.Text = "0 (Đầy đủ Driver [OK])"
+                $txtPostWinMissingCount.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#10B981")
+            }
+        }
+    } catch {}
+}
+
 function Update-VUONGTTIsoEditionsUi {
     param([string]$FilePath)
     if (-not $FilePath -or -not (Test-Path $FilePath)) {
@@ -4524,6 +4570,74 @@ if ($btnPostInstallTweak) {
         $txtFooterStatus.Text = "• [OK] Đã tối ưu hệ thống sau cài Win!"
     })
 }
+
+if ($btnPostWinAutoInstallDrivers) {
+    $btnPostWinAutoInstallDrivers.Add_Click({
+        $btnPostWinAutoInstallDrivers.IsEnabled = $false
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "Đang kết nối dịch vụ Windows Update để quét và tự động cài đặt toàn bộ Driver còn thiếu...`n$($txtAutoWinLog.Text)" }
+        $txtFooterStatus.Text = "• [Đang chạy] Quét & cập nhật Driver qua Microsoft Update..."
+        Invoke-VUONGTTDoEvents
+        try {
+            $res = Invoke-VUONGTTAutoUpdateAllDrivers -OnProgress {
+                param($m)
+                if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$m`n$($txtAutoWinLog.Text)" }
+                Invoke-VUONGTTDoEvents
+            }
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$res`n$($txtAutoWinLog.Text)" }
+            Refresh-PostWinDriverStatusBadge -ForceRefresh
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét và cập nhật Driver!"
+            [System.Windows.MessageBox]::Show("Đã hoàn tất quy trình quét và cài đặt Driver qua Microsoft Update Catalog.`nChi tiết kết quả đã được ghi vào khung Nhật ký bên dưới.", "Cài Đặt Driver", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } catch {
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[LỖI CÀI DRIVER] $($_.Exception.Message)`n$($txtAutoWinLog.Text)" }
+        } finally {
+            $btnPostWinAutoInstallDrivers.IsEnabled = $true
+        }
+    })
+}
+
+if ($btnPostWinInstall3DPNet) {
+    $btnPostWinInstall3DPNet.Add_Click({
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "Đang tìm kiếm bộ cài Driver Mạng Wi-Fi & LAN (3DP Net)...`n$($txtAutoWinLog.Text)" }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "3dpnet" -OnProgress {
+            param($m)
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$m`n$($txtAutoWinLog.Text)" }
+            Invoke-VUONGTTDoEvents
+        }
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$res`n$($txtAutoWinLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] $res"
+        Refresh-PostWinDriverStatusBadge -ForceRefresh
+    })
+}
+
+if ($btnPostWinLaunch3DPChip) {
+    $btnPostWinLaunch3DPChip.Add_Click({
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "Đang kiểm tra và khởi chạy công cụ 3DP Chip...`n$($txtAutoWinLog.Text)" }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "3dpchip" -OnProgress {
+            param($m)
+            if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$m`n$($txtAutoWinLog.Text)" }
+            Invoke-VUONGTTDoEvents
+        }
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "$res`n$($txtAutoWinLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] $res"
+    })
+}
+
+if ($btnPostWinOpenOEMPortal) {
+    $btnPostWinOpenOEMPortal.Add_Click({
+        $portal = Open-VUONGTTOfficialDriverPortal
+        if ($txtAutoWinLog) { 
+            $txtAutoWinLog.Text = "[CHÍNH HÃNG] Đã mở cổng hỗ trợ tải Driver chính hãng của $($portal.Manufacturer) ($($portal.Model)):`n$($portal.Url)`n$($txtAutoWinLog.Text)" 
+        }
+        $txtFooterStatus.Text = "• [OK] Đã mở trang hỗ trợ Driver $($portal.Manufacturer)"
+    })
+}
+
+if ($btnPostWinGoToDriverTab) {
+    $btnPostWinGoToDriverTab.Add_Click({
+        Switch-Tab -TargetTag "BackupDriver"
+    })
+}
+
 
 # =========================================================================
 # MODULE 13: CUSTOM APP SILENT INSTALLER
@@ -7337,6 +7451,8 @@ $window.Add_ContentRendered({
     # Kiểm tra cập nhật NGAY LẬP TỨC KHI VỪA MỞ TOOL nếu có kết nối mạng Internet (100% An toàn, không Crash)
     $script:startupPs = $null
     $script:startupAsyncHandle = $null
+
+    try { Refresh-PostWinDriverStatusBadge } catch {}
 
     $startupCheckTimer = New-Object System.Windows.Threading.DispatcherTimer
     $startupCheckTimer.Interval = [TimeSpan]::FromMilliseconds(500)

@@ -1294,9 +1294,10 @@ function Get-VUONGTTPostWinDriverStatus {
     try {
         $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
         $bios = Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue
-        $mfg = if ($cs.Manufacturer) { $cs.Manufacturer.Trim() } else { "PC" }
-        $model = if ($cs.Model) { $cs.Model.Trim() } else { "Desktop" }
-        $status.MachineModel = "$mfg $model"
+        $mb = Get-CimInstance Win32_BaseBoard -ErrorAction SilentlyContinue
+        $mfg = if ($cs.Manufacturer -and $cs.Manufacturer -notmatch "System manufacturer|To be filled by O\.E\.M\.") { $cs.Manufacturer.Trim() } else { $mb.Manufacturer.Trim() }
+        $model = if ($cs.Model -and $cs.Model -notmatch "System Product Name|To be filled by O\.E\.M\.") { $cs.Model.Trim() } else { $mb.Product.Trim() }
+        $status.MachineModel = "$mfg $model".Trim()
 
         # Kiểm tra card mạng và kết nối Internet
         $adapters = Get-CimInstance Win32_NetworkAdapter -Filter "NetConnectionStatus = 2" -ErrorAction SilentlyContinue
