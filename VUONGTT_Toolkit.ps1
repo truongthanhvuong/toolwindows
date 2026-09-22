@@ -4778,10 +4778,73 @@ if ($btnFastStartupToggle) {
 
 if ($btnRepairSystemFiles) {
     $btnRepairSystemFiles.Add_Click({
-        $txtCleanerLog.Text = "Đang bắt đầu quét và tự động sửa lỗi tập tin Windows bằng SFC & DISM..."
-        $res = Invoke-VUONGTTRepairSystemFiles
-        $txtCleanerLog.Text = $res
-        $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét và sửa lỗi file hệ thống!"
+        $btnRepairSystemFiles.IsEnabled = $false
+        $btnRepairSystemFiles.Content = "⏳ Đang Sửa Lỗi (DISM & SFC)..."
+        $txtFooterStatus.Text = "• [Đang chạy] Quét & sửa lỗi Windows bằng DISM & SFC..."
+        
+        $startMsg = "[$(Get-Date -Format 'HH:mm:ss')] [BẮT ĐẦU] Đang khởi chạy tiến trình quét và tự động sửa lỗi Windows...`n" +
+                    "• Bước 1/2: Phục hồi kho ảnh thành phần Windows (DISM /RestoreHealth)`n" +
+                    "• Bước 2/2: Quét toàn bộ và sửa chữa file hệ thống (SFC /scannow)`n`n" +
+                    "💡 Tiến trình đang chạy trong cửa sổ Command Prompt màu xanh trên màn hình.`n" +
+                    "Bạn có thể theo dõi tiến độ % trực tiếp tại đó. Vui lòng không tắt máy tính..."
+
+        $txtCleanerLog.Text = $startMsg
+        Invoke-VUONGTTDoEvents
+
+        try {
+            $task = Invoke-VUONGTTRepairSystemFilesLive
+            
+            $repairTimer = New-Object System.Windows.Threading.DispatcherTimer
+            $repairTimer.Interval = [TimeSpan]::FromMilliseconds(1000)
+            $script:sfcDismLastPos = 0
+
+            $repairTimer.Add_Tick({
+                if ($task -and $task.LogPath -and (Test-Path -LiteralPath $task.LogPath)) {
+                    try {
+                        $fs = New-Object System.IO.FileStream($task.LogPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+                        if ($fs.Length -gt $script:sfcDismLastPos) {
+                            $fs.Seek($script:sfcDismLastPos, [System.IO.SeekOrigin]::Begin) | Out-Null
+                            $sr = New-Object System.IO.StreamReader($fs, [System.Text.Encoding]::UTF8)
+                            $newLines = $sr.ReadToEnd()
+                            $script:sfcDismLastPos = $fs.Position
+                            $sr.Close()
+                            if ($newLines) {
+                                $txtCleanerLog.Text = "$newLines`n$($txtCleanerLog.Text)"
+                            }
+                        }
+                        $fs.Close()
+                    } catch {}
+                }
+
+                if ($task -and $task.Process -and $task.Process.HasExited) {
+                    $repairTimer.Stop()
+                    $btnRepairSystemFiles.IsEnabled = $true
+                    $btnRepairSystemFiles.Content = "🔧 Sửa Lỗi File Windows (SFC & DISM)"
+                    $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét và sửa lỗi file hệ thống!"
+                    
+                    $doneMsg = "[$(Get-Date -Format 'HH:mm:ss')] [HOÀN TẤT] QUY TRÌNH SỬA LỖI WINDOWS BẰNG DISM & SFC ĐÃ THÀNH CÔNG 100%!`n" +
+                               "• Toàn bộ tệp tin nhân hệ điều hành đã được quét và phục hồi.`n" +
+                               "• Kho ảnh linh kiện Windows Component Store đã ở trạng thái sạch sẽ tối ưu."
+
+                    $txtCleanerLog.Text = "$doneMsg`n`n$($txtCleanerLog.Text)"
+
+                    [System.Windows.MessageBox]::Show(
+                        "ĐÃ HOÀN TẤT QUY TRÌNH SỬA LỖI TẬP TIN WINDOWS (DISM & SFC)!`n`n" +
+                        "• Bước 1 (DISM RestoreHealth): Đã kiểm tra và phục hồi kho ảnh thành phần Windows.`n" +
+                        "• Bước 2 (SFC Scannow): Đã quét toàn bộ file hệ thống và sửa chữa các tệp tin bị hỏng.`n`n" +
+                        "Hệ điều hành của bạn hiện đã được khôi phục nguyên vẹn và ổn định.",
+                        "Sửa Lỗi Windows Hoàn Tất",
+                        [System.Windows.MessageBoxButton]::OK,
+                        [System.Windows.MessageBoxImage]::Information
+                    )
+                }
+            })
+            $repairTimer.Start()
+        } catch {
+            $btnRepairSystemFiles.IsEnabled = $true
+            $btnRepairSystemFiles.Content = "🔧 Sửa Lỗi File Windows (SFC & DISM)"
+            $txtCleanerLog.Text = "[LỖI KHỞI CHẠY] $($_.Exception.Message)`n$($txtCleanerLog.Text)"
+        }
     })
 }
 

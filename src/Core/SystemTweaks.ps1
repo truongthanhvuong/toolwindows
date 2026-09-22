@@ -441,26 +441,9 @@ function Invoke-VUONGTTRepairSystemFiles {
     $timestamp = (Get-Date).ToString("HH:mm:ss")
     $log += "[$timestamp] [BẮT ĐẦU TỰ ĐỘNG QUÉT & SỬA LỖI TẬP TIN HỆ THỐNG]"
 
-    # 1. SFC /scannow
+    # 1. DISM RestoreHealth trước (Chuẩn Microsoft: Sửa kho ảnh trước khi chạy SFC)
     try {
-        $log += "[1/2] Đang quét toàn bộ file hệ thống bằng công cụ SFC (sfc /scannow)..."
-        $exit1 = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
-            Start-VUONGTTProcessResponsive -FilePath "sfc.exe" -ArgumentList "/scannow" -TimeoutSeconds 900
-        } else {
-            (Start-Process -FilePath "sfc.exe" -ArgumentList "/scannow" -Wait -PassThru -NoNewWindow).ExitCode
-        }
-        if ($exit1 -eq 0) {
-            $log += "[OK] Quá trình quét SFC hoàn tất: Không phát hiện lỗi cấu trúc hệ thống!"
-        } else {
-            $log += "[OK] Quá trình quét SFC hoàn tất: Các file hỏng nếu có đã được khôi phục tự động."
-        }
-    } catch {
-        $log += "[CHÚ Ý SFC] $($_.Exception.Message)"
-    }
-
-    # 2. DISM RestoreHealth
-    try {
-        $log += "[2/2] Đang phục hồi kho ảnh Windows bằng DISM RestoreHealth..."
+        $log += "[1/2] Đang phục hồi kho ảnh Windows bằng DISM RestoreHealth..."
         $exit2 = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
             Start-VUONGTTProcessResponsive -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /restorehealth" -TimeoutSeconds 900
         } else {
@@ -475,8 +458,96 @@ function Invoke-VUONGTTRepairSystemFiles {
         $log += "[CHÚ Ý DISM] $($_.Exception.Message)"
     }
 
+    # 2. SFC /scannow sau
+    try {
+        $log += "[2/2] Đang quét toàn bộ file hệ thống bằng công cụ SFC (sfc /scannow)..."
+        $exit1 = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "sfc.exe" -ArgumentList "/scannow" -TimeoutSeconds 900
+        } else {
+            (Start-Process -FilePath "sfc.exe" -ArgumentList "/scannow" -Wait -PassThru -NoNewWindow).ExitCode
+        }
+        if ($exit1 -eq 0) {
+            $log += "[OK] Quá trình quét SFC hoàn tất: Không phát hiện lỗi cấu trúc hệ thống!"
+        } else {
+            $log += "[OK] Quá trình quét SFC hoàn tất: Các file hỏng nếu có đã được khôi phục tự động."
+        }
+    } catch {
+        $log += "[CHÚ Ý SFC] $($_.Exception.Message)"
+    }
+
     $log += "[HOÀN TẤT] Hệ điều hành Windows đã được phục hồi nguyên vẹn các tệp lõi!"
     return ($log -join "`n")
+}
+
+function Invoke-VUONGTTRepairSystemFilesLive {
+    <#
+    .SYNOPSIS
+        Khởi chạy tiến trình DISM RestoreHealth và SFC scannow thời gian thực qua console trực quan
+    #>
+    $timeStr = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $logPath = Join-Path $env:TEMP "VUONGTT_SFC_DISM_$timeStr.log"
+    $batPath = Join-Path $env:TEMP "VUONGTT_SFC_DISM_$timeStr.cmd"
+
+    $batContent = @"
+@echo off
+chcp 65001 >nul
+title [VUONGTT TOOLKIT] DANG QUET VA SUA LOI HE THONG WINDOWS (DISM & SFC)...
+color 0A
+echo ==============================================================================
+echo   VUONGTT TOOLKIT 2026 - QUET VA TU DONG SUA LOI HE THONG WINDOWS
+echo ==============================================================================
+echo   Thoi gian bat dau : %date% %time%
+echo   Quy trinh gom 2 buoc chuyen sau:
+echo     * [Buoc 1/2] Phuc hoi kho anh linh kien Windows (DISM /RestoreHealth)
+echo     * [Buoc 2/2] Quet toan bo file he thong va sua chua tu dong (SFC /scannow)
+echo ==============================================================================
+echo   Luu y: Tien trinh co the mat tu 5 den 15 phut tuy toc do o dia va CPU.
+echo   Vui long KHONG tat may tinh hoac dong cua so trong qua trinh sua loi!
+echo ==============================================================================
+echo.
+
+echo [BUOC 1/2] DANG KIEM TRA VA PHUC HOI KHO ANH WINDOWS (DISM RestoreHealth)...
+echo [BUOC 1/2] DANG KIEM TRA VA PHUC HOI KHO ANH WINDOWS (DISM RestoreHealth)... > "$logPath"
+dism.exe /online /cleanup-image /restorehealth
+set DISM_EXIT=%ERRORLEVEL%
+echo DISM exit code: %DISM_EXIT% >> "$logPath"
+
+echo.
+echo ==============================================================================
+echo [BUOC 2/2] DANG QUET VA SUA CHUA TOAN BO TEP TIN CORE WINDOWS (SFC /scannow)...
+echo [BUOC 2/2] DANG QUET VA SUA CHUA TOAN BO TEP TIN CORE WINDOWS (SFC /scannow)... >> "$logPath"
+echo ==============================================================================
+echo.
+sfc.exe /scannow
+set SFC_EXIT=%ERRORLEVEL%
+echo SFC exit code: %SFC_EXIT% >> "$logPath"
+
+echo.
+echo ==============================================================================
+echo [HOAN TAT] DA HOAN TAT 100%% QUY TRINH QUET VA SUA LOI WINDOWS!
+echo ==============================================================================
+echo [HOAN TAT] DA HOAN TAT 100%% QUY TRINH QUET VA SUA LOI WINDOWS! >> "$logPath"
+echo.
+echo Cua so nay se tu dong dong sau 5 giay...
+timeout /t 5 >nul
+exit 0
+"@
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($batPath, $batContent, $utf8NoBom)
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "cmd.exe"
+    $psi.Arguments = "/c `"$batPath`""
+    $psi.UseShellExecute = $true
+    $psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Normal
+
+    $proc = [System.Diagnostics.Process]::Start($psi)
+    return [PSCustomObject]@{
+        Process = $proc
+        LogPath = $logPath
+        BatPath = $batPath
+    }
 }
 
 # =========================================================================
