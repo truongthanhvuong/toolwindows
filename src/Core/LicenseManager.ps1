@@ -997,8 +997,11 @@ function Invoke-VUONGTTKeyActivation {
     $targetKey.UsedPCName    = $env:COMPUTERNAME
     $targetKey.ActivatedDate = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
 
-    # ĐỒNG BỘ TỨC THÌ LÊN CLOUD GITHUB VÀ KHO CỤC BỘ
-    Save-VUONGTTLicenseVault -KeyList $vault
+    # ĐỒNG BỘ TỨC THÌ LÊN CLOUD GITHUB VÀ KHO CỤC BỘ (MERGE CHUYÊN SÂU CHỐNG MẤT KEY)
+    $cloudOk = Sync-VUONGTTKeyActivationToCloud -Key $targetKey.Key -Customer $targetKey.Customer -Duration $targetKey.Duration -HWID $currentHWID -PCName $env:COMPUTERNAME -ActivatedDate $targetKey.ActivatedDate
+    if (-not $cloudOk) {
+        Save-VUONGTTLicenseVault -KeyList $vault
+    }
 
     # LƯU BẢN QUYỀN PRO ĐA TẦNG (IN-MEMORY + REGISTRY + FILE .LIC)
     Write-VUONGTTActiveLicenseFile -Key $targetKey.Key -Customer $targetKey.Customer -Duration $targetKey.Duration -HWID $currentHWID
@@ -1009,6 +1012,121 @@ function Invoke-VUONGTTKeyActivation {
         Duration = $targetKey.Duration
         Customer = $targetKey.Customer
     }
+}
+
+function Sync-VUONGTTKeyActivationToCloud {
+    [CmdletBinding()]
+    param(
+        [string]$Key,
+        [string]$Customer,
+        [string]$Duration,
+        [string]$HWID,
+        [string]$PCName,
+        [string]$ActivatedDate
+    )
+
+    $token = Get-VUONGTTGitHubToken
+    if (-not $token) { return $false }
+
+    for ($retry = 0; $retry -lt 3; $retry++) {
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+            $headers = @{
+                "Authorization" = "token $token"
+                "User-Agent"    = "VUONGTT-CloudSync/2026"
+                "Accept"        = "application/vnd.github.v3+json"
+            }
+
+            $metaUrl = "https://api.github.com/repos/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME/contents/src/Config/licenses_vault.json"
+            $meta = Invoke-RestMethod -Uri $metaUrl -Headers $headers -TimeoutSec 8
+            if (-not $meta -or -not $meta.content -or -not $meta.sha) { break }
+
+            $sha = $meta.sha
+            $cleanB64 = $meta.content -replace '\s+', ''
+            $rawBytes = [System.Convert]::FromBase64String($cleanB64)
+            if ($rawBytes.Length -ge 3 -and $rawBytes[0] -eq 0xEF -and $rawBytes[1] -eq 0xBB -and $rawBytes[2] -eq 0xBF) {
+                $rawBytes = $rawBytes[3..($rawBytes.Length - 1)]
+            }
+            $cloudJson = [System.Text.Encoding]::UTF8.GetString($rawBytes).Trim()
+            $cloudKeys = @(ConvertFrom-Json $cloudJson)
+
+            $found = $false
+            foreach ($k in $cloudKeys) {
+                if ($k.Key -and ($k.Key.Trim() -eq $Key.Trim())) {
+                    $k.IsUsed        = $true
+                    $k.UsedHWID      = $HWID
+                    $k.UsedPCName    = $PCName
+                    $k.ActivatedDate = $ActivatedDate
+                    $found = $true
+                    break
+                }
+            }
+
+            if (-not $found) {
+                $cloudKeys += [PSCustomObject]@{
+                    Key           = $Key.Trim()
+                    Customer      = if ($Customer) { $Customer } else { "Khách Hàng PRO" }
+                    Duration      = if ($Duration) { $Duration } else { "Lifetime" }
+                    CreatedDate   = $ActivatedDate
+                    IsUsed        = $true
+                    UsedHWID      = $HWID
+                    UsedPCName    = $PCName
+                    ActivatedDate = $ActivatedDate
+                }
+            }
+
+            $newJson = [object[]]$cloudKeys | ConvertTo-Json -Depth 4
+            $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+            $putB64 = [System.Convert]::ToBase64String($utf8NoBom.GetBytes($newJson))
+            $bodyObj = @{
+                message = "sync(activation): machine '$PCName' activated key $Key"
+                content = $putB64
+                sha     = $sha
+                branch  = "main"
+            }
+
+            $putUrl = "https://api.github.com/repos/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME/contents/src/Config/licenses_vault.json"
+            $null = Invoke-RestMethod -Uri $putUrl -Method Put -Headers $headers -Body ($bodyObj | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 10
+
+            [System.IO.File]::WriteAllText($script:VAULT_FILE, $newJson, $utf8NoBom)
+            try {
+                $localCfgVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
+                if (Test-Path (Split-Path $localCfgVault -Parent)) {
+                    [System.IO.File]::WriteAllText($localCfgVault, $newJson, $utf8NoBom)
+                }
+            } catch {}
+
+            return $true
+        } catch {
+            Start-Sleep -Milliseconds 500
+        }
+    }
+    return $false
+}
+
+function Set-VUONGTTKeyStatusAdmin {
+    param(
+        [string]$Key,
+        [bool]$IsUsed,
+        [string]$PCName = ""
+    )
+    $vault = @(Get-VUONGTTAllLicenses)
+    $target = $vault | Where-Object { $_.Key -eq $Key }
+    if ($target) {
+        $target.IsUsed = $IsUsed
+        if ($IsUsed) {
+            $target.UsedPCName = if ($PCName) { $PCName } else { "Admin Verified" }
+            $target.UsedHWID = "VERIFIED-ADMIN-MANUAL"
+            $target.ActivatedDate = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
+        } else {
+            $target.UsedPCName = ""
+            $target.UsedHWID = ""
+            $target.ActivatedDate = ""
+        }
+        Save-VUONGTTLicenseVault -KeyList $vault
+        return $true
+    }
+    return $false
 }
 
 function Write-VUONGTTActiveLicenseFile {

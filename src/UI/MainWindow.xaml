@@ -2281,16 +2281,16 @@
                                         <CheckBox x:Name="chk_VisualEffects" Content="Tối Ưu Hiệu Năng Tối Đa (Visual Effects - Best Performance)" ToolTip="Tắt hiệu ứng chuyển cảnh giúp máy mượt mà tức thì" Margin="0,2,0,2"/>
                                         <CheckBox x:Name="chk_GameMode" Content="Tối Ưu Chơi Game (Game Mode &amp; Tắt Game Bar DVR)" ToolTip="Tắt Xbox Game Bar ghi ngầm giúp tăng FPS game" Margin="0,2,0,2"/>
                                     </StackPanel>
-                                    <!-- DNS Configuration Dropdown -->
+                                    <!-- DNS Configuration Dropdown (Tùy chọn độc lập, chỉ áp dụng khi tick chọn) -->
                                     <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="10,8,10,8" Margin="0,4,0,0" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                         <DockPanel>
-                                            <TextBlock Text="DNS - Máy chủ phân giải:" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                            <ComboBox x:Name="cmbDnsProvider" Height="28" Width="170" HorizontalAlignment="Right">
-                                                <ComboBoxItem Content="Mặc định (Default DHCP)" IsSelected="True"/>
-                                                <ComboBoxItem Content="Cloudflare (1.1.1.1)"/>
+                                            <CheckBox x:Name="chk_DnsProvider" Content="🌐 Đổi DNS Máy Chủ Phân Giải:" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,10,0" IsChecked="False" ToolTip="Tick chọn để áp dụng cấu hình DNS máy chủ bên phải khi bấm nút 'Áp Dụng'"/>
+                                            <ComboBox x:Name="cmbDnsProvider" Height="28" Width="170" HorizontalAlignment="Right" IsEnabled="{Binding ElementName=chk_DnsProvider, Path=IsChecked}">
+                                                <ComboBoxItem Content="Cloudflare (1.1.1.1)" IsSelected="True"/>
                                                 <ComboBoxItem Content="Google (8.8.8.8)"/>
                                                 <ComboBoxItem Content="Quad9 (9.9.9.9)"/>
                                                 <ComboBoxItem Content="AdGuard (94.140.14.14)"/>
+                                                <ComboBoxItem Content="Khôi phục mặc định (DHCP Default)"/>
                                             </ComboBox>
                                         </DockPanel>
                                     </Border>

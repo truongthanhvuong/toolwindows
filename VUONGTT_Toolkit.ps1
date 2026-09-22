@@ -4460,6 +4460,7 @@ $btnAppXRemoval       = Get-Control "btnAppXRemoval"
 
 $btnRunTweaks         = Get-Control "btnRunTweaks"
 $btnUndoTweaks        = Get-Control "btnUndoTweaks"
+$chk_DnsProvider      = Get-Control "chk_DnsProvider"
 $cmbDnsProvider       = Get-Control "cmbDnsProvider"
 $txtCurrentPowerPlan    = Get-Control "txtCurrentPowerPlan"
 $btnPlanUltimate        = Get-Control "btnPlanUltimate"
@@ -4607,18 +4608,20 @@ if ($btnRunTweaks) {
                 }
             }
 
-            # Apply DNS if selected
-            if ($cmbDnsProvider -and $cmbDnsProvider.SelectedItem) {
+            # Chỉ áp dụng cấu hình DNS khi người dùng tick chọn CheckBox "Đổi DNS Máy Chủ Phân Giải"
+            if ($chk_DnsProvider -and $chk_DnsProvider.IsChecked -and $cmbDnsProvider -and $cmbDnsProvider.SelectedItem) {
                 $dnsText = $cmbDnsProvider.SelectedItem.Content.ToString()
                 if ($dnsText -like "*Cloudflare*") { $dRes = Set-VUONGTTDns "Cloudflare" }
                 elseif ($dnsText -like "*Google*") { $dRes = Set-VUONGTTDns "Google" }
                 elseif ($dnsText -like "*Quad9*") { $dRes = Set-VUONGTTDns "Quad9" }
                 elseif ($dnsText -like "*AdGuard*") { $dRes = Set-VUONGTTDns "AdGuard" }
+                elseif ($dnsText -like "*Khôi phục mặc định*" -or $dnsText -like "*Default*") { $dRes = Set-VUONGTTDns "Default" }
                 else { $dRes = Set-VUONGTTDns "Default" }
                 if ($txtTweaksLog) {
                     $txtTweaksLog.AppendText("$dRes`r`n")
                     $txtTweaksLog.ScrollToEnd()
                 }
+                $count++
                 Invoke-VUONGTTDoEvents
             }
 
@@ -6525,7 +6528,34 @@ function Render-VUONGTTAdminKeys {
             }
         }.GetNewClosure())
 
+        $btnToggleStatus = New-Object System.Windows.Controls.Button
+        if ($k.IsUsed) {
+            $btnToggleStatus.Content = "🔄 Reset"
+            $btnToggleStatus.ToolTip = "Đặt lại key này về trạng thái Chưa Sử Dụng (để cấp cho máy khác)"
+            $btnToggleStatus.Background = $conv.ConvertFromString("#FEF3C7")
+            $btnToggleStatus.Foreground = $conv.ConvertFromString("#B45309")
+        } else {
+            $btnToggleStatus.Content = "✅ Đã Dùng"
+            $btnToggleStatus.ToolTip = "Đánh dấu key này đã được kích hoạt sử dụng"
+            $btnToggleStatus.Background = $conv.ConvertFromString("#ECFDF5")
+            $btnToggleStatus.Foreground = $conv.ConvertFromString("#047857")
+        }
+        $btnToggleStatus.Height = 28
+        $btnToggleStatus.Padding = New-Object System.Windows.Thickness(8, 0, 8, 0)
+        $btnToggleStatus.Margin = New-Object System.Windows.Thickness(0, 0, 6, 0)
+        $btnToggleStatus.FontWeight = [System.Windows.FontWeights]::Bold
+        $btnToggleStatus.FontSize = 11
+        $btnToggleStatus.Cursor = [System.Windows.Input.Cursors]::Hand
+        $isUsedNow = [bool]$k.IsUsed
+        $btnToggleStatus.Add_Click({
+            $newTargetStatus = -not $isUsedNow
+            Set-VUONGTTKeyStatusAdmin -Key $keyVal -IsUsed $newTargetStatus | Out-Null
+            Render-VUONGTTAdminKeys
+            $txtFooterStatus.Text = "• [STATUS] Đã cập nhật trạng thái key $keyVal -> $(if ($newTargetStatus) { 'ĐÃ KÍCH HOẠT' } else { 'CHƯA SỬ DỤNG' })"
+        }.GetNewClosure())
+
         $spBtns.Children.Add($btnCopyKey) | Out-Null
+        $spBtns.Children.Add($btnToggleStatus) | Out-Null
         $spBtns.Children.Add($btnDelKey) | Out-Null
         [System.Windows.Controls.Grid]::SetColumn($spBtns, 1)
         $grid.Children.Add($spBtns) | Out-Null
