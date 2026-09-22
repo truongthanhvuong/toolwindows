@@ -1266,6 +1266,10 @@ function Start-VUONGTTOEMDriverAssistant {
             if ($OnProgress) { & $OnProgress "Phát hiện máy ACER. Đang mở Acer Care Center / Driver Support..." }
             Start-Process "https://www.acer.com/vn-vi/support/drivers-and-manuals"
             return "Đã mở trang hỗ trợ tải Driver chính hãng Acer!"
+        } elseif ($boardMfg -like "*GIGABYTE*" -or $mfg -like "*GIGABYTE*") {
+            if ($OnProgress) { & $OnProgress "Phát hiện bo mạch chủ GIGABYTE. Đang mở trang hỗ trợ Driver chính hãng..." }
+            Start-Process "https://www.gigabyte.com/Support/Consumer/Download"
+            return "Đã mở cổng tải tiện ích & Driver bo mạch chủ GIGABYTE!"
         } else {
             # Máy lắp ráp / Intel
             if ($OnProgress) { & $OnProgress "Máy tính Desktop / Tự lắp ráp. Đang mở Intel Driver & Support Assistant (IDSA)..." }
@@ -1366,11 +1370,11 @@ function Open-VUONGTTOfficialDriverPortal {
         } elseif ($mfg -like "*ACER*") {
             $url = "https://www.acer.com/vn-vi/support/drivers-and-manuals"
         } elseif ($boardMfg -like "*GIGABYTE*" -or $mfg -like "*GIGABYTE*") {
-            $url = "https://www.gigabyte.com/Support/Motherboard"
+            $url = "https://www.google.com/search?q=" + [System.Uri]::EscapeDataString("Gigabyte $model driver support download")
         } elseif ($boardMfg -like "*MSI*" -or $mfg -like "*MICRO-STAR*") {
-            $url = "https://www.msi.com/support/download"
+            $url = "https://www.google.com/search?q=" + [System.Uri]::EscapeDataString("MSI $model driver support download")
         } elseif ($boardMfg -like "*ASROCK*") {
-            $url = "https://www.asrock.com/support/index.asp"
+            $url = "https://www.google.com/search?q=" + [System.Uri]::EscapeDataString("ASRock $model driver support download")
         } else {
             # Kiem tra GPU neu la may lap rap Desktop
             $gpu = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -First 1

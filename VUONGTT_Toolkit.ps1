@@ -3511,11 +3511,13 @@ $btnViewDriverIssues         = Get-Control "btnViewDriverIssues"
 $btnOpenDeviceManagerDirect  = Get-Control "btnOpenDeviceManagerDirect"
 
 $btnAutoUpdateAllDrivers     = Get-Control "btnAutoUpdateAllDrivers"
+$btnLaunch3DPNet             = Get-Control "btnLaunch3DPNet"
 $btnLaunchSDIO               = Get-Control "btnLaunchSDIO"
 $btnLaunch3DPChip            = Get-Control "btnLaunch3DPChip"
 $btnDownloadNvidiaDriver     = Get-Control "btnDownloadNvidiaDriver"
 $btnDownloadAmdDriver        = Get-Control "btnDownloadAmdDriver"
 $btnDownloadIntelArcDriver   = Get-Control "btnDownloadIntelArcDriver"
+$btnLaunchDriverAssistantOEM = Get-Control "btnLaunchDriverAssistantOEM"
 $btnOpenOEMDriverPortal      = Get-Control "btnOpenOEMDriverPortal"
 
 $btnBackupAllDrivers         = Get-Control "btnBackupAllDrivers"
@@ -3637,6 +3639,19 @@ if ($btnAutoUpdateAllDrivers) {
     })
 }
 
+if ($btnLaunch3DPNet) {
+    $btnLaunch3DPNet.Add_Click({
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang tìm kiếm bộ cài Driver Mạng Wi-Fi & LAN (3DP Net)..." }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "3dpnet" -OnProgress {
+            param($m)
+            if ($txtDriverLog) { $txtDriverLog.Text = "$m`n$($txtDriverLog.Text)" }
+            Invoke-VUONGTTDoEvents
+        }
+        if ($txtDriverLog) { $txtDriverLog.Text = "$res`n$($txtDriverLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] $res"
+    })
+}
+
 if ($btnLaunchSDIO) {
     $btnLaunchSDIO.Add_Click({
         if ($txtDriverLog) { $txtDriverLog.Text = "Đang kiểm tra và khởi chạy bộ cài Driver Snappy Driver Installer Origin (SDIO)..." }
@@ -3687,13 +3702,26 @@ if ($btnDownloadIntelArcDriver) {
     })
 }
 
+if ($btnLaunchDriverAssistantOEM) {
+    $btnLaunchDriverAssistantOEM.Add_Click({
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang nhận diện hãng máy tính/bo mạch chủ để mở công cụ Driver Assistant..." }
+        $res = Invoke-VUONGTTLaunchDriverTool -ToolName "driverassistant" -OnProgress {
+            param($m)
+            if ($txtDriverLog) { $txtDriverLog.Text = "$m`n$($txtDriverLog.Text)" }
+            Invoke-VUONGTTDoEvents
+        }
+        if ($txtDriverLog) { $txtDriverLog.Text = "$res`n$($txtDriverLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] $res"
+    })
+}
+
 if ($btnOpenOEMDriverPortal) {
     $btnOpenOEMDriverPortal.Add_Click({
         $portal = Open-VUONGTTOfficialDriverPortal
         if ($txtDriverLog) { 
-            $txtDriverLog.Text = "[CHÍNH HÃNG] Đã mở cổng hỗ trợ tải Driver chính hãng của hãng $($portal.Vendor):`n$($portal.Url)" 
+            $txtDriverLog.Text = "[CHÍNH HÃNG] Đã mở cổng hỗ trợ tải Driver chính hãng của $($portal.Manufacturer) ($($portal.Model)):`n$($portal.Url)" 
         }
-        $txtFooterStatus.Text = "• [OK] Đã mở trang hỗ trợ Driver $($portal.Vendor)"
+        $txtFooterStatus.Text = "• [OK] Đã mở trang hỗ trợ Driver $($portal.Manufacturer)"
     })
 }
 
