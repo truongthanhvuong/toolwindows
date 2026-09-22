@@ -1544,17 +1544,29 @@ $txtCpuR23Score        = Get-Control "txtCpuR23Score"
 $txtCpuNotes           = Get-Control "txtCpuNotes"
 $panelChipsets         = Get-Control "panelChipsets"
 
+$btnSearchCpu          = Get-Control "btnSearchCpu"
+$btnSearchCpuOnline    = Get-Control "btnSearchCpuOnline"
+
 $cmbCpuCompare1        = Get-Control "cmbCpuCompare1"
 $cmbCpuCompare2        = Get-Control "cmbCpuCompare2"
 $btnCompareCpu         = Get-Control "btnCompareCpu"
+$btnCompareCpuOnline   = Get-Control "btnCompareCpuOnline"
 $txtCpuCompareReport   = Get-Control "txtCpuCompareReport"
 
 function Search-CpuInfo {
+    param([switch]$Online = $false)
     $q = if ($cmbCpuSearch -and $cmbCpuSearch.Text) { $cmbCpuSearch.Text.Trim() } else { "285K" }
     if ([string]::IsNullOrEmpty($q)) { $q = "285K" }
-    
-    # Check enhanced spec DB first
-    $spec = Find-CpuSpecByQuery -Query $q
+
+    $onlineInfo = $null
+    if ($Online) {
+        $txtFooterStatus.Text = "• [Đang tìm kiếm online] Đang truy vấn thông số CPU '$q' trên Internet..."
+        Invoke-VUONGTTDoEvents
+        $onlineInfo = Find-CpuOnlineInfo -Query $q
+    }
+
+    # Tra cứu cơ sở dữ liệu và Heuristic Engine
+    $spec = if ($onlineInfo -and $onlineInfo.Specs) { $onlineInfo.Specs } else { Find-CpuSpecByQuery -Query $q -EnableOnlineSearch:$Online }
     $item = Find-CpuOrChipset -Query $q
 
     if ($spec) {
@@ -1568,7 +1580,12 @@ function Search-CpuInfo {
             $txtCpuR23Score.Text = "Cinebench R23: $([string]::Format('{0:N0}', $spec.R23Single)) Single / $([string]::Format('{0:N0}', $spec.R23Multi)) Multi"
         }
         if ($txtCpuNotes) {
-            $notesList = @(
+            $notesList = @()
+            if ($onlineInfo -and $onlineInfo.Summary) {
+                $notesList += "🌐 [Dữ liệu trực tuyến]: $($onlineInfo.Summary)"
+                $notesList += "--------------------------------------------------------"
+            }
+            $notesList += @(
                 "- Chuẩn RAM hỗ trợ: $($spec.RAM)",
                 "- Mainboard khuyến nghị: $($spec.Main)",
                 "- Socket: $($spec.Socket) | TDP: $($spec.TDP) | Bộ nhớ đệm L3: $($spec.L3Cache)"
@@ -1576,13 +1593,13 @@ function Search-CpuInfo {
             if ($item -and $item.Notes) {
                 $notesList += $item.Notes
             }
-            $txtCpuNotes.Text = ($notesList -join "`n")
+            $txtCpuNotes.Text = ($notesList -join "`r`n")
         }
     } elseif ($item) {
         $txtCpuFoundName.Text   = $item.DisplayName
         $txtCpuFoundSocket.Text = $item.Socket
         $txtCpuFoundArch.Text   = $item.Arch
-        if ($txtCpuNotes) { $txtCpuNotes.Text = ($item.Notes -join "`n") }
+        if ($txtCpuNotes) { $txtCpuNotes.Text = ($item.Notes -join "`r`n") }
     }
 
     # Populate Chipset Badges
@@ -1591,18 +1608,21 @@ function Search-CpuInfo {
         $conv = [System.Windows.Media.BrushConverter]::new()
         $chipsetsToRender = @()
 
-        if ($item -and $item.Chipsets) {
-            $chipsetsToRender = $item.Chipsets
-        } elseif ($spec -and $spec.Main) {
+        if ($spec -and $spec.Main) {
             $mainList = $spec.Main.Split(',')
             $isFirst = $true
             foreach ($m in $mainList) {
-                $chipsetsToRender += [PSCustomObject]@{
-                    Name = $m.Trim()
-                    IsPrimary = $isFirst
+                $cleanM = $m.Trim()
+                if (-not [string]::IsNullOrWhiteSpace($cleanM)) {
+                    $chipsetsToRender += [PSCustomObject]@{
+                        Name = $cleanM
+                        IsPrimary = $isFirst
+                    }
+                    $isFirst = $false
                 }
-                $isFirst = $false
             }
+        } elseif ($item -and $item.Chipsets) {
+            $chipsetsToRender = $item.Chipsets
         }
 
         foreach ($c in $chipsetsToRender) {
@@ -1631,9 +1651,17 @@ function Search-CpuInfo {
             $panelChipsets.Children.Add($bd) | Out-Null
         }
     }
+
+    if ($Online) {
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tất tra cứu online và phân tích cấu hình CPU '$q'!"
+    } else {
+        $txtFooterStatus.Text = "• [OK] Đã tra cứu thành công thông số CPU và bo mạch chủ tương thích cho '$q'!"
+    }
 }
 
 if ($btnSearchCpu) { $btnSearchCpu.Add_Click({ Search-CpuInfo }) }
+if ($btnSearchCpuOnline) { $btnSearchCpuOnline.Add_Click({ Search-CpuInfo -Online }) }
+
 if ($cmbCpuSearch) {
     $cmbCpuSearch.Add_SelectionChanged({ Search-CpuInfo })
     # Enter key to search
@@ -1648,15 +1676,31 @@ if ($cmbCpuSearch) {
 # CPU Side-by-Side Comparison Handler
 if ($btnCompareCpu) {
     $btnCompareCpu.Add_Click({
-        $q1 = if ($cmbCpuCompare1 -and $cmbCpuCompare1.Text) { $cmbCpuCompare1.Text.Trim() } else { "14400" }
+        $q1 = if ($cmbCpuCompare1 -and $cmbCpuCompare1.Text) { $cmbCpuCompare1.Text.Trim() } else { "14400F" }
         $q2 = if ($cmbCpuCompare2 -and $cmbCpuCompare2.Text) { $cmbCpuCompare2.Text.Trim() } else { "9800X3D" }
         
         $txtFooterStatus.Text = "• [Đang xử lý] Đang tính toán và so sánh hiệu năng: $q1 VS $q2..."
+        Invoke-VUONGTTDoEvents
         $cmp = Compare-VUONGTTCpu -Cpu1Query $q1 -Cpu2Query $q2
         if ($txtCpuCompareReport) {
             $txtCpuCompareReport.Text = $cmp.ReportText
         }
         $txtFooterStatus.Text = "• [OK] Đã hoàn tất so sánh đối đầu $($cmp.Cpu1.Name) và $($cmp.Cpu2.Name)!"
+    })
+}
+
+if ($btnCompareCpuOnline) {
+    $btnCompareCpuOnline.Add_Click({
+        $q1 = if ($cmbCpuCompare1 -and $cmbCpuCompare1.Text) { $cmbCpuCompare1.Text.Trim() } else { "14400F" }
+        $q2 = if ($cmbCpuCompare2 -and $cmbCpuCompare2.Text) { $cmbCpuCompare2.Text.Trim() } else { "9800X3D" }
+        
+        $txtFooterStatus.Text = "• [Đang tìm kiếm online] Đang truy vấn Internet và so sánh đối đầu: $q1 VS $q2..."
+        Invoke-VUONGTTDoEvents
+        $cmp = Compare-VUONGTTCpu -Cpu1Query $q1 -Cpu2Query $q2 -EnableOnlineSearch
+        if ($txtCpuCompareReport) {
+            $txtCpuCompareReport.Text = $cmp.ReportText
+        }
+        $txtFooterStatus.Text = "• [OK] Đã hoàn tất so sánh đối đầu online $($cmp.Cpu1.Name) và $($cmp.Cpu2.Name)!"
     })
 }
 

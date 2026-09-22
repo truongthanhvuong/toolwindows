@@ -1184,18 +1184,28 @@
                                     <ComboBox x:Name="cmbCpuSearch" IsEditable="True" Height="34" FontSize="13" VerticalContentAlignment="Center" SelectedIndex="0">
                                         <ComboBoxItem Content="Core Ultra 9 285K"/>
                                         <ComboBoxItem Content="Ryzen 7 9800X3D"/>
-                                        <ComboBoxItem Content="Core i5-14400"/>
-                                        <ComboBoxItem Content="Core i7-14700K"/>
                                         <ComboBoxItem Content="Core i9-14900K"/>
+                                        <ComboBoxItem Content="Core i7-14700K"/>
+                                        <ComboBoxItem Content="Core i5-14400F"/>
                                         <ComboBoxItem Content="Core i5-12400F"/>
+                                        <ComboBoxItem Content="Ryzen 9 9950X"/>
                                         <ComboBoxItem Content="Ryzen 7 7800X3D"/>
-                                        <ComboBoxItem Content="Ryzen 5 7600"/>
+                                        <ComboBoxItem Content="Ryzen 5 7600X"/>
+                                        <ComboBoxItem Content="Ryzen 7 5700X3D"/>
                                         <ComboBoxItem Content="Ryzen 5 5600X"/>
-                                        <ComboBoxItem Content="Core i5-10400"/>
+                                        <ComboBoxItem Content="Core i5-10400F"/>
                                         <ComboBoxItem Content="Core i5-9400F"/>
                                         <ComboBoxItem Content="Core i5-6500"/>
+                                        <ComboBoxItem Content="Core i7-4790K"/>
+                                        <ComboBoxItem Content="Core i5-3470"/>
+                                        <ComboBoxItem Content="Xeon E5-2678v3"/>
+                                        <ComboBoxItem Content="Core 2 Quad Q9550"/>
+                                        <ComboBoxItem Content="AMD FX-8350"/>
                                     </ComboBox>
-                                    <Button x:Name="btnSearchCpu" Grid.Column="1" Content="🔎 Tra Cứu" Background="#0284C7" Style="{StaticResource ActionBtn}" Margin="8,0,0,0" Width="130" Height="34"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                                        <Button x:Name="btnSearchCpu" Content="🔎 Tra Cứu" Background="#0284C7" Style="{StaticResource ActionBtn}" Width="120" Height="34"/>
+                                        <Button x:Name="btnSearchCpuOnline" Content="🌐 Tra Cứu Online" Background="#0D9488" Style="{StaticResource ActionBtn}" Padding="12,0,12,0" Height="34" Margin="6,0,0,0" ToolTip="Tìm kiếm thông số CPU và Socket Mainboard trên Internet theo thời gian thực"/>
+                                    </StackPanel>
                                 </Grid>
                                 <TextBlock Text="💡 Gõ mã CPU (vd: 14400, 9800X, 12400F, 5600X, 285K) hoặc Chipset (Z890, B760, B650, H610, X670) rồi ấn Enter để xem chi tiết." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,6,0,0"/>
                             </StackPanel>                        </Border>
@@ -1263,29 +1273,48 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="CPU thứ 1:" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,4"/>
-                                        <ComboBox x:Name="cmbCpuCompare1" IsEditable="True" Height="32" SelectedIndex="2">
-                                            <ComboBoxItem Content="Core i5-14400"/>
+                                        <ComboBox x:Name="cmbCpuCompare1" IsEditable="True" Height="32" SelectedIndex="0">
+                                            <ComboBoxItem Content="Core i5-14400F"/>
                                             <ComboBoxItem Content="Core Ultra 9 285K"/>
                                             <ComboBoxItem Content="Ryzen 7 9800X3D"/>
+                                            <ComboBoxItem Content="Core i9-14900K"/>
                                             <ComboBoxItem Content="Core i7-14700K"/>
+                                            <ComboBoxItem Content="Core i5-13600K"/>
                                             <ComboBoxItem Content="Core i5-12400F"/>
-                                            <ComboBoxItem Content="Ryzen 5 5600X"/>
+                                            <ComboBoxItem Content="Ryzen 9 9950X"/>
                                             <ComboBoxItem Content="Ryzen 7 7800X3D"/>
-                                            <ComboBoxItem Content="Core i5-10400"/>
+                                            <ComboBoxItem Content="Ryzen 5 7600X"/>
+                                            <ComboBoxItem Content="Ryzen 7 5700X3D"/>
+                                            <ComboBoxItem Content="Ryzen 5 5600X"/>
+                                            <ComboBoxItem Content="Core i5-10400F"/>
+                                            <ComboBoxItem Content="Xeon E5-2678v3"/>
+                                            <ComboBoxItem Content="Core i7-4790K"/>
                                         </ComboBox>
-                                    </StackPanel>                                    <StackPanel Grid.Column="2">
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
                                         <TextBlock Text="CPU thứ 2:" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,4"/>
-                                        <ComboBox x:Name="cmbCpuCompare2" IsEditable="True" Height="32" SelectedIndex="0">
-                                            <ComboBoxItem Content="Ryzen 7 9800X3D"/>
+                                        <ComboBox x:Name="cmbCpuCompare2" IsEditable="True" Height="32" SelectedIndex="2">
+                                            <ComboBoxItem Content="Core i5-14400F"/>
                                             <ComboBoxItem Content="Core Ultra 9 285K"/>
-                                            <ComboBoxItem Content="Core i5-14400"/>
+                                            <ComboBoxItem Content="Ryzen 7 9800X3D"/>
+                                            <ComboBoxItem Content="Core i9-14900K"/>
                                             <ComboBoxItem Content="Core i7-14700K"/>
+                                            <ComboBoxItem Content="Core i5-13600K"/>
                                             <ComboBoxItem Content="Core i5-12400F"/>
-                                            <ComboBoxItem Content="Ryzen 5 5600X"/>
+                                            <ComboBoxItem Content="Ryzen 9 9950X"/>
                                             <ComboBoxItem Content="Ryzen 7 7800X3D"/>
-                                            <ComboBoxItem Content="Core i5-10400"/>
+                                            <ComboBoxItem Content="Ryzen 5 7600X"/>
+                                            <ComboBoxItem Content="Ryzen 7 5700X3D"/>
+                                            <ComboBoxItem Content="Ryzen 5 5600X"/>
+                                            <ComboBoxItem Content="Core i5-10400F"/>
+                                            <ComboBoxItem Content="Xeon E5-2678v3"/>
+                                            <ComboBoxItem Content="Core i7-4790K"/>
                                         </ComboBox>
-                                    </StackPanel>                                    <Button x:Name="btnCompareCpu" Grid.Column="4" Content="⚖️ So Sánh Đối Đầu" VerticalAlignment="Bottom" Height="32" Background="#B45309" Style="{StaticResource ActionBtn}" Padding="14,0,14,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Bottom">
+                                        <Button x:Name="btnCompareCpu" Content="⚖️ So Sánh Đối Đầu" Height="32" Background="#B45309" Style="{StaticResource ActionBtn}" Padding="14,0,14,0"/>
+                                        <Button x:Name="btnCompareCpuOnline" Content="🌐 So Sánh &amp; Tìm Online" Height="32" Background="#0D9488" Style="{StaticResource ActionBtn}" Padding="12,0,12,0" Margin="6,0,0,0" ToolTip="Tìm kiếm thông số CPU trên Internet nếu chưa có trong máy và so sánh đối đầu"/>
+                                    </StackPanel>
                                 </Grid>
                                 <TextBox x:Name="txtCpuCompareReport" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" FontFamily="Segoe UI, Tahoma, Arial, sans-serif" FontSize="12.5" Height="220" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Text="Chọn hoặc gõ 2 CPU cần so sánh bên trên rồi bấm 'So Sánh Đối Đầu' để phân tích chi tiết thông số, sức mạnh render và gaming."/>
                             </StackPanel>                        </Border>
