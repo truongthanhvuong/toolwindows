@@ -11,63 +11,138 @@ function Get-LaptopBatteryHealth {
         return $script:cachedBatteryHealth
     }
 
-    $battery = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $battery) {
-        $noBat = [PSCustomObject]@{
-            HasBattery               = $false
-            DesignCapacity           = "Không có pin (Máy để bàn Desktop)"
-            FullChargeCapacity       = "N/A"
-            DesignCapacityValue      = 0
-            FullChargeCapacityValue  = 0
-            WearLevelPercent         = 0
-            HealthPercent            = 100
-            HealthStatus             = "N/A - Desktop PC"
-            CycleCount               = "N/A"
-            EstimatedChargeRemaining = "N/A"
-            BatteryStatus            = "Cắm nguồn AC trực tiếp"
-        }
-        $script:cachedBatteryHealth = $noBat
-        return $noBat
-    }
-
     $designCap = 0
     $fullCap = 0
     $cycleCount = "N/A"
+    $hasBattery = $false
+    $batterySource = "Unknown"
+    $batteryStatusStr = "Bình thường"
+    $estimatedChargeStr = "N/A"
 
-    # 1. Thử lấy từ WMI root\wmi (BatteryStaticData & BatteryFullChargedCapacity & BatteryCycleCount)
+    # =========================================================================
+    # TẦNG 1: THỬ LẤY TỪ CIM / WMI Win32_Battery & Win32_PortableBattery
+    # =========================================================================
+    $battery = $null
+    try {
+        $battery = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $battery) {
+            $battery = Get-WmiObject -Class Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1
+        }
+        if ($battery) {
+            $hasBattery = $true
+            $batterySource = "Win32_Battery"
+            if ($battery.EstimatedChargeRemaining) {
+                $estimatedChargeStr = "$($battery.EstimatedChargeRemaining)%"
+            }
+            if ($battery.BatteryStatus) {
+                $batteryStatusStr = switch ($battery.BatteryStatus) {
+                    1 { "Đang xả pin (Discharging)" }
+                    2 { "Đang cắm sạc (AC - Charging)" }
+                    3 { "Đầy pin (Fully Charged)" }
+                    4 { "Pin yếu (Low)" }
+                    5 { "Pin cực yếu (Critical)" }
+                    default { "Bình thường" }
+                }
+            }
+            if ($battery.DesignCapacity -and [int]$battery.DesignCapacity -gt 0) {
+                $designCap = [int]$battery.DesignCapacity
+            }
+            if ($battery.FullChargeCapacity -and [int]$battery.FullChargeCapacity -gt 0) {
+                $fullCap = [int]$battery.FullChargeCapacity
+            }
+        }
+    } catch {}
+
+    # Thử thêm Win32_PortableBattery nếu chưa có DesignCapacity
+    if ($designCap -le 0) {
+        try {
+            $pBat = Get-CimInstance Win32_PortableBattery -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($pBat) {
+                $hasBattery = $true
+                if ($pBat.DesignCapacity -and [int]$pBat.DesignCapacity -gt 0) {
+                    $designCap = [int]$pBat.DesignCapacity
+                }
+            }
+        } catch {}
+    }
+
+    # =========================================================================
+    # TẦNG 2: THỬ LẤY TỪ WMI root\wmi (BatteryStaticData, BatteryFullChargedCapacity, BatteryCycleCount, BatteryStatus)
+    # =========================================================================
     try {
         $staticData = Get-CimInstance -Namespace root\wmi -ClassName BatteryStaticData -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($staticData) {
-            if ($staticData.DesignedCapacity -and [int]$staticData.DesignedCapacity -gt 0) {
-                $designCap = [int]$staticData.DesignedCapacity
-            } elseif ($staticData.DesignCapacity -and [int]$staticData.DesignCapacity -gt 0) {
-                $designCap = [int]$staticData.DesignCapacity
+            $hasBattery = $true
+            if ($designCap -le 0) {
+                if ($staticData.DesignedCapacity -and [int]$staticData.DesignedCapacity -gt 0) {
+                    $designCap = [int]$staticData.DesignedCapacity
+                } elseif ($staticData.DesignCapacity -and [int]$staticData.DesignCapacity -gt 0) {
+                    $designCap = [int]$staticData.DesignCapacity
+                }
             }
         }
+
         $fullCapData = Get-CimInstance -Namespace root\wmi -ClassName BatteryFullChargedCapacity -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($fullCapData -and $fullCapData.FullChargedCapacity -and [int]$fullCapData.FullChargedCapacity -gt 0) {
-            $fullCap = [int]$fullCapData.FullChargedCapacity
+            $hasBattery = $true
+            if ($fullCap -le 0) {
+                $fullCap = [int]$fullCapData.FullChargedCapacity
+            }
         }
+
         $cycleData = Get-CimInstance -Namespace root\wmi -ClassName BatteryCycleCount -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($cycleData -and $cycleData.CycleCount) {
-            $cycleCount = "$($cycleData.CycleCount)"
+            $hasBattery = $true
+            if ($cycleCount -eq "N/A" -or [string]::IsNullOrWhiteSpace($cycleCount)) {
+                $cycleCount = "$($cycleData.CycleCount)"
+            }
+        }
+
+        if ($estimatedChargeStr -eq "N/A") {
+            $wmiStatus = Get-CimInstance -Namespace root\wmi -ClassName BatteryStatus -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($wmiStatus -and $wmiStatus.RemainingCapacity -and $fullCap -gt 0) {
+                $pct = [math]::Round(($wmiStatus.RemainingCapacity / $fullCap) * 100)
+                $estimatedChargeStr = "$pct%"
+            }
         }
     } catch {}
 
-    # 2. Thử lấy từ Win32_Battery nếu WMI static data thiếu
+    # =========================================================================
+    # TẦNG 3: KIỂM TRA QUA WIN32 API POWERSTATUS & PNP BATTERY CONTROLLER
+    # =========================================================================
     try {
-        if ($designCap -le 0 -and $battery.DesignCapacity -and [int]$battery.DesignCapacity -gt 0) {
-            $designCap = [int]$battery.DesignCapacity
-        }
-        if ($fullCap -le 0 -and $battery.FullChargeCapacity -and [int]$battery.FullChargeCapacity -gt 0) {
-            $fullCap = [int]$battery.FullChargeCapacity
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
+        $pStatus = [System.Windows.Forms.SystemInformation]::PowerStatus
+        if ($pStatus -and $pStatus.BatteryChargeStatus -ne [System.Windows.Forms.BatteryChargeStatus]::NoSystemBattery) {
+            $hasBattery = $true
+            if ($estimatedChargeStr -eq "N/A" -and $pStatus.BatteryLifePercent -ge 0) {
+                $estimatedChargeStr = "$([math]::Round($pStatus.BatteryLifePercent * 100))%"
+            }
+            if ($batteryStatusStr -eq "Bình thường") {
+                if ($pStatus.PowerLineStatus -eq [System.Windows.Forms.PowerLineStatus]::Online) {
+                    $batteryStatusStr = "Đang cắm sạc (AC Online)"
+                } else {
+                    $batteryStatusStr = "Đang dùng pin (Battery Discharging)"
+                }
+            }
         }
     } catch {}
 
-    # 3. Cơ chế cứu hộ chuẩn Windows (Fallback): Chạy powercfg /batteryreport /xml ngầm
-    # Đây là phương thức đọc trực tiếp kernel ACPI của Microsoft, giải quyết triệt để lỗi DesignedCapacity = 0 trên laptop OEM
-    if ($designCap -le 0 -or $fullCap -le 0 -or $cycleCount -eq "N/A") {
-        $tempXml = [System.IO.Path]::Combine($env:TEMP, "vuongtt_bat_check_$([Guid]::NewGuid().ToString('N')).xml")
+    # Kiểm tra phần cứng Battery PnP Device (Microsoft ACPI-Compliant Control Method Battery)
+    try {
+        $pnpBat = Get-CimInstance Win32_PnPEntity -Filter "PNPClass='Battery'" -ErrorAction SilentlyContinue | Where-Object { $_.DeviceID -like "*PNP0C0A*" -or $_.Name -like "*Control Method Battery*" -or $_.Name -like "*Pin*" }
+        if ($pnpBat) {
+            $hasBattery = $true
+        }
+    } catch {}
+
+    # =========================================================================
+    # TẦNG 4: CHẠY POWERCFG /BATTERYREPORT (ACPI KERNEL DEEP SCAN)
+    # Đây là nguồn chuẩn xác nhất của Windows OS, cứu hộ khi WMI bị thiếu
+    # =========================================================================
+    if ($designCap -le 0 -or $fullCap -le 0 -or $cycleCount -eq "N/A" -or -not $hasBattery) {
+        $reportBase = [System.IO.Path]::Combine($env:TEMP, "vuongtt_bat_check_$([Guid]::NewGuid().ToString('N'))")
+        $tempXml = "$reportBase.xml"
         try {
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = "powercfg.exe"
@@ -76,30 +151,34 @@ function Get-LaptopBatteryHealth {
             $psi.UseShellExecute = $false
             $psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
             $proc = [System.Diagnostics.Process]::Start($psi)
-            if ($proc.WaitForExit(4000)) {
+            
+            # Cho phép chạy tối đa 12 giây để đọc đầy đủ ACPI kernel
+            if ($proc.WaitForExit(12000)) {
                 if (Test-Path -LiteralPath $tempXml) {
                     [xml]$xml = Get-Content -LiteralPath $tempXml -Raw -ErrorAction SilentlyContinue
                     $batNodes = $xml.SelectNodes("//Battery")
                     if ($batNodes -and $batNodes.Count -gt 0) {
-                        $bNode = $batNodes[0]
-                        if ($designCap -le 0 -and $bNode.DesignCapacity) {
-                            $rawD = ($bNode.DesignCapacity -replace '[^\d]')
-                            $valD = 0
-                            if ([int]::TryParse($rawD, [ref]$valD) -and $valD -gt 0) {
-                                $designCap = $valD
+                        $hasBattery = $true
+                        foreach ($bNode in $batNodes) {
+                            if ($designCap -le 0 -and $bNode.DesignCapacity) {
+                                $rawD = ($bNode.DesignCapacity -replace '[^\d]')
+                                $valD = 0
+                                if ([int]::TryParse($rawD, [ref]$valD) -and $valD -gt 0) {
+                                    $designCap = $valD
+                                }
                             }
-                        }
-                        if ($fullCap -le 0 -and $bNode.FullChargeCapacity) {
-                            $rawF = ($bNode.FullChargeCapacity -replace '[^\d]')
-                            $valF = 0
-                            if ([int]::TryParse($rawF, [ref]$valF) -and $valF -gt 0) {
-                                $fullCap = $valF
+                            if ($fullCap -le 0 -and $bNode.FullChargeCapacity) {
+                                $rawF = ($bNode.FullChargeCapacity -replace '[^\d]')
+                                $valF = 0
+                                if ([int]::TryParse($rawF, [ref]$valF) -and $valF -gt 0) {
+                                    $fullCap = $valF
+                                }
                             }
-                        }
-                        if (($cycleCount -eq "N/A" -or [string]::IsNullOrWhiteSpace($cycleCount)) -and $bNode.CycleCount) {
-                            $rawC = ($bNode.CycleCount -replace '[^\d]')
-                            if ($rawC) {
-                                $cycleCount = "$rawC"
+                            if (($cycleCount -eq "N/A" -or [string]::IsNullOrWhiteSpace($cycleCount)) -and $bNode.CycleCount) {
+                                $rawC = ($bNode.CycleCount -replace '[^\d]')
+                                if ($rawC) {
+                                    $cycleCount = "$rawC"
+                                }
                             }
                         }
                     }
@@ -116,7 +195,109 @@ function Get-LaptopBatteryHealth {
         }
     }
 
-    # 4. Tính toán độ chai pin (Wear Level) và Sức khỏe (Health Status)
+    # =========================================================================
+    # TẦNG 5: NẾU VẪN THIẾU -> FALLBACK THỬ POWERCFG HTML REPORT & REGEX PARSE
+    # =========================================================================
+    if (($designCap -le 0 -or $fullCap -le 0) -and $hasBattery) {
+        $tempHtml = [System.IO.Path]::Combine($env:TEMP, "vuongtt_bat_html_$([Guid]::NewGuid().ToString('N')).html")
+        try {
+            $psi2 = New-Object System.Diagnostics.ProcessStartInfo
+            $psi2.FileName = "powercfg.exe"
+            $psi2.Arguments = "/batteryreport /output `"$tempHtml`""
+            $psi2.CreateNoWindow = $true
+            $psi2.UseShellExecute = $false
+            $proc2 = [System.Diagnostics.Process]::Start($psi2)
+            if ($proc2.WaitForExit(10000)) {
+                if (Test-Path -LiteralPath $tempHtml) {
+                    $htmlContent = Get-Content -LiteralPath $tempHtml -Raw -ErrorAction SilentlyContinue
+                    if ($htmlContent) {
+                        # Regex tìm DESIGN CAPACITY
+                        if ($designCap -le 0 -and $htmlContent -match "(?i)DESIGN\s+CAPACITY[\s\S]*?<td[^>]*>\s*([\d,]+)\s*mWh") {
+                            $valStr = $matches[1] -replace '[^\d]'
+                            $valInt = 0
+                            if ([int]::TryParse($valStr, [ref]$valInt) -and $valInt -gt 0) { $designCap = $valInt }
+                        }
+                        # Regex tìm FULL CHARGE CAPACITY
+                        if ($fullCap -le 0 -and $htmlContent -match "(?i)FULL\s+CHARGE\s+CAPACITY[\s\S]*?<td[^>]*>\s*([\d,]+)\s*mWh") {
+                            $valStr = $matches[1] -replace '[^\d]'
+                            $valInt = 0
+                            if ([int]::TryParse($valStr, [ref]$valInt) -and $valInt -gt 0) { $fullCap = $valInt }
+                        }
+                        # Regex tìm CYCLE COUNT
+                        if ($cycleCount -eq "N/A" -and $htmlContent -match "(?i)CYCLE\s+COUNT[\s\S]*?<td[^>]*>\s*([\d,]+)") {
+                            $valStr = $matches[1] -replace '[^\d]'
+                            if ($valStr) { $cycleCount = $valStr }
+                        }
+                    }
+                    Remove-Item -LiteralPath $tempHtml -Force -ErrorAction SilentlyContinue
+                }
+            } else {
+                try { $proc2.Kill() } catch {}
+            }
+        } catch {}
+        finally {
+            if (Test-Path -LiteralPath $tempHtml) {
+                Remove-Item -LiteralPath $tempHtml -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    # =========================================================================
+    # TẦNG 6: PHÂN BIỆT RÕ RÀNG LAPTOP VS DESKTOP NẾU HOÀN TOÀN KHÔNG CÓ PIN
+    # =========================================================================
+    if (-not $hasBattery) {
+        $isChassisLaptop = $false
+        try {
+            $enc = Get-CimInstance Win32_SystemEnclosure -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($enc -and $enc.ChassisTypes) {
+                if ($enc.ChassisTypes | Where-Object { $_ -in @(8, 9, 10, 11, 12, 14, 30, 31, 32) }) {
+                    $isChassisLaptop = $true
+                }
+            }
+        } catch {}
+
+        if ($isChassisLaptop) {
+            # Là Laptop nhưng pin bị tháo, bị chai chết 0V, hoặc driver ACPI bị lỗi
+            $laptopNoBat = [PSCustomObject]@{
+                HasBattery               = $true
+                IsLaptopNoBattery        = $true
+                DesignCapacity           = "Không thể đọc dữ liệu pin"
+                FullChargeCapacity       = "Pin có thể bị tháo rời hoặc chai kiệt 0V"
+                DesignCapacityValue      = 0
+                FullChargeCapacityValue  = 0
+                WearLevelPercent         = $null
+                HealthPercent            = $null
+                HealthStatus             = "Cần kiểm tra pin vật lý hoặc driver ACPI"
+                CycleCount               = "N/A"
+                EstimatedChargeRemaining = "Cắm nguồn AC"
+                BatteryStatus            = "Không nhận diện được cell pin (Cắm sạc trực tiếp)"
+            }
+            $script:cachedBatteryHealth = $laptopNoBat
+            return $laptopNoBat
+        }
+
+        # Thực sự là máy tính để bàn (Desktop PC)
+        $noBat = [PSCustomObject]@{
+            HasBattery               = $false
+            IsLaptopNoBattery        = $false
+            DesignCapacity           = "Không có pin (Máy để bàn Desktop)"
+            FullChargeCapacity       = "N/A"
+            DesignCapacityValue      = 0
+            FullChargeCapacityValue  = 0
+            WearLevelPercent         = 0
+            HealthPercent            = 100
+            HealthStatus             = "N/A - Desktop PC"
+            CycleCount               = "N/A"
+            EstimatedChargeRemaining = "N/A"
+            BatteryStatus            = "Cắm nguồn AC trực tiếp"
+        }
+        $script:cachedBatteryHealth = $noBat
+        return $noBat
+    }
+
+    # =========================================================================
+    # TẦNG 7: TÍNH TOÁN ĐỘ CHAI PIN & SỨC KHỎE
+    # =========================================================================
     $wearLevel = $null
     $healthPercent = $null
     if ($designCap -gt 0 -and $fullCap -gt 0) {
@@ -130,21 +311,13 @@ function Get-LaptopBatteryHealth {
         }
     }
 
-    $statusStr = switch ($battery.BatteryStatus) {
-        1 { "Đang xả pin (Discharging)" }
-        2 { "Đang cắm sạc (AC - Charging)" }
-        3 { "Đầy pin (Fully Charged)" }
-        4 { "Pin yếu (Low)" }
-        5 { "Pin cực yếu (Critical)" }
-        default { "Bình thường" }
-    }
-
     $designStr = if ($designCap -gt 0) { "$designCap mWh" } else { "Không xác định (OEM không cung cấp)" }
     $fullStr   = if ($fullCap -gt 0) { "$fullCap mWh" } else { "Không xác định" }
-    $healthStr = if ($null -ne $healthPercent) { "$healthPercent%" } else { "Không xác định" }
+    $healthStr = if ($null -ne $healthPercent) { "$healthPercent%" } else { "Chưa thể đo" }
 
     $batObj = [PSCustomObject]@{
         HasBattery               = $true
+        IsLaptopNoBattery        = $false
         DesignCapacity           = $designStr
         FullChargeCapacity       = $fullStr
         DesignCapacityValue      = $designCap
@@ -153,8 +326,8 @@ function Get-LaptopBatteryHealth {
         HealthPercent            = $healthPercent
         HealthStatus             = $healthStr
         CycleCount               = $cycleCount
-        EstimatedChargeRemaining = "$($battery.EstimatedChargeRemaining)%"
-        BatteryStatus            = $statusStr
+        EstimatedChargeRemaining = $estimatedChargeStr
+        BatteryStatus            = $batteryStatusStr
     }
     $script:cachedBatteryHealth = $batObj
     return $batObj
@@ -168,7 +341,7 @@ function Export-BatteryReport {
             Start-Process $reportPath
             return "[OK] Đã xuất báo cáo pin HTML chi tiết thành công tại: $reportPath"
         } else {
-            return "Không thể tạo báo cáo pin (Có thể thiết bị là máy bàn Desktop không có pin)."
+            return "Không thể tạo báo cáo pin (Có thể thiết bị là máy để bàn Desktop không có pin hoặc Windows hạn chế quyền tạo báo cáo)."
         }
     } catch {
         return "Lỗi: $($_.Exception.Message)"

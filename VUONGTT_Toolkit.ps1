@@ -2856,6 +2856,15 @@ function Refresh-BatteryDisplay {
     param([switch]$ForceRefresh)
     $bat = Get-LaptopBatteryHealth -ForceRefresh:$ForceRefresh
     if ($bat.HasBattery) {
+        if ($bat.IsLaptopNoBattery) {
+            $lblBatteryStatus.Text    = "Thiết bị: Laptop / Máy tính xách tay (Cắm sạc AC trực tiếp)"
+            $lblBatteryDesignCap.Text = "Tình trạng: $($bat.DesignCapacity)"
+            $lblBatteryFullCap.Text   = "Chi tiết: $($bat.FullChargeCapacity)"
+            $lblBatteryWear.Text      = "Độ chai pin: Không thể đo (Pin bị tháo rời hoặc chai kiệt 0V)"
+            $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::DarkOrange
+            return
+        }
+
         $lblBatteryStatus.Text    = "Tình trạng: $($bat.BatteryStatus) ($($bat.EstimatedChargeRemaining))"
         $lblBatteryDesignCap.Text = "Dung lượng thiết kế: $($bat.DesignCapacity)"
         
@@ -2875,7 +2884,7 @@ function Refresh-BatteryDisplay {
                 $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::ForestGreen
             }
         } else {
-            $lblBatteryWear.Text = "Độ chai pin: Chưa xác định (Dung lượng sạc đầy: $($bat.FullChargeCapacity))"
+            $lblBatteryWear.Text = "Độ chai pin: Chưa xác định (Dung lượng sạc đầy: $($bat.FullChargeCapacity))`n👉 Vui lòng cắm sạc đầy pin hoặc bấm 'Xuất Báo Cáo HTML' để xem chi tiết."
             $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
         }
     } else {
@@ -2888,6 +2897,7 @@ function Refresh-BatteryDisplay {
 }
 
 $btnRefreshBattery.Add_Click({
+    if ($lblBatteryStatus) { $lblBatteryStatus.Text = "Đang đo lại dung lượng & độ chai pin (ACPI Deep Scan)..." }
     Invoke-VUONGTTDoEvents
     Refresh-BatteryDisplay -ForceRefresh
 })
