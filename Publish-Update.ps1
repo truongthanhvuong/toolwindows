@@ -11,6 +11,17 @@ param(
 $rootDir = $PSScriptRoot
 if (-not $rootDir) { $rootDir = (Get-Location).Path }
 
+# Yeu cau dac quyen Administrator de build va chay smoke test
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host ">>> Dang tu dong nang quyen Administrator cho Publish-Update.ps1..." -ForegroundColor Yellow
+    $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    if ($Version) { $argList += " -Version `"$Version`"" }
+    if ($ChangelogMessage) { $argList += " -ChangelogMessage `"$ChangelogMessage`"" }
+    Start-Process powershell.exe -ArgumentList $argList -Verb RunAs
+    Exit
+}
+
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "   VUONGTT TOOLKIT 2026 - TIEN TRINH PHAT HANH BAN MOI   " -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -114,9 +125,25 @@ $hasCrashed = $false
 for ($s = 1; $s -le $testDurationSec; $s++) {
     Start-Sleep -Seconds 1
     Write-Host " -> Theo doi do on dinh he thong... ($s/$testDurationSec s)" -ForegroundColor Gray
-    if ($smokeProc.HasExited) {
+    
+    # 1. Neu tien trinh chinh bi thoat voi ma loi != 0 -> Crash chac chan
+    if ($smokeProc.HasExited -and $smokeProc.ExitCode -ne 0) {
         $hasCrashed = $true
         break
+    }
+    
+    # 2. Neu tien trinh chinh thoat voi ExitCode == 0, kiem tra tien trinh PowerShell con
+    if ($smokeProc.HasExited -and $smokeProc.ExitCode -eq 0) {
+        $childPs = Get-Process -Name "powershell" -ErrorAction SilentlyContinue | Where-Object {
+            try {
+                $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+                $cmd -like "*VUONGTT_Toolkit*"
+            } catch { $false }
+        }
+        if (-not $childPs) {
+            $hasCrashed = $true
+            break
+        }
     }
 }
 

@@ -10,3 +10,5 @@ obj/
 .idea/
 launcher_info.txt
 *.lic
+*.old*.exe
+

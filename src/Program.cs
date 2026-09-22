@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.908.72")]
-[assembly: AssemblyFileVersion("20.5.908.72")]
+[assembly: AssemblyVersion("20.5.908.92")]
+[assembly: AssemblyFileVersion("20.5.908.92")]
 
 namespace VUONGTT
 {
@@ -59,7 +59,7 @@ namespace VUONGTT
                     pb.Location = new Point(22, 78);
 
                     Label lblVer = new Label();
-                    lblVer.Text = "v20.5.908.90 • Professional Standalone (All-in-One)";
+                    lblVer.Text = "v20.5.908.92 • Professional Standalone (All-in-One)";
                     lblVer.ForeColor = Color.FromArgb(148, 163, 184);
                     lblVer.Font = new Font("Segoe UI", 7.5f, FontStyle.Regular);
                     lblVer.Location = new Point(22, 98);
@@ -113,6 +113,19 @@ namespace VUONGTT
         [STAThread]
         static void Main(string[] args)
         {
+            bool isSmokeTest = false;
+            if (args != null && args.Length > 0)
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (string.Equals(args[i], "--smoke-test", StringComparison.OrdinalIgnoreCase))
+                    {
+                        isSmokeTest = true;
+                        break;
+                    }
+                }
+            }
+
             try
             {
                 // Kiểm tra và tự động yêu cầu quyền Administrator
@@ -123,14 +136,31 @@ namespace VUONGTT
                     startInfo.UseShellExecute = true;
                     startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
                     startInfo.FileName = Application.ExecutablePath;
+                    if (args != null && args.Length > 0)
+                    {
+                        startInfo.Arguments = string.Join(" ", args);
+                    }
                     startInfo.Verb = "runas";
                     try
                     {
-                        Process.Start(startInfo);
+                        Process elevated = Process.Start(startInfo);
+                        if (isSmokeTest && elevated != null)
+                        {
+                            elevated.WaitForExit();
+                            Environment.Exit(elevated.ExitCode);
+                            return;
+                        }
                     }
                     catch
                     {
-                        MessageBox.Show("Vui lòng đồng ý cấp quyền Quản trị viên (Run as Administrator) để sử dụng VUONGTT Tool Pro 2026.", "Yêu cầu quyền Administrator", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        if (!isSmokeTest)
+                        {
+                            MessageBox.Show("Vui lòng đồng ý cấp quyền Quản trị viên (Run as Administrator) để sử dụng VUONGTT Tool Pro 2026.", "Yêu cầu quyền Administrator", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                        else
+                        {
+                            Environment.Exit(1);
+                        }
                     }
                     return;
                 }
@@ -231,19 +261,6 @@ namespace VUONGTT
 
                 DateTime startTime = DateTime.UtcNow;
                 Process proc = Process.Start(psi);
-
-                bool isSmokeTest = false;
-                if (args != null && args.Length > 0)
-                {
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        if (string.Equals(args[i], "--smoke-test", StringComparison.OrdinalIgnoreCase))
-                        {
-                            isSmokeTest = true;
-                            break;
-                        }
-                    }
-                }
 
                 // Giữ Splash Screen trong khoảng 2.0 giây cho đến khi cửa sổ chính WPF sẵn sàng
                 Thread.Sleep(2000);
