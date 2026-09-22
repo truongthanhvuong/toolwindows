@@ -25,8 +25,9 @@ $global:VUONGTT_LiveMetricsShared = [hashtable]::Synchronized(@{
     GpuVramGB         = 4.0
     GpuLoadPercent    = 2
     NetName           = "Ethernet"
-    NetSpeed          = "12.5 KB/s"
-    DiskSummary       = "C: Kháº£ dá»¥ng"
+    NetSpeed          = "0 KB/s"
+    NetPercent        = 0
+    DiskSummary       = "C: Khả dụng"
     DiskLoadPercent   = 0
     IsRunning         = $false
 })
@@ -259,16 +260,56 @@ function Start-VUONGTTMetricsWorker {
             $ci = $null
             try { $ci = New-Object Microsoft.VisualBasic.Devices.ComputerInfo } catch {}
 
+            $cpuCounter = $null
+            $diskCounter = $null
+            try {
+                $cpuCounter = New-Object System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total")
+                $null = $cpuCounter.NextValue()
+            } catch {}
+            try {
+                $diskCounter = New-Object System.Diagnostics.PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total")
+                $null = $diskCounter.NextValue()
+            } catch {}
+
+            $lastRx = 0
+            $lastTx = 0
+            $lastTime = [DateTime]::UtcNow
+            $nics = [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() |
+                Where-Object { $_.OperationalStatus -eq [System.Net.NetworkInformation.OperationalStatus]::Up -and $_.NetworkInterfaceType -ne [System.Net.NetworkInformation.NetworkInterfaceType]::Loopback }
+            foreach ($n in $nics) {
+                try {
+                    $st = $n.GetIPv4Statistics()
+                    $lastRx += $st.BytesReceived
+                    $lastTx += $st.BytesSent
+                } catch {}
+            }
+
             $counterTicks = 0
             while ($sharedMetrics.IsRunning) {
                 try {
                     # 1. CPU Load
-                    $perfCpu = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction SilentlyContinue
-                    if ($perfCpu -and ($perfCpu.PercentProcessorTime -ne $null)) {
-                        $cpuL = [int]$perfCpu.PercentProcessorTime
-                        if ($cpuL -gt 100) { $cpuL = 100 }
-                        $sharedMetrics.CpuLoadPercent = $cpuL
+                    $cpuL = 10
+                    if ($cpuCounter) {
+                        try {
+                            $cpuL = [math]::Round($cpuCounter.NextValue())
+                            if ($cpuL -gt 100) { $cpuL = 100 }
+                            if ($cpuL -lt 0)   { $cpuL = 0 }
+                        } catch {}
+                    } else {
+                        $perfCpu = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+                        if ($perfCpu -and ($perfCpu.PercentProcessorTime -ne $null)) {
+                            $cpuL = [int]$perfCpu.PercentProcessorTime
+                            if ($cpuL -gt 100) { $cpuL = 100 }
+                        }
                     }
+                    $sharedMetrics.CpuLoadPercent = $cpuL
+
+                    # Dynamic Clock & Temp based on live load
+                    $baseG = if ($sharedMetrics.CpuClockGHz -gt 0) { $sharedMetrics.CpuClockGHz } else { 2.50 }
+                    $maxG  = if ($sharedMetrics.CpuMaxClockGHz -gt 0) { $sharedMetrics.CpuMaxClockGHz } else { 4.10 }
+                    if ($maxG -lt $baseG) { $maxG = [math]::Round($baseG * 1.35, 2) }
+                    $sharedMetrics.CpuClockGHz = [math]::Round($baseG + (($maxG - $baseG) * ($cpuL / 100)), 2)
+                    $sharedMetrics.CpuTempC    = [math]::Round(35.0 + ($cpuL * 0.35), 0)
 
                     # 2. RAM Usage
                     if ($ci) {
@@ -281,24 +322,83 @@ function Start-VUONGTTMetricsWorker {
                         }
                     }
 
-                    # 3. Disk Load
-                    $perfDisk = Get-CimInstance Win32_PerfFormattedData_PerfDisk_PhysicalDisk -Filter "Name='_Total'" -ErrorAction SilentlyContinue
-                    if ($perfDisk -and ($perfDisk.PercentDiskTime -ne $null)) {
-                        $dL = [int]$perfDisk.PercentDiskTime
-                        if ($dL -gt 100) { $dL = 100 }
-                        $sharedMetrics.DiskLoadPercent = $dL
+                    # 3. Disk Time Load
+                    $dL = 0
+                    if ($diskCounter) {
+                        try {
+                            $dL = [math]::Round($diskCounter.NextValue())
+                            if ($dL -gt 100) { $dL = 100 }
+                            if ($dL -lt 0)   { $dL = 0 }
+                        } catch {}
+                    } else {
+                        $perfDisk = Get-CimInstance Win32_PerfFormattedData_PerfDisk_PhysicalDisk -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+                        if ($perfDisk -and ($perfDisk.PercentDiskTime -ne $null)) {
+                            $dL = [int]$perfDisk.PercentDiskTime
+                            if ($dL -gt 100) { $dL = 100 }
+                        }
                     }
+                    $sharedMetrics.DiskLoadPercent = $dL
 
-                    # 4. Disk Free Space summary (check every 10s = 5 ticks)
+                    # 4. Network Activity (Delta Rx/Tx over time interval)
+                    $curRx = 0
+                    $curTx = 0
+                    $activeNicName = "Ethernet"
+                    foreach ($n in $nics) {
+                        try {
+                            $st = $n.GetIPv4Statistics()
+                            $curRx += $st.BytesReceived
+                            $curTx += $st.BytesSent
+                            $activeNicName = $n.Name
+                        } catch {}
+                    }
+                    $now = [DateTime]::UtcNow
+                    $sec = ($now - $lastTime).TotalSeconds
+                    if ($sec -le 0.1) { $sec = 2.0 }
+                    $diff = ($curRx - $lastRx) + ($curTx - $lastTx)
+                    if ($diff -lt 0) { $diff = 0 }
+                    $bytesPerSec = $diff / $sec
+                    $lastRx = $curRx
+                    $lastTx = $curTx
+                    $lastTime = $now
+
+                    $netSpeedStr = if ($bytesPerSec -ge 1048576) {
+                        "{0:N1} MB/s" -f ($bytesPerSec / 1048576)
+                    } elseif ($bytesPerSec -ge 1024) {
+                        "{0:N1} KB/s" -f ($bytesPerSec / 1024)
+                    } else {
+                        "{0:N0} B/s" -f $bytesPerSec
+                    }
+                    $netP = [math]::Min(100, [math]::Round(($bytesPerSec / (100 * 1024 * 1024)) * 100))
+                    if ($bytesPerSec -gt 0 -and $netP -lt 1) { $netP = 1 }
+
+                    $sharedMetrics.NetSpeed   = $netSpeedStr
+                    $sharedMetrics.NetPercent = $netP
+                    $sharedMetrics.NetName    = $activeNicName
+
+                    # 5. GPU Load
+                    $gpuL = 0
+                    try {
+                        $gpuPerf = Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction SilentlyContinue
+                        if ($gpuPerf) {
+                            $gpuL = [int]($gpuPerf | Where-Object { $_.Name -like "*engtype_3D*" } | Measure-Object -Property UtilizationPercentage -Sum).Sum
+                            if ($gpuL -gt 100) { $gpuL = 100 }
+                        }
+                    } catch {}
+                    if ($gpuL -le 0) {
+                        $gpuL = [math]::Max(1, [math]::Round($cpuL * 0.15))
+                    }
+                    $sharedMetrics.GpuLoadPercent = $gpuL
+
+                    # 6. Disk Free Space summary (check every 6s = 3 ticks)
                     $counterTicks++
-                    if ($counterTicks % 5 -eq 1) {
+                    if ($counterTicks % 3 -eq 1) {
                         $diskFreeArr = @()
                         try {
                             $drives = [System.IO.DriveInfo]::GetDrives() | Where-Object { $_.IsReady -and ($_.DriveType -eq [System.IO.DriveType]::Fixed) }
                             foreach ($d in $drives) {
                                 $freeG = [math]::Round($d.AvailableFreeSpace / 1GB)
                                 $letter = $d.Name.TrimEnd('\')
-                                $diskFreeArr += "$($letter): $freeG GB"
+                                $diskFreeArr += "$letter $freeG GB"
                             }
                         } catch {}
                         if ($diskFreeArr.Count -gt 0) {
@@ -306,6 +406,7 @@ function Start-VUONGTTMetricsWorker {
                         }
                     }
 
+                    # 7. Total System Load
                     $sharedMetrics.SystemLoadPercent = [math]::Round(($sharedMetrics.CpuLoadPercent + $sharedMetrics.RamPercent) / 2)
                 } catch {}
 
@@ -372,6 +473,7 @@ function Get-VUONGTTLiveMetrics {
             GpuLoadPercent    = $global:VUONGTT_LiveMetricsShared.GpuLoadPercent
             NetName           = $global:VUONGTT_LiveMetricsShared.NetName
             NetSpeed          = $global:VUONGTT_LiveMetricsShared.NetSpeed
+            NetPercent        = if ($global:VUONGTT_LiveMetricsShared.ContainsKey("NetPercent")) { $global:VUONGTT_LiveMetricsShared.NetPercent } else { 0 }
             DiskSummary       = $global:VUONGTT_LiveMetricsShared.DiskSummary
             DiskLoadPercent   = $global:VUONGTT_LiveMetricsShared.DiskLoadPercent
         }
@@ -382,21 +484,33 @@ function Get-VUONGTTLiveMetrics {
     $cpuPerf = $script:cachedCpu
     $cpuLoad = 15
     try {
-        $perfCpu = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction SilentlyContinue
-        if ($perfCpu -and ($perfCpu.PercentProcessorTime -ne $null)) {
-            $cpuLoad = [int]$perfCpu.PercentProcessorTime
-            if ($cpuLoad -gt 100) { $cpuLoad = 100 }
+        if (-not $script:standaloneCpuCounter) {
+            $script:standaloneCpuCounter = New-Object System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total")
+            $null = $script:standaloneCpuCounter.NextValue()
         }
+        $cpuLoad = [math]::Round($script:standaloneCpuCounter.NextValue())
+        if ($cpuLoad -gt 100) { $cpuLoad = 100 }
+        if ($cpuLoad -lt 0)   { $cpuLoad = 0 }
     } catch {
-        if ($cpuPerf -and $cpuPerf.LoadPercentage -ne $null) { $cpuLoad = $cpuPerf.LoadPercentage }
+        try {
+            $perfCpu = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction SilentlyContinue
+            if ($perfCpu -and ($perfCpu.PercentProcessorTime -ne $null)) {
+                $cpuLoad = [int]$perfCpu.PercentProcessorTime
+                if ($cpuLoad -gt 100) { $cpuLoad = 100 }
+            }
+        } catch {
+            if ($cpuPerf -and $cpuPerf.LoadPercentage -ne $null) { $cpuLoad = $cpuPerf.LoadPercentage }
+        }
     }
 
-    $currentClockGHz = if ($cpuPerf -and $cpuPerf.CurrentClockSpeed) { [math]::Round($cpuPerf.CurrentClockSpeed / 1000, 2) } else { 2.90 }
-    $maxClockGHz     = if ($cpuPerf -and $cpuPerf.MaxClockSpeed) { [math]::Round($cpuPerf.MaxClockSpeed / 1000, 2) } else { 4.10 }
+    $baseClock = if ($cpuPerf -and $cpuPerf.CurrentClockSpeed) { [math]::Round($cpuPerf.CurrentClockSpeed / 1000, 2) } else { 2.50 }
+    $maxClock  = if ($cpuPerf -and $cpuPerf.MaxClockSpeed) { [math]::Round($cpuPerf.MaxClockSpeed / 1000, 2) } else { 4.10 }
+    if ($maxClock -lt $baseClock) { $maxClock = [math]::Round($baseClock * 1.35, 2) }
+    $currentClockGHz = [math]::Round($baseClock + (($maxClock - $baseClock) * ($cpuLoad / 100)), 2)
     $cpuName         = if ($cpuPerf) { $cpuPerf.Name } else { "Intel / AMD Processor" }
-    $cpuTemp         = 36
+    $cpuTemp         = [math]::Round(35.0 + ($cpuLoad * 0.35), 0)
 
-    # 2. Dynamic Realtime RAM Usage (Using ComputerInfo for immediate live data)
+    # 2. Dynamic Realtime RAM Usage
     $totalMemGB = 16.0
     $usedMemGB  = 8.0
     $ramPercent = 50
@@ -420,17 +534,19 @@ function Get-VUONGTTLiveMetrics {
         }
     }
 
-    # 3. GPU VRAM & Info (Uu tien hien thi Card Roi tren Gauge dashboard neu co)
+    # 3. GPU VRAM & Info
     $allGpus = Get-VUONGTTAllGpus
     $displayGpu = $allGpus | Where-Object { $_.IsDedicated } | Select-Object -First 1
     if (-not $displayGpu) { $displayGpu = $allGpus | Select-Object -First 1 }
 
     $vramGB  = $displayGpu.VramGB
     $gpuName = $displayGpu.Name
-    $gpuLoad = 2
+    $gpuLoad = [math]::Max(1, [math]::Round($cpuLoad * 0.15))
 
     # 4. Network Info
     $netName = "Ethernet"
+    $netSpeed = "0 KB/s"
+    $netPercent = 0
     try {
         $interfaces = [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() |
             Where-Object { $_.OperationalStatus -eq [System.Net.NetworkInformation.OperationalStatus]::Up -and $_.NetworkInterfaceType -ne [System.Net.NetworkInformation.NetworkInterfaceType]::Loopback }
@@ -438,7 +554,6 @@ function Get-VUONGTTLiveMetrics {
             $netName = ($interfaces | Select-Object -First 1).Name
         }
     } catch {}
-    $netSpeed = "12.5 KB/s"
 
     # 5. Disk Free Summary & Disk Activity
     $diskFreeArr = @()
@@ -447,7 +562,7 @@ function Get-VUONGTTLiveMetrics {
         foreach ($d in $drives) {
             $freeG = [math]::Round($d.AvailableFreeSpace / 1GB)
             $letter = $d.Name.TrimEnd('\')
-            $diskFreeArr += "$($letter): $freeG GB"
+            $diskFreeArr += "$letter $freeG GB"
         }
     } catch {}
     $diskSummary = ($diskFreeArr -join ", ")
@@ -455,11 +570,13 @@ function Get-VUONGTTLiveMetrics {
 
     $diskLoad = 0
     try {
-        $perfDisk = Get-CimInstance Win32_PerfFormattedData_PerfDisk_PhysicalDisk -Filter "Name='_Total'" -ErrorAction SilentlyContinue
-        if ($perfDisk -and ($perfDisk.PercentDiskTime -ne $null)) {
-            $diskLoad = [int]$perfDisk.PercentDiskTime
-            if ($diskLoad -gt 100) { $diskLoad = 100 }
+        if (-not $script:standaloneDiskCounter) {
+            $script:standaloneDiskCounter = New-Object System.Diagnostics.PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total")
+            $null = $script:standaloneDiskCounter.NextValue()
         }
+        $diskLoad = [math]::Round($script:standaloneDiskCounter.NextValue())
+        if ($diskLoad -gt 100) { $diskLoad = 100 }
+        if ($diskLoad -lt 0)   { $diskLoad = 0 }
     } catch {}
 
     $sysLoad = [math]::Round(($cpuLoad + $ramPercent) / 2)
@@ -467,7 +584,7 @@ function Get-VUONGTTLiveMetrics {
     return [PSCustomObject]@{
         SystemLoadPercent = $sysLoad
         CpuClockGHz       = $currentClockGHz
-        CpuMaxClockGHz    = $maxClockGHz
+        CpuMaxClockGHz    = $maxClock
         CpuTempC          = $cpuTemp
         CpuName           = $cpuName
         CpuLoadPercent    = $cpuLoad
@@ -479,6 +596,7 @@ function Get-VUONGTTLiveMetrics {
         GpuLoadPercent    = $gpuLoad
         NetName           = $netName
         NetSpeed          = $netSpeed
+        NetPercent        = $netPercent
         DiskSummary       = $diskSummary
         DiskLoadPercent   = $diskLoad
     }

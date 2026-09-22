@@ -492,7 +492,10 @@ function Switch-Tab {
             "Office"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt và cấu hình Microsoft Office." }
             "Users"        { $txtFooterStatus.Text = "• [OK] Danh sách tài khoản người dùng đã sẵn sàng." }
             "Customize"    { $txtFooterStatus.Text = "• [OK] Thông tin tùy chỉnh OEM đã sẵn sàng." }
-            "SysInfo"      { $txtFooterStatus.Text = "• [OK] Xem cấu hình máy tính & thông số phần cứng thời gian thực." }
+            "SysInfo"      {
+                $txtFooterStatus.Text = "• [OK] Xem cấu hình máy tính & thông số phần cứng thời gian thực."
+                Update-LiveGaugeValues
+            }
         }
     }
 }
@@ -810,10 +813,18 @@ $txtGaugeRamTotal      = Get-Control "txtGaugeRamTotal"
 $txtGaugeGpuPercent    = Get-Control "txtGaugeGpuPercent"
 $txtGaugeGpuVram       = Get-Control "txtGaugeGpuVram"
 $txtGaugeGpuName       = Get-Control "txtGaugeGpuName"
+$txtGaugeNetPercent    = Get-Control "txtGaugeNetPercent"
 $txtGaugeNetSpeed      = Get-Control "txtGaugeNetSpeed"
 $txtGaugeNetName       = Get-Control "txtGaugeNetName"
 $txtGaugeDiskPercent   = Get-Control "txtGaugeDiskPercent"
 $txtGaugeDiskSummary   = Get-Control "txtGaugeDiskSummary"
+
+$borderGaugeTotal      = Get-Control "borderGaugeTotal"
+$borderGaugeCpu        = Get-Control "borderGaugeCpu"
+$borderGaugeRam        = Get-Control "borderGaugeRam"
+$borderGaugeGpu        = Get-Control "borderGaugeGpu"
+$borderGaugeNet        = Get-Control "borderGaugeNet"
+$borderGaugeDisk       = Get-Control "borderGaugeDisk"
 
 $lblCpuTurbo           = Get-Control "lblCpuTurbo"
 $lblCpuBus             = Get-Control "lblCpuBus"
@@ -879,21 +890,25 @@ $btnMissingDriver      = Get-Control "btnMissingDriver"
 function Update-LiveGaugeValues {
     try {
         $m = Get-VUONGTTLiveMetrics
-        $txtGaugeTotalPercent.Text = "$($m.SystemLoadPercent)%"
-        $txtGaugeCpuPercent.Text   = "$($m.CpuLoadPercent)%"
-        $txtGaugeCpuSub.Text       = "$($m.CpuClockGHz) GHz · $($m.CpuTempC)°C"
-        $txtGaugeCpuName.Text      = $m.CpuName
-        $txtGaugeRamPercent.Text   = "$($m.RamPercent)%"
-        $txtGaugeRamSub.Text       = "$($m.RamUsedGB) / $($m.RamTotalGB) GB"
-        $txtGaugeRamTotal.Text     = "$($m.RamTotalGB) GB Total"
-        $txtGaugeGpuVram.Text      = "$($m.GpuVramGB) GB VRAM"
-        $txtGaugeGpuName.Text      = $m.GpuName
-        $txtGaugeNetSpeed.Text     = $m.NetSpeed
-        $txtGaugeNetName.Text      = $m.NetName
-        if ($txtGaugeDiskPercent) {
-            $txtGaugeDiskPercent.Text = "$($m.DiskLoadPercent)%"
-        }
-        $txtGaugeDiskSummary.Text  = "Ổ cứng trống: $($m.DiskSummary)"
+        if ($txtGaugeTotalPercent) { $txtGaugeTotalPercent.Text = "$($m.SystemLoadPercent)%" }
+        if ($txtGaugeCpuPercent)   { $txtGaugeCpuPercent.Text   = "$($m.CpuLoadPercent)%" }
+        if ($txtGaugeCpuSub)       { $txtGaugeCpuSub.Text       = "$($m.CpuClockGHz) GHz · $($m.CpuTempC)°C" }
+        if ($txtGaugeCpuName -and $m.CpuName) { $txtGaugeCpuName.Text = $m.CpuName }
+        if ($txtGaugeRamPercent)   { $txtGaugeRamPercent.Text   = "$($m.RamPercent)%" }
+        if ($txtGaugeRamSub)       { $txtGaugeRamSub.Text       = "$($m.RamUsedGB) / $($m.RamTotalGB) GB" }
+        if ($txtGaugeRamTotal)     { $txtGaugeRamTotal.Text     = "$($m.RamTotalGB) GB Total" }
+        if ($txtGaugeGpuPercent)   { $txtGaugeGpuPercent.Text   = "$($m.GpuLoadPercent)%" }
+        if ($txtGaugeGpuVram)      { $txtGaugeGpuVram.Text      = "$($m.GpuVramGB) GB VRAM" }
+        if ($txtGaugeGpuName -and $m.GpuName) { $txtGaugeGpuName.Text = $m.GpuName }
+        if ($txtGaugeNetPercent)   { $txtGaugeNetPercent.Text   = "$($m.NetPercent)%" }
+        if ($txtGaugeNetSpeed)     { $txtGaugeNetSpeed.Text     = $m.NetSpeed }
+        if ($txtGaugeNetName -and $m.NetName) { $txtGaugeNetName.Text = $m.NetName }
+        if ($txtGaugeDiskPercent)  { $txtGaugeDiskPercent.Text  = "$($m.DiskLoadPercent)%" }
+        if ($txtGaugeDiskSummary)  { $txtGaugeDiskSummary.Text  = "Ổ cứng trống: $($m.DiskSummary)" }
+
+        # Đồng bộ nhịp với panel chi tiết bên dưới
+        if ($lblCpuSpeed -and $m.CpuClockGHz) { $lblCpuSpeed.Text = "$([math]::Round($m.CpuClockGHz * 1000)) MHz" }
+        if ($lblCpuTemp -and $m.CpuTempC)     { $lblCpuTemp.Text  = "$($m.CpuTempC)°C" }
     } catch {}
 }
 
