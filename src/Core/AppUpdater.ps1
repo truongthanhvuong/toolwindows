@@ -1,7 +1,7 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.909.09"
+$script:APP_CURRENT_VERSION = "20.5.909.10"
 
 # Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {
@@ -252,50 +252,6 @@ function Get-VUONGTTAppUpdateInfo {
 
     return $result
 }
-
-function Get-VUONGTTTargetExePath {
-    # 1. Global variable từ lệnh gọi khởi động
-    if ($global:VUONGTT_TARGET_EXE -and (Test-Path $global:VUONGTT_TARGET_EXE -ErrorAction SilentlyContinue) -and ($global:VUONGTT_TARGET_EXE -like "*.exe")) {
-        return $global:VUONGTT_TARGET_EXE
-    }
-
-    # 2. Biến môi trường từ C# wrapper
-    if ($env:VUONGTT_ORIGINAL_EXE -and (Test-Path $env:VUONGTT_ORIGINAL_EXE -ErrorAction SilentlyContinue) -and ($env:VUONGTT_ORIGINAL_EXE -like "*.exe")) {
-        return $env:VUONGTT_ORIGINAL_EXE
-    }
-
-    # 3. File launcher_info.txt trong Temp hoặc Runtime hoặc thư mục ứng dụng
-    $infoFiles = @(
-        "$env:TEMP\VUONGTT_Toolkit_Runtime\launcher_info.txt",
-        "$env:TEMP\launcher_info.txt",
-        "E:\toolwindows\launcher_info.txt"
-    )
-    if ($global:ScriptDir) {
-        $infoFiles += (Join-Path $global:ScriptDir "launcher_info.txt")
-    }
-    if ($script:appRootDir) {
-        $infoFiles += (Join-Path $script:appRootDir "launcher_info.txt")
-    }
-    if ($PSScriptRoot) {
-        $infoFiles += (Join-Path $PSScriptRoot "launcher_info.txt")
-        $srcDir = Split-Path $PSScriptRoot -Parent
-        if ($srcDir) {
-            $projDir = Split-Path $srcDir -Parent
-            if ($projDir) {
-                $infoFiles += (Join-Path $projDir "launcher_info.txt")
-            }
-        }
-    }
-    foreach ($inf in $infoFiles) {
-        if (Test-Path $inf -ErrorAction SilentlyContinue) {
-            try {
-                $rawP = (Get-Content $inf -Raw -ErrorAction SilentlyContinue).Trim()
-                if ($rawP -and (Test-Path $rawP -ErrorAction SilentlyContinue) -and ($rawP -like "*.exe") -and ($rawP -notlike "*powershell*")) {
-                    return $rawP
-                }
-            } catch {}
-        }
-    }
 
 function Get-VUONGTTTargetExePath {
     # 1. Global variable từ lệnh gọi khởi động
