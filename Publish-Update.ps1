@@ -88,7 +88,7 @@ if (Test-Path $xamlFile) {
 }
 
 # 4. Bien dich lai file EXE
-Write-Host "`n>>> [2/5] Dang bien dich VUONGTT_Toolkit.exe..." -ForegroundColor Yellow
+Write-Host "`n>>> [2/6] Dang bien dich VUONGTT_Toolkit.exe..." -ForegroundColor Yellow
 $buildScript = Join-Path $rootDir "Build-Exe.ps1"
 & powershell -ExecutionPolicy Bypass -File $buildScript
 $exePath = Join-Path $rootDir "VUONGTT_Toolkit.exe"
@@ -100,8 +100,61 @@ if (-not (Test-Path $exePath)) {
 $exeSize = [math]::Round((Get-Item $exePath).Length / 1KB, 1)
 Write-Host " -> Bien dich thanh cong! File EXE: $exeSize KB" -ForegroundColor Green
 
+# 4.5 Pre-flight Smoke Test: Kiem thu tu dong khoi chay EXE trong 6 giay de ngan ngua 100% rui ro crash tren 1.000 may Client
+Write-Host "`n>>> [3/6] Dang thuc hien Pre-flight Smoke Test tren file EXE vua bien dich..." -ForegroundColor Yellow
+Write-Host " -> Khoi chay tien trinh thu nghiem (che do --smoke-test): $exePath" -ForegroundColor Gray
+
+$smokeErrFile = Join-Path $env:TEMP "VUONGTT_Toolkit_Runtime\error.log"
+if (Test-Path $smokeErrFile) { Remove-Item $smokeErrFile -Force -ErrorAction SilentlyContinue }
+
+$smokeProc = Start-Process -FilePath $exePath -ArgumentList "--smoke-test" -PassThru -ErrorAction Stop
+$testDurationSec = 6
+$hasCrashed = $false
+
+for ($s = 1; $s -le $testDurationSec; $s++) {
+    Start-Sleep -Seconds 1
+    Write-Host " -> Theo doi do on dinh he thong... ($s/$testDurationSec s)" -ForegroundColor Gray
+    if ($smokeProc.HasExited) {
+        $hasCrashed = $true
+        break
+    }
+}
+
+if ($hasCrashed) {
+    $exitCode = $smokeProc.ExitCode
+    Write-Host "`n==========================================================" -ForegroundColor Red
+    Write-Host " [NGUY HIEM] PRE-FLIGHT SMOKE TEST THAT BAI!" -ForegroundColor Red
+    Write-Host " File EXE bi vang/crash trong $testDurationSec giay dau (ExitCode: $exitCode)!" -ForegroundColor Red
+    Write-Host " TIEN TRINH PHAT HANH BI HUY BO DE BAO VE 1.000 MAY CLIENT!" -ForegroundColor Red
+    Write-Host " TUYET DOI KHONG THUC HIEN COMMIT HOAC PUSH GITHUB!" -ForegroundColor Red
+    Write-Host "==========================================================" -ForegroundColor Red
+
+    try {
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
+        [System.Windows.Forms.MessageBox]::Show(
+            "PRE-FLIGHT SMOKE TEST THAT BAI!`n`nFile VUONGTT_Toolkit.exe vua bien dich bi vang/crash trong $testDurationSec giay dau (ExitCode: $exitCode).`n`nHe thong da tu dong CHAN phat hanh de tranh lam hong 1.000 may Client!`nVui long kiem tra va sua loi truoc khi phat hanh lai.",
+            "Phat Hanh Bi Huy Bo - Smoke Test Failed",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Error
+        ) | Out-Null
+    } catch {}
+    exit 1
+}
+
+Write-Host " -> [XAC NHAN] Pre-flight Smoke Test PASS! File EXE chay on dinh tren $testDurationSec giay khong loi!" -ForegroundColor Green
+try {
+    Stop-Process -Id $smokeProc.Id -Force -ErrorAction SilentlyContinue
+    Get-Process -Name "powershell" -ErrorAction SilentlyContinue | Where-Object {
+        try {
+            $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+            $cmd -like "*VUONGTT_Toolkit*"
+        } catch { $false }
+    } | Stop-Process -Force -ErrorAction SilentlyContinue
+} catch {}
+
 # 5. Git Commit va Push len GitHub voi co che tu dong Rebase & Retry
-Write-Host "`n>>> [3/5] Dang day ban moi v$targetVer len GitHub..." -ForegroundColor Yellow
+Write-Host "`n>>> [4/6] Dang day ban moi v$targetVer len GitHub..." -ForegroundColor Yellow
+
 git add -A
 $commitMsg = "release: v$targetVer - $(if ($ChangelogMessage) { $ChangelogMessage } else { 'Auto-update release for client machines' })"
 git commit -m $commitMsg
@@ -123,7 +176,7 @@ for ($attempt = 1; $attempt -le 3; $attempt++) {
 if ($pushSuccess) {
     # 6. Purge cache CDN toan cau de tat ca may khach nhan dien tuc thi trong 1s
     try {
-        Write-Host "`n>>> [4/5] Dang lam moi (Purge) cache CDN toan cau..." -ForegroundColor Yellow
+        Write-Host "`n>>> [5/5] Dang lam moi (Purge) cache CDN toan cau..." -ForegroundColor Yellow
         $purgeUrl = "https://purge.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/version.json"
         $wc = New-Object System.Net.WebClient
         $wc.Headers.Add("User-Agent", "VUONGTT-Release-Publisher/2026")

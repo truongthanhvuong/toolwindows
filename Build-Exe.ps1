@@ -20,9 +20,9 @@ if (-not (Test-Path $cscPath)) {
 
 Write-Host ">>> Trinh bien dich C#: $cscPath" -ForegroundColor Cyan
 
-# Dam bao 100% cac file ma nguon ps1, xaml, json deu co UTF-8 BOM tranh loi font/ky tu tieng Viet trong PowerShell
+# Dam bao 100% cac file ma nguon ps1, xaml, json, cs deu co UTF-8 BOM tranh loi font/ky tu tieng Viet trong PowerShell va csc
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)
-$textFilesToEnforce = Get-ChildItem -Path $RootDir -Recurse -Include "*.ps1", "*.xaml", "*.json" -File | Where-Object { $_.FullName -notmatch "\\\.git\\" }
+$textFilesToEnforce = Get-ChildItem -Path $RootDir -Recurse -Include "*.ps1", "*.xaml", "*.json", "*.cs" -File | Where-Object { $_.FullName -notmatch "\\\.git\\" }
 foreach ($tf in $textFilesToEnforce) {
     try {
         $bytes = [System.IO.File]::ReadAllBytes($tf.FullName)
