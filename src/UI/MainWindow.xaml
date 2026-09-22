@@ -669,23 +669,24 @@
                         </Border>
 
                         <!-- Toolbar: Quét lại, Sao chép, Xuất Excel, Xuất CSV, Chép Serial, Tra Bảo Hành, Driver Hãng, Driver Thiếu -->
-                        <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="8,4,8,4" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                            <Grid>
-                                <WrapPanel VerticalAlignment="Center">
-                                    <Button x:Name="btnRefreshHardware" Content="Quét lại" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Width="80"/>
-                                    <Button x:Name="btnCopyHardware" Content="Sao chép" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Width="85"/>
-                                    <Button x:Name="btnExportExcel" Content="Xuất Excel" Background="{DynamicResource CardBgBrush}" Foreground="#047857" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Width="90"/>
-                                    <Button x:Name="btnExportCsv" Content="Xuất CSV" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Width="80"/>
-                                    <Button x:Name="btnCopySerialOnly" Content="📋 Chép Serial" Background="{DynamicResource CardBgBrush}" Foreground="#0284C7" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Width="105" ToolTip="Sao chép nhanh số Serial / Service Tag máy"/>
-                                    <Button x:Name="btnCheckWarranty" Content="🔍 Tra Bảo Hành" Background="{DynamicResource CardBgBrush}" Foreground="#D97706" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Width="115" ToolTip="Tra cứu bảo hành trực tuyến theo Hãng &amp; Số Serial"/>
-                                    <Button x:Name="btnDriverVendor" Content="Driver Hãng" Background="{DynamicResource CardBgBrush}" Foreground="#2563EB" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Width="90"/>
-                                    <Button x:Name="btnMissingDriver" Content="Driver Thiếu" Background="{DynamicResource CardBgBrush}" Foreground="#BE123C" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Width="95"/>
-                                </WrapPanel>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0">
-                                    <TextBlock Text="Số Serial: " FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="txtQuickSerial" Text="Đang đọc..." FontSize="12.5" FontWeight="Bold" Foreground="#BE123C" FontFamily="Consolas, monospace" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Grid>
+                        <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" Padding="8,5,8,5" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <WrapPanel VerticalAlignment="Center">
+                                <Button x:Name="btnRefreshHardware" Content="Quét lại" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Padding="12,4,12,4" Margin="0,2,6,2"/>
+                                <Button x:Name="btnCopyHardware" Content="Sao chép" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Padding="12,4,12,4" Margin="0,2,6,2"/>
+                                <Button x:Name="btnExportExcel" Content="Xuất Excel" Background="{DynamicResource CardBgBrush}" Foreground="#047857" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Padding="12,4,12,4" Margin="0,2,6,2"/>
+                                <Button x:Name="btnExportCsv" Content="Xuất CSV" Background="{DynamicResource CardBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Padding="12,4,12,4" Margin="0,2,6,2"/>
+                                <Button x:Name="btnCopySerialOnly" Content="📋 Chép Serial" Background="{DynamicResource CardBgBrush}" Foreground="#0284C7" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Padding="12,4,12,4" Margin="0,2,6,2" ToolTip="Sao chép nhanh số Serial / Service Tag máy"/>
+                                <Button x:Name="btnCheckWarranty" Content="🔍 Tra Bảo Hành" Background="{DynamicResource CardBgBrush}" Foreground="#D97706" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Padding="12,4,12,4" Margin="0,2,6,2" ToolTip="Tra cứu bảo hành trực tuyến theo Hãng &amp; Số Serial"/>
+                                <Button x:Name="btnDriverVendor" Content="Driver Hãng" Background="{DynamicResource CardBgBrush}" Foreground="#2563EB" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Padding="12,4,12,4" Margin="0,2,6,2"/>
+                                <Button x:Name="btnMissingDriver" Content="Driver Thiếu" Background="{DynamicResource CardBgBrush}" Foreground="#BE123C" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Style="{StaticResource ActionBtn}" Padding="12,4,12,4" Margin="0,2,6,2"/>
+                                
+                                <Border Background="{DynamicResource CardBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10,4,10,4" Margin="4,2,0,2" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Số Serial: " FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="txtQuickSerial" Text="Đang đọc..." FontSize="12.5" FontWeight="Bold" Foreground="#BE123C" FontFamily="Consolas, monospace" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </WrapPanel>
                         </Border>
 
                         <!-- Two-column Detailed Specifications (Split Panel) -->
