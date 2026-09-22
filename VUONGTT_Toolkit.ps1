@@ -853,6 +853,19 @@ $lblDimmSpeed          = Get-Control "lblDimmSpeed"
 $lblDimmVolt           = Get-Control "lblDimmVolt"
 $lblDimmSerial         = Get-Control "lblDimmSerial"
 
+$txtQuickSerial        = Get-Control "txtQuickSerial"
+$btnCopySerialOnly     = Get-Control "btnCopySerialOnly"
+$btnCheckWarranty      = Get-Control "btnCheckWarranty"
+$btnCopySerialFromCard = Get-Control "btnCopySerialFromCard"
+$lblMachineSerial      = Get-Control "lblMachineSerial"
+$lblMachineModel       = Get-Control "lblMachineModel"
+$lblMachineBoard       = Get-Control "lblMachineBoard"
+$lblBoardSerial        = Get-Control "lblBoardSerial"
+$lblMachineBios        = Get-Control "lblMachineBios"
+$lblBiosDate           = Get-Control "lblBiosDate"
+$lblSystemUUID         = Get-Control "lblSystemUUID"
+$lblSerialAuditStatus  = Get-Control "lblSerialAuditStatus"
+
 $btnRefreshHardware    = Get-Control "btnRefreshHardware"
 $btnCopyHardware       = Get-Control "btnCopyHardware"
 $btnExportExcel        = Get-Control "btnExportExcel"
@@ -943,6 +956,23 @@ function Refresh-SysInfoDisplay {
             $lblDimmVolt.Text    = $dimm.Voltage
             $lblDimmSerial.Text  = $dimm.Serial
         }
+
+        if ($txtQuickSerial)       { $txtQuickSerial.Text = $d.SystemSerial }
+        if ($lblMachineSerial)     { $lblMachineSerial.Text = $d.SystemSerial }
+        if ($lblMachineModel)      { $lblMachineModel.Text = $d.SystemModel }
+        if ($lblMachineBoard)      { $lblMachineBoard.Text = $d.Motherboard }
+        if ($lblBoardSerial)       { $lblBoardSerial.Text = $d.MotherboardSerial }
+        if ($lblMachineBios)       { $lblMachineBios.Text = $d.BiosVersion }
+        if ($lblBiosDate)          { $lblBiosDate.Text = $d.BiosDate }
+        if ($lblSystemUUID)        { $lblSystemUUID.Text = $d.SystemUUID }
+        if ($lblSerialAuditStatus) {
+            $lblSerialAuditStatus.Text = $d.SerialAuditStatus
+            if ($d.SerialAuditValid) {
+                $lblSerialAuditStatus.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#047857")
+            } else {
+                $lblSerialAuditStatus.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+            }
+        }
         $txtFooterStatus.Text = "• [OK] Đã quét toàn bộ thông tin phần cứng thành công."
     } catch {
         $txtFooterStatus.Text = "• [LỖI] Không thể đọc chi tiết phần cứng: $($_.Exception.Message)"
@@ -1006,16 +1036,56 @@ $btnCopyHardware.Add_Click({
         $d = Get-VUONGTTDetailedHardwareInfo
         $txt = @"
 THÔNG TIN CẤU HÌNH MÁY TÍNH - $env:COMPUTERNAME
+• Số Serial / Service Tag: $($d.SystemSerial) ($($d.SerialAuditStatus))
+• Model máy tính: $($d.SystemModel)
+• Bo mạch chủ (Main): $($d.Motherboard) (Serial: $($d.MotherboardSerial))
+• Phiên bản BIOS: $($d.BiosVersion) (Ngày: $($d.BiosDate))
 • CPU: $($d.CpuName) (Socket: $($d.Socket), Tốc độ: $($d.CurrentClockMHz))
 • RAM: $($d.TotalRamGB) $($d.RamType) ($($d.SlotUsage), Kênh: $($d.RamChannel))
 • GPU: $($d.GpuName) (VRAM: $($d.GpuVram), Driver: $($d.GpuDriver))
-• Mainboard: $($d.Motherboard)
-• Hệ điều hành: $($d.OSName) ($($d.OSVersion))
+$(if ($d.HasGpu1) { "• GPU 1 (Rời): $($d.Gpu1Name) (VRAM: $($d.Gpu1Vram))`n" } else { "" })• Hệ điều hành: $($d.OSName) ($($d.OSVersion))
+• System UUID: $($d.SystemUUID)
 "@
         [System.Windows.Clipboard]::SetText($txt)
-        [System.Windows.MessageBox]::Show("Đã sao chép cấu hình chi tiết vào Clipboard!", "Sao Chép Cấu Hình", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        [System.Windows.MessageBox]::Show("Đã sao chép cấu hình chi tiết & Số Serial máy vào Clipboard!", "Sao Chép Cấu Hình", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
     } catch {}
 })
+
+$copySerialOnlyAction = {
+    try {
+        $d = Get-VUONGTTDetailedHardwareInfo
+        if ($d.SystemSerial -and $d.SystemSerial -ne "N/A") {
+            [System.Windows.Clipboard]::SetText($d.SystemSerial)
+            $txtFooterStatus.Text = "• [OK] Đã sao chép số Serial máy: $($d.SystemSerial)"
+            [System.Windows.MessageBox]::Show("Đã sao chép Số Serial / Service Tag máy:`n`n$($d.SystemSerial)`n`n($($d.SystemModel))`nvào bộ nhớ tạm (Clipboard)!", "Sao Chép Serial Máy", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } else {
+            [System.Windows.MessageBox]::Show("Không tìm thấy số Serial hợp lệ của máy (Máy đang dùng Serial mặc định).", "Thông Báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        }
+    } catch {}
+}
+
+if ($btnCopySerialOnly) {
+    $btnCopySerialOnly.Add_Click($copySerialOnlyAction)
+}
+if ($btnCopySerialFromCard) {
+    $btnCopySerialFromCard.Add_Click($copySerialOnlyAction)
+}
+
+if ($btnCheckWarranty) {
+    $btnCheckWarranty.Add_Click({
+        try {
+            $d = Get-VUONGTTDetailedHardwareInfo
+            $res = Open-VUONGTTWarrantyLookup -Manufacturer $d.Manufacturer -SerialNumber $d.SystemSerial
+            if ($res.Success) {
+                $txtFooterStatus.Text = "• [OK] $($res.Message)"
+            } else {
+                [System.Windows.MessageBox]::Show($res.Message, "Tra Cứu Bảo Hành", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            }
+        } catch {
+            [System.Windows.MessageBox]::Show("Lỗi khi mở tra cứu bảo hành: $($_.Exception.Message)", "Tra Cứu Bảo Hành", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+        }
+    })
+}
 
 # Xuat cau hinh ra Excel / CSV thong qua SaveFileDialog an toan tuyet doi
 $exportAction = {

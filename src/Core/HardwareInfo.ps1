@@ -70,6 +70,8 @@ function Get-VUONGTTHardwareSnapshot {
         $script:cachedGpu   = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue
         $script:cachedRam   = Get-CimInstance Win32_PhysicalMemory -ErrorAction SilentlyContinue
         $script:cachedBoard = Get-CimInstance Win32_BaseBoard -ErrorAction SilentlyContinue
+        $script:cachedBios  = Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue
+        $script:cachedCsp   = Get-CimInstance Win32_ComputerSystemProduct -ErrorAction SilentlyContinue
         
         # Quet PnP Entity de phat hien card do hoa chua co driver (Ma loi 28 / Display Class)
         $script:cachedPnpGpu = Get-CimInstance Win32_PnPEntity -ErrorAction SilentlyContinue | Where-Object {
@@ -91,6 +93,8 @@ function Clear-VUONGTTHardwareCache {
     $script:cachedCs      = $null
     $script:cachedRam     = $null
     $script:cachedBoard   = $null
+    $script:cachedBios    = $null
+    $script:cachedCsp     = $null
     $script:cachedPnpGpu  = $null
     $script:cachedAllGpus = $null
     $script:cachedDetailedHardwareInfo = $null
@@ -551,13 +555,53 @@ function Get-VUONGTTDetailedHardwareInfo {
         }
     }
 
+    $bios  = if ($script:cachedBios) { $script:cachedBios } else { Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue }
+    $csp   = if ($script:cachedCsp) { $script:cachedCsp } else { Get-CimInstance Win32_ComputerSystemProduct -ErrorAction SilentlyContinue }
+
+    # Xử lý số Serial máy & Đánh giá tính toàn vẹn (Service Tag / Serial Number)
+    $sysSerial = "N/A"
+    if ($bios -and $bios.SerialNumber -and $bios.SerialNumber.Trim() -ne "" -and $bios.SerialNumber -notmatch '^(None|Default string|To be filled by O\.E\.M\.)$') {
+        $sysSerial = $bios.SerialNumber.Trim()
+    } elseif ($csp -and $csp.IdentifyingNumber -and $csp.IdentifyingNumber.Trim() -ne "" -and $csp.IdentifyingNumber -notmatch '^(None|Default string)$') {
+        $sysSerial = $csp.IdentifyingNumber.Trim()
+    } elseif ($board -and $board.SerialNumber -and $board.SerialNumber.Trim() -ne "" -and $board.SerialNumber -notmatch '^(None|Default string)$') {
+        $sysSerial = $board.SerialNumber.Trim()
+    } elseif ($bios -and $bios.SerialNumber) {
+        $sysSerial = $bios.SerialNumber.Trim()
+    }
+
+    $boardSerial = if ($board -and $board.SerialNumber -and $board.SerialNumber.Trim()) { $board.SerialNumber.Trim() } else { "N/A" }
+    $biosVer     = if ($bios -and $bios.SMBIOSBIOSVersion) { $bios.SMBIOSBIOSVersion.Trim() } else { "N/A" }
+    $biosDate    = if ($bios -and $bios.ReleaseDate) { 
+        if ($bios.ReleaseDate -is [DateTime]) { $bios.ReleaseDate.ToString("dd/MM/yyyy") } else { "$($bios.ReleaseDate)" }
+    } else { "N/A" }
+    $sysUuid     = if ($csp -and $csp.UUID) { $csp.UUID.Trim() } else { "N/A" }
+
+    $isDefaultSerial = ($sysSerial -like "*Default string*" -or $sysSerial -like "*To be filled*" -or $sysSerial -eq "None" -or $sysSerial -eq "0123456789" -or $sysSerial -eq "N/A")
+    $auditStatus = if ($isDefaultSerial) {
+        "⚠️ Serial mặc định (BIOS trắng / Thay main)"
+    } else {
+        "✅ Chuẩn nhà sản xuất"
+    }
+    $auditValid = (-not $isDefaultSerial)
+
     $resultHardware = [PSCustomObject]@{
-        # System
-        ComputerName    = $cs.Name
-        Username        = $cs.UserName
-        OSName          = $os.Caption
-        OSVersion       = "$($os.Version) (Build $($os.BuildNumber))"
-        Motherboard     = "$($board.Manufacturer) $($board.Product)"
+        # System & Serial
+        ComputerName      = $cs.Name
+        Username          = $cs.UserName
+        OSName            = $os.Caption
+        OSVersion         = "$($os.Version) (Build $($os.BuildNumber))"
+        Motherboard       = "$($board.Manufacturer) $($board.Product)"
+        MotherboardSerial = $boardSerial
+        SystemSerial      = $sysSerial
+        SystemModel       = "$($cs.Manufacturer) $($cs.Model)"
+        Manufacturer      = if ($cs.Manufacturer) { $cs.Manufacturer.Trim() } else { "Chưa rõ" }
+        ModelName         = if ($cs.Model) { $cs.Model.Trim() } else { "PC Desktop / Laptop" }
+        BiosVersion       = $biosVer
+        BiosDate          = $biosDate
+        SystemUUID        = $sysUuid
+        SerialAuditStatus = $auditStatus
+        SerialAuditValid  = $auditValid
         
         # CPU
         CpuName         = $cpu.Name
@@ -621,10 +665,17 @@ function Export-HardwareInfoToCsv {
 
         $info = Get-VUONGTTDetailedHardwareInfo
         $rows = @(
+            [PSCustomObject]@{ Category="Hệ thống"; Item="Số Serial / Service Tag"; Value=$info.SystemSerial },
+            [PSCustomObject]@{ Category="Hệ thống"; Item="Kiểm tra Serial"; Value=$info.SerialAuditStatus },
+            [PSCustomObject]@{ Category="Hệ thống"; Item="Hãng & Model máy"; Value=$info.SystemModel },
             [PSCustomObject]@{ Category="Hệ thống"; Item="Tên máy tính"; Value=$info.ComputerName },
             [PSCustomObject]@{ Category="Hệ thống"; Item="Hệ điều hành"; Value=$info.OSName },
             [PSCustomObject]@{ Category="Hệ thống"; Item="Phiên bản OS"; Value=$info.OSVersion },
             [PSCustomObject]@{ Category="Hệ thống"; Item="Bo mạch chủ (Mainboard)"; Value=$info.Motherboard },
+            [PSCustomObject]@{ Category="Hệ thống"; Item="Serial Bo mạch chủ"; Value=$info.MotherboardSerial },
+            [PSCustomObject]@{ Category="Hệ thống"; Item="Phiên bản BIOS"; Value=$info.BiosVersion },
+            [PSCustomObject]@{ Category="Hệ thống"; Item="Ngày xuất xưởng BIOS"; Value=$info.BiosDate },
+            [PSCustomObject]@{ Category="Hệ thống"; Item="UUID Hệ thống"; Value=$info.SystemUUID },
             [PSCustomObject]@{ Category="CPU"; Item="Tên vi xử lý"; Value=$info.CpuName },
             [PSCustomObject]@{ Category="CPU"; Item="Số nhân / Số luồng"; Value=$info.CpuCores },
             [PSCustomObject]@{ Category="CPU"; Item="Socket vi xử lý"; Value=$info.Socket },
@@ -661,8 +712,58 @@ function Export-HardwareInfoToCsv {
     } catch {
         return [PSCustomObject]@{
             Success  = $false
-            FilePath = $FilePath
-            Message  = "Lỗi xuất file: $($_.Exception.Message)"
+            FilePath = ""
+            Message  = "[LỖI] Không thể xuất file CSV: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Open-VUONGTTWarrantyLookup {
+    param([string]$Manufacturer = "", [string]$SerialNumber = "")
+    try {
+        if (-not $SerialNumber -or $SerialNumber -eq "N/A" -or $SerialNumber -like "*Default string*") {
+            $diag = Get-VUONGTTDetailedHardwareInfo
+            $SerialNumber = $diag.SystemSerial
+            $Manufacturer = $diag.Manufacturer
+        }
+
+        # Sao chep Serial vao Clipboard de nguoi dung san sang paste
+        if ($SerialNumber -and $SerialNumber -ne "N/A") {
+            [System.Windows.Clipboard]::SetText($SerialNumber)
+        }
+
+        $mfg = $Manufacturer.ToUpper()
+        $url = ""
+        if ($mfg -like "*DELL*") {
+            $url = "https://www.dell.com/support/home/product-support/servicetag/$SerialNumber/overview"
+        } elseif ($mfg -like "*LENOVO*") {
+            $url = "https://pcsupport.lenovo.com/products/search?query=$SerialNumber"
+        } elseif ($mfg -like "*HP*" -or $mfg -like "*HEWLETT*") {
+            $url = "https://support.hp.com/vn-en/check-warranty"
+        } elseif ($mfg -like "*ASUS*") {
+            $url = "https://www.asus.com/vn/support/warranty-status/"
+        } elseif ($mfg -like "*ACER*") {
+            $url = "https://www.acer.com/vn-vi/support"
+        } elseif ($mfg -like "*MSI*") {
+            $url = "https://account.msi.com/en/services/warranty"
+        } elseif ($mfg -like "*GIGABYTE*") {
+            $url = "https://www.gigabyte.com/Support/Warranty"
+        } else {
+            $encodedQuery = [System.Uri]::EscapeDataString("warranty check $Manufacturer $SerialNumber")
+            $url = "https://www.google.com/search?q=$encodedQuery"
+        }
+
+        Start-Process $url
+        return [PSCustomObject]@{
+            Success = $true
+            Serial  = $SerialNumber
+            Url     = $url
+            Message = "Đã sao chép Serial '$SerialNumber' vào Clipboard và mở trang kiểm tra bảo hành $Manufacturer!"
+        }
+    } catch {
+        return [PSCustomObject]@{
+            Success = $false
+            Message = "Lỗi khi mở trang bảo hành: $($_.Exception.Message)"
         }
     }
 }
