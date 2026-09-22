@@ -644,24 +644,42 @@ function Get-LaptopRepairAudit {
     $bios = Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue
     $board = Get-CimInstance Win32_BaseBoard -ErrorAction SilentlyContinue
     $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+    $csp = Get-CimInstance Win32_ComputerSystemProduct -ErrorAction SilentlyContinue
 
     $releaseDate = if ($bios.ReleaseDate) { $bios.ReleaseDate.ToString('dd/MM/yyyy') } else { "N/A" }
+    $biosSerial = if ($bios.SerialNumber) { $bios.SerialNumber.Trim() } else { "N/A" }
+    $boardSerial = if ($board.SerialNumber) { $board.SerialNumber.Trim() } else { "N/A" }
+    $sysSerial = if ($csp.IdentifyingNumber) { $csp.IdentifyingNumber.Trim() } else { $biosSerial }
+    $sysUuid = if ($csp.UUID) { $csp.UUID.Trim() } else { "N/A" }
 
     $log = @()
     $log += "================= KIỂM TRA LỊCH SỬ PHẦN CỨNG & SERIAL ================="
     $log += "• Hãng sản xuất máy : $($cs.Manufacturer)"
     $log += "• Tên Model thiết bị: $($cs.Model)"
-    $log += "• Số Serial BIOS    : $($bios.SerialNumber)"
+    $log += "• Số Serial BIOS    : $biosSerial"
+    $log += "• Số Serial Máy     : $sysSerial"
     $log += "• Phiên bản BIOS    : $($bios.SMBIOSBIOSVersion)"
     $log += "• Ngày xuất xưởng   : $releaseDate"
     $log += "• Bo mạch chủ (Main): $($board.Manufacturer) $($board.Product)"
-    $log += "• Serial Mainboard  : $($board.SerialNumber)"
+    $log += "• Serial Bo mạch chủ: $boardSerial"
+    $log += "• Mã định danh UUID : $sysUuid"
     $log += "-----------------------------------------------------------------------"
     $log += "ĐÁNH GIÁ TÌNH TRẠNG:"
-    if ($bios.SerialNumber -like "*Default string*" -or $board.SerialNumber -like "*Default string*") {
-        $log += "⚠️ CẢNH BÁO: Số Serial Mainboard đang để giá trị mặc định ('Default string'). Có khả năng máy đã được nạp lại BIOS trắng hoặc thay thế bo mạch chủ!"
+
+    $suspiciousValues = @('Default string', 'None', 'To be filled by O.E.M.', '0123456789', 'System Serial Number', 'Not Specified')
+    $isSuspicious = $false
+    foreach ($sus in $suspiciousValues) {
+        if ($biosSerial -like "*$sus*" -or $boardSerial -like "*$sus*") {
+            $isSuspicious = $true
+            break
+        }
+    }
+
+    if ($isSuspicious) {
+        $log += "⚠️ CẢNH BÁO: Số Serial BIOS hoặc Bo mạch chủ có giá trị mặc định ('$biosSerial' / '$boardSerial')."
+        $log += "-> Rất có thể máy đã từng nạp lại file BIOS trắng (Clear ME / Reprogram), thay thế bo mạch chủ hoặc sửa chữa can thiệp phần cứng!"
     } else {
-        $log += "✅ Số Serial BIOS và Bo mạch chủ còn nguyên vẹn theo chuẩn nhà sản xuất."
+        $log += "✅ Số Serial BIOS và Bo mạch chủ khớp chuẩn OEM, chưa phát hiện dấu hiệu nạp lại BIOS trắng."
     }
     $log += "======================================================================="
 

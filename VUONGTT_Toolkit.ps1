@@ -2835,6 +2835,7 @@ $btnTestAudioLeft       = Get-Control "btnTestAudioLeft"
 $btnTestAudioRight      = Get-Control "btnTestAudioRight"
 
 $btnRunRepairAudit      = Get-Control "btnRunRepairAudit"
+$btnCopyRepairAudit     = Get-Control "btnCopyRepairAudit"
 $txtRepairAuditLog      = Get-Control "txtRepairAuditLog"
 
 function Refresh-BatteryDisplay {
@@ -3034,10 +3035,22 @@ if ($btnTestSpeakerStereo) {
 }
 
 $btnRunRepairAudit.Add_Click({
-    $txtRepairAuditLog.Text = "Đang quét thông tin phần cứng..."
+    Invoke-VUONGTTDoEvents
+    if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = "⏳ Đang quét thông tin BIOS, Bo mạch chủ và Serial phần cứng..." }
     $res = Get-LaptopRepairAudit
-    $txtRepairAuditLog.Text = $res
+    if ($txtRepairAuditLog) { $txtRepairAuditLog.Text = $res }
+    if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã quét Serial & BIOS hoàn tất" }
 })
+
+if ($btnCopyRepairAudit) {
+    $btnCopyRepairAudit.Add_Click({
+        if ($txtRepairAuditLog -and -not [string]::IsNullOrWhiteSpace($txtRepairAuditLog.Text)) {
+            [System.Windows.Clipboard]::SetText($txtRepairAuditLog.Text)
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã sao chép kết quả quét Serial & BIOS vào Clipboard" }
+            [System.Windows.MessageBox]::Show("Đã sao chép toàn bộ kết quả kiểm tra Serial & BIOS vào bộ nhớ tạm (Clipboard) thành công!", "Sao Chép Kết Quả", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+}
 
 # =========================================================================
 # MODULE 9: SỨC KHỎE Ổ CỨNG & BENCHMARK HỆ THỐNG (CRYSTAL DISK INFO)

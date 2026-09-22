@@ -2149,10 +2149,16 @@
                                 <StackPanel>
                                     <TextBlock Text="🔍 Kiểm Tra Laptop Đã Qua Sửa Chữa? (Audit Phần Cứng)" FontWeight="Bold" FontSize="15" Foreground="#B45309" Margin="0,0,0,6"/>
                                     <TextBlock Text="Phân tích số Serial BIOS, Bo mạch chủ, ngày xuất xưởng để phát hiện máy nạp lại BIOS trắng hoặc thay linh kiện:" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
-                                    <WrapPanel>
+                                    <WrapPanel Margin="0,0,0,8">
                                         <Button x:Name="btnRunRepairAudit" Content="🔍 Quét Serial &amp; BIOS" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="180" Padding="14,0,14,0"/>
+                                        <Button x:Name="btnCopyRepairAudit" Content="📋 Sao Chép Kết Quả" Background="#475569" Style="{StaticResource ActionBtn}" Margin="8,0,0,0" Padding="12,0,12,0"/>
                                     </WrapPanel>
-                                </StackPanel>                            </Border>
+                                    <TextBox x:Name="txtRepairAuditLog" Height="100" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                             Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="8,6" FontFamily="Consolas, SF Mono, Courier New, monospace" FontSize="11.5"
+                                             Text="Bấm nút '🔍 Quét Serial &amp; BIOS' ở trên để phân tích số Serial máy, Bo mạch chủ và phát hiện máy nạp lại BIOS trắng."/>
+                                </StackPanel>
+                            </Border>
                         </UniformGrid>
 
                         <!-- Row 2: Keyboard, CPU Stress & Network -->
