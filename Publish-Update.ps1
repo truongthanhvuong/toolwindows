@@ -29,11 +29,18 @@ Write-Host "   VUONGTT TOOLKIT 2026 - TIEN TRINH PHAT HANH BAN MOI   " -Foregrou
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 0. Kiem tra va dong bo du lieu moi nhat tu GitHub truoc khi dong goi
-Write-Host "`n>>> [0/5] Dang dong bo du lieu moi nhat tu GitHub (git pull --rebase)..." -ForegroundColor Cyan
-git -C $rootDir pull --rebase origin main
-if ($LASTEXITCODE -ne 0) {
-    Write-Host " [!] Canh bao: Co the gap xung dot khi rebase, dang kiem tra lai..." -ForegroundColor Yellow
+Write-Host "`n>>> [0/5] Dang dong bo du lieu moi nhat tu GitHub..." -ForegroundColor Cyan
+
+# Tu dong don dep rebase bi treo neu co
+if ((Test-Path (Join-Path $rootDir ".git\rebase-merge")) -or (Test-Path (Join-Path $rootDir ".git\rebase-apply"))) {
+    Write-Host " [!] Phat hien rebase bi treo truoc do, dang tu dong abort..." -ForegroundColor Yellow
+    git -C $rootDir rebase --abort
+    Remove-Item -Path (Join-Path $rootDir ".git\rebase-merge") -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $rootDir ".git\rebase-apply") -Recurse -Force -ErrorAction SilentlyContinue
 }
+
+git -C $rootDir fetch origin main
+git -C $rootDir merge origin/main --no-edit -X ours -m "merge: sync remote updates from GitHub"
 
 # 1. Xac dinh so hieu phien ban tiep theo
 $verJsonPath = Join-Path $rootDir "version.json"
@@ -199,8 +206,9 @@ for ($attempt = 1; $attempt -le 3; $attempt++) {
         $pushSuccess = $true
         break
     } else {
-        Write-Host " [!] Push bi tu choi do GitHub co commit moi. Dang tu dong pull --rebase..." -ForegroundColor Yellow
-        git -C $rootDir pull --rebase origin main
+        Write-Host " [!] Push bi tu choi do GitHub co commit moi. Dang tu dong fetch va merge..." -ForegroundColor Yellow
+        git -C $rootDir fetch origin main
+        git -C $rootDir merge origin/main --no-edit -X ours -m "merge: auto-sync remote before retry push"
         Start-Sleep -Seconds 1
     }
 }
