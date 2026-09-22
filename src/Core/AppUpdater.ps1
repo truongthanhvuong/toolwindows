@@ -269,6 +269,9 @@ function Get-VUONGTTTargetExePath {
         "$env:TEMP\VUONGTT_Toolkit_Runtime\launcher_info.txt",
         "$env:TEMP\launcher_info.txt"
     )
+    if ($script:appRootDir) {
+        $infoFiles += (Join-Path $script:appRootDir "launcher_info.txt")
+    }
     foreach ($inf in $infoFiles) {
         if (Test-Path $inf -ErrorAction SilentlyContinue) {
             try {
@@ -280,7 +283,15 @@ function Get-VUONGTTTargetExePath {
         }
     }
 
-    # 4. Truy vết tiến trình cha qua WMI/CIM
+    # 4. Quét tiến trình VUONGTT_Toolkit đang thực thi
+    try {
+        $vProc = Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue | Where-Object { $_.Path -and (Test-Path $_.Path -ErrorAction SilentlyContinue) } | Select-Object -First 1
+        if ($vProc -and $vProc.Path) {
+            return $vProc.Path
+        }
+    } catch {}
+
+    # 5. Truy vết tiến trình cha qua WMI/CIM
     try {
         $parentPid = (Get-CimInstance Win32_Process -Filter "ProcessId = $PID" -ErrorAction SilentlyContinue).ParentProcessId
         if ($parentPid) {
@@ -291,19 +302,19 @@ function Get-VUONGTTTargetExePath {
         }
     } catch {}
 
-    # 5. Quét tiến trình VUONGTT_Toolkit đang chạy
-    try {
-        $vProc = Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($vProc -and $vProc.Path -and (Test-Path $vProc.Path -ErrorAction SilentlyContinue)) {
-            return $vProc.Path
+    # 6. Dò tìm trong thư mục ứng dụng hiện hành
+    if ($script:appRootDir) {
+        $localExe = Join-Path $script:appRootDir "VUONGTT_Toolkit.exe"
+        if (Test-Path $localExe -ErrorAction SilentlyContinue) {
+            return $localExe
         }
-    } catch {}
+    }
 
-    # 6. Dò tìm trong các thư mục thông dụng của người dùng hiện tại
+    # 7. Dò tìm trong các thư mục thông dụng của người dùng hiện tại
     $userProf = [System.Environment]::GetFolderPath("UserProfile")
     $candidates = @(
-        (Join-Path $userProf "Downloads\VUONGTT_Toolkit.exe"),
         (Join-Path $userProf "Desktop\VUONGTT_Toolkit.exe"),
+        (Join-Path $userProf "Downloads\VUONGTT_Toolkit.exe"),
         "E:\toolwindows\VUONGTT_Toolkit.exe",
         "D:\VUONGTT_Toolkit.exe",
         "C:\VUONGTT_Toolkit.exe"
@@ -314,9 +325,17 @@ function Get-VUONGTTTargetExePath {
         }
     }
 
-    # 7. Fallback an toàn mặc định: Thư mục Downloads
+    # 8. Fallback an toàn mặc định: Thư mục Downloads
     return (Join-Path $userProf "Downloads\VUONGTT_Toolkit.exe")
 }
+
+# Tự động dọn dẹp các tệp tin backup .old / .bak sau khi cập nhật thành công
+try {
+    $cleanupTarget = Get-VUONGTTTargetExePath
+    if ($cleanupTarget -and (Test-Path "$cleanupTarget.old")) {
+        Remove-Item "$cleanupTarget.old" -Force -ErrorAction SilentlyContinue
+    }
+} catch {}
 
 function Invoke-VUONGTTAppSelfUpdate {
     [CmdletBinding()]
@@ -374,52 +393,75 @@ function Invoke-VUONGTTAppSelfUpdate {
         $client.DownloadFile($dlUrlWithCacheBust, $tempDownloadExe)
 
         if (-not (Test-Path $tempDownloadExe) -or (Get-Item $tempDownloadExe).Length -lt 50000) {
-            return "[LỖI] Tải bản cập nhật thất bại hoặc tệp tin bị lỗi! Vui lòng thử lại sau."
+            return "[LỖI] Tải bản cập nhật thất bại hoặc tệp tin bị lỗi! Vui lòng kiểm tra lại kết nối mạng."
         }
 
         $sizeKb = [math]::Round((Get-Item $tempDownloadExe).Length / 1KB, 1)
         if ($OnProgress) { & $OnProgress "Đã tải xong bản mới ($sizeKb KB). Đang khởi tạo tiến trình tự động thay thế file..." }
 
-        # Tạo script chuyển giao độc lập không bao giờ mở shell PowerShell rỗng
+        # Tạo script cập nhật độc lập với kỹ thuật Shadow Rename và hiển thị cửa sổ Normal (chống Ghost Process)
         $updaterCmd = "$env:TEMP\VUONGTT_HotSwap_Updater.cmd"
         $cmdContent = @"
 @echo off
-title VUONGTT Toolkit Auto Updater
-echo ========================================================
-echo   VUONGTT TOOLKIT AUTO UPDATER - DANG CAP NHAT...
-echo ========================================================
-echo 1. Dang dong cac tien trinh cu de giai phong file lock...
-taskkill /f /im "VUONGTT_Toolkit.exe" >nul 2>&1
-timeout /t 2 /nobreak >nul
+chcp 65001 >nul
+title VUONGTT Tool Pro 2026 - He Thong Tu Dong Cap Nhat
+mode con: cols=76 lines=14
+color 0B
+cls
+echo ============================================================================
+echo        VUONGTT TOOL PRO 2026 - TIEN TRINH TU DONG NANG CAP HE THONG
+echo ============================================================================
+echo.
+echo   [1/3] Dang dong tien trinh cu de giai phong tai nguyen...
 
-:wait_loop
+:: Dong cac tien trinh cu
+taskkill /f /im "VUONGTT_Toolkit.exe" >nul 2>&1
+
+:: Cho an toan toi da 3 giay, tranh bi treo vo han
+set /a retryCount=0
+:check_proc
+set /a retryCount+=1
+timeout /t 1 /nobreak >nul
 tasklist /fi "imagename eq VUONGTT_Toolkit.exe" 2>nul | find /i "VUONGTT_Toolkit.exe" >nul
 if not errorlevel 1 (
-    timeout /t 1 /nobreak >nul
-    goto wait_loop
+    if %retryCount% lss 3 (
+        taskkill /f /im "VUONGTT_Toolkit.exe" >nul 2>&1
+        goto check_proc
+    )
 )
 
-echo 2. Dang ghi de phien ban moi v$NewVersion...
-copy /y "$tempDownloadExe" "$targetExePath" >nul
-if errorlevel 1 (
-    echo [CANH BAO] Khong the ghi de file goc, dang luu ban moi tai Downloads...
-    set "FALLBACK_EXE=%USERPROFILE%\Downloads\VUONGTT_Toolkit_v$($NewVersion).exe"
-    copy /y "$tempDownloadExe" "%FALLBACK_EXE%" >nul
-    del /f /q "$tempDownloadExe" 2>nul
-    echo 3. Khoi dong lai VUONGTT Tool Pro 2026 moi nhat...
-    start "" "%FALLBACK_EXE%"
-    timeout /t 1 /nobreak >nul
-    del /f /q "%~f0" 2>nul
-    exit
+echo.
+echo   [2/3] Dang ghi de phien ban moi v$NewVersion (Shadow Hot-Swap Engine)...
+
+:: Co che Shadow Rename: Doi ten file goc thanh .old de pha vo File Lock ngay lap tuc
+if exist "$targetExePath.old" del /f /q "$targetExePath.old" >nul 2>&1
+move /y "$targetExePath" "$targetExePath.old" >nul 2>&1
+
+:: Di chuyen/Copy file moi vao dung vi tri goc
+move /y "$tempDownloadExe" "$targetExePath" >nul 2>&1
+if not exist "$targetExePath" (
+    copy /y "$tempDownloadExe" "$targetExePath" >nul 2>&1
 )
 
-del /f /q "$tempDownloadExe" 2>nul
+:: Kiem tra neu cap nhat thanh cong
+if exist "$targetExePath" (
+    del /f /q "$targetExePath.old" >nul 2>&1
+    del /f /q "$tempDownloadExe" >nul 2>&1
+    echo.
+    echo   [3/3] Cap nhat thanh cong 100%! Dang khoi dong lai VUONGTT Tool Pro 2026...
+    timeout /t 1 /nobreak >nul
+    start "" "$targetExePath"
+) else (
+    echo.
+    echo   [!] Khong the ghi de thu muc goc, dang chuyen ban moi ra Desktop...
+    set "DESK_EXE=%USERPROFILE%\Desktop\VUONGTT_Toolkit.exe"
+    move /y "$tempDownloadExe" "%DESK_EXE%" >nul 2>&1
+    echo   [3/3] Dang khoi dong ban moi tu Desktop...
+    timeout /t 1 /nobreak >nul
+    start "" "%DESK_EXE%"
+)
 
-echo 3. Khoi dong lai VUONGTT Tool Pro 2026 moi nhat...
-start "" "$targetExePath"
-
-echo 4. Hoan tat cap nhat!
-timeout /t 1 /nobreak >nul
+timeout /t 2 /nobreak >nul
 del /f /q "%~f0" 2>nul
 exit
 "@
@@ -427,11 +469,12 @@ exit
 
         if ($OnProgress) { & $OnProgress "Đang khởi động lại ứng dụng với phiên bản v$NewVersion..." }
 
-        # Khởi chạy updater.cmd ngầm
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$updaterCmd`"" -WindowStyle Hidden
+        # Khởi chạy updater.cmd với cửa sổ hiển thị bình thường (WindowStyle Normal)
+        # Tuyệt đối KHÔNG dùng WindowStyle Hidden vì cờ SW_HIDE sẽ di truyền làm ứng dụng mới bị ẩn
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$updaterCmd`"" -WindowStyle Normal
 
-        # Đóng ứng dụng cũ ngay lập tức
-        Start-Sleep -Milliseconds 800
+        # Đóng ứng dụng cũ ngay lập tức để giải phóng hoàn toàn file lock cho updater
+        Start-Sleep -Milliseconds 600
         [System.Environment]::Exit(0)
 
         return "[OK] Đang khởi động lại ứng dụng mới!"
