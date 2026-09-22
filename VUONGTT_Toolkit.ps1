@@ -7151,10 +7151,13 @@ $window.Add_ContentRendered({
                                 if ($askUpdate -eq [System.Windows.MessageBoxResult]::Yes) {
                                     $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang tải bản v$($uInfo.LatestVersion) từ GitHub..."
                                     Invoke-VUONGTTDoEvents
-                                    Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -OnProgress {
+                                    $updRes = Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -OnProgress {
                                         param($m)
                                         $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
                                         Invoke-VUONGTTDoEvents
+                                    }
+                                    if ($updRes -and ($updRes -like "*[LỖI]*" -or $updRes -like "*[CANH BAO]*")) {
+                                        [System.Windows.MessageBox]::Show($updRes, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
                                     }
                                 }
                             }

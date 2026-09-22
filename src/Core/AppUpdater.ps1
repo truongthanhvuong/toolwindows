@@ -264,13 +264,16 @@ function Get-VUONGTTTargetExePath {
         return $env:VUONGTT_ORIGINAL_EXE
     }
 
-    # 3. File launcher_info.txt trong Temp hoặc Runtime
+    # 3. File launcher_info.txt trong Temp hoặc Runtime hoặc thư mục ứng dụng
     $infoFiles = @(
         "$env:TEMP\VUONGTT_Toolkit_Runtime\launcher_info.txt",
         "$env:TEMP\launcher_info.txt"
     )
     if ($script:appRootDir) {
         $infoFiles += (Join-Path $script:appRootDir "launcher_info.txt")
+    }
+    if ($PSScriptRoot) {
+        $infoFiles += (Join-Path $PSScriptRoot "launcher_info.txt")
     }
     foreach ($inf in $infoFiles) {
         if (Test-Path $inf -ErrorAction SilentlyContinue) {
@@ -291,42 +294,35 @@ function Get-VUONGTTTargetExePath {
         }
     } catch {}
 
-    # 5. Truy vết tiến trình cha qua WMI/CIM
-    try {
-        $parentPid = (Get-CimInstance Win32_Process -Filter "ProcessId = $PID" -ErrorAction SilentlyContinue).ParentProcessId
-        if ($parentPid) {
-            $parentProc = Get-CimInstance Win32_Process -Filter "ProcessId = $parentPid" -ErrorAction SilentlyContinue
-            if ($parentProc -and $parentProc.ExecutablePath -and ($parentProc.ExecutablePath -like "*.exe") -and ($parentProc.ExecutablePath -notlike "*powershell*")) {
-                return $parentProc.ExecutablePath
-            }
-        }
-    } catch {}
-
-    # 6. Dò tìm trong thư mục ứng dụng hiện hành
+    # 5. Dò tìm trong thư mục ứng dụng hiện hành
     if ($script:appRootDir) {
         $localExe = Join-Path $script:appRootDir "VUONGTT_Toolkit.exe"
         if (Test-Path $localExe -ErrorAction SilentlyContinue) {
             return $localExe
         }
     }
-
-    # 7. Dò tìm trong các thư mục thông dụng của người dùng hiện tại
-    $userProf = [System.Environment]::GetFolderPath("UserProfile")
-    $candidates = @(
-        (Join-Path $userProf "Desktop\VUONGTT_Toolkit.exe"),
-        (Join-Path $userProf "Downloads\VUONGTT_Toolkit.exe"),
-        "E:\toolwindows\VUONGTT_Toolkit.exe",
-        "D:\VUONGTT_Toolkit.exe",
-        "C:\VUONGTT_Toolkit.exe"
-    )
-    foreach ($cand in $candidates) {
-        if (Test-Path $cand -ErrorAction SilentlyContinue) {
-            return $cand
+    if ($PSScriptRoot) {
+        $localExe = Join-Path $PSScriptRoot "VUONGTT_Toolkit.exe"
+        if (Test-Path $localExe -ErrorAction SilentlyContinue) {
+            return $localExe
         }
     }
 
-    # 8. Fallback an toàn mặc định: Thư mục Downloads
-    return (Join-Path $userProf "Downloads\VUONGTT_Toolkit.exe")
+    # 6. Dò tìm trên Desktop
+    $userProf = [System.Environment]::GetFolderPath("UserProfile")
+    $deskExe = Join-Path $userProf "Desktop\VUONGTT_Toolkit.exe"
+    if (Test-Path $deskExe -ErrorAction SilentlyContinue) {
+        return $deskExe
+    }
+
+    # 7. Dò tìm trong Downloads
+    $downExe = Join-Path $userProf "Downloads\VUONGTT_Toolkit.exe"
+    if (Test-Path $downExe -ErrorAction SilentlyContinue) {
+        return $downExe
+    }
+
+    # 8. Fallback an toàn: Desktop
+    return $deskExe
 }
 
 # Tự động dọn dẹp các tệp tin backup .old / .bak sau khi cập nhật thành công
@@ -353,7 +349,7 @@ function Invoke-VUONGTTAppSelfUpdate {
     $targetExePath = Get-VUONGTTTargetExePath
     if (-not $targetExePath -or ($targetExePath -like "*powershell*") -or ($targetExePath -notlike "*.exe")) {
         $userProf = [System.Environment]::GetFolderPath("UserProfile")
-        $targetExePath = Join-Path $userProf "Downloads\VUONGTT_Toolkit.exe"
+        $targetExePath = Join-Path $userProf "Desktop\VUONGTT_Toolkit.exe"
     }
 
     if ($OnProgress) { & $OnProgress "Đang chuẩn bị tải gói cập nhật phiên bản v$NewVersion..." }
@@ -414,21 +410,10 @@ echo ===========================================================================
 echo.
 echo   [1/3] Dang dong tien trinh cu de giai phong tai nguyen...
 
-:: Dong cac tien trinh cu
+:: Dong cac tien trinh cu bang moi co che
 taskkill /f /im "VUONGTT_Toolkit.exe" >nul 2>&1
-
-:: Cho an toan toi da 3 giay, tranh bi treo vo han
-set /a retryCount=0
-:check_proc
-set /a retryCount+=1
+wmic process where "name='VUONGTT_Toolkit.exe'" call terminate >nul 2>&1
 timeout /t 1 /nobreak >nul
-tasklist /fi "imagename eq VUONGTT_Toolkit.exe" 2>nul | find /i "VUONGTT_Toolkit.exe" >nul
-if not errorlevel 1 (
-    if %retryCount% lss 3 (
-        taskkill /f /im "VUONGTT_Toolkit.exe" >nul 2>&1
-        goto check_proc
-    )
-)
 
 echo.
 echo   [2/3] Dang ghi de phien ban moi v$NewVersion (Shadow Hot-Swap Engine)...

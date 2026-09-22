@@ -88,6 +88,8 @@ $programCsFile = Join-Path $rootDir "src\Program.cs"
 if (Test-Path $programCsFile) {
     $c = [System.IO.File]::ReadAllText($programCsFile, [System.Text.Encoding]::UTF8)
     $c = $c -replace 'v20\.5\.908\.\d+', "v$targetVer"
+    $c = $c -replace 'AssemblyVersion\("[^"]+"\)', "AssemblyVersion(`"$targetVer`")"
+    $c = $c -replace 'AssemblyFileVersion\("[^"]+"\)', "AssemblyFileVersion(`"$targetVer`")"
     [System.IO.File]::WriteAllText($programCsFile, $c, (New-Object System.Text.UTF8Encoding($true)))
     Write-Host " -> Da cap nhat src\Program.cs" -ForegroundColor Gray
 }
