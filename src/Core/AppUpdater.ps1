@@ -1,7 +1,7 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.909.3"
+$script:APP_CURRENT_VERSION = "20.5.909.04"
 
 # Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {
@@ -267,13 +267,24 @@ function Get-VUONGTTTargetExePath {
     # 3. File launcher_info.txt trong Temp hoặc Runtime hoặc thư mục ứng dụng
     $infoFiles = @(
         "$env:TEMP\VUONGTT_Toolkit_Runtime\launcher_info.txt",
-        "$env:TEMP\launcher_info.txt"
+        "$env:TEMP\launcher_info.txt",
+        "E:\toolwindows\launcher_info.txt"
     )
+    if ($global:ScriptDir) {
+        $infoFiles += (Join-Path $global:ScriptDir "launcher_info.txt")
+    }
     if ($script:appRootDir) {
         $infoFiles += (Join-Path $script:appRootDir "launcher_info.txt")
     }
     if ($PSScriptRoot) {
         $infoFiles += (Join-Path $PSScriptRoot "launcher_info.txt")
+        $srcDir = Split-Path $PSScriptRoot -Parent
+        if ($srcDir) {
+            $projDir = Split-Path $srcDir -Parent
+            if ($projDir) {
+                $infoFiles += (Join-Path $projDir "launcher_info.txt")
+            }
+        }
     }
     foreach ($inf in $infoFiles) {
         if (Test-Path $inf -ErrorAction SilentlyContinue) {
@@ -294,17 +305,27 @@ function Get-VUONGTTTargetExePath {
         }
     } catch {}
 
-    # 5. Dò tìm trong thư mục ứng dụng hiện hành
-    if ($script:appRootDir) {
-        $localExe = Join-Path $script:appRootDir "VUONGTT_Toolkit.exe"
-        if (Test-Path $localExe -ErrorAction SilentlyContinue) {
-            return $localExe
+    # 5. Dò tìm trong thư mục ứng dụng hiện hành / thư mục gốc của dự án
+    $candidateExeDirs = @(
+        $global:ScriptDir,
+        $script:appRootDir,
+        (Get-Location).Path,
+        "E:\toolwindows"
+    )
+    if ($PSScriptRoot) {
+        $candidateExeDirs += $PSScriptRoot
+        $srcDir = Split-Path $PSScriptRoot -Parent
+        if ($srcDir) {
+            $projDir = Split-Path $srcDir -Parent
+            if ($projDir) { $candidateExeDirs += $projDir }
         }
     }
-    if ($PSScriptRoot) {
-        $localExe = Join-Path $PSScriptRoot "VUONGTT_Toolkit.exe"
-        if (Test-Path $localExe -ErrorAction SilentlyContinue) {
-            return $localExe
+    foreach ($dir in $candidateExeDirs) {
+        if ($dir -and (Test-Path $dir -ErrorAction SilentlyContinue)) {
+            $localExe = Join-Path $dir "VUONGTT_Toolkit.exe"
+            if (Test-Path $localExe -ErrorAction SilentlyContinue) {
+                return $localExe
+            }
         }
     }
 
@@ -321,7 +342,7 @@ function Get-VUONGTTTargetExePath {
         return $downExe
     }
 
-    # 8. Fallback an toàn: Desktop
+    # 8. Fallback an toàn
     return $deskExe
 }
 
@@ -388,78 +409,119 @@ function Invoke-VUONGTTAppSelfUpdate {
         if ($OnProgress) { & $OnProgress "Đang kết nối máy chủ và tải bản cập nhật mới nhất: $DownloadUrl..." }
         $client.DownloadFile($dlUrlWithCacheBust, $tempDownloadExe)
 
-        if (-not (Test-Path $tempDownloadExe) -or (Get-Item $tempDownloadExe).Length -lt 50000) {
-            return "[LỖI] Tải bản cập nhật thất bại hoặc tệp tin bị lỗi! Vui lòng kiểm tra lại kết nối mạng."
+        if (-not (Test-Path $tempDownloadExe) -or (Get-Item $tempDownloadExe).Length -lt 500000) {
+            return "[LỖI] Tải bản cập nhật thất bại hoặc tệp tin bị lỗi dung lượng (< 500KB)! Vui lòng kiểm tra lại kết nối mạng."
         }
 
         $sizeKb = [math]::Round((Get-Item $tempDownloadExe).Length / 1KB, 1)
-        if ($OnProgress) { & $OnProgress "Đã tải xong bản mới ($sizeKb KB). Đang khởi tạo tiến trình tự động thay thế file..." }
+        if ($OnProgress) { & $OnProgress "Đã tải xong bản mới ($sizeKb KB). Đang chuẩn bị tiến trình thay thế tập tin..." }
 
-        # Tạo script cập nhật độc lập với kỹ thuật Shadow Rename và hiển thị cửa sổ Normal (chống Ghost Process)
+        # Tạo script cập nhật độc lập đa tầng sử dụng PowerShell để bảo đảm giải phóng khóa tập tin 100%
+        $updaterPs1 = "$env:TEMP\VUONGTT_HotSwap_Updater.ps1"
+        $targetDir = Split-Path $targetExePath -Parent
+        if (-not $targetDir) { $targetDir = "E:\toolwindows" }
+
+        $psContent = @"
+`$ErrorActionPreference = 'SilentlyContinue'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "       VUONGTT TOOL PRO 2026 - TIEN TRINH TU DONG NANG CAP HE THONG         " -ForegroundColor Yellow
+Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host " [1/3] Dang dong tien trinh cu va doi giai phong khoa tap tin..." -ForegroundColor Gray
+
+# 1. Dong cac tien trinh cu
+`$procs = Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue
+foreach (`$p in `$procs) {
+    try { `$p.Kill(); `$p.WaitForExit(2000) } catch {}
+}
+
+# 2. Vong lap kiem tra khoa tap tin (File Lock polling)
+`$target = '$($targetExePath -replace "'", "''")'
+`$tempNew = '$($tempDownloadExe -replace "'", "''")'
+`$workDir = '$($targetDir -replace "'", "''")'
+
+`$lockCleared = `$false
+for (`$i = 0; `$i -lt 30; `$i++) {
+    try {
+        if (-not (Test-Path `$target)) {
+            `$lockCleared = `$true
+            break
+        }
+        `$fs = [System.IO.File]::Open(`$target, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+        if (`$fs) {
+            `$fs.Close()
+            `$fs.Dispose()
+            `$lockCleared = `$true
+            break
+        }
+    } catch {
+        Start-Sleep -Milliseconds 400
+    }
+}
+
+Write-Host " [2/3] Dang thay the phien ban moi v$NewVersion..." -ForegroundColor Green
+
+# 3. Kỹ thuật Shadow Swap an toàn tuyệt đối
+`$targetBak = "`$target.old"
+if (Test-Path `$targetBak) { Remove-Item `$targetBak -Force -ErrorAction SilentlyContinue }
+
+`$swapSuccess = `$false
+try {
+    if (Test-Path `$target) {
+        Move-Item -Path `$target -Destination `$targetBak -Force
+    }
+    Copy-Item -Path `$tempNew -Destination `$target -Force
+    if ((Test-Path `$target) -and ((Get-Item `$target).Length -gt 500000)) {
+        `$swapSuccess = `$true
+        Remove-Item `$targetBak -Force -ErrorAction SilentlyContinue
+        Remove-Item `$tempNew -Force -ErrorAction SilentlyContinue
+    }
+} catch {}
+
+# Fallback neu ghi de that bai: khoi phuc ban cu
+if (-not `$swapSuccess) {
+    Write-Host " [!] Khong the ghi de truc tiep, dang phuc hoi file goc..." -ForegroundColor Yellow
+    if (Test-Path `$targetBak) {
+        Move-Item -Path `$targetBak -Destination `$target -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Write-Host " [3/3] Dang khoi dong lai VUONGTT Tool Pro 2026..." -ForegroundColor Cyan
+Start-Sleep -Milliseconds 600
+
+# 4. Khoi dong lai ung dung voi day du quyen Quan tri vien (RunAs)
+try {
+    Start-Process -FilePath `$target -WorkingDirectory `$workDir -Verb RunAs
+} catch {
+    Start-Process -FilePath `$target -WorkingDirectory `$workDir
+}
+
+Start-Sleep -Milliseconds 1000
+exit 0
+"@
+        [System.IO.File]::WriteAllText($updaterPs1, $psContent, (New-Object System.Text.UTF8Encoding($true)))
+
+        # Tạo file launcher .cmd để khởi chạy PowerShell độc lập hoàn toàn khỏi tiến trình hiện tại
         $updaterCmd = "$env:TEMP\VUONGTT_HotSwap_Updater.cmd"
         $cmdContent = @"
 @echo off
 chcp 65001 >nul
-title VUONGTT Tool Pro 2026 - He Thong Tu Dong Cap Nhat
-mode con: cols=76 lines=14
-color 0B
-cls
-echo ============================================================================
-echo        VUONGTT TOOL PRO 2026 - TIEN TRINH TU DONG NANG CAP HE THONG
-echo ============================================================================
-echo.
-echo   [1/3] Dang dong tien trinh cu de giai phong tai nguyen...
-
-:: Dong cac tien trinh cu bang moi co che
-taskkill /f /im "VUONGTT_Toolkit.exe" >nul 2>&1
-wmic process where "name='VUONGTT_Toolkit.exe'" call terminate >nul 2>&1
-timeout /t 1 /nobreak >nul
-
-echo.
-echo   [2/3] Dang ghi de phien ban moi v$NewVersion (Shadow Hot-Swap Engine)...
-
-:: Co che Shadow Rename: Doi ten file goc thanh .old de pha vo File Lock ngay lap tuc
-if exist "$targetExePath.old" del /f /q "$targetExePath.old" >nul 2>&1
-move /y "$targetExePath" "$targetExePath.old" >nul 2>&1
-
-:: Di chuyen/Copy file moi vao dung vi tri goc
-move /y "$tempDownloadExe" "$targetExePath" >nul 2>&1
-if not exist "$targetExePath" (
-    copy /y "$tempDownloadExe" "$targetExePath" >nul 2>&1
-)
-
-:: Kiem tra neu cap nhat thanh cong
-if exist "$targetExePath" (
-    del /f /q "$targetExePath.old" >nul 2>&1
-    del /f /q "$tempDownloadExe" >nul 2>&1
-    echo.
-    echo   [3/3] Cap nhat thanh cong 100%! Dang khoi dong lai VUONGTT Tool Pro 2026...
-    timeout /t 1 /nobreak >nul
-    start "" "$targetExePath"
-) else (
-    echo.
-    echo   [!] Khong the ghi de thu muc goc, dang chuyen ban moi ra Desktop...
-    set "DESK_EXE=%USERPROFILE%\Desktop\VUONGTT_Toolkit.exe"
-    move /y "$tempDownloadExe" "%DESK_EXE%" >nul 2>&1
-    echo   [3/3] Dang khoi dong ban moi tu Desktop...
-    timeout /t 1 /nobreak >nul
-    start "" "%DESK_EXE%"
-)
-
-timeout /t 2 /nobreak >nul
-del /f /q "%~f0" 2>nul
+title VUONGTT Tool Pro 2026 - Dang Nang Cap...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "$updaterPs1"
+del /f /q "%~f0" >nul 2>&1
 exit
 "@
         [System.IO.File]::WriteAllText($updaterCmd, $cmdContent, [System.Text.Encoding]::Default)
 
         if ($OnProgress) { & $OnProgress "Đang khởi động lại ứng dụng với phiên bản v$NewVersion..." }
 
-        # Khởi chạy updater.cmd với cửa sổ hiển thị bình thường (WindowStyle Normal)
-        # Tuyệt đối KHÔNG dùng WindowStyle Hidden vì cờ SW_HIDE sẽ di truyền làm ứng dụng mới bị ẩn
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$updaterCmd`"" -WindowStyle Normal
+        # Khởi chạy updater.cmd độc lập với quyền Administrator
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$updaterCmd`"" -WindowStyle Normal -Verb RunAs
 
         # Đóng ứng dụng cũ ngay lập tức để giải phóng hoàn toàn file lock cho updater
-        Start-Sleep -Milliseconds 600
+        Start-Sleep -Milliseconds 500
         [System.Environment]::Exit(0)
 
         return "[OK] Đang khởi động lại ứng dụng mới!"

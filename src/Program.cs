@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.3")]
-[assembly: AssemblyFileVersion("20.5.909.3")]
+[assembly: AssemblyVersion("20.5.909.04")]
+[assembly: AssemblyFileVersion("20.5.909.04")]
 
 namespace VUONGTT
 {
@@ -59,7 +59,8 @@ namespace VUONGTT
                     pb.Location = new Point(22, 78);
 
                     Label lblVer = new Label();
-                    lblVer.Text = "v20.5.909.02 • Professional Standalone (All-in-One)";
+                    string verStr = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                    lblVer.Text = "v" + verStr + " • Professional Standalone (All-in-One)";
                     lblVer.ForeColor = Color.FromArgb(148, 163, 184);
                     lblVer.Font = new Font("Segoe UI", 7.5f, FontStyle.Regular);
                     lblVer.Location = new Point(22, 98);
@@ -289,17 +290,23 @@ namespace VUONGTT
                         int exitCode = 0;
                         try { exitCode = proc.ExitCode; } catch { }
 
-                        // Nếu PowerShell bị văng trong 5.5 giây đầu
-                        if (exitCode != 0 || (DateTime.UtcNow - startTime).TotalSeconds < 5.0)
+                        // Chỉ kích hoạt Self-Healing nếu tiến trình thực sự bị văng lỗi (exitCode != 0)
+                        if (exitCode != 0)
                         {
                             if (isSmokeTest)
                             {
                                 // Chế độ Smoke Test: Thoát ngay với mã lỗi để CI/Release script bắt được tức thì
-                                Environment.Exit(exitCode != 0 ? exitCode : 99);
+                                Environment.Exit(exitCode);
                                 return;
                             }
 
                             PerformSelfHealingPrompt(currentExe, exitCode);
+                            return;
+                        }
+                        else
+                        {
+                            // Tiến trình PowerShell đã chủ động kết thúc hợp lệ (ví dụ: chuyển giao cho kịch bản Self-Update)
+                            Environment.Exit(0);
                             return;
                         }
                     }
