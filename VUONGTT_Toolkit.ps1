@@ -983,49 +983,121 @@ function Refresh-SysInfoDisplay {
 }
 
 # Disk Benchmark Controls
-$txtBenchmarkResult  = Get-Control "txtBenchmarkResult"
-$btnRunDiskBenchmark = Get-Control "btnRunDiskBenchmark"
+$txtBenchmarkResult    = Get-Control "txtBenchmarkResult"
+$btnRunDiskBenchmark   = Get-Control "btnRunDiskBenchmark"
+$btnStopDiskBenchmark  = Get-Control "btnStopDiskBenchmark"
+$global:isSysInfoBenchCancelled = $false
+
+if ($btnStopDiskBenchmark) {
+    $btnStopDiskBenchmark.Add_Click({
+        $global:isSysInfoBenchCancelled = $true
+        if ($txtBenchmarkResult) {
+            $txtBenchmarkResult.Text = "🛑 Đang dừng đo tốc độ..."
+        }
+        $txtFooterStatus.Text = "• [Dừng] Đang dừng tiến trình đo tốc độ ổ đĩa..."
+    })
+}
 
 if ($btnRunDiskBenchmark) {
     $btnRunDiskBenchmark.Add_Click({
+        $global:isSysInfoBenchCancelled = $false
         $btnRunDiskBenchmark.IsEnabled = $false
         $btnRunDiskBenchmark.Content = "⏳ Đang Đo Tốc Độ..."
-        $txtBenchmarkResult.Text = "Đang kiểm tra tốc độ đọc/ghi ổ đĩa hệ thống..."
+        if ($btnStopDiskBenchmark) {
+            $btnStopDiskBenchmark.Visibility = [System.Windows.Visibility]::Visible
+            $btnStopDiskBenchmark.IsEnabled = $true
+        }
+        $txtBenchmarkResult.Text = "Đang khởi tạo bài đo tốc độ Đọc/Ghi..."
+        $txtFooterStatus.Text = "• [Đang đo] Bắt đầu đo tốc độ ổ đĩa hệ thống..."
+        Invoke-VUONGTTDoEvents
 
-        $benchTimer = New-Object System.Windows.Threading.DispatcherTimer
-        $benchTimer.Interval = [TimeSpan]::FromMilliseconds(150)
-        $benchTimer.Add_Tick({
-            $benchTimer.Stop()
-            try {
-                $testPath = "$env:TEMP\VUONGTT_DiskSpeedTest.dat"
-                $sizeMB = 64
-                $data = New-Object byte[] ($sizeMB * 1024 * 1024)
-                [System.Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($data)
+        $testPath = Join-Path $env:TEMP 'VUONGTT_DiskSpeedTest.dat'
+        $fs = $null
+        try {
+            $chunkSize = 4 * 1024 * 1024 # 4MB chunk
+            $totalChunks = 16            # 64MB total test size
+            $totalMB = ($chunkSize * $totalChunks) / 1MB
 
-                # Sequential Write Test
-                $sw = [System.Diagnostics.Stopwatch]::StartNew()
-                [System.IO.File]::WriteAllBytes($testPath, $data)
-                $sw.Stop()
-                $writeMBps = [math]::Round($sizeMB / ($sw.ElapsedMilliseconds / 1000), 1)
+            # Tao buffer 4MB ngau nhien chong nen
+            $buffer = New-Object byte[] $chunkSize
+            [System.Random]::new().NextBytes($buffer)
 
-                # Sequential Read Test
-                $sw.Restart()
-                $readBytes = [System.IO.File]::ReadAllBytes($testPath)
-                $sw.Stop()
-                $readMBps = [math]::Round($sizeMB / ($sw.ElapsedMilliseconds / 1000), 1)
+            # 1. GIAI ĐOẠN GHI TUẦN TỰ (SEQUENTIAL WRITE)
+            $txtBenchmarkResult.Text = "⏳ Đang ghi dữ liệu mẫu (0%)..."
+            Invoke-VUONGTTDoEvents
 
-                if (Test-Path $testPath) { Remove-Item $testPath -Force -ErrorAction SilentlyContinue }
-
-                $txtBenchmarkResult.Text = 'Doc: ' + $readMBps + ' MB/s | Ghi: ' + $writeMBps + ' MB/s'
-                $txtFooterStatus.Text = '• [OK] Hoàn tất đo tốc độ ổ C: Đọc ' + $readMBps + ' MB/s - Ghi ' + $writeMBps + ' MB/s'
-            } catch {
-                $txtBenchmarkResult.Text = 'Lỗi: ' + $_.Exception.Message
-            } finally {
-                $btnRunDiskBenchmark.IsEnabled = $true
-                $btnRunDiskBenchmark.Content = "🚀 Bắt Đầu Đo Tốc Độ"
+            $swWrite = [System.Diagnostics.Stopwatch]::StartNew()
+            $fs = [System.IO.File]::Open($testPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+            for ($i = 1; $i -le $totalChunks; $i++) {
+                if ($global:isSysInfoBenchCancelled) { break }
+                $fs.Write($buffer, 0, $chunkSize)
+                $pct = [math]::Round(($i / $totalChunks) * 50)
+                $txtBenchmarkResult.Text = "⏳ Đang ghi dữ liệu mẫu ($pct%)..."
+                $btnRunDiskBenchmark.Content = "⏳ Đang Ghi ($pct%)..."
+                Invoke-VUONGTTDoEvents
             }
-        })
-        $benchTimer.Start()
+            $fs.Flush()
+            $fs.Close()
+            $fs = $null
+            $swWrite.Stop()
+
+            if ($global:isSysInfoBenchCancelled) {
+                if (Test-Path $testPath) { Remove-Item $testPath -Force -ErrorAction SilentlyContinue }
+                $txtBenchmarkResult.Text = "🛑 Đã hủy đo tốc độ ổ đĩa theo yêu cầu."
+                $txtFooterStatus.Text = "• [Đã hủy] Tiến trình đo tốc độ ổ đĩa đã được dừng an toàn."
+                return
+            }
+
+            $writeSec = [math]::Max(0.001, $swWrite.Elapsed.TotalSeconds)
+            $writeMBps = [math]::Round($totalMB / $writeSec, 1)
+
+            # 2. GIAI ĐOẠN ĐỌC TUẦN TỰ (SEQUENTIAL READ)
+            $txtBenchmarkResult.Text = "⏳ Đang đọc kiểm tra tốc độ (50%)..."
+            Invoke-VUONGTTDoEvents
+
+            $swRead = [System.Diagnostics.Stopwatch]::StartNew()
+            $fs = [System.IO.File]::Open($testPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+            for ($i = 1; $i -le $totalChunks; $i++) {
+                if ($global:isSysInfoBenchCancelled) { break }
+                $bytesRead = $fs.Read($buffer, 0, $chunkSize)
+                $pct = 50 + [math]::Round(($i / $totalChunks) * 50)
+                $txtBenchmarkResult.Text = "⏳ Đang đọc kiểm tra tốc độ ($pct%)..."
+                $btnRunDiskBenchmark.Content = "⏳ Đang Đọc ($pct%)..."
+                Invoke-VUONGTTDoEvents
+            }
+            $fs.Close()
+            $fs = $null
+            $swRead.Stop()
+
+            if ($global:isSysInfoBenchCancelled) {
+                if (Test-Path $testPath) { Remove-Item $testPath -Force -ErrorAction SilentlyContinue }
+                $txtBenchmarkResult.Text = "🛑 Đã hủy đo tốc độ ổ đĩa theo yêu cầu."
+                $txtFooterStatus.Text = "• [Đã hủy] Tiến trình đo tốc độ ổ đĩa đã được dừng an toàn."
+                return
+            }
+
+            $readSec = [math]::Max(0.001, $swRead.Elapsed.TotalSeconds)
+            $readMBps = [math]::Round($totalMB / $readSec, 1)
+
+            if (Test-Path $testPath) { Remove-Item $testPath -Force -ErrorAction SilentlyContinue }
+
+            $txtBenchmarkResult.Text = "⚡ Đọc: $readMBps MB/s | Ghi: $writeMBps MB/s"
+            $txtFooterStatus.Text = "• [OK] Hoàn tất đo tốc độ ổ C: Đọc $readMBps MB/s - Ghi $writeMBps MB/s"
+        } catch {
+            $txtBenchmarkResult.Text = "Lỗi: " + $_.Exception.Message
+            $txtFooterStatus.Text = "• [Lỗi] Không thể hoàn tất đo tốc độ: $($_.Exception.Message)"
+        } finally {
+            if ($fs) {
+                try { $fs.Close() } catch {}
+            }
+            if (Test-Path $testPath) { Remove-Item $testPath -Force -ErrorAction SilentlyContinue }
+            if ($btnStopDiskBenchmark) {
+                $btnStopDiskBenchmark.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            $btnRunDiskBenchmark.IsEnabled = $true
+            $btnRunDiskBenchmark.Content = "🚀 Bắt Đầu Đo Tốc Độ"
+            $global:isSysInfoBenchCancelled = $false
+        }
     })
 }
 
@@ -3100,7 +3172,8 @@ $txtDiskSerial        = Get-Control "txtDiskSerial"
 $txtDiskFirmware      = Get-Control "txtDiskFirmware"
 $panelDiskVolumes     = Get-Control "panelDiskVolumes"
 $lstSmartAttributes   = Get-Control "lstSmartAttributes"
-$btnRunDiskBenchmark2 = Get-Control "btnRunDiskBenchmark2"
+$btnRunDiskBenchmark2  = Get-Control "btnRunDiskBenchmark2"
+$btnStopDiskBenchmark2 = Get-Control "btnStopDiskBenchmark2"
 $btnRunSurfaceScan    = Get-Control "btnRunSurfaceScan"
 $btnCopyDiskReport    = Get-Control "btnCopyDiskReport"
 $btnRunCpuBenchmark   = Get-Control "btnRunCpuBenchmark"
@@ -3304,22 +3377,55 @@ if ($btnCheckPowerHours) {
     })
 }
 
+if ($btnStopDiskBenchmark2) {
+    $btnStopDiskBenchmark2.Add_Click({
+        $global:isDiskBenchCancelled = $true
+        if ($txtBenchmarkResult2) {
+            $txtBenchmarkResult2.Text += "`r`n🛑 [YÊU CẦU DỪNG] Đang dừng tiến trình đo tốc độ ổ đĩa..."
+        }
+        $txtFooterStatus.Text = "• [Dừng] Đang gửi tín hiệu dừng đo tốc độ ổ đĩa..."
+    })
+}
+
 if ($btnRunDiskBenchmark2) {
     $btnRunDiskBenchmark2.Add_Click({
+        $global:isDiskBenchCancelled = $false
         $targetDrive = "C"
         $curDisk = if ($script:cachedDiskHealthList -and $cmbDiskSelect -and $cmbDiskSelect.SelectedIndex -ge 0) { $script:cachedDiskHealthList[$cmbDiskSelect.SelectedIndex] } else { $null }
         if ($curDisk -and $curDisk.Volumes -and $curDisk.Volumes.Count -gt 0) {
             $targetDrive = $curDisk.Volumes[0].DriveLetter.Replace(":","")
         }
 
+        if ($btnStopDiskBenchmark2) {
+            $btnStopDiskBenchmark2.Visibility = [System.Windows.Visibility]::Visible
+            $btnStopDiskBenchmark2.IsEnabled = $true
+        }
+        $btnRunDiskBenchmark2.IsEnabled = $false
+
         if ($txtBenchmarkResult2) {
-            $txtBenchmarkResult2.Text = "⏳ Đang tiến hành đo tốc độ Đọc/Ghi tuần tự trên phân vùng $($targetDrive): (Kích thước mẫu 128 MB)... Vui lòng đợi trong giây lát!"
+            $txtBenchmarkResult2.Text = "⏳ Đang chuẩn bị đo tốc độ Đọc/Ghi tuần tự trên phân vùng $($targetDrive): (Kích thước mẫu 128 MB)... Bấm '🛑 Dừng Đo' bất cứ lúc nào để hủy!"
         }
         Invoke-VUONGTTDoEvents
 
-        $res = Measure-VUONGTTDiskBenchmark -TargetDrive $targetDrive
-        if ($txtBenchmarkResult2) { $txtBenchmarkResult2.Text = $res }
-        $txtFooterStatus.Text = "• [OK] Hoàn tất đo tốc độ Đọc/Ghi thực tế của ổ đĩa ($($targetDrive):)!"
+        try {
+            $res = Measure-VUONGTTDiskBenchmark -TargetDrive $targetDrive -ProgressCallback {
+                param($pct)
+                if ($txtBenchmarkResult2) {
+                    $txtBenchmarkResult2.Text = "⏳ Đang đo tốc độ phân vùng $($targetDrive):... Tiến độ: $pct%`r`n(Đang kiểm tra thông lượng I/O thực tế. Bấm '🛑 Dừng Đo' để hủy)."
+                }
+                Invoke-VUONGTTDoEvents
+            }
+            if ($txtBenchmarkResult2) { $txtBenchmarkResult2.Text = $res }
+            $txtFooterStatus.Text = "• [OK] Đã hoàn tất tác vụ đo tốc độ của ổ đĩa ($($targetDrive):)!"
+        } catch {
+            if ($txtBenchmarkResult2) { $txtBenchmarkResult2.Text = "Lỗi khi đo tốc độ: $($_.Exception.Message)" }
+        } finally {
+            if ($btnStopDiskBenchmark2) {
+                $btnStopDiskBenchmark2.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            $btnRunDiskBenchmark2.IsEnabled = $true
+            $global:isDiskBenchCancelled = $false
+        }
     })
 }
 

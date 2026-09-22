@@ -664,7 +664,11 @@
                                             <TextBlock x:Name="txtBenchmarkResult" Text="Chưa đo tốc độ (Nhấn 'Bắt Đầu Đo' để kiểm tra)" FontSize="11.5" FontWeight="Bold" Foreground="#78350F"/>
                                         </Border>
                                     </StackPanel>                                    <TextBlock Text="Kiểm tra tốc độ đọc tuần tự (Sequential Read) &amp; ghi tuần tự (Write) trên ổ đĩa hệ thống." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0"/>
-                                </StackPanel>                                <Button x:Name="btnRunDiskBenchmark" Grid.Column="1" Content="🚀 Bắt Đầu Đo Tốc Độ" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="160" Height="34" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button x:Name="btnRunDiskBenchmark" Content="🚀 Bắt Đầu Đo Tốc Độ" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="160" Height="34"/>
+                                    <Button x:Name="btnStopDiskBenchmark" Content="🛑 Dừng Đo" Background="#DC2626" Foreground="White" FontWeight="Bold" Style="{StaticResource ActionBtn}" Height="34" Padding="12,0,12,0" Margin="8,0,0,0" Visibility="Collapsed" ToolTip="Dừng quá trình đo tốc độ ổ đĩa ngay lập tức"/>
+                                </StackPanel>
                             </Grid>
                         </Border>
 
@@ -2746,6 +2750,7 @@
                                 <WrapPanel>
                                     <Button x:Name="btnCheckPowerHours" Content="⏱️ Kiểm Tra Chi Tiết Số Giờ Đã Chạy" Background="#059669" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0" Margin="0,0,8,8" ToolTip="Phân tích chi tiết tổng số giờ hoạt động, thời gian bật máy hiện tại và lịch sử bật/tắt nguồn"/>
                                     <Button x:Name="btnRunDiskBenchmark2" Content="💾 Đo Tốc Độ SSD/HDD (Read/Write)" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="240" Padding="14,0,14,0" Margin="0,0,8,8" ToolTip="Đo tốc độ Đọc/Ghi tuần tự thực tế và độ trễ truy xuất 4KB"/>
+                                    <Button x:Name="btnStopDiskBenchmark2" Content="🛑 Dừng Đo" Background="#DC2626" Foreground="White" FontWeight="Bold" Style="{StaticResource ActionBtn}" Padding="14,0,14,0" Margin="0,0,8,8" Visibility="Collapsed" ToolTip="Dừng quá trình đo tốc độ ổ đĩa ngay lập tức"/>
                                     <Button x:Name="btnRunSurfaceScan" Content="🛡️ Quét Lỗi Bề Mặt &amp; Sửa Tệp (Chkdsk)" Background="#0284C7" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0" Margin="0,0,8,8" ToolTip="Quét kiểm tra an toàn bề mặt và cấu trúc tập tin NTFS/FAT32"/>
                                     <Button x:Name="btnCopyDiskReport" Content="📋 Copy Báo Cáo Sức Khỏe" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="210" Padding="14,0,14,0" Margin="0,0,8,8" ToolTip="Sao chép toàn bộ thông số sức khỏe và bảng SMART ra Clipboard"/>
                                     <Button x:Name="btnRunCpuBenchmark" Content="⚡ Benchmark CPU" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="180" Padding="14,0,14,0" Margin="0,0,8,8"/>

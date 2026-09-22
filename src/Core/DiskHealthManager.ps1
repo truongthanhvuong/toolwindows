@@ -1141,7 +1141,8 @@ function Get-VUONGTTDiskPowerAnalysis {
 # Do toc do Doc / Ghi tuan tu thuc te cua o cung (CrystalDiskMark style)
 function Measure-VUONGTTDiskBenchmark {
     param(
-        [string]$TargetDrive = "C"
+        [string]$TargetDrive = "C",
+        [scriptblock]$ProgressCallback = $null
     )
 
     $driveClean = $TargetDrive.Substring(0, 1)
@@ -1164,7 +1165,16 @@ function Measure-VUONGTTDiskBenchmark {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     $fsWrite = [System.IO.File]::Open($testFile, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
     for ($i = 0; $i -lt $fileSizeMB; $i++) {
+        if ($global:isDiskBenchCancelled) {
+            $fsWrite.Close()
+            if (Test-Path $testFile) { Remove-Item -Path $testFile -Force -ErrorAction SilentlyContinue }
+            if ($testDir -ne $env:TEMP -and (Test-Path $testDir)) { Remove-Item -Path $testDir -Force -Recurse -ErrorAction SilentlyContinue }
+            return "🛑 Đã hủy bỏ quá trình đo tốc độ ổ đĩa theo yêu cầu người dùng!"
+        }
         $fsWrite.Write($buffer, 0, $bufferSize)
+        if ($ProgressCallback -and ($i % 8 -eq 0)) {
+            & $ProgressCallback ([math]::Round(($i / $fileSizeMB) * 50))
+        }
     }
     $fsWrite.Flush()
     $fsWrite.Close()
@@ -1177,7 +1187,19 @@ function Measure-VUONGTTDiskBenchmark {
     $sw.Restart()
     $fsRead = [System.IO.File]::Open($testFile, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
     $readBuf = New-Object byte[] $bufferSize
-    while (($read = $fsRead.Read($readBuf, 0, $bufferSize)) -gt 0) {}
+    $readChunks = 0
+    while (($read = $fsRead.Read($readBuf, 0, $bufferSize)) -gt 0) {
+        $readChunks++
+        if ($global:isDiskBenchCancelled) {
+            $fsRead.Close()
+            if (Test-Path $testFile) { Remove-Item -Path $testFile -Force -ErrorAction SilentlyContinue }
+            if ($testDir -ne $env:TEMP -and (Test-Path $testDir)) { Remove-Item -Path $testDir -Force -Recurse -ErrorAction SilentlyContinue }
+            return "🛑 Đã hủy bỏ quá trình đo tốc độ ổ đĩa theo yêu cầu người dùng!"
+        }
+        if ($ProgressCallback -and ($readChunks % 8 -eq 0)) {
+            & $ProgressCallback (50 + [math]::Round(($readChunks / $fileSizeMB) * 50))
+        }
+    }
     $fsRead.Close()
     $sw.Stop()
 
@@ -1189,6 +1211,12 @@ function Measure-VUONGTTDiskBenchmark {
     $fsLatency = [System.IO.File]::Open($testFile, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
     $smallBuf = New-Object byte[] 4096
     for ($k = 0; $k -lt 500; $k++) {
+        if ($global:isDiskBenchCancelled) {
+            $fsLatency.Close()
+            if (Test-Path $testFile) { Remove-Item -Path $testFile -Force -ErrorAction SilentlyContinue }
+            if ($testDir -ne $env:TEMP -and (Test-Path $testDir)) { Remove-Item -Path $testDir -Force -Recurse -ErrorAction SilentlyContinue }
+            return "🛑 Đã hủy bỏ quá trình đo tốc độ ổ đĩa theo yêu cầu người dùng!"
+        }
         $offset = (Get-Random -Minimum 0 -Maximum ($fileSizeMB * 1024 * 1024 - 4096))
         $fsLatency.Seek($offset, [System.IO.SeekOrigin]::Begin) | Out-Null
         $fsLatency.Read($smallBuf, 0, 4096) | Out-Null
