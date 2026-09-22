@@ -99,17 +99,10 @@
     },
     {
         "Id":  "BackupDriver",
-        "Name":  "Sao Lưu / Phục Hồi Driver",
+        "Name":  "Quản Lý \u0026 Cập Nhật Driver",
         "Icon":  "💾",
-        "Tier":  "PRO",
-        "Description":  "Backup toàn bộ driver thiết bị và phục hồi tự động khi cài lại máy"
-    },
-    {
-        "Id":  "DevMgmt",
-        "Name":  "Quản Lý Thiết Bị Phần Cứng",
-        "Icon":  "🔌",
         "Tier":  "FREE",
-        "Description":  "Quản lý Device Manager, kiểm tra driver thiếu hoặc lỗi"
+        "Description":  "Quản lý Device Manager, kiểm tra driver thiếu hoặc lỗi, sao lưu và cập nhật driver"
     },
     {
         "Id":  "Activation",

@@ -443,11 +443,6 @@
                                 <TextBlock Text="💾" Margin="0,0,8,0"/>
                                 <TextBlock Text="Quản Lý &amp; Cập Nhật Driver"/>
                             </StackPanel>                        </Button>
-                        <Button x:Name="btnMenuDevMgmt" Style="{StaticResource MenuBtn}" Tag="DevMgmt">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🛠️" Margin="0,0,8,0"/>
-                                <TextBlock Text="Mở Device Manager"/>
-                            </StackPanel>                        </Button>
 
                         <!-- GROUP 5: TIỆN ÍCH KỸ THUẬT -->
                         <TextBlock x:Name="txtMenuHeaderGroup5" Text="▾ TIỆN ÍCH KỸ THUẬT" Style="{StaticResource MenuHeaderTxt}"/>

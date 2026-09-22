@@ -240,7 +240,7 @@ $menuButtons = @(
     "btnMenuLaptopCheck", "btnMenuCpuMain",
     "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuUninstaller", "btnMenuFonts",
     "btnMenuCleaner", "btnMenuConfig", "btnMenuPrinterLAN", "btnMenuBackupDriver",
-    "btnMenuDevMgmt", "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition",
+    "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition",
     "btnMenuIpScanner", "btnMenuAdmin"
 )
 
@@ -262,7 +262,6 @@ $pages = @{
     "Config"       = Get-Control "pageConfig"
     "PrinterLAN"   = Get-Control "pagePrinterLAN"
     "BackupDriver" = Get-Control "pageBackupDriver"
-    "DevMgmt"      = Get-Control "pageBackupDriver"
     "Activation"   = Get-Control "pageActivation"
     "BitLocker"    = Get-Control "pageBitLocker"
     "AutoWin"      = Get-Control "pageAutoWin"
@@ -288,7 +287,6 @@ $pageTitlesVI = @{
     "Config"       = @{ Title = "Cấu Hình Tính Năng & Sửa Lỗi Hệ Thống"; Icon = "🛠️" }
     "PrinterLAN"   = @{ Title = "Sửa Lỗi Máy In (87 Chức Năng)"; Icon = "🖨️" }
     "BackupDriver" = @{ Title = "Quản Lý, Kiểm Tra & Cập Nhật Driver"; Icon = "💾" }
-    "DevMgmt"      = @{ Title = "Quản Lý Thiết Bị (Device Manager)"; Icon = "🛠️" }
     "Activation"   = @{ Title = "Kích Hoạt (MAS HWID)"; Icon = "🔑" }
     "BitLocker"    = @{ Title = "Quản Lý & Tắt BitLocker - EFS"; Icon = "🔒" }
     "AutoWin"      = @{ Title = "Bộ Công Cụ Cài Win & Bypass"; Icon = "🚀" }
@@ -314,7 +312,6 @@ $pageTitlesEN = @{
     "Config"       = @{ Title = "Windows Config & Fixes Manager"; Icon = "🛠️" }
     "PrinterLAN"   = @{ Title = "Printer Repair (87 Tools)"; Icon = "🖨️" }
     "BackupDriver" = @{ Title = "Manage, Check & Update Drivers"; Icon = "💾" }
-    "DevMgmt"      = @{ Title = "Open Device Manager"; Icon = "🛠️" }
     "Activation"   = @{ Title = "Activate Windows & Office"; Icon = "🔑" }
     "BitLocker"    = @{ Title = "Manage BitLocker - EFS"; Icon = "🔒" }
     "AutoWin"      = @{ Title = "Auto Windows Deploy"; Icon = "🚀" }
@@ -463,9 +460,6 @@ function Switch-Tab {
                 Refresh-DriverStatusBadge
                 $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." }
             }
-            "DevMgmt"      { 
-                $txtFooterStatus.Text = "• [OK] Mở Device Manager từ danh mục Backup Driver hoặc quản lý phần cứng."
-            }
             "Activation"   { $txtFooterStatus.Text = "• [OK] Sẵn sàng kích hoạt bản quyền số vĩnh viễn MAS HWID." }
             "BitLocker"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng quản lý mã hóa BitLocker & trích xuất Recovery Key." }
             "AutoWin"      { $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass và tải ISO cài Win." }
@@ -550,7 +544,6 @@ function Set-ToolkitLanguage {
             "btnMenuConfig"       = "Cấu Hình & Sửa Lỗi (Config)"
             "btnMenuPrinterLAN"   = "Sửa Lỗi Máy In (87 Chức Năng)"
             "btnMenuBackupDriver" = "Quản Lý & Cập Nhật Driver"
-            "btnMenuDevMgmt"      = "Mở Device Manager"
             "btnMenuActivation"   = "Kích Hoạt (MAS HWID)"
             "btnMenuBitLocker"    = "Tắt BitLocker - EFS"
             "btnMenuAutoWin"      = "Cài Win & Tự Động Hóa"
@@ -606,7 +599,6 @@ function Set-ToolkitLanguage {
             "btnMenuConfig"       = "Windows Config & Fixes"
             "btnMenuPrinterLAN"   = "Printer Repair (87 Tools)"
             "btnMenuBackupDriver" = "Manage & Update Drivers"
-            "btnMenuDevMgmt"      = "Open Device Manager"
             "btnMenuActivation"   = "Activate Windows & Office"
             "btnMenuBitLocker"    = "Manage BitLocker - EFS"
             "btnMenuAutoWin"      = "Auto Windows Deploy"
