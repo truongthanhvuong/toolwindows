@@ -48,5 +48,15 @@
         "UsedHWID":  "",
         "UsedPCName":  "",
         "ActivatedDate":  ""
+    },
+    {
+        "Key":  "VUONG-LJ3L-GSWM-KL8S-9ZBW",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "22/09/2026 13:43:01",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
     }
 ]
