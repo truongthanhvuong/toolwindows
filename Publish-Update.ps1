@@ -10,6 +10,7 @@ param(
 
 $rootDir = $PSScriptRoot
 if (-not $rootDir) { $rootDir = (Get-Location).Path }
+Set-Location $rootDir
 
 # Yeu cau dac quyen Administrator de build va chay smoke test
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -18,9 +19,10 @@ if (-not $isAdmin) {
     $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     if ($Version) { $argList += " -Version `"$Version`"" }
     if ($ChangelogMessage) { $argList += " -ChangelogMessage `"$ChangelogMessage`"" }
-    Start-Process powershell.exe -ArgumentList $argList -Verb RunAs
+    Start-Process powershell.exe -ArgumentList $argList -WorkingDirectory $rootDir -Verb RunAs
     Exit
 }
+Set-Location $rootDir
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "   VUONGTT TOOLKIT 2026 - TIEN TRINH PHAT HANH BAN MOI   " -ForegroundColor Yellow
@@ -28,7 +30,7 @@ Write-Host "==========================================================" -Foregro
 
 # 0. Kiem tra va dong bo du lieu moi nhat tu GitHub truoc khi dong goi
 Write-Host "`n>>> [0/5] Dang dong bo du lieu moi nhat tu GitHub (git pull --rebase)..." -ForegroundColor Cyan
-git pull --rebase origin main
+git -C $rootDir pull --rebase origin main
 if ($LASTEXITCODE -ne 0) {
     Write-Host " [!] Canh bao: Co the gap xung dot khi rebase, dang kiem tra lai..." -ForegroundColor Yellow
 }
@@ -182,20 +184,21 @@ try {
 # 5. Git Commit va Push len GitHub voi co che tu dong Rebase & Retry
 Write-Host "`n>>> [4/6] Dang day ban moi v$targetVer len GitHub..." -ForegroundColor Yellow
 
-git add -A
+Set-Location $rootDir
+git -C $rootDir add -A
 $commitMsg = "release: v$targetVer - $(if ($ChangelogMessage) { $ChangelogMessage } else { 'Auto-update release for client machines' })"
-git commit -m $commitMsg
+git -C $rootDir commit -m $commitMsg
 
 $pushSuccess = $false
 for ($attempt = 1; $attempt -le 3; $attempt++) {
     Write-Host " -> Dang thuc hien git push origin main (Lan thu $attempt)..." -ForegroundColor Gray
-    git push origin main
+    git -C $rootDir push origin main
     if ($LASTEXITCODE -eq 0) {
         $pushSuccess = $true
         break
     } else {
         Write-Host " [!] Push bi tu choi do GitHub co commit moi. Dang tu dong pull --rebase..." -ForegroundColor Yellow
-        git pull --rebase origin main
+        git -C $rootDir pull --rebase origin main
         Start-Sleep -Seconds 1
     }
 }
