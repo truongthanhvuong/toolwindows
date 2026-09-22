@@ -38,5 +38,15 @@
         "UsedHWID":  "",
         "UsedPCName":  "",
         "ActivatedDate":  ""
+    },
+    {
+        "Key":  "VUONG-LGAC-52WK-PPWJ-V7YN",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "22/09/2026 13:42:47",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
     }
 ]
