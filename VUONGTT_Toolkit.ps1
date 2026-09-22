@@ -120,6 +120,7 @@ $corePath = Join-Path $ScriptDir "src\Core"
 . (Join-Path $corePath "ConfigManager.ps1")
 . (Join-Path $corePath "DiskHealthManager.ps1")
 . (Join-Path $corePath "AutoWinDeployer.ps1")
+. (Join-Path $corePath "SystemBackupManager.ps1")
 
 # Load Main UI XAML
 $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
@@ -3520,6 +3521,11 @@ $btnDownloadIntelArcDriver   = Get-Control "btnDownloadIntelArcDriver"
 $btnLaunchDriverAssistantOEM = Get-Control "btnLaunchDriverAssistantOEM"
 $btnOpenOEMDriverPortal      = Get-Control "btnOpenOEMDriverPortal"
 
+$btnBackupFullWindowsSystem        = Get-Control "btnBackupFullWindowsSystem"
+$btnCreateSystemRestorePoint       = Get-Control "btnCreateSystemRestorePoint"
+$btnOpenWindowsBackupRestoreWizard = Get-Control "btnOpenWindowsBackupRestoreWizard"
+$btnLaunchSystemImageRecovery      = Get-Control "btnLaunchSystemImageRecovery"
+
 $btnBackupAllDrivers         = Get-Control "btnBackupAllDrivers"
 $btnBackupPrinterDrivers     = Get-Control "btnBackupPrinterDrivers"
 $btnExportDriverList         = Get-Control "btnExportDriverList"
@@ -3728,6 +3734,191 @@ if ($btnOpenOEMDriverPortal) {
 if ($btnClearDriverLog) {
     $btnClearDriverLog.Add_Click({
         if ($txtDriverLog) { $txtDriverLog.Text = "" }
+    })
+}
+
+if ($btnBackupFullWindowsSystem) {
+    $btnBackupFullWindowsSystem.Add_Click({
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang quét các phân vùng lưu trữ khả dụng để sao lưu Windows & Tệp tin..." }
+        $candidates = Get-VUONGTTCandidateBackupDrives
+        
+        $sysDrive = $env:SystemDrive
+        $sysDisk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$sysDrive'" -ErrorAction SilentlyContinue
+        $sysUsedGB = if ($sysDisk) { [math]::Round(($sysDisk.Size - $sysDisk.FreeSpace) / 1GB, 2) } else { 0 }
+
+        if (-not $candidates -or $candidates.Count -eq 0) {
+            $msg = "Hệ thống không tìm thấy phân vùng nào khác ngoài ổ $sysDrive (hoặc các ổ khác không phải định dạng NTFS).`n`nTheo quy định của Windows, không thể lưu bản System Image của ổ $sysDrive lên chính ổ $sysDrive.`n`n👉 Giải pháp:`n1. Cắm thêm ổ cứng di động (USB / HDD ngoài) định dạng NTFS.`n2. Hoặc dùng tính năng 'Quản Lý Phân Vùng' để chia thêm một ổ đĩa mới (D:, E:).`n`nBạn có muốn mở giao diện Windows Backup Center để xem thêm tùy chọn không?"
+            $choice = [System.Windows.MessageBox]::Show($msg, "Không tìm thấy ổ đĩa đích khả dụng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+            if ($choice -eq [System.Windows.MessageBoxResult]::Yes) {
+                Open-VUONGTTWindowsBackupCenter | Out-Null
+            }
+            return
+        }
+
+        # Tạo cửa sổ chọn ổ đĩa đích WPF chuyên nghiệp
+        $dlg = New-Object System.Windows.Window
+        $dlg.Title = "🛡️ Sao Lưu Toàn Bộ Windows & Tệp Tin (Full System Image)"
+        $dlg.Width = 580
+        $dlg.Height = 380
+        $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+        $dlg.ResizeMode = [System.Windows.ResizeMode]::NoResize
+        $dlg.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0F172A")
+        $dlg.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F8FAFC")
+        $dlg.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+
+        $mainPanel = New-Object System.Windows.Controls.StackPanel
+        $mainPanel.Margin = New-Object System.Windows.Thickness(20)
+
+        # Title
+        $tbTitle = New-Object System.Windows.Controls.TextBlock
+        $tbTitle.Text = "🛡️ SAO LƯU NGUYÊN TRẠNG TOÀN BỘ WINDOWS & TỆP TIN"
+        $tbTitle.FontSize = 15
+        $tbTitle.FontWeight = [System.Windows.FontWeights]::Bold
+        $tbTitle.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#34D399")
+        $tbTitle.Margin = New-Object System.Windows.Thickness(0,0,0,8)
+        $mainPanel.Children.Add($tbTitle)
+
+        # Source info
+        $tbSource = New-Object System.Windows.Controls.TextBlock
+        $tbSource.Text = "• Phân vùng nguồn: Ổ $sysDrive (Hệ điều hành Windows, Boot EFI, Users, Toàn bộ tệp tin)`n• Dung lượng cần sao lưu: Khoảng ~$sysUsedGB GB"
+        $tbSource.FontSize = 12.5
+        $tbSource.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+        $tbSource.Margin = New-Object System.Windows.Thickness(0,0,0,12)
+        $mainPanel.Children.Add($tbSource)
+
+        # Select prompt
+        $tbPrompt = New-Object System.Windows.Controls.TextBlock
+        $tbPrompt.Text = "Chọn ổ đĩa đích để lưu bản sao lưu (WindowsImageBackup):"
+        $tbPrompt.FontSize = 13
+        $tbPrompt.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $tbPrompt.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+        $tbPrompt.Margin = New-Object System.Windows.Thickness(0,0,0,6)
+        $mainPanel.Children.Add($tbPrompt)
+
+        # ComboBox for target drive
+        $cbDrives = New-Object System.Windows.Controls.ComboBox
+        $cbDrives.Height = 36
+        $cbDrives.FontSize = 12.5
+        $cbDrives.Margin = New-Object System.Windows.Thickness(0,0,0,14)
+
+        $bestIndex = 0
+        $idx = 0
+        $maxFree = -1
+        foreach ($cand in $candidates) {
+            $cbDrives.Items.Add($cand.DisplayText) | Out-Null
+            if ($cand.IsFit -and $cand.FreeGB -gt $maxFree) {
+                $maxFree = $cand.FreeGB
+                $bestIndex = $idx
+            }
+            $idx++
+        }
+        $cbDrives.SelectedIndex = $bestIndex
+        $mainPanel.Children.Add($cbDrives)
+
+        # Info tip
+        $tbTip = New-Object System.Windows.Controls.TextBlock
+        $tbTip.Text = "💡 Lưu ý: Quá trình sao lưu chạy qua WBAdmin trong cửa sổ tiến trình thời gian thực. Sau khi hoàn tất, bạn có thể dùng USB cứu hộ hoặc WinRE để khôi phục 100% nguyên trạng hệ thống khi xảy ra sự cố."
+        $tbTip.FontSize = 11.5
+        $tbTip.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        $tbTip.TextWrapping = [System.Windows.TextWrapping]::Wrap
+        $tbTip.Margin = New-Object System.Windows.Thickness(0,0,0,16)
+        $mainPanel.Children.Add($tbTip)
+
+        # Buttons
+        $btnPanel = New-Object System.Windows.Controls.StackPanel
+        $btnPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+        $btnPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+
+        $btnStart = New-Object System.Windows.Controls.Button
+        $btnStart.Content = "🚀 Bắt Đầu Sao Lưu"
+        $btnStart.Width = 150
+        $btnStart.Height = 36
+        $btnStart.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#059669")
+        $btnStart.Foreground = [System.Windows.Media.Brushes]::White
+        $btnStart.FontWeight = [System.Windows.FontWeights]::Bold
+        $btnStart.Margin = New-Object System.Windows.Thickness(0,0,10,0)
+
+        $btnCancel = New-Object System.Windows.Controls.Button
+        $btnCancel.Content = "Hủy Bỏ"
+        $btnCancel.Width = 90
+        $btnCancel.Height = 36
+        $btnCancel.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#334155")
+        $btnCancel.Foreground = [System.Windows.Media.Brushes]::White
+
+        $script:selectedBackupDrive = $null
+        $btnStart.Add_Click({
+            $sel = $cbDrives.SelectedIndex
+            if ($sel -ge 0 -and $sel -lt $candidates.Count) {
+                $script:selectedBackupDrive = $candidates[$sel].DeviceID
+            }
+            $dlg.Close()
+        })
+
+        $btnCancel.Add_Click({
+            $script:selectedBackupDrive = $null
+            $dlg.Close()
+        })
+
+        $btnPanel.Children.Add($btnStart) | Out-Null
+        $btnPanel.Children.Add($btnCancel) | Out-Null
+        $mainPanel.Children.Add($btnPanel)
+
+        $dlg.Content = $mainPanel
+        $dlg.ShowDialog() | Out-Null
+
+        if ($script:selectedBackupDrive) {
+            $drive = $script:selectedBackupDrive
+            $res = Start-VUONGTTFullWindowsBackup -TargetDrive $drive -OnProgress {
+                param($m)
+                if ($txtDriverLog) { $txtDriverLog.Text = "$m`n$($txtDriverLog.Text)" }
+                Invoke-VUONGTTDoEvents
+            }
+            if ($txtDriverLog) {
+                $txtDriverLog.Text = "$($res.Message)`n$($txtDriverLog.Text)"
+            }
+            $txtFooterStatus.Text = "• [OK] Đã khởi chạy sao lưu Windows & Tệp tin sang $drive"
+        }
+    })
+}
+
+if ($btnCreateSystemRestorePoint) {
+    $btnCreateSystemRestorePoint.Add_Click({
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang kiểm tra System Protection và tạo Điểm Khôi Phục Hệ Thống (Restore Point)..." }
+        Invoke-VUONGTTDoEvents
+        $res = New-VUONGTTSystemRestorePoint
+        if ($txtDriverLog) {
+            $txtDriverLog.Text = "$($res.Message)`n$($txtDriverLog.Text)"
+        }
+        $txtFooterStatus.Text = if ($res.Success) { "• [OK] Đã tạo Restore Point thành công" } else { "• [LỖI] Không thể tạo Restore Point" }
+    })
+}
+
+if ($btnOpenWindowsBackupRestoreWizard) {
+    $btnOpenWindowsBackupRestoreWizard.Add_Click({
+        $res = Open-VUONGTTWindowsBackupCenter
+        if ($txtDriverLog) { $txtDriverLog.Text = "$res`n$($txtDriverLog.Text)" }
+        $txtFooterStatus.Text = "• [OK] Đã mở Windows Backup & Restore"
+    })
+}
+
+if ($btnLaunchSystemImageRecovery) {
+    $btnLaunchSystemImageRecovery.Add_Click({
+        $helpMsg = "HƯỚNG DẪN KHÔI PHỤC TOÀN BỘ WINDOWS & TỆP TIN TỪ SYSTEM IMAGE:`n`n" +
+                   "1. Khi máy tính bị lỗi hệ điều hành, virus hoặc bạn vừa thay ổ cứng mới:`n" +
+                   "   - Đảm bảo ổ cứng di động/phân vùng chứa thư mục 'WindowsImageBackup' đã được kết nối vào máy.`n`n" +
+                   "2. Truy cập môi trường phục hồi Windows Recovery Environment (WinRE):`n" +
+                   "   - Chọn: Troubleshoot (Khắc phục sự cố)`n" +
+                   "   - Chọn: Advanced options (Tùy chọn nâng cao)`n" +
+                   "   - Chọn: System Image Recovery (Phục hồi bằng hình ảnh hệ thống)`n`n" +
+                   "3. Hệ thống sẽ tự động tìm thấy bản sao lưu và phục hồi 100% nguyên trạng hệ thống cùng toàn bộ tệp tin cá nhân của bạn!`n`n" +
+                   "👉 BẠN CÓ MUỐN KHỞI ĐỘNG LẠI MÁY TÍNH VÀO MÔI TRƯỜNG WINRE NGAY BÂY GIỜ KHÔNG?`n" +
+                   "(Lưu ý: Hãy lưu tất cả công việc dang dở trước khi bấm Yes)."
+
+        $choice = [System.Windows.MessageBox]::Show($helpMsg, "Khôi Phục Toàn Bộ Windows & Tệp Tin (WinRE)", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+        if ($choice -eq [System.Windows.MessageBoxResult]::Yes) {
+            if ($txtDriverLog) { $txtDriverLog.Text = "Đang yêu cầu Windows khởi động lại vào môi trường phục hồi WinRE...`n$($txtDriverLog.Text)" }
+            Start-Process "shutdown.exe" -ArgumentList "/r /o /f /t 02"
+        }
     })
 }
 

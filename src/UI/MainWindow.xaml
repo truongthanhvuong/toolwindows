@@ -443,7 +443,7 @@
                         <Button x:Name="btnMenuBackupDriver" Style="{StaticResource MenuBtn}" Tag="BackupDriver">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="💾" Margin="0,0,8,0"/>
-                                <TextBlock Text="Quản Lý &amp; Cập Nhật Driver"/>
+                                <TextBlock Text="Sao Lưu Win &amp; Driver"/>
                             </StackPanel>                        </Button>
 
                         <!-- GROUP 5: TIỆN ÍCH KỸ THUẬT -->
@@ -2810,8 +2810,8 @@
                         <!-- Banner Header -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="💾 QUẢN LÝ, KIỂM TRA &amp; CẬP NHẬT DRIVER TOÀN DIỆN" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
-                                <TextBlock Text="Tự động quét chẩn đoán phần cứng, tìm và cài đặt toàn bộ Driver qua Microsoft Update &amp; SDIO, sao lưu và khôi phục Driver siêu tốc." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Text="💾 QUẢN LÝ, KIỂM TRA, CẬP NHẬT DRIVER &amp; SAO LƯU TOÀN BỘ WINDOWS" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Tự động quét chẩn đoán phần cứng, tìm và cài đặt Driver qua Microsoft Update, sao lưu khôi phục toàn diện Hệ điều hành Windows, toàn bộ tệp tin &amp; Driver siêu tốc." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </Border>
 
@@ -2873,10 +2873,29 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Card 3: Công Cụ Sao Lưu & Khôi Phục Driver -->
+                        <!-- Card 3: Sao Lưu & Khôi Phục Toàn Bộ Windows & Tệp Tin (Full Backup) -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="💾 SAO LƯU &amp; KHÔI PHỤC DRIVER (BACKUP &amp; RESTORE)" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBlock Text="🛡️ SAO LƯU TOÀN BỘ WINDOWS &amp; TỆP TIN (SYSTEM IMAGE &amp; FILES BACKUP)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <Border Background="#059669" CornerRadius="4" Padding="6,2,6,2" HorizontalAlignment="Right">
+                                        <TextBlock Text="Full Bare-Metal / VSS Image" FontSize="11" FontWeight="Bold" Foreground="White"/>
+                                    </Border>
+                                </DockPanel>
+                                <TextBlock Text="Tạo bản sao lưu toàn diện nguyên trạng Hệ điều hành Windows (C:), phân vùng khởi động EFI/System Reserved, phần mềm và toàn bộ tệp tin, dữ liệu người dùng (Users, Desktop, Documents, Downloads...) bằng công cụ Windows System Image (WBAdmin) để phục hồi 100% khi lỗi Win hoặc thay ổ cứng." FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                                <WrapPanel>
+                                    <Button x:Name="btnBackupFullWindowsSystem" Content="🛡️ Sao Lưu Toàn Bộ Windows &amp; File (System Image)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="340" FontWeight="Bold" Padding="16,0,16,0" ToolTip="Sao lưu toàn bộ Windows, phân vùng EFI và toàn bộ tệp tin dữ liệu ổ C: sang ổ đĩa khác bằng WBAdmin System Image"/>
+                                    <Button x:Name="btnCreateSystemRestorePoint" Content="📍 Tạo Điểm Khôi Phục Nhanh (Restore Point)" Background="#0284C7" Style="{StaticResource ActionBtn}" MinWidth="280" Padding="14,0,14,0" ToolTip="Tạo điểm khôi phục nhanh Windows System Restore Point tức thì"/>
+                                    <Button x:Name="btnOpenWindowsBackupRestoreWizard" Content="⚙️ Quản Lý Windows Backup &amp; Restore" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0" ToolTip="Mở giao diện gốc Windows Backup and Restore Center của Windows để quản lý các bản sao lưu"/>
+                                    <Button x:Name="btnLaunchSystemImageRecovery" Content="🔄 Hướng Dẫn &amp; Vào Khôi Phục Image (WinRE)" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="310" Padding="14,0,14,0" ToolTip="Khởi động vào môi trường phục hồi Windows RE để khôi phục lại toàn bộ Windows và dữ liệu từ bản Image"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 4: Công Cụ Sao Lưu & Khôi Phục Driver Phần Cứng -->
+                        <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="💾 SAO LƯU &amp; KHÔI PHỤC DRIVER PHẦN CỨNG (DRIVER BACKUP &amp; RESTORE)" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnBackupAllDrivers" Content="💾 Sao Lưu Toàn Bộ Driver Hệ Thống" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="260" Padding="14,0,14,0"/>
                                     <Button x:Name="btnBackupPrinterDrivers" Content="🖨️ Sao Lưu Riêng Driver Máy In" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="230" Padding="14,0,14,0"/>
