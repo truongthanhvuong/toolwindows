@@ -988,81 +988,128 @@
                                     <Button x:Name="btnOpenSystemPropertiesComputerName" Content="🌐 Hộp Thoại Windows" Background="#334155" Style="{StaticResource ActionBtn}" Height="24" FontSize="11" Padding="8,0,8,0" HorizontalAlignment="Right" ToolTip="Mở trực tiếp cửa sổ Computer Name / Domain Changes của Windows"/>
                                 </Grid>
                                 <Grid Margin="0,3,0,6">
-                                    <TextBlock Text="Tên máy tính" VerticalAlignment="Center" Width="130"/>
-                                    <Grid Margin="135,0,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="txtCustomComputerName" Height="30" Text="DESKTOP-2REKBI3"/>
-                                        <Button x:Name="btnRenameComputerDirect" Grid.Column="1" Content="Đổi Tên Máy" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="30" Padding="10,0,10,0" Margin="6,0,0,0" FontSize="11.5" ToolTip="Đổi tên máy tính ngay lập tức"/>
-                                    </Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Tên máy tính" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomComputerName" Grid.Column="1" Height="30" Text="DESKTOP-2REKBI3"/>
+                                    <Button x:Name="btnRenameComputerDirect" Grid.Column="2" Content="Đổi Tên Máy" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="30" Padding="12,0,12,0" Margin="6,0,0,0" FontSize="11.5" ToolTip="Đổi tên máy tính ngay lập tức"/>
                                 </Grid>
                                 <!-- Chế độ Mạng: Workgroup hoặc Domain -->
                                 <Grid Margin="0,3,0,6">
-                                    <TextBlock Text="Mô hình mạng" VerticalAlignment="Center" Width="130"/>
-                                    <StackPanel Margin="135,0,0,0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Mô hình mạng" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                         <RadioButton x:Name="rbMemberWorkgroup" Content="Workgroup" IsChecked="True" FontWeight="Bold" Margin="0,0,24,0"/>
                                         <RadioButton x:Name="rbMemberDomain" Content="Domain (Active Directory)" FontWeight="Bold"/>
                                     </StackPanel>
                                 </Grid>
                                 <!-- Khung Workgroup -->
                                 <Grid x:Name="pnlWorkgroupContainer" Margin="0,3,0,6" Visibility="Visible">
-                                    <TextBlock Text="Tên Workgroup" VerticalAlignment="Center" Width="130"/>
-                                    <TextBox x:Name="txtCustomWorkgroup" Margin="135,0,0,0" Height="30" Text="WORKGROUP"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Tên Workgroup" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomWorkgroup" Grid.Column="1" Height="30" Text="WORKGROUP"/>
                                 </Grid>
                                 <!-- Khung Join Domain -->
-                                <Border x:Name="pnlDomainContainer" Margin="0,3,0,6" Background="{DynamicResource CardInnerBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Visibility="Collapsed">
+                                <Border x:Name="pnlDomainContainer" Margin="0,3,0,6" Background="{DynamicResource CardInnerBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,10" Visibility="Collapsed">
                                     <StackPanel>
                                         <TextBlock Text="🏢 CẤU HÌNH GIA NHẬP DOMAIN (JOIN ACTIVE DIRECTORY)" FontWeight="Bold" FontSize="12" Foreground="#0284C7" Margin="0,0,0,8"/>
                                         <Grid Margin="0,2,0,4">
-                                            <TextBlock Text="Tên Domain" VerticalAlignment="Center" Width="120"/>
-                                            <TextBox x:Name="txtDomainName" Margin="125,0,0,0" Height="28" Text="company.local"/>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Tên Domain" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                            <TextBox x:Name="txtDomainName" Grid.Column="1" Height="28" Text="company.local"/>
                                         </Grid>
                                         <Grid Margin="0,2,0,4">
-                                            <TextBlock Text="Tài khoản Admin" VerticalAlignment="Center" Width="120"/>
-                                            <TextBox x:Name="txtDomainUser" Margin="125,0,0,0" Height="28" Text="Administrator"/>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Tài khoản Admin" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                            <TextBox x:Name="txtDomainUser" Grid.Column="1" Height="28" Text="Administrator"/>
                                         </Grid>
                                         <Grid Margin="0,2,0,8">
-                                            <TextBlock Text="Mật khẩu Admin" VerticalAlignment="Center" Width="120"/>
-                                            <PasswordBox x:Name="pwdDomainPass" Margin="125,0,0,0" Height="28"/>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Mật khẩu Admin" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                            <PasswordBox x:Name="pwdDomainPass" Grid.Column="1" Height="28"/>
                                         </Grid>
                                         <Button x:Name="btnJoinDomainDirect" Content="🚀 Gia Nhập Domain Ngay (Join Domain)" Background="#047857" Style="{StaticResource ActionBtn}" Height="32" FontWeight="Bold" FontSize="12.5"/>
                                     </StackPanel>
                                 </Border>
                                 <Grid Margin="0,3,0,12">
-                                    <TextBlock Text="Mô tả máy" VerticalAlignment="Center" Width="130"/>
-                                    <TextBox x:Name="txtCustomDescription" Margin="135,0,0,0" Height="30" Text="Không bắt buộc"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Mô tả máy" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomDescription" Grid.Column="1" Height="30" Text="Không bắt buộc"/>
                                 </Grid>
 
                                 <!-- Chủ sở hữu Windows -->
                                 <TextBlock Text="Chủ sở hữu Windows" FontWeight="Bold" FontSize="14" Margin="0,4,0,6"/>
                                 <Grid Margin="0,3,0,6">
-                                    <TextBlock Text="Chủ sở hữu" VerticalAlignment="Center" Width="130"/>
-                                    <TextBox x:Name="txtCustomOwner" Margin="135,0,0,0" Height="30" Text="VUONGTT"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Chủ sở hữu" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomOwner" Grid.Column="1" Height="30" Text="VUONGTT"/>
                                 </Grid>
                                 <Grid Margin="0,3,0,12">
-                                    <TextBlock Text="Tổ chức" VerticalAlignment="Center" Width="130"/>
-                                    <TextBox x:Name="txtCustomOrg" Margin="135,0,0,0" Height="30" Text="Không bắt buộc"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Tổ chức" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomOrg" Grid.Column="1" Height="30" Text="Không bắt buộc"/>
                                 </Grid>
 
                                 <!-- OEM (System Properties) -->
                                 <TextBlock Text="OEM (System Properties)" FontWeight="Bold" FontSize="14" Margin="0,4,0,6"/>
                                 <Grid Margin="0,3,0,6">
-                                    <TextBlock Text="Hãng OEM" VerticalAlignment="Center" Width="130"/>
-                                    <TextBox x:Name="txtCustomManufacturer" Margin="135,0,0,0" Height="30" Text="Ví dụ: VUONGTT Technology"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Hãng OEM" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomManufacturer" Grid.Column="1" Height="30" Text="Ví dụ: VUONGTT Technology"/>
                                 </Grid>
                                 <Grid Margin="0,3,0,6">
-                                    <TextBlock Text="Model OEM" VerticalAlignment="Center" Width="130"/>
-                                    <TextBox x:Name="txtCustomModel" Margin="135,0,0,0" Height="30" Text="Ví dụ: VTT-Pro2026"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Model OEM" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomModel" Grid.Column="1" Height="30" Text="Ví dụ: VTT-Pro2026"/>
                                 </Grid>
                                 <Grid Margin="0,3,0,6">
-                                    <TextBlock Text="Điện thoại hỗ trợ" VerticalAlignment="Center" Width="130"/>
-                                    <TextBox x:Name="txtCustomPhone" Margin="135,0,0,0" Height="30" Text="Ví dụ: 1900 xxxx"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Điện thoại hỗ trợ" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomPhone" Grid.Column="1" Height="30" Text="Ví dụ: 1900 xxxx"/>
                                 </Grid>
                                 <Grid Margin="0,3,0,14">
-                                    <TextBlock Text="Link hỗ trợ" VerticalAlignment="Center" Width="130"/>
-                                    <TextBox x:Name="txtCustomURL" Margin="135,0,0,0" Height="30" Text="https://..."/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Link hỗ trợ" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="txtCustomURL" Grid.Column="1" Height="30" Text="https://..."/>
                                 </Grid>
 
                                 <!-- Action Buttons: Áp dụng, Sao lưu, Khôi phục, Tải lại -->
