@@ -94,7 +94,7 @@ if (Test-Path $appUpdaterFile) {
 $programCsFile = Join-Path $rootDir "src\Program.cs"
 if (Test-Path $programCsFile) {
     $c = [System.IO.File]::ReadAllText($programCsFile, [System.Text.Encoding]::UTF8)
-    $c = $c -replace 'v20\.5\.908\.\d+', "v$targetVer"
+    $c = $c -replace 'v\d+\.\d+\.\d+(\.\d+)?', "v$targetVer"
     $c = $c -replace 'AssemblyVersion\("[^"]+"\)', "AssemblyVersion(`"$targetVer`")"
     $c = $c -replace 'AssemblyFileVersion\("[^"]+"\)', "AssemblyFileVersion(`"$targetVer`")"
     [System.IO.File]::WriteAllText($programCsFile, $c, (New-Object System.Text.UTF8Encoding($true)))
@@ -104,9 +104,17 @@ if (Test-Path $programCsFile) {
 $xamlFile = Join-Path $rootDir "src\UI\MainWindow.xaml"
 if (Test-Path $xamlFile) {
     $c = [System.IO.File]::ReadAllText($xamlFile, [System.Text.Encoding]::UTF8)
-    $c = $c -replace 'v20\.5\.908\.\d+', "v$targetVer"
+    $c = $c -replace 'v\d+\.\d+\.\d+(\.\d+)?', "v$targetVer"
     [System.IO.File]::WriteAllText($xamlFile, $c, (New-Object System.Text.UTF8Encoding($true)))
     Write-Host " -> Da cap nhat src\UI\MainWindow.xaml" -ForegroundColor Gray
+}
+
+$mainPs1File = Join-Path $rootDir "VUONGTT_Toolkit.ps1"
+if (Test-Path $mainPs1File) {
+    $c = [System.IO.File]::ReadAllText($mainPs1File, [System.Text.Encoding]::UTF8)
+    $c = $c -replace 'VER\s+\d+\.\d+\.\d+(\.\d+)?', "VER $targetVer"
+    [System.IO.File]::WriteAllText($mainPs1File, $c, (New-Object System.Text.UTF8Encoding($true)))
+    Write-Host " -> Da cap nhat VUONGTT_Toolkit.ps1" -ForegroundColor Gray
 }
 
 # 4. Bien dich lai file EXE
