@@ -44,18 +44,27 @@ public class DiskSmartNativeHelper {
 
     public class SmartAttributeRaw {
         public int Id;
-        public int Current;
-        public int Worst;
+        public string Name = "";
+        public int Current = 100;
+        public int Worst = 100;
+        public int Threshold = 0;
         public ulong RawValue;
+        public string HexRaw = "";
     }
 
     public class SmartInfo {
         public bool HasData;
         public bool HasAtaData;
+        public bool IsNvme;
         public int TemperatureC;
         public ulong PowerOnHours;
         public ulong PowerCycles;
         public int WearLevel = -1;
+        public ulong TotalHostReadsGB;
+        public ulong TotalHostWritesGB;
+        public ulong UnsafeShutdowns;
+        public string RealSerialNumber = "";
+        public string RealFirmware = "";
         public string Source = "";
         public ulong ReallocatedSectors;
         public ulong CurrentPendingSectors;
@@ -104,13 +113,10 @@ public class DiskSmartNativeHelper {
         }
 
         using (hDisk) {
-            // 1. Giao thức NVMe Log Page 0x02
-            if (TryQueryNvme(hDisk, 50, info)) {
-                info.Source = "Giao thức NVMe Log Page 0x02 (Device IOCTL 50)";
-                return info;
-            }
-            if (TryQueryNvme(hDisk, 49, info)) {
-                info.Source = "Giao thức NVMe Log Page 0x02 (Adapter IOCTL 49)";
+            // 1. Giao thức NVMe Log Page 0x02 (Adapter 49, Device 48, Device 50)
+            if (TryQueryNvme(hDisk, 49, info) || TryQueryNvme(hDisk, 48, info) || TryQueryNvme(hDisk, 50, info)) {
+                info.Source = "Giao thức NVMe Log Page 0x02 (Storage Protocol IOCTL)";
+                QueryNvmeIdentifyInfo(hDisk, info);
                 return info;
             }
 
@@ -137,41 +143,103 @@ public class DiskSmartNativeHelper {
         try {
             for (int i = 0; i < bufferSize; i++) Marshal.WriteByte(pBuffer, i, 0);
 
+            // STORAGE_PROPERTY_QUERY (8 bytes)
             Marshal.WriteInt32(pBuffer, 0, propertyId);
-            Marshal.WriteInt32(pBuffer, 4, 0);
+            Marshal.WriteInt32(pBuffer, 4, 0); // PropertyStandardQuery
 
-            int protocolOffset = 16;
-            Marshal.WriteInt32(pBuffer, 8, protocolOffset);
-
-            Marshal.WriteInt32(pBuffer, protocolOffset + 0, 1); // ProtocolTypeNvme
-            Marshal.WriteInt32(pBuffer, protocolOffset + 4, 1); // NVMeDataTypeLogPage
-            Marshal.WriteInt32(pBuffer, protocolOffset + 8, 2); // NVME_LOG_PAGE_HEALTH_INFO
-            Marshal.WriteInt32(pBuffer, protocolOffset + 12, 0);
-            int logPageOffset = protocolOffset + 32;
-            Marshal.WriteInt32(pBuffer, protocolOffset + 16, logPageOffset);
-            Marshal.WriteInt32(pBuffer, protocolOffset + 20, 512);
+            // STORAGE_PROTOCOL_SPECIFIC_DATA (offset 8, 40 bytes)
+            int protoStart = 8;
+            Marshal.WriteInt32(pBuffer, protoStart + 0, 1);   // ProtocolTypeNvme (1)
+            Marshal.WriteInt32(pBuffer, protoStart + 4, 1);   // NVMeDataTypeLogPage (1)
+            Marshal.WriteInt32(pBuffer, protoStart + 8, 2);   // NVME_LOG_PAGE_HEALTH_INFO (2)
+            Marshal.WriteInt32(pBuffer, protoStart + 12, 0);  // SubValue = 0
+            Marshal.WriteInt32(pBuffer, protoStart + 16, 40); // ProtocolDataOffset = sizeof(STORAGE_PROTOCOL_SPECIFIC_DATA)
+            Marshal.WriteInt32(pBuffer, protoStart + 20, 512);// ProtocolDataLength = 512
 
             uint bytesReturned = 0;
             bool ok = DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, pBuffer, bufferSize, pBuffer, bufferSize, out bytesReturned, IntPtr.Zero);
 
-            if (ok && bytesReturned > (uint)logPageOffset + 140) {
-                int tempK = Marshal.ReadByte(pBuffer, logPageOffset + 1) | (Marshal.ReadByte(pBuffer, logPageOffset + 2) << 8);
+            if (ok && bytesReturned >= 48 + 140) {
+                int returnedOffset = Marshal.ReadInt32(pBuffer, protoStart + 16);
+                int dataStart = (returnedOffset > 0) ? (protoStart + returnedOffset) : 48;
+
+                info.IsNvme = true;
+
+                // 01 Critical Warning (Byte 0)
+                byte critWarn = Marshal.ReadByte(pBuffer, dataStart + 0);
+                AddNvmeAttr(info, 0x01, "Critical Warning", 100, 100, (ulong)critWarn);
+
+                // 02 Composite Temperature (Bytes 1..2 in Kelvin)
+                int tempK = Marshal.ReadByte(pBuffer, dataStart + 1) | (Marshal.ReadByte(pBuffer, dataStart + 2) << 8);
                 if (tempK > 200 && tempK < 450) {
                     info.TemperatureC = tempK - 273;
                 }
+                AddNvmeAttr(info, 0x02, "Composite Temperature", 100, 100, (ulong)tempK);
 
-                info.WearLevel = Marshal.ReadByte(pBuffer, logPageOffset + 5);
+                // 03 Available Spare (Byte 3)
+                byte availSpare = Marshal.ReadByte(pBuffer, dataStart + 3);
+                AddNvmeAttr(info, 0x03, "Available Spare", (int)availSpare, 100, (ulong)availSpare);
 
-                long pc = Marshal.ReadInt64(pBuffer, logPageOffset + 112);
-                if (pc > 0) info.PowerCycles = (ulong)pc;
+                // 04 Available Spare Threshold (Byte 4)
+                byte spareThresh = Marshal.ReadByte(pBuffer, dataStart + 4);
+                AddNvmeAttr(info, 0x04, "Available Spare Threshold", (int)spareThresh, 100, (ulong)spareThresh);
 
-                long poh = Marshal.ReadInt64(pBuffer, logPageOffset + 128);
-                if (poh > 0) info.PowerOnHours = (ulong)poh;
+                // 05 Percentage Used (Byte 5) -> MỨC HAO MÒN FLASH NAND
+                byte wear = Marshal.ReadByte(pBuffer, dataStart + 5);
+                info.WearLevel = (int)wear;
+                AddNvmeAttr(info, 0x05, "Percentage Used", 100, 100, (ulong)wear);
 
-                if (info.PowerOnHours > 0 || info.PowerCycles > 0 || info.TemperatureC > 0) {
-                    info.HasData = true;
-                    return true;
+                // 06 Data Units Read (Bytes 32..47)
+                long unitsRead = Marshal.ReadInt64(pBuffer, dataStart + 32);
+                if (unitsRead > 0) {
+                    info.TotalHostReadsGB = (ulong)Math.Round((double)unitsRead * 512000.0 / (1024.0 * 1024.0 * 1024.0));
                 }
+                AddNvmeAttr(info, 0x06, "Data Units Read", 100, 100, (ulong)unitsRead);
+
+                // 07 Data Units Written (Bytes 48..63)
+                long unitsWritten = Marshal.ReadInt64(pBuffer, dataStart + 48);
+                if (unitsWritten > 0) {
+                    info.TotalHostWritesGB = (ulong)Math.Round((double)unitsWritten * 512000.0 / (1024.0 * 1024.0 * 1024.0));
+                }
+                AddNvmeAttr(info, 0x07, "Data Units Written", 100, 100, (ulong)unitsWritten);
+
+                // 08 Host Read Commands (Bytes 64..79)
+                long readCmds = Marshal.ReadInt64(pBuffer, dataStart + 64);
+                AddNvmeAttr(info, 0x08, "Host Read Commands", 100, 100, (ulong)readCmds);
+
+                // 09 Host Write Commands (Bytes 80..95)
+                long writeCmds = Marshal.ReadInt64(pBuffer, dataStart + 80);
+                AddNvmeAttr(info, 0x09, "Host Write Commands", 100, 100, (ulong)writeCmds);
+
+                // 0A Controller Busy Time (Bytes 96..111)
+                long busyTime = Marshal.ReadInt64(pBuffer, dataStart + 96);
+                AddNvmeAttr(info, 0x0A, "Controller Busy Time", 100, 100, (ulong)busyTime);
+
+                // 0B Power Cycles (Bytes 112..127)
+                long pc = Marshal.ReadInt64(pBuffer, dataStart + 112);
+                if (pc > 0) info.PowerCycles = (ulong)pc;
+                AddNvmeAttr(info, 0x0B, "Power Cycles", 100, 100, (ulong)pc);
+
+                // 0C Power On Hours (Bytes 128..143)
+                long poh = Marshal.ReadInt64(pBuffer, dataStart + 128);
+                if (poh > 0) info.PowerOnHours = (ulong)poh;
+                AddNvmeAttr(info, 0x0C, "Power On Hours", 100, 100, (ulong)poh);
+
+                // 0D Unsafe Shutdowns (Bytes 144..159)
+                long us = Marshal.ReadInt64(pBuffer, dataStart + 144);
+                if (us > 0) info.UnsafeShutdowns = (ulong)us;
+                AddNvmeAttr(info, 0x0D, "Unsafe Shutdowns", 100, 100, (ulong)us);
+
+                // 0E Media and Data Integrity Errors (Bytes 160..175)
+                long mediaErrors = Marshal.ReadInt64(pBuffer, dataStart + 160);
+                AddNvmeAttr(info, 0x0E, "Media and Data Integrity Errors", 100, 100, (ulong)mediaErrors);
+
+                // 0F Number of Error Information Log Entries (Bytes 176..191)
+                long errEntries = Marshal.ReadInt64(pBuffer, dataStart + 176);
+                AddNvmeAttr(info, 0x0F, "Number of Error Information Log Entries", 100, 100, (ulong)errEntries);
+
+                info.HasData = true;
+                return true;
             }
         } catch {
         } finally {
@@ -179,6 +247,65 @@ public class DiskSmartNativeHelper {
         }
 
         return false;
+    }
+
+    private static void AddNvmeAttr(SmartInfo info, int id, string name, int cur, int worst, ulong raw) {
+        SmartAttributeRaw attr = new SmartAttributeRaw();
+        attr.Id = id;
+        attr.Name = name;
+        attr.Current = cur;
+        attr.Worst = worst;
+        attr.Threshold = 0;
+        attr.RawValue = raw;
+        attr.HexRaw = raw.ToString("X14");
+        info.Attributes[id] = attr;
+    }
+
+    private static void QueryNvmeIdentifyInfo(SafeFileHandle hDisk, SmartInfo info) {
+        uint bufferSize = 4096;
+        IntPtr pBuffer = Marshal.AllocHGlobal((int)bufferSize);
+        try {
+            int[] propIds = new int[] { 49, 48 };
+            foreach (int propId in propIds) {
+                for (int i = 0; i < bufferSize; i++) Marshal.WriteByte(pBuffer, i, 0);
+
+                Marshal.WriteInt32(pBuffer, 0, propId);
+                Marshal.WriteInt32(pBuffer, 4, 0);
+
+                int protoStart = 8;
+                Marshal.WriteInt32(pBuffer, protoStart + 0, 1);   // ProtocolTypeNvme (1)
+                Marshal.WriteInt32(pBuffer, protoStart + 4, 2);   // NVMeDataTypeIdentify (2)
+                Marshal.WriteInt32(pBuffer, protoStart + 8, 1);   // NVME_IDENTIFY_CNS_CONTROLLER (1)
+                Marshal.WriteInt32(pBuffer, protoStart + 12, 0);  // SubValue = 0
+                Marshal.WriteInt32(pBuffer, protoStart + 16, 40); // ProtocolDataOffset = 40
+                Marshal.WriteInt32(pBuffer, protoStart + 20, 512);// ProtocolDataLength = 512
+
+                uint bytesReturned = 0;
+                bool ok = DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, pBuffer, bufferSize, pBuffer, bufferSize, out bytesReturned, IntPtr.Zero);
+                if (ok && bytesReturned >= 48 + 72) {
+                    int returnedOffset = Marshal.ReadInt32(pBuffer, protoStart + 16);
+                    int dataStart = (returnedOffset > 0) ? (protoStart + returnedOffset) : 48;
+
+                    byte[] snBytes = new byte[20];
+                    Marshal.Copy(new IntPtr(pBuffer.ToInt64() + dataStart + 4), snBytes, 0, 20);
+                    string sn = System.Text.Encoding.ASCII.GetString(snBytes).Trim();
+                    if (!string.IsNullOrEmpty(sn) && !sn.Contains("FFFF")) {
+                        info.RealSerialNumber = sn;
+                    }
+
+                    byte[] fwBytes = new byte[8];
+                    Marshal.Copy(new IntPtr(pBuffer.ToInt64() + dataStart + 64), fwBytes, 0, 8);
+                    string fw = System.Text.Encoding.ASCII.GetString(fwBytes).Trim();
+                    if (!string.IsNullOrEmpty(fw)) {
+                        info.RealFirmware = fw;
+                    }
+                    break;
+                }
+            }
+        } catch {
+        } finally {
+            Marshal.FreeHGlobal(pBuffer);
+        }
     }
 
     private static bool TryQueryAtaSmart(SafeFileHandle hDisk, int diskIndex, SmartInfo info) {
@@ -557,12 +684,19 @@ function Get-VUONGTTDiskHealthList {
                 $tempText = "36°C (Mát mẻ)"
             }
 
-            # Tuong thich Firmware va Serial tu WMI
+            # Tuong thich Firmware va Serial tu WMI va Hardware Controller
             $wmiMatch = $wmiDrives | Where-Object { $_.Index -eq $devId -or $_.DeviceID -like "*$devId*" -or ($_.Model -and $model -like "*$($_.Model.Split(' ')[0])*") } | Select-Object -First 1
             $firmware = "Standard"
             if ($wmiMatch) {
                 if ($wmiMatch.FirmwareRevision) { $firmware = $wmiMatch.FirmwareRevision.Trim() }
                 if ($serial -eq "N/A" -and $wmiMatch.SerialNumber) { $serial = $wmiMatch.SerialNumber.Trim() }
+            }
+            # Uu tien Serial Number va Firmware thuc te tu NVMe Controller IOCTL (Tranh bi loi dummy FFFF_FFFF cua WMI)
+            if ($smartNative -and $smartNative.RealSerialNumber) {
+                $serial = $smartNative.RealSerialNumber
+            }
+            if ($smartNative -and $smartNative.RealFirmware) {
+                $firmware = $smartNative.RealFirmware
             }
 
             # TÍNH TOÁN SỨC KHỎE SÂU (DEEP S.M.A.R.T HEALTH ENGINE - CRYSTALDISKINFO / HARD DISK SENTINEL STANDARD)
@@ -702,6 +836,9 @@ function Get-VUONGTTDiskHealthList {
                 PowerOnHours      = $powerHours
                 PowerOnCount      = $powerCount
                 PowerHoursRating  = $powerHoursRating
+                TotalHostReadsGB  = if ($smartNative) { $smartNative.TotalHostReadsGB } else { 0 }
+                TotalHostWritesGB = if ($smartNative) { $smartNative.TotalHostWritesGB } else { 0 }
+                UnsafeShutdowns   = if ($smartNative) { $smartNative.UnsafeShutdowns } else { 0 }
                 SessionUptime     = $bootDiag.UptimeText
                 SmartSource       = $smartSource
                 WearLevel         = $wear
@@ -713,6 +850,7 @@ function Get-VUONGTTDiskHealthList {
                 UdmaCrcErrors     = $udmaCrc
                 Volumes           = $diskVolumes
                 SmartAttributes   = $smartList
+                SmartNative       = $smartNative
             }
         }
     } elseif ($wmiDrives.Count -gt 0) {
@@ -802,9 +940,36 @@ function Get-VUONGTTSmartAttributes {
     $tVal = if ($TempC) { "$($TempC)°C" } else { "36°C" }
     $ssdLife = if ($Wear -ne $null -and $Wear -ge 0) { "$([math]::Max(0, 100 - $Wear))%" } else { "100%" }
 
-    $statusGood = "🟢 Tốt (OK)"
+    $statusGood = "🔵 Tốt (Good)"
     $statusWarn = "🟡 Cảnh báo"
     $statusBad  = "🔴 Nguy hiểm"
+
+    # Neu la o dia NVMe da doc duoc qua IOCTL NVMe Log Page 0x02
+    if ($SmartNative -and $SmartNative.IsNvme -and $SmartNative.Attributes.Count -gt 0) {
+        $nvmeList = @()
+        foreach ($kvp in ($SmartNative.Attributes.GetEnumerator() | Sort-Object { $_.Key })) {
+            $attr = $kvp.Value
+            $stt = if ($attr.Id -eq 0x01 -and $attr.RawValue -gt 0) {
+                $statusBad
+            } elseif ($attr.Id -eq 0x0E -and $attr.RawValue -gt 0) {
+                $statusBad
+            } elseif ($attr.Id -eq 0x05 -and $attr.RawValue -ge 80) {
+                $statusWarn
+            } else {
+                $statusGood
+            }
+            $nvmeList += [PSCustomObject]@{
+                Id        = $attr.Id.ToString("X2")
+                Name      = $attr.Name
+                Current   = "$($attr.Current)"
+                Worst     = "$($attr.Worst)"
+                Threshold = "$($attr.Threshold)"
+                RawValue  = $attr.HexRaw
+                Status    = $stt
+            }
+        }
+        return $nvmeList
+    }
 
     $attrList = @(
         [PSCustomObject]@{

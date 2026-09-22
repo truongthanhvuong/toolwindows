@@ -2843,13 +2843,32 @@ function Refresh-BatteryDisplay {
     if ($bat.HasBattery) {
         $lblBatteryStatus.Text    = "Tình trạng: $($bat.BatteryStatus) ($($bat.EstimatedChargeRemaining))"
         $lblBatteryDesignCap.Text = "Dung lượng thiết kế: $($bat.DesignCapacity)"
-        $lblBatteryFullCap.Text   = "Dung lượng sạc đầy: $($bat.FullChargeCapacity)"
-        $lblBatteryWear.Text      = "Độ chai pin: $($bat.WearLevelPercent)% (Sức khỏe: $($bat.HealthStatus))"
+        
+        $fullCapStr = "Dung lượng sạc đầy: $($bat.FullChargeCapacity)"
+        if ($bat.CycleCount -and $bat.CycleCount -ne "N/A") {
+            $fullCapStr += " | Số lần sạc (Chu kỳ): $($bat.CycleCount)"
+        }
+        $lblBatteryFullCap.Text   = $fullCapStr
+
+        if ($null -ne $bat.WearLevelPercent -and $bat.DesignCapacityValue -gt 0) {
+            $lblBatteryWear.Text = "Độ chai pin: $($bat.WearLevelPercent)% (Sức khỏe: $($bat.HealthPercent)%)"
+            if ($bat.WearLevelPercent -gt 35) {
+                $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::Crimson
+            } elseif ($bat.WearLevelPercent -gt 15) {
+                $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::DarkOrange
+            } else {
+                $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::ForestGreen
+            }
+        } else {
+            $lblBatteryWear.Text = "Độ chai pin: Chưa xác định (Dung lượng sạc đầy: $($bat.FullChargeCapacity))"
+            $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
+        }
     } else {
         $lblBatteryStatus.Text    = "Thiết bị: Máy tính để bàn (Desktop PC) - Cắm nguồn trực tiếp"
         $lblBatteryDesignCap.Text = "Không có pin tích hợp"
         $lblBatteryFullCap.Text   = "-"
-        $lblBatteryWear.Text      = "Độ chai pin: 0%"
+        $lblBatteryWear.Text      = "Độ chai pin: 0% (N/A - Desktop PC)"
+        $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::Gray
     }
 }
 
