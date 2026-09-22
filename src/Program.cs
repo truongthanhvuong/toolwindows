@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.8")]
-[assembly: AssemblyFileVersion("20.5.909.8")]
+[assembly: AssemblyVersion("20.5.909.09")]
+[assembly: AssemblyFileVersion("20.5.909.09")]
 
 namespace VUONGTT
 {
@@ -210,6 +210,7 @@ namespace VUONGTT
                         else if (name.Contains("ConfigManager.ps1")) relPath = Path.Combine("src", "Core", "ConfigManager.ps1");
                         else if (name.Contains("DiskHealthManager.ps1")) relPath = Path.Combine("src", "Core", "DiskHealthManager.ps1");
                         else if (name.Contains("AutoWinDeployer.ps1")) relPath = Path.Combine("src", "Core", "AutoWinDeployer.ps1");
+                        else if (name.Contains("SystemBackupManager.ps1")) relPath = Path.Combine("src", "Core", "SystemBackupManager.ps1");
                         else if (name.Contains("licenses_vault.json")) relPath = Path.Combine("src", "Config", "licenses_vault.json");
                         else if (name.Contains("feature_policy.json")) relPath = Path.Combine("src", "Config", "feature_policy.json");
                         else if (name.Contains("SoftwareDatabase.json")) relPath = Path.Combine("src", "Data", "SoftwareDatabase.json");

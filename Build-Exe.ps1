@@ -139,6 +139,7 @@ $resources = @(
     "/resource:`"$RootDir\src\Core\ConfigManager.ps1`",VUONGTT.ConfigManager.ps1",
     "/resource:`"$RootDir\src\Core\DiskHealthManager.ps1`",VUONGTT.DiskHealthManager.ps1",
     "/resource:`"$RootDir\src\Core\AutoWinDeployer.ps1`",VUONGTT.AutoWinDeployer.ps1",
+    "/resource:`"$RootDir\src\Core\SystemBackupManager.ps1`",VUONGTT.SystemBackupManager.ps1",
     "/resource:`"$RootDir\src\Config\licenses_vault.json`",VUONGTT.licenses_vault.json",
     "/resource:`"$RootDir\src\Config\feature_policy.json`",VUONGTT.feature_policy.json",
     "/resource:`"$RootDir\src\Data\SoftwareDatabase.json`",VUONGTT.SoftwareDatabase.json",
