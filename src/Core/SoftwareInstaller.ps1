@@ -538,6 +538,7 @@ namespace VUONGTT
         private string _quietUninstallString = "";
         private string _registryPath = "";
         private string _registryKeyName = "";
+        private string _displayIcon = "";
 
         public bool IsChecked
         {
@@ -611,6 +612,12 @@ namespace VUONGTT
             set { _registryKeyName = value; OnPropertyChanged("RegistryKeyName"); }
         }
 
+        public string DisplayIcon
+        {
+            get { return _displayIcon; }
+            set { _displayIcon = value; OnPropertyChanged("DisplayIcon"); }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name)
         {
@@ -664,6 +671,9 @@ namespace VUONGTT
                     $appItem.QuietUninstallString = if ($_.QuietUninstallString) { $_.QuietUninstallString.Trim() } else { "" }
                     $appItem.RegistryPath         = if ($_.PSPath) { $_.PSPath } else { "" }
                     $appItem.RegistryKeyName      = if ($_.PSChildName) { $_.PSChildName } else { "" }
+                    try {
+                        $appItem.DisplayIcon      = if ($_.DisplayIcon) { $_.DisplayIcon.Trim() } else { "" }
+                    } catch {}
 
                     $apps.Add($appItem)
                 }
@@ -683,6 +693,287 @@ namespace VUONGTT
     return @($sorted)
 }
 
+# ==============================================================================
+# BỘ HÀM PHỤ TRỢ CHO CLEAN UNINSTALLER ENGINE
+# ==============================================================================
+
+function Resolve-VUONGTTExecutableAndArgs {
+    param([string]$CmdLine)
+
+    if ([string]::IsNullOrWhiteSpace($CmdLine)) {
+        return @{ Exe = ""; Args = "" }
+    }
+
+    $trimmed = $CmdLine.Trim()
+
+    # Case 1: Có ngoặc kép bao quanh "C:\Path\To\file.exe" args...
+    if ($trimmed -match '^"([^"]+)"\s*(.*)$') {
+        return @{
+            Exe  = $matches[1].Trim()
+            Args = $matches[2].Trim()
+        }
+    }
+
+    # Case 2: Không có ngoặc kép nhưng có chứa khoảng trắng.
+    # Thử từng phân đoạn từ trái sang phải để tìm file thực tế trên đĩa
+    $tokens = $trimmed -split '\s+'
+    $candidate = ""
+    $foundIndex = -1
+
+    for ($i = 0; $i -lt $tokens.Count; $i++) {
+        if ($i -eq 0) { $candidate = $tokens[0] }
+        else { $candidate = "$candidate $($tokens[$i])" }
+
+        # Kiểm tra nếu candidate là file .exe/.bat/.cmd/.vbs tồn tại
+        if ($candidate -match '\.(exe|bat|cmd|vbs)$' -and (Test-Path $candidate -PathType Leaf -ErrorAction SilentlyContinue)) {
+            $exe = $candidate
+            $foundIndex = $i
+            break
+        }
+    }
+
+    if ($foundIndex -ge 0) {
+        $remainingTokens = if ($foundIndex + 1 -lt $tokens.Count) {
+            $tokens[($foundIndex + 1)..($tokens.Count - 1)] -join " "
+        } else { "" }
+        return @{
+            Exe  = $exe
+            Args = $remainingTokens.Trim()
+        }
+    }
+
+    # Case 3: Phân đoạn tại khoảng trắng đầu tiên
+    if ($trimmed -match '^([^\s]+)\s*(.*)$') {
+        return @{
+            Exe  = $matches[1].Trim()
+            Args = $matches[2].Trim()
+        }
+    }
+
+    return @{ Exe = $trimmed; Args = "" }
+}
+
+function Get-VUONGTTResolvedInstallLocations {
+    param(
+        [PSCustomObject]$AppItem,
+        [string[]]$CleanTerms
+    )
+
+    $resolvedDirs = [System.Collections.Generic.List[string]]::new()
+
+    # 1. Thư mục từ InstallLocation
+    if ($AppItem.InstallLocation -and (Test-Path $AppItem.InstallLocation -ErrorAction SilentlyContinue)) {
+        $resolvedDirs.Add($AppItem.InstallLocation.TrimEnd('\'))
+    }
+
+    # 2. Thư mục từ DisplayIcon
+    $iconPath = ""
+    try {
+        if ($AppItem.DisplayIcon) { $iconPath = $AppItem.DisplayIcon }
+    } catch {}
+
+    if (-not $iconPath -and $AppItem.RegistryPath -and (Test-Path $AppItem.RegistryPath -ErrorAction SilentlyContinue)) {
+        $regProps = Get-ItemProperty -Path $AppItem.RegistryPath -ErrorAction SilentlyContinue
+        if ($regProps -and $regProps.DisplayIcon) {
+            $iconPath = "$($regProps.DisplayIcon)"
+        }
+    }
+
+    if ($iconPath) {
+        $cleanIcon = ($iconPath -replace ',\s*-?[0-9]+$', '') -replace '^"|"$', ''
+        if (Test-Path $cleanIcon -ErrorAction SilentlyContinue) {
+            $parentDir = Split-Path -Path $cleanIcon -Parent
+            if ($parentDir -and (Test-Path $parentDir -ErrorAction SilentlyContinue)) {
+                $resolvedDirs.Add($parentDir.TrimEnd('\'))
+            }
+        }
+    }
+
+    # 3. Thư mục từ UninstallString
+    $rawUninst = if ($AppItem.QuietUninstallString) { $AppItem.QuietUninstallString } else { $AppItem.UninstallString }
+    if ($rawUninst -and $rawUninst -notmatch '\{[0-9A-Fa-f\-]{36}\}') {
+        $parsed = Resolve-VUONGTTExecutableAndArgs -CmdLine $rawUninst
+        if ($parsed.Exe -and (Test-Path $parsed.Exe -ErrorAction SilentlyContinue)) {
+            $parentDir = Split-Path -Path $parsed.Exe -Parent
+            if ($parentDir -and (Test-Path $parentDir -ErrorAction SilentlyContinue)) {
+                $resolvedDirs.Add($parentDir.TrimEnd('\'))
+            }
+        }
+    }
+
+    # 4. Thăm dò trong các thư mục Program Files tiêu chuẩn theo CleanTerms
+    $standardRoots = @(
+        $env:ProgramFiles,
+        ${env:ProgramFiles(x86)},
+        "$env:LOCALAPPDATA\Programs"
+    )
+
+    foreach ($term in $CleanTerms) {
+        if ($term.Length -ge 3) {
+            foreach ($root in $standardRoots) {
+                if ($root -and (Test-Path $root -ErrorAction SilentlyContinue)) {
+                    $probe = Join-Path $root $term
+                    if (Test-Path $probe -PathType Container -ErrorAction SilentlyContinue) {
+                        $resolvedDirs.Add($probe.TrimEnd('\'))
+                    }
+                }
+            }
+        }
+    }
+
+    # Lọc an toàn tuyệt đối: Không bao giờ được phép xóa các thư mục gốc hoặc thư mục hệ thống
+    $safeDirs = [System.Collections.Generic.List[string]]::new()
+    $criticalRoots = @(
+        "$env:SystemDrive\",
+        "$env:SystemDrive",
+        "$env:windir",
+        "$env:windir\System32",
+        "$env:ProgramFiles",
+        "${env:ProgramFiles(x86)}",
+        "$env:USERPROFILE",
+        "$env:APPDATA",
+        "$env:LOCALAPPDATA",
+        "$env:ProgramData",
+        "C:\Users",
+        "C:\Users\Default"
+    ) | ForEach-Object { $_.TrimEnd('\').ToLower() }
+
+    foreach ($d in ($resolvedDirs | Select-Object -Unique)) {
+        if (-not $d) { continue }
+        $dNorm = $d.TrimEnd('\')
+        $dLower = $dNorm.ToLower()
+
+        if ($dNorm.Length -gt 10 -and $criticalRoots -notcontains $dLower) {
+            $slashCount = ($dNorm.ToCharArray() | Where-Object { $_ -eq '\' }).Count
+            if ($slashCount -ge 2) {
+                $safeDirs.Add($dNorm)
+            }
+        }
+    }
+
+    return @($safeDirs | Select-Object -Unique)
+}
+
+function Stop-VUONGTTRelatedProcessesAndServices {
+    param(
+        [string[]]$TargetDirs,
+        [string[]]$CleanTerms,
+        [scriptblock]$OnLog
+    )
+
+    function Write-SubLog { param($m) if ($OnLog) { & $OnLog $m } }
+
+    $whitelistProcesses = @("explorer", "taskmgr", "powershell", "pwsh", "cmd", "conhost", "svchost", "csrss", "lsass", "winlogon", "services", "dwm", "smss", "spoolsv", "vuongtt_toolkit", "devenv", "code")
+
+    # 1. Quét và dừng Windows Services liên quan
+    try {
+        $services = Get-CimInstance -ClassName Win32_Service -ErrorAction SilentlyContinue
+        foreach ($svc in $services) {
+            $pathName = $svc.PathName
+            $svcName = $svc.Name
+            $isRelated = $false
+
+            if ($pathName) {
+                foreach ($dir in $TargetDirs) {
+                    if ($pathName -like "*$dir*") { $isRelated = $true; break }
+                }
+            }
+
+            if (-not $isRelated) {
+                foreach ($term in $CleanTerms) {
+                    if ($term.Length -ge 4 -and ($svcName -like "*$term*" -or $svc.DisplayName -like "*$term*")) {
+                        $isRelated = $true
+                        break
+                    }
+                }
+            }
+
+            if ($isRelated -and $svcName -notlike "*Windows*" -and $svcName -notlike "*Microsoft*") {
+                Write-SubLog "• Đang dừng dịch vụ nền liên quan: $svcName ($($svc.DisplayName))..."
+                Stop-Service -Name $svcName -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } catch {}
+
+    # 2. Quét và dập tắt Processes liên quan khóa tệp
+    try {
+        $processes = Get-Process -ErrorAction SilentlyContinue
+        foreach ($p in $processes) {
+            $pName = $p.ProcessName.ToLower()
+            if ($whitelistProcesses -contains $pName) { continue }
+
+            $pPath = ""
+            try { $pPath = $p.Path } catch {}
+            if (-not $pPath) {
+                try { $pPath = $p.MainModule.FileName } catch {}
+            }
+
+            $shouldKill = $false
+
+            if ($pPath) {
+                foreach ($dir in $TargetDirs) {
+                    if ($pPath.StartsWith($dir, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $shouldKill = $true
+                        break
+                    }
+                }
+            }
+
+            if (-not $shouldKill) {
+                foreach ($term in $CleanTerms) {
+                    if ($term.Length -ge 3 -and $pName -eq $term.ToLower()) {
+                        $shouldKill = $true
+                        break
+                    }
+                }
+            }
+
+            if ($shouldKill) {
+                Write-SubLog "• Đang dập tắt tiến trình khóa tệp: $($p.ProcessName) (PID: $($p.Id))..."
+                try {
+                    Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+                    & taskkill.exe /F /PID $p.Id /T *>$null
+                } catch {}
+            }
+        }
+    } catch {}
+
+    Start-Sleep -Milliseconds 250
+}
+
+function Remove-VUONGTTDirectoryThorough {
+    param([string]$Path)
+
+    if (-not (Test-Path $Path -ErrorAction SilentlyContinue)) { return $true }
+
+    try {
+        Remove-Item -Path $Path -Recurse -Force -ErrorAction Stop
+        return $true
+    } catch {
+        # Nếu bị lỗi lock, dọn dẹp từng file và áp dụng rename trick
+        try {
+            Get-ChildItem -Path $Path -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { -not $_.PSIsContainer } | ForEach-Object {
+                try {
+                    $_.Attributes = 'Normal'
+                    Remove-Item -Path $_.FullName -Force -ErrorAction Stop
+                } catch {
+                    $renamed = "$($_.FullName).del.$([Guid]::NewGuid().ToString('N').Substring(0,6))"
+                    Rename-Item -Path $_.FullName -NewName $renamed -Force -ErrorAction SilentlyContinue
+                    Remove-Item -Path $renamed -Force -ErrorAction SilentlyContinue
+                }
+            }
+            Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue
+            return (-not (Test-Path $Path -ErrorAction SilentlyContinue))
+        } catch {
+            return $false
+        }
+    }
+}
+
+# ==============================================================================
+# HÀM CHÍNH: GỠ CÀI ĐẶT & GỠ SẠCH TRIỆT ĐỂ (TITANIUM CLEAN UNINSTALLER ENGINE)
+# ==============================================================================
+
 function Invoke-VUONGTTUninstallSoftware {
     [CmdletBinding()]
     param(
@@ -700,21 +991,57 @@ function Invoke-VUONGTTUninstallSoftware {
     $appName = $AppItem.DisplayName
     Write-LogMsg ">>> Bắt đầu tiến trình gỡ cài đặt: $appName (v$($AppItem.DisplayVersion))..."
 
+    # TẦNG 1: FINGERPRINT MATRIX (THU THẬP TỪ KHÓA & THƯ MỤC CÀI ĐẶT)
+    $cleanTerms = [System.Collections.Generic.List[string]]::new()
+    $baseName = $appName -replace '\s*(64-bit|32-bit|x64|x86|\(.*?\)|v?[0-9]+\.[0-9]+.*)$', ''
+    $baseName = $baseName.Trim()
+
+    if ($baseName.Length -ge 3) {
+        $cleanTerms.Add($baseName)
+    }
+
+    # Thêm từ khóa tách biệt (ví dụ CPU-Z từ CPUID CPU-Z)
+    $nameParts = $baseName -split '\s+'
+    foreach ($part in $nameParts) {
+        if ($part.Length -ge 4 -and $part -notmatch '^[0-9\.]+$') {
+            $cleanTerms.Add($part)
+        }
+    }
+
+    # Bổ sung Publisher nếu hợp lệ
+    $publisher = if ($AppItem.Publisher) { $AppItem.Publisher.Trim() } else { "" }
+    $forbiddenVendors = @("microsoft", "windows", "corporation", "chưa xác định", "unknown", "system", "intel", "amd", "realtek", "nvidia")
+    if ($publisher.Length -ge 4 -and ($publisher.ToLower() -notin $forbiddenVendors)) {
+        $cleanTerms.Add($publisher)
+    }
+
+    $forbiddenKeywords = @("windows", "microsoft", "system", "system32", "program files", "appdata", "users", "common files", "temp", "desktop", "intel", "amd", "realtek", "nvidia")
+    $safeCleanTerms = @($cleanTerms | Select-Object -Unique | Where-Object { $_.ToLower() -notin $forbiddenKeywords -and $_.Length -ge 3 })
+
+    # Nhận diện toàn bộ thư mục cài đặt gốc thực tế
+    $targetInstallDirs = Get-VUONGTTResolvedInstallLocations -AppItem $AppItem -CleanTerms $safeCleanTerms
+
+    # TẦNG 2: DẬP TẮT TIẾN TRÌNH & DỊCH VỤ ĐANG KHÓA TỆP TRƯỚC KHI GỠ
+    if ($targetInstallDirs.Count -gt 0 -or $safeCleanTerms.Count -gt 0) {
+        Stop-VUONGTTRelatedProcessesAndServices -TargetDirs $targetInstallDirs -CleanTerms $safeCleanTerms -OnLog $OnLog
+    }
+
+    # TẦNG 3: GIẢI MÃ CHUỖI LỆNH & GỌI UNINSTALLER GỐC
     $uninstCmd = if ($AppItem.QuietUninstallString) { $AppItem.QuietUninstallString } else { $AppItem.UninstallString }
 
     if (-not $uninstCmd) {
-        Write-LogMsg "⚠️ [CẢNH BÁO] Không tìm thấy chuỗi lệnh gỡ cài đặt chính thống trong Registry!"
+        Write-LogMsg "⚠️ [THÔNG BÁO] Ứng dụng không khai báo chuỗi UninstallString chính thống."
         if (-not $CleanDeepScan) {
-            return "[THẤT BẠI] Ứng dụng không có UninstallString hợp lệ!"
+            return "[THẤT BẠI] Ứng dụng không có chuỗi gỡ cài đặt trong Registry!"
         }
     } else {
         Write-LogMsg "• Lệnh gỡ bỏ phát hiện: $uninstCmd"
         try {
-            # Xử lý lệnh MsiExec (GUID)
+            # 3.1: Xử lý Windows Installer (MSI GUID)
             if ($uninstCmd -match '\{[0-9A-Fa-f\-]{36}\}') {
                 $guid = $matches[0]
-                Write-LogMsg "• Phát hiện gói Windows Installer (MSI): $guid. Đang gọi MsiExec..."
-                $msiArgs = "/X$guid /passive /norestart"
+                Write-LogMsg "• Phát hiện gói MSI Installer ($guid). Đang gọi MsiExec..."
+                $msiArgs = if ($CleanDeepScan) { "/X$guid /qn /norestart" } else { "/X$guid /passive /norestart" }
                 $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
                     Start-VUONGTTProcessResponsive -FilePath "msiexec.exe" -ArgumentList $msiArgs -TimeoutSeconds 600 -NoNewWindow $false
                 } else {
@@ -722,29 +1049,43 @@ function Invoke-VUONGTTUninstallSoftware {
                 }
                 Write-LogMsg "• MsiExec hoàn tất với mã thoát: $exitCode"
             } else {
-                # Xử lý lệnh tệp thực thi EXE thông thường
-                $exePath = ""
-                $argList = ""
-                if ($uninstCmd -match '^"([^"]+)"\s*(.*)$') {
-                    $exePath = $matches[1]
-                    $argList = $matches[2]
-                } elseif ($uninstCmd -match '^([^\s]+)\s*(.*)$') {
-                    $exePath = $matches[1]
-                    $argList = $matches[2]
-                } else {
-                    $exePath = $uninstCmd
+                # 3.2: Xử lý tệp thực thi EXE thông minh (Smart Path Resolver)
+                $resolved = Resolve-VUONGTTExecutableAndArgs -CmdLine $uninstCmd
+                $exePath = $resolved.Exe
+                $argList = $resolved.Args
+
+                # Tự động tối ưu cờ Silent / Cưỡng chế khi người dùng chọn Gỡ Sạch Triệt Để
+                if ($CleanDeepScan) {
+                    $exeName = [System.IO.Path]::GetFileName($exePath).ToLower()
+                    if ($exeName -like "*unins*.exe") {
+                        # Inno Setup
+                        if ($argList -notmatch '/(SILENT|VERYSILENT)') {
+                            $argList = "$argList /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-".Trim()
+                        }
+                    } elseif ($exeName -eq "uninstall.exe" -or $exeName -eq "uninst.exe") {
+                        # NSIS
+                        if ($argList -notmatch '/S') {
+                            $argList = "$argList /S".Trim()
+                        }
+                    } elseif ($exeName -eq "setup.exe" -and $argList -like "*--uninstall*") {
+                        # Chromium (Chrome, Brave, Edge)
+                        if ($argList -notmatch '--force-uninstall') {
+                            $argList = "$argList --force-uninstall --system-level".Trim()
+                        }
+                    }
                 }
 
-                if (Test-Path $exePath -ErrorAction SilentlyContinue) {
-                    Write-LogMsg "• Đang khởi chạy uninstaller gốc: $exePath $argList"
+                if ($exePath -and (Test-Path $exePath -ErrorAction SilentlyContinue)) {
+                    Write-LogMsg "• Đang khởi chạy uninstaller: `"$exePath`" $argList"
+                    $workingDir = Split-Path -Path $exePath -Parent
                     $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
-                        Start-VUONGTTProcessResponsive -FilePath $exePath -ArgumentList $argList -TimeoutSeconds 600 -NoNewWindow $false
+                        Start-VUONGTTProcessResponsive -FilePath $exePath -ArgumentList $argList -WorkingDirectory $workingDir -TimeoutSeconds 600 -NoNewWindow $false
                     } else {
-                        (Start-Process -FilePath $exePath -ArgumentList $argList -Wait -PassThru).ExitCode
+                        (Start-Process -FilePath $exePath -ArgumentList $argList -WorkingDirectory $workingDir -Wait -PassThru).ExitCode
                     }
                     Write-LogMsg "• Trình gỡ cài đặt kết thúc với mã thoát: $exitCode"
                 } else {
-                    Write-LogMsg "⚠️ Không thể chạy trực tiếp: $exePath. Thực thi qua cmd.exe..."
+                    Write-LogMsg "⚠️ Không thể tìm thấy file trực tiếp: $exePath. Thực thi qua cmd.exe..."
                     $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
                         Start-VUONGTTProcessResponsive -FilePath "cmd.exe" -ArgumentList "/c `"$uninstCmd`"" -TimeoutSeconds 600 -NoNewWindow $true
                     } else {
@@ -754,118 +1095,246 @@ function Invoke-VUONGTTUninstallSoftware {
                 }
             }
         } catch {
-            Write-LogMsg "⚠️ Lỗi khi khởi chạy uninstaller gốc: $($_.Exception.Message)"
+            Write-LogMsg "⚠️ Cảnh báo uninstaller: $($_.Exception.Message)"
         }
     }
 
-    # BƯỚC 2: NẾU BẬT GỠ SẠCH TRIỆT ĐỂ (CLEAN DEEP SCAN)
+    # BƯỚC 4, 5, 6, 7: CHẾ ĐỘ GỠ SẠCH TRIỆT ĐỂ (TITANIUM CLEAN DEEP SCAN)
     if ($CleanDeepScan) {
         Write-LogMsg "=========================================================="
-        Write-LogMsg "🔍 BẮT ĐẦU QUÉT & DỌN RÁC CHUYÊN SÂU (DEEP CLEAN REMNANTS)..."
+        Write-LogMsg "🛡️ BẮT ĐẦU QUÉT & DỌN SẠCH TẬN GỐC (TITANIUM DEEP CLEAN)..."
         Write-LogMsg "=========================================================="
-        
-        # Tạo từ khóa lọc an toàn
-        $cleanTerm = $appName -replace '\s*(64-bit|32-bit|x64|x86|\(.*?\)|v?[0-9]+\.[0-9]+.*)$', ''
-        $cleanTerm = $cleanTerm.Trim()
 
-        # Bảo vệ tuyệt đối hệ thống - Không bao giờ quét hoặc xóa từ khóa nguy hiểm
-        $forbiddenKeywords = @("windows", "microsoft", "system", "system32", "program files", "appdata", "users", "common files", "temp", "desktop", "intel", "amd", "realtek", "nvidia")
-        $isForbidden = $false
-        foreach ($fk in $forbiddenKeywords) {
-            if ($cleanTerm.ToLower() -eq $fk) {
-                $isForbidden = $true
-                break
+        # Dập tắt lại tiến trình lần 2 (nếu uninstaller vừa spawn thêm background process)
+        Stop-VUONGTTRelatedProcessesAndServices -TargetDirs $targetInstallDirs -CleanTerms $safeCleanTerms -OnLog $null
+
+        # TẦNG 4: CƯỠNG CHẾ XÓA THƯ MỤC CÀI ĐẶT GỐC
+        if ($targetInstallDirs.Count -gt 0) {
+            foreach ($dir in $targetInstallDirs) {
+                if (Test-Path $dir -ErrorAction SilentlyContinue) {
+                    $deleted = Remove-VUONGTTDirectoryThorough -Path $dir
+                    if ($deleted) {
+                        Write-LogMsg "✅ [ĐÃ XÓA SẠCH] Thư mục cài đặt gốc: $dir"
+                    } else {
+                        Write-LogMsg "⚠️ [ĐÃ ĐỔI TÊN/ĐÁNH DẤU XÓA] File bị khóa trong: $dir"
+                    }
+                }
             }
         }
 
-        if ($cleanTerm.Length -ge 3 -and -not $isForbidden) {
-            Write-LogMsg "• Từ khóa nhận diện tệp/khóa rác: '$cleanTerm'"
+        # TẦNG 5: QUÉT SÂU 2 CẤP APPDATA, LOCALAPPDATA, PROGRAMDATA (VENDOR + APP)
+        $dataRoots = @(
+            "$env:LOCALAPPDATA",
+            "$env:APPDATA",
+            "$env:ProgramData",
+            "$env:ProgramFiles",
+            "${env:ProgramFiles(x86)}",
+            "$env:LOCALAPPDATA\Programs"
+        )
 
-            # 1. Dọn dẹp thư mục cài đặt gốc (InstallLocation)
-            if ($AppItem.InstallLocation -and (Test-Path $AppItem.InstallLocation -ErrorAction SilentlyContinue)) {
-                $loc = $AppItem.InstallLocation
-                if ($loc.Length -gt 10 -and $loc -notlike "C:\Windows*" -and $loc -notlike "C:\Program Files" -and $loc -notlike "C:\Program Files (x86)") {
+        foreach ($dr in $dataRoots) {
+            if (-not (Test-Path $dr -ErrorAction SilentlyContinue)) { continue }
+
+            Get-ChildItem -Path $dr -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                $dirName1 = $_.Name
+                $dirPath1 = $_.FullName
+                if ($dirName1.ToLower() -in $forbiddenKeywords) { return }
+
+                # Kiểm tra khớp cấp 1
+                $match1 = $false
+                foreach ($term in $safeCleanTerms) {
+                    if ($dirName1 -like "*$term*") { $match1 = $true; break }
+                }
+
+                if ($match1) {
+                    Remove-VUONGTTDirectoryThorough -Path $dirPath1 | Out-Null
+                    Write-LogMsg "✅ [ĐÃ DỌN RÁC APPDATA CẤP 1] $dirPath1"
+                } else {
+                    # Kiểm tra khớp cấp 2 (Thư mục Vendor chứa App)
+                    Get-ChildItem -Path $dirPath1 -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                        $dirName2 = $_.Name
+                        $dirPath2 = $_.FullName
+
+                        $match2 = $false
+                        foreach ($term in $safeCleanTerms) {
+                            if ($dirName2 -like "*$term*") { $match2 = $true; break }
+                        }
+
+                        if ($match2) {
+                            Remove-VUONGTTDirectoryThorough -Path $dirPath2 | Out-Null
+                            Write-LogMsg "✅ [ĐÃ DỌN RÁC APPDATA CẤP 2] $dirPath2"
+
+                            # Dọn dẹp thư mục Vendor nếu rỗng
+                            $remaining = (Get-ChildItem -Path $dirPath1 -Force -ErrorAction SilentlyContinue).Count
+                            if ($remaining -eq 0) {
+                                Remove-Item -Path $dirPath1 -Force -ErrorAction SilentlyContinue
+                                Write-LogMsg "✅ [ĐÃ DỌN THƯ MỤC VENDOR RỖNG] $dirPath1"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        # TẦNG 6: DỌN DẸP REGISTRY CHUYÊN SÂU (UNINSTALL KEYS, SOFTWARE & STARTUP RUN)
+        $uninstBranches = @(
+            "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+            "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+        )
+
+        foreach ($ub in $uninstBranches) {
+            if (-not (Test-Path $ub -ErrorAction SilentlyContinue)) { continue }
+            Get-ChildItem -Path $ub -ErrorAction SilentlyContinue | ForEach-Object {
+                $regKeyPath = $_.PSPath
+                $regChild = $_.PSChildName
+                $regProps = Get-ItemProperty -Path $regKeyPath -ErrorAction SilentlyContinue
+
+                $shouldDelete = $false
+                if ($AppItem.RegistryPath -and $regKeyPath -eq $AppItem.RegistryPath) {
+                    $shouldDelete = $true
+                } elseif ($AppItem.RegistryKeyName -and $regChild -eq $AppItem.RegistryKeyName) {
+                    $shouldDelete = $true
+                } elseif ($regProps -and $regProps.DisplayName -and $regProps.DisplayName.Trim() -eq $appName) {
+                    $shouldDelete = $true
+                }
+
+                if ($shouldDelete) {
                     try {
-                        Remove-Item -Path $loc -Recurse -Force -ErrorAction SilentlyContinue
-                        Write-LogMsg "✅ [ĐÃ XÓA SẠCH] Thư mục cài đặt gốc: $loc"
+                        Remove-Item -Path $regKeyPath -Recurse -Force -ErrorAction SilentlyContinue
+                        Write-LogMsg "✅ [ĐÃ XÓA MÃ GỠ BỎ REGISTRY] $regKeyPath"
                     } catch {}
                 }
             }
+        }
 
-            # 2. Dọn dẹp các thư mục rác trong AppData & ProgramData
-            $dataRoots = @(
-                "$env:LOCALAPPDATA",
-                "$env:APPDATA",
-                "$env:ProgramData",
-                "$env:ProgramFiles",
-                "${env:ProgramFiles(x86)}"
-            )
+        # Quét Registry Software 2 cấp (HKCU & HKLM)
+        $regRoots = @(
+            "HKCU:\Software",
+            "HKLM:\Software",
+            "HKLM:\Software\Wow6432Node"
+        )
 
-            foreach ($dr in $dataRoots) {
-                if (Test-Path $dr -ErrorAction SilentlyContinue) {
-                    Get-ChildItem -Path $dr -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-                        if ($_.Name -like "*$cleanTerm*" -and ($_.Name.ToLower() -notin $forbiddenKeywords)) {
-                            $targetTrash = $_.FullName
+        foreach ($rr in $regRoots) {
+            if (-not (Test-Path $rr -ErrorAction SilentlyContinue)) { continue }
+            Get-ChildItem -Path $rr -ErrorAction SilentlyContinue | ForEach-Object {
+                $key1Name = $_.PSChildName
+                $key1Path = $_.PSPath
+                if ($key1Name.ToLower() -in $forbiddenKeywords) { return }
+
+                $match1 = $false
+                foreach ($term in $safeCleanTerms) {
+                    if ($key1Name -like "*$term*") { $match1 = $true; break }
+                }
+
+                if ($match1) {
+                    try {
+                        Remove-Item -Path $key1Path -Recurse -Force -ErrorAction SilentlyContinue
+                        Write-LogMsg "✅ [ĐÃ XÓA REGISTRY CẤP 1] $key1Path"
+                    } catch {}
+                } else {
+                    Get-ChildItem -Path $key1Path -ErrorAction SilentlyContinue | ForEach-Object {
+                        $key2Name = $_.PSChildName
+                        $key2Path = $_.PSPath
+
+                        $match2 = $false
+                        foreach ($term in $safeCleanTerms) {
+                            if ($key2Name -like "*$term*") { $match2 = $true; break }
+                        }
+
+                        if ($match2) {
                             try {
-                                Remove-Item -Path $targetTrash -Recurse -Force -ErrorAction SilentlyContinue
-                                Write-LogMsg "✅ [ĐÃ DỌN RÁC] Thư mục dư thừa: $targetTrash"
+                                Remove-Item -Path $key2Path -Recurse -Force -ErrorAction SilentlyContinue
+                                Write-LogMsg "✅ [ĐÃ XÓA REGISTRY CẤP 2] $key2Path"
+                            } catch {}
+
+                            $remSub = (Get-ChildItem -Path $key1Path -ErrorAction SilentlyContinue).Count
+                            $remVal = ((Get-ItemProperty -Path $key1Path -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -notmatch '^PS' }).Count
+                            if ($remSub -eq 0 -and $remVal -eq 0) {
+                                Remove-Item -Path $key1Path -Recurse -Force -ErrorAction SilentlyContinue
+                                Write-LogMsg "✅ [ĐÃ DỌN REGISTRY VENDOR RỖNG] $key1Path"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        # Dọn dẹp Registry Startup Run
+        $runKeys = @(
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+            "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
+        )
+        foreach ($rk in $runKeys) {
+            if (Test-Path $rk -ErrorAction SilentlyContinue) {
+                $props = Get-ItemProperty -Path $rk -ErrorAction SilentlyContinue
+                if ($props) {
+                    foreach ($prop in $props.PSObject.Properties) {
+                        $propName = $prop.Name
+                        $propVal = "$($prop.Value)"
+                        if ($propName -match '^PS') { continue }
+
+                        $isMatch = $false
+                        foreach ($term in $safeCleanTerms) {
+                            if ($propName -like "*$term*" -or $propVal -like "*$term*") {
+                                $isMatch = $true; break
+                            }
+                        }
+                        if ($isMatch) {
+                            try {
+                                Remove-ItemProperty -Path $rk -Name $propName -Force -ErrorAction SilentlyContinue
+                                Write-LogMsg "✅ [ĐÃ XÓA KHỞI ĐỘNG CÙNG WINDOWS] $rk -> $propName"
                             } catch {}
                         }
                     }
                 }
             }
+        }
 
-            # 3. Dọn dẹp khóa Registry còn sót lại
-            $regRoots = @(
-                "HKCU:\Software",
-                "HKLM:\Software",
-                "HKLM:\Software\Wow6432Node"
-            )
+        # TẦNG 7: DỌN DẸP SCHEDULED TASKS & SHORTCUTS
+        try {
+            $tasks = Get-ScheduledTask -ErrorAction SilentlyContinue
+            foreach ($t in $tasks) {
+                $tName = $t.TaskName
+                $tPath = $t.TaskPath
+                if ($tPath -like "\Microsoft\Windows\*" -or $tPath -like "\Microsoft\Office\*") { continue }
 
-            foreach ($rr in $regRoots) {
-                if (Test-Path $rr -ErrorAction SilentlyContinue) {
-                    Get-ChildItem -Path $rr -ErrorAction SilentlyContinue | ForEach-Object {
-                        $keyNameOnly = $_.PSChildName
-                        if ($keyNameOnly -like "*$cleanTerm*" -and ($keyNameOnly.ToLower() -notin $forbiddenKeywords)) {
-                            $trashRegKey = $_.PSPath
-                            try {
-                                Remove-Item -Path $trashRegKey -Recurse -Force -ErrorAction SilentlyContinue
-                                Write-LogMsg "✅ [ĐÃ XÓA REGISTRY] $trashRegKey"
-                            } catch {}
-                        }
+                $isMatch = $false
+                foreach ($term in $safeCleanTerms) {
+                    if ($term.Length -ge 4 -and ($tName -like "*$term*" -or $tPath -like "*$term*")) {
+                        $isMatch = $true; break
                     }
                 }
+                if ($isMatch) {
+                    try {
+                        Unregister-ScheduledTask -TaskName $tName -TaskPath $tPath -Confirm:$false -ErrorAction SilentlyContinue
+                        Write-LogMsg "✅ [ĐÃ XÓA TÁC VỤ ĐỊNH KỲ] $tPath$tName"
+                    } catch {}
+                }
             }
+        } catch {}
 
-            # 4. Xóa Registry Uninstall Key của chính ứng dụng nếu uninstaller bỏ sót
-            if ($AppItem.RegistryPath -and (Test-Path $AppItem.RegistryPath -ErrorAction SilentlyContinue)) {
-                try {
-                    Remove-Item -Path $AppItem.RegistryPath -Recurse -Force -ErrorAction SilentlyContinue
-                    Write-LogMsg "✅ [ĐÃ XÓA MÃ GỠ BỎ REGISTRY] $($AppItem.RegistryPath)"
-                } catch {}
-            }
+        # Dọn Shortcuts trên Desktop & Start Menu
+        $shortcutFolders = @(
+            "$env:USERPROFILE\Desktop",
+            "$env:PUBLIC\Desktop",
+            "$env:APPDATA\Microsoft\Windows\Start Menu\Programs",
+            "$env:ProgramData\Microsoft\Windows\Start Menu\Programs"
+        )
 
-            # 5. Dọn dẹp Shortcut (.lnk) trên Desktop & Start Menu
-            $shortcutFolders = @(
-                "$env:USERPROFILE\Desktop",
-                "$env:PUBLIC\Desktop",
-                "$env:APPDATA\Microsoft\Windows\Start Menu\Programs",
-                "$env:ProgramData\Microsoft\Windows\Start Menu\Programs"
-            )
-
-            foreach ($sf in $shortcutFolders) {
-                if (Test-Path $sf -ErrorAction SilentlyContinue) {
-                    Get-ChildItem -Path $sf -Filter "*$cleanTerm*.lnk" -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+        foreach ($sf in $shortcutFolders) {
+            if (Test-Path $sf -ErrorAction SilentlyContinue) {
+                foreach ($term in $safeCleanTerms) {
+                    Get-ChildItem -Path $sf -Filter "*$term*.lnk" -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
                         try {
                             Remove-Item -Path $_.FullName -Force -ErrorAction SilentlyContinue
-                            Write-LogMsg "✅ [ĐÃ XÓA SHORTCUT] $($_.Name)"
+                            Write-LogMsg "✅ [ĐÃ XÓA PHÍM TẮT] $($_.Name)"
                         } catch {}
                     }
                 }
             }
-        } else {
-            Write-LogMsg "• Bỏ qua quét theo tên vì từ khóa quá ngắn hoặc thuộc hệ thống bảo vệ."
         }
+
         Write-LogMsg "=========================================================="
         Write-LogMsg "🎉 [HOÀN TẤT] Đã gỡ bỏ và dọn dẹp sạch sẽ phần mềm $appName!"
     } else {
