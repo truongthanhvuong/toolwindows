@@ -7084,12 +7084,15 @@ $window.Add_ContentRendered({
 
     $script:appRootDir = if ($global:ScriptDir) { $global:ScriptDir } elseif ($ScriptDir) { $ScriptDir } else { (Get-Location).Path }
 
-    # ================= 1. REALTIME STARTUP AUTO-UPDATE ENGINE =================
-    # Kiểm tra cập nhật NGAY LẬP TỨC KHI VỪA MỞ TOOL nếu có kết nối mạng Internet
-    $startupUpdateTimer = New-Object System.Windows.Threading.DispatcherTimer
-    $startupUpdateTimer.Interval = [TimeSpan]::FromMilliseconds(500)
-    $startupUpdateTimer.Add_Tick({
-        $startupUpdateTimer.Stop()
+    # ================= 1. REALTIME STARTUP AUTO-UPDATE ENGINE (SAFE ISOLATED RUNSPACE) =================
+    # Kiểm tra cập nhật NGAY LẬP TỨC KHI VỪA MỞ TOOL nếu có kết nối mạng Internet (100% An toàn, không Crash)
+    $script:startupPs = $null
+    $script:startupAsyncHandle = $null
+
+    $startupCheckTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $startupCheckTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+    $startupCheckTimer.Add_Tick({
+        $startupCheckTimer.Stop()
 
         $hasNet = [System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()
         if (-not $hasNet) {
@@ -7097,48 +7100,76 @@ $window.Add_ContentRendered({
             return
         }
 
-        # Có mạng Internet -> Kiểm tra bản cập nhật ngầm không làm đơ giao diện
-        $txtFooterStatus.Text = "• [Đang kiểm tra] Đang kiểm tra bản cập nhật mới nhất từ GitHub..."
-        [System.Threading.ThreadPool]::QueueUserWorkItem([System.Threading.WaitCallback]{
-            try {
-                $uInfo = Get-VUONGTTAppUpdateInfo -TimeoutSec 4
-                $window.Dispatcher.BeginInvoke([action]{
-                    if ($uInfo -and $uInfo.HasUpdate) {
-                        if ($btnCheckAppUpdate) {
-                            $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
-                            $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
-                            $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
-                        }
-
-                        $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
-                        if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdate) {
-                            $script:hasTriggeredAutoUpdate = $true
-                            $txtFooterStatus.Text = "• [AUTO-UPDATE] Tác giả vừa cập nhật bản mới v$($uInfo.LatestVersion)! Đang tự động nâng cấp sau 2 giây..."
-
-                            $autoUpdTimer = New-Object System.Windows.Threading.DispatcherTimer
-                            $autoUpdTimer.Interval = [TimeSpan]::FromSeconds(2)
-                            $autoUpdTimer.Add_Tick({
-                                $autoUpdTimer.Stop()
-                                $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang tải bản v$($uInfo.LatestVersion) từ GitHub..."
-                                Invoke-VUONGTTDoEvents
-                                Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -OnProgress {
-                                    param($m)
-                                    $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
-                                    Invoke-VUONGTTDoEvents
-                                }
-                            })
-                            $autoUpdTimer.Start()
-                        } elseif ($isDevSourceRepo) {
-                            $txtFooterStatus.Text = "• [CHÚ Ý] Đã có bản cập nhật mới v$($uInfo.LatestVersion) trên GitHub! Bấm 'Có Bản Mới' ở trên để nâng cấp."
-                        }
-                    } elseif ($uInfo -and $uInfo.IsOnline) {
-                        $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng! Bạn đang dùng bản mới nhất (v$($uInfo.CurrentVersion))."
+        # Có mạng Internet -> Khởi chạy kiểm tra phiên bản mới qua Isolated PowerShell Runspace (Độc lập, không chặn UI, không crash)
+        $txtFooterStatus.Text = "• [Đang kiểm tra] Đang kết nối GitHub kiểm tra bản cập nhật mới nhất..."
+        try {
+            $script:startupPs = [System.Management.Automation.PowerShell]::Create()
+            $script:startupPs.AddScript({
+                param($updFile)
+                try {
+                    if (Test-Path $updFile) { . $updFile }
+                    if (Get-Command "Get-VUONGTTAppUpdateInfo" -ErrorAction SilentlyContinue) {
+                        return Get-VUONGTTAppUpdateInfo -TimeoutSec 4
                     }
-                }) | Out-Null
-            } catch {}
-        }) | Out-Null
+                } catch {}
+                return $null
+            }).AddArgument((Join-Path $script:appRootDir "src\Core\AppUpdater.ps1")) | Out-Null
+
+            $script:startupAsyncHandle = $script:startupPs.BeginInvoke()
+
+            # Timer kiểm tra kết quả bất đồng bộ mỗi 300ms
+            $pollTimer = New-Object System.Windows.Threading.DispatcherTimer
+            $pollTimer.Interval = [TimeSpan]::FromMilliseconds(300)
+            $pollTimer.Add_Tick({
+                if ($script:startupAsyncHandle -and $script:startupAsyncHandle.IsCompleted) {
+                    $pollTimer.Stop()
+                    try {
+                        $uInfo = $script:startupPs.EndInvoke($script:startupAsyncHandle)
+                        $script:startupPs.Dispose()
+                        $script:startupPs = $null
+                        $script:startupAsyncHandle = $null
+
+                        if ($uInfo -and $uInfo.HasUpdate) {
+                            if ($btnCheckAppUpdate) {
+                                $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
+                                $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                                $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
+                            }
+
+                            $txtFooterStatus.Text = "• [CÓ BẢN MỚI] Đã có bản cập nhật v$($uInfo.LatestVersion) trên GitHub! Bấm 'CÓ BẢN MỚI' ở góc trên để nâng cấp."
+
+                            # Tự động hỏi và cập nhật cho máy khách hàng:
+                            $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
+                            if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdate) {
+                                $script:hasTriggeredAutoUpdate = $true
+                                $askUpdate = [System.Windows.MessageBox]::Show(
+                                    "Hệ thống phát hiện phiên bản phát hành mới nhất: v$($uInfo.LatestVersion)`n`nBạn có muốn tự động tải và nâng cấp ngay bây giờ không?",
+                                    "VUONGTT Tool Pro 2026 - Tự Động Cập Nhật",
+                                    [System.Windows.MessageBoxButton]::YesNo,
+                                    [System.Windows.MessageBoxImage]::Information
+                                )
+                                if ($askUpdate -eq [System.Windows.MessageBoxResult]::Yes) {
+                                    $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang tải bản v$($uInfo.LatestVersion) từ GitHub..."
+                                    Invoke-VUONGTTDoEvents
+                                    Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -OnProgress {
+                                        param($m)
+                                        $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
+                                        Invoke-VUONGTTDoEvents
+                                    }
+                                }
+                            }
+                        } elseif ($uInfo -and $uInfo.IsOnline) {
+                            $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng! Bạn đang dùng bản mới nhất (v$($uInfo.CurrentVersion))."
+                        }
+                    } catch {}
+                }
+            })
+            $pollTimer.Start()
+        } catch {
+            $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng phục vụ!"
+        }
     })
-    $startupUpdateTimer.Start()
+    $startupCheckTimer.Start()
 
     # ================= 2. REALTIME BACKGROUND 2-WAY CLOUD AUTO-SYNC WORKER =================
     # Tự động đồng bộ chính sách phân quyền (Free/PRO), kho license keys và định kỳ kiểm tra bản update
