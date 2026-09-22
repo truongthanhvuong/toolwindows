@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "20.5.908.88",
-    "releaseDate":  "21/09/2026",
+    "version":  "20.5.908.89",
+    "releaseDate":  "22/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
                       "Nâng cấp toàn diện Phân Hệ Quản Lý, Kiểm Tra \u0026 Cập Nhật Toàn Bộ Driver: Tự động quét chẩn đoán sâu bus phần cứng PnP, phát hiện thiết bị thiếu driver/chấm than vàng Code 28, 43, 10, hiển thị Hardware Badge trực quan, tích hợp động cơ tự động tìm và cài đặt Driver chính hãng mới nhất qua Microsoft Update Catalog API (Microsoft.Update.Session), kèm bộ công cụ mở nhanh SDIO, 3DP Chip và cổng tải Driver OEM theo Model máy.",
