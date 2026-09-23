@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.11
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.12
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -6687,6 +6687,35 @@ if ($btnGetRecoveryKey) {
 
 if ($btnCheckAppUpdate) {
     $btnCheckAppUpdate.Add_Click({
+        # 1. Nếu bản cập nhật đã được tải ngầm sẵn sàng trong Temp -> Áp dụng tức thì trong 1 giây!
+        if ($global:VUONGTT_UPDATE_READY -and $global:VUONGTT_UPDATE_READY.ExePath -and (Test-Path $global:VUONGTT_UPDATE_READY.ExePath)) {
+            $stagedPath = $global:VUONGTT_UPDATE_READY.ExePath
+            $stagedVer  = $global:VUONGTT_UPDATE_READY.Version
+            $askReady = [System.Windows.MessageBox]::Show(
+                "BẢN CẬP NHẬT ĐÃ ĐƯỢC TẢI SẴN TRÊN MÁY!`n=====================================================`n" +
+                "• Phiên bản mới: v$stagedVer`n" +
+                "• Gói cài đặt: Đã lưu sẵn trong bộ nhớ đệm an toàn 100%.`n" +
+                "• Tốc độ nâng cấp: ~1 giây (Áp dụng tức thì, không cần tải lại mạng).`n`n" +
+                "Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay bây giờ không?",
+                "Cập Nhật Sẵn Sàng - Nâng Cấp Tức Thì",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Information
+            )
+            if ($askReady -eq [System.Windows.MessageBoxResult]::Yes) {
+                $txtFooterStatus.Text = "• [UPDATE] Đang áp dụng bản cập nhật v$stagedVer..."
+                Invoke-VUONGTTDoEvents
+                $res = Invoke-VUONGTTAppSelfUpdate -DownloadUrl "" -NewVersion $stagedVer -PreDownloadedExePath $stagedPath -OnProgress {
+                    param($m)
+                    $txtFooterStatus.Text = "• [UPDATE] $m"
+                    Invoke-VUONGTTDoEvents
+                }
+                if ($res -and ($res -like "*[LỖI]*" -or $res -like "*[CANH BAO]*")) {
+                    [System.Windows.MessageBox]::Show($res, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                }
+            }
+            return
+        }
+
         $btnCheckAppUpdate.IsEnabled = $false
         $origContent = $btnCheckAppUpdate.Content
         $btnCheckAppUpdate.Content = "⏳ Đang kiểm tra..."
@@ -7703,77 +7732,169 @@ $window.Add_ContentRendered({
             return
         }
 
-        # Có mạng Internet -> Khởi chạy kiểm tra phiên bản mới qua Isolated PowerShell Runspace (Độc lập, không chặn UI, không crash)
-        $txtFooterStatus.Text = "• [Đang kiểm tra] Đang kết nối GitHub kiểm tra bản cập nhật mới nhất..."
-        try {
-            $script:startupPs = [System.Management.Automation.PowerShell]::Create()
-            $script:startupPs.AddScript({
-                param($updFile)
-                try {
-                    if (Test-Path $updFile) { . $updFile }
-                    if (Get-Command "Get-VUONGTTAppUpdateInfo" -ErrorAction SilentlyContinue) {
-                        return Get-VUONGTTAppUpdateInfo -TimeoutSec 4
+    # ================= 1.5 CƠ CHẾ TỰ ĐỘNG TẢI NGẦM TRƯỚC (PRE-DOWNLOAD STAGING) =================
+    # Tự động tải trước bản cập nhật về Temp, kiểm tra toàn vẹn rồi mới thông báo người dùng
+    $script:hasTriggeredAutoUpdatePrompt = $false
+    $script:isPreDownloading = $false
+
+    $script:TriggerPreDownloadAndNotify = {
+        param($uInfo)
+        if (-not $uInfo -or -not $uInfo.HasUpdate) { return }
+
+        $stagedPath = "$env:TEMP\VUONGTT_Toolkit_v$($uInfo.LatestVersion)_READY.exe"
+        $isAlreadyReady = $false
+        if (Test-Path $stagedPath) {
+            try {
+                $fi = Get-Item $stagedPath -ErrorAction SilentlyContinue
+                if ($fi -and $fi.Length -gt 1000000) {
+                    $isAlreadyReady = $true
+                }
+            } catch {}
+        }
+
+        if ($isAlreadyReady) {
+            $global:VUONGTT_UPDATE_READY = @{
+                Version = $uInfo.LatestVersion
+                ExePath = $stagedPath
+            }
+            if ($btnCheckAppUpdate) {
+                $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion) (SẴN SÀNG)"
+                $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
+            }
+            $txtFooterStatus.Text = "• [ĐÃ TẢI SẴN] Bản cập nhật v$($uInfo.LatestVersion) đã sẵn sàng trên máy! Bấm để nâng cấp ngay trong 1s."
+
+            $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
+            if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdatePrompt) {
+                $script:hasTriggeredAutoUpdatePrompt = $true
+                $changeText = if ($uInfo.Changelog) { ($uInfo.Changelog -join "`n• ") } else { "Đã cập nhật toàn bộ tính năng và sửa lỗi mới nhất." }
+                $msg = @"
+ĐÃ TẢI XONG BẢN CẬP NHẬT MỚI: v$($uInfo.LatestVersion)!
+=====================================================
+• Gói cập nhật đã được tải về máy tính của bạn hoàn tất 100%.
+• Tốc độ nâng cấp: Cực nhanh (~1 giây, không cần chờ tải qua mạng).
+
+ĐIỂM MỚI TRONG BẢN V$($uInfo.LatestVersion):
+• $changeText
+
+=====================================================
+Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay bây giờ không?
+(Bấm 'Yes' để áp dụng ngay trong 1 giây, hoặc 'No' để tiếp tục dùng và nâng cấp sau).
+"@
+                $ask = [System.Windows.MessageBox]::Show($msg, "VUONGTT Tool Pro 2026 - Bản Cập Nhật Đã Sẵn Sàng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
+                if ($ask -eq [System.Windows.MessageBoxResult]::Yes) {
+                    $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang áp dụng bản cập nhật v$($uInfo.LatestVersion)..."
+                    Invoke-VUONGTTDoEvents
+                    Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -PreDownloadedExePath $stagedPath -OnProgress {
+                        param($m)
+                        $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
+                        Invoke-VUONGTTDoEvents
                     }
-                } catch {}
-                return $null
-            }).AddArgument((Join-Path $script:appRootDir "src\Core\AppUpdater.ps1")) | Out-Null
+                }
+            }
+            return
+        }
 
-            $script:startupAsyncHandle = $script:startupPs.BeginInvoke()
+        # Chưa tải sẵn -> Khởi chạy tải ngầm bất đồng bộ không chặn UI
+        if (-not $script:isPreDownloading) {
+            $script:isPreDownloading = $true
+            if ($btnCheckAppUpdate) {
+                $btnCheckAppUpdate.Content = "⏳ Đang tải bản v$($uInfo.LatestVersion)..."
+                $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#D97706")
+                $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
+            }
+            $txtFooterStatus.Text = "• [TẢI NGẦM] Phát hiện bản mới v$($uInfo.LatestVersion)! Đang tự động tải trước gói cập nhật về máy..."
 
-            # Timer kiểm tra kết quả bất đồng bộ mỗi 300ms
-            $pollTimer = New-Object System.Windows.Threading.DispatcherTimer
-            $pollTimer.Interval = [TimeSpan]::FromMilliseconds(300)
-            $pollTimer.Add_Tick({
-                if ($script:startupAsyncHandle -and $script:startupAsyncHandle.IsCompleted) {
-                    $pollTimer.Stop()
+            try {
+                $script:preDlPs = [System.Management.Automation.PowerShell]::Create()
+                $script:preDlPs.AddScript({
+                    param($appRoot, $dlUrl, $ver)
                     try {
-                        $uInfo = $script:startupPs.EndInvoke($script:startupAsyncHandle)
-                        $script:startupPs.Dispose()
-                        $script:startupPs = $null
-                        $script:startupAsyncHandle = $null
-
-                        if ($uInfo -and $uInfo.HasUpdate) {
-                            if ($btnCheckAppUpdate) {
-                                $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
-                                $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
-                                $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
-                            }
-
-                            $txtFooterStatus.Text = "• [CÓ BẢN MỚI] Đã có bản cập nhật v$($uInfo.LatestVersion) trên GitHub! Bấm 'CÓ BẢN MỚI' ở góc trên để nâng cấp."
-
-                            # Tự động hỏi và cập nhật cho máy khách hàng:
-                            $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
-                            if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdate) {
-                                $script:hasTriggeredAutoUpdate = $true
-                                $askUpdate = [System.Windows.MessageBox]::Show(
-                                    "Hệ thống phát hiện phiên bản phát hành mới nhất: v$($uInfo.LatestVersion)`n`nBạn có muốn tự động tải và nâng cấp ngay bây giờ không?",
-                                    "VUONGTT Tool Pro 2026 - Tự Động Cập Nhật",
-                                    [System.Windows.MessageBoxButton]::YesNo,
-                                    [System.Windows.MessageBoxImage]::Information
-                                )
-                                if ($askUpdate -eq [System.Windows.MessageBoxResult]::Yes) {
-                                    $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang tải bản v$($uInfo.LatestVersion) từ GitHub..."
-                                    Invoke-VUONGTTDoEvents
-                                    $updRes = Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -OnProgress {
-                                        param($m)
-                                        $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
-                                        Invoke-VUONGTTDoEvents
-                                    }
-                                    if ($updRes -and ($updRes -like "*[LỖI]*" -or $updRes -like "*[CANH BAO]*")) {
-                                        [System.Windows.MessageBox]::Show($updRes, "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
-                                    }
-                                }
-                            }
-                        } elseif ($uInfo -and $uInfo.IsOnline) {
-                            $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng! Bạn đang dùng bản mới nhất (v$($uInfo.CurrentVersion))."
+                        $upd = Join-Path $appRoot "src\Core\AppUpdater.ps1"
+                        if (Test-Path $upd) { . $upd }
+                        if (Get-Command "Start-VUONGTTBackgroundPreDownload" -ErrorAction SilentlyContinue) {
+                            return Start-VUONGTTBackgroundPreDownload -DownloadUrl $dlUrl -NewVersion $ver
                         }
                     } catch {}
-                }
-            })
-            $pollTimer.Start()
-        } catch {
-            $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng phục vụ!"
+                    return $null
+                }).AddArgument($script:appRootDir).AddArgument($uInfo.DownloadUrl).AddArgument($uInfo.LatestVersion) | Out-Null
+
+                $script:preDlAsync = $script:preDlPs.BeginInvoke()
+
+                $preDlTimer = New-Object System.Windows.Threading.DispatcherTimer
+                $preDlTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+                $preDlTimer.Add_Tick({
+                    if ($script:preDlAsync -and $script:preDlAsync.IsCompleted) {
+                        $preDlTimer.Stop()
+                        $script:isPreDownloading = $false
+                        try {
+                            $resPath = $script:preDlPs.EndInvoke($script:preDlAsync)
+                            $script:preDlPs.Dispose()
+                            $script:preDlPs = $null
+                            $script:preDlAsync = $null
+
+                            if ($resPath -and (Test-Path $resPath)) {
+                                & $script:TriggerPreDownloadAndNotify $uInfo
+                            } else {
+                                if ($btnCheckAppUpdate) {
+                                    $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
+                                    $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                                }
+                                $txtFooterStatus.Text = "• [CÓ BẢN MỚI] Phát hiện bản mới v$($uInfo.LatestVersion)! Bấm nút ở góc trên để nâng cấp."
+                            }
+                        } catch {
+                            $script:isPreDownloading = $false
+                        }
+                    }
+                })
+                $preDlTimer.Start()
+            } catch {
+                $script:isPreDownloading = $false
+            }
         }
+    }
+
+    # Có mạng Internet -> Khởi chạy kiểm tra phiên bản mới qua Isolated PowerShell Runspace (Độc lập, không chặn UI, không crash)
+    $txtFooterStatus.Text = "• [Đang kiểm tra] Đang kết nối GitHub kiểm tra bản cập nhật mới nhất..."
+    try {
+        $script:startupPs = [System.Management.Automation.PowerShell]::Create()
+        $script:startupPs.AddScript({
+            param($updFile)
+            try {
+                if (Test-Path $updFile) { . $updFile }
+                if (Get-Command "Get-VUONGTTAppUpdateInfo" -ErrorAction SilentlyContinue) {
+                    return Get-VUONGTTAppUpdateInfo -TimeoutSec 4
+                }
+            } catch {}
+            return $null
+        }).AddArgument((Join-Path $script:appRootDir "src\Core\AppUpdater.ps1")) | Out-Null
+
+        $script:startupAsyncHandle = $script:startupPs.BeginInvoke()
+
+        # Timer kiểm tra kết quả bất đồng bộ mỗi 300ms
+        $pollTimer = New-Object System.Windows.Threading.DispatcherTimer
+        $pollTimer.Interval = [TimeSpan]::FromMilliseconds(300)
+        $pollTimer.Add_Tick({
+            if ($script:startupAsyncHandle -and $script:startupAsyncHandle.IsCompleted) {
+                $pollTimer.Stop()
+                try {
+                    $uInfo = $script:startupPs.EndInvoke($script:startupAsyncHandle)
+                    $script:startupPs.Dispose()
+                    $script:startupPs = $null
+                    $script:startupAsyncHandle = $null
+
+                    if ($uInfo -and $uInfo.HasUpdate) {
+                        & $script:TriggerPreDownloadAndNotify $uInfo
+                    } elseif ($uInfo -and $uInfo.IsOnline) {
+                        $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng! Bạn đang dùng bản mới nhất (v$($uInfo.CurrentVersion))."
+                    }
+                } catch {}
+            }
+        })
+        $pollTimer.Start()
+    } catch {
+        $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng phục vụ!"
+    }
     })
     $startupCheckTimer.Start()
 
@@ -7828,34 +7949,7 @@ $window.Add_ContentRendered({
 
                         # Nhận diện bản cập nhật phần mềm mới từ GitHub
                         if ($uInfo -and $uInfo.HasUpdate) {
-                            if ($btnCheckAppUpdate) {
-                                $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
-                                $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
-                                $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
-                            }
-
-                            # Tự động nâng cấp cho các máy khách hàng (Auto Hot-Update)
-                            $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
-                            if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdate) {
-                                $script:hasTriggeredAutoUpdate = $true
-                                $txtFooterStatus.Text = "• [AUTO-UPDATE] Tác giả vừa cập nhật bản mới v$($uInfo.LatestVersion)! Tự động nâng cấp sau 2 giây..."
-
-                                $autoUpdTimer = New-Object System.Windows.Threading.DispatcherTimer
-                                $autoUpdTimer.Interval = [TimeSpan]::FromSeconds(2)
-                                $autoUpdTimer.Add_Tick({
-                                    $autoUpdTimer.Stop()
-                                    $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang tải bản v$($uInfo.LatestVersion) từ GitHub..."
-                                    Invoke-VUONGTTDoEvents
-                                    Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -OnProgress {
-                                        param($m)
-                                        $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
-                                        Invoke-VUONGTTDoEvents
-                                    }
-                                })
-                                $autoUpdTimer.Start()
-                            } elseif ($isDevSourceRepo) {
-                                $txtFooterStatus.Text = "• [CHÚ Ý] Đã có bản cập nhật mới v$($uInfo.LatestVersion) trên GitHub! Bấm nút 'Có Bản Mới' ở trên để nâng cấp."
-                            }
+                            & $script:TriggerPreDownloadAndNotify $uInfo
                         }
 
                         # Tự động cập nhật phân quyền Free/PRO nếu Admin vừa đổi trên Cloud

@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.11")]
-[assembly: AssemblyFileVersion("20.5.909.11")]
+[assembly: AssemblyVersion("20.5.909.12")]
+[assembly: AssemblyFileVersion("20.5.909.12")]
 
 namespace VUONGTT
 {
@@ -238,6 +238,50 @@ namespace VUONGTT
                 }
 
                 string currentExe = Application.ExecutablePath;
+
+                // CƠ CHẾ NÂNG CẤP TỰ ĐỘNG TẦNG C# (NATIVE AUTO-UPDATE APPLIER)
+                // Kiểm tra nếu có bản cập nhật đã tải sẵn trong Temp từ phiên làm việc trước
+                try
+                {
+                    string tempPath = Path.GetTempPath();
+                    string[] readyFiles = Directory.GetFiles(tempPath, "VUONGTT_Toolkit_v*_READY.exe");
+                    if (readyFiles != null && readyFiles.Length > 0)
+                    {
+                        Array.Sort(readyFiles);
+                        string newestReady = readyFiles[readyFiles.Length - 1];
+                        FileInfo fi = new FileInfo(newestReady);
+                        if (fi.Exists && fi.Length > 1000000)
+                        {
+                            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(newestReady);
+                            Version readyVer = null;
+                            Version curVer = Assembly.GetExecutingAssembly().GetName().Version;
+                            if (Version.TryParse(fvi.FileVersion, out readyVer) && readyVer > curVer)
+                            {
+                                CloseSplash();
+                                string updaterCmd = Path.Combine(tempPath, "VUONGTT_HotSwap_Staged.cmd");
+                                string cmdLines = "@echo off\r\n" +
+                                    "title VUONGTT Toolkit Auto Update Apply\r\n" +
+                                    "taskkill /f /im \"VUONGTT_Toolkit.exe\" >nul 2>&1\r\n" +
+                                    "timeout /t 1 /nobreak >nul\r\n" +
+                                    "copy /y \"" + newestReady + "\" \"" + currentExe + "\" >nul\r\n" +
+                                    "del /f /q \"" + newestReady + "\" >nul 2>&1\r\n" +
+                                    "start \"\" \"" + currentExe + "\"\r\n" +
+                                    "del /f /q \"%~f0\" >nul 2>&1\r\n" +
+                                    "exit\r\n";
+                                File.WriteAllText(updaterCmd, cmdLines, System.Text.Encoding.Default);
+                                ProcessStartInfo cmdPsi = new ProcessStartInfo();
+                                cmdPsi.FileName = updaterCmd;
+                                cmdPsi.WindowStyle = ProcessWindowStyle.Hidden;
+                                cmdPsi.UseShellExecute = true;
+                                Process.Start(cmdPsi);
+                                Environment.Exit(0);
+                                return;
+                            }
+                        }
+                    }
+                }
+                catch { }
+
                 string runtimeDir = Path.GetDirectoryName(scriptPath);
                 try
                 {
