@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.14
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.16
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -424,7 +424,6 @@ function Switch-Tab {
             }
             "SysInfo"      { Refresh-SysInfoDisplay }
             "Benchmark"    {
-                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [Loading] Scanning disk health & S.M.A.R.T..." } else { "• [Đang nạp] Chẩn đoán sức khỏe ổ cứng & S.M.A.R.T..." }
                 Invoke-VUONGTTDoEvents
                 Refresh-VUONGTTDiskHealthUI
                 $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & S.M.A.R.T diagnostic ready." } else { "• [OK] Sẵn sàng chẩn đoán sức khỏe ổ cứng S.M.A.R.T & đo hiệu năng." }
@@ -433,7 +432,6 @@ function Switch-Tab {
             "Users"        { Refresh-UsersList }
             "CpuMain"      { Search-CpuInfo }
             "LaptopCheck"  { 
-                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [Loading] Checking laptop battery & hardware..." } else { "• [Đang nạp] Kiểm tra thông tin Pin & phần cứng ngoại vi..." }
                 Invoke-VUONGTTDoEvents
                 Refresh-BatteryDisplay
                 $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Laptop, hardware & peripheral test ready." } else { "• [OK] Bộ chẩn đoán Laptop, phần cứng & ngoại vi sẵn sàng." }
@@ -458,7 +456,6 @@ function Switch-Tab {
             }
             "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
             "BackupDriver" { 
-                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [Loading] Scanning PnP device drivers..." } else { "• [Đang nạp] Chẩn đoán Driver và danh sách thiết bị PnP..." }
                 Invoke-VUONGTTDoEvents
                 Refresh-DriverStatusBadge
                 $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." }
@@ -471,7 +468,6 @@ function Switch-Tab {
                 Refresh-PostWinDriverStatusBadge
             }
             "Partition"    { 
-                $txtFooterStatus.Text = "• [Đang nạp] Đang nạp danh sách phân vùng và ổ đĩa hệ thống..."
                 Invoke-VUONGTTDoEvents
                 Refresh-DiskPartitionDisplay
                 $txtFooterStatus.Text = "• [OK] Quản lý phân vùng đĩa & Storage Engine sẵn sàng."
@@ -3713,6 +3709,8 @@ $btnLaunchSystemImageRecovery      = Get-Control "btnLaunchSystemImageRecovery"
 $btnClearAutoWinLog                = Get-Control "btnClearAutoWinLog"
 $cmbBackupTargetDrive              = Get-Control "cmbBackupTargetDrive"
 $btnRefreshBackupDrives            = Get-Control "btnRefreshBackupDrives"
+$btnBrowseCustomBackupTarget       = Get-Control "btnBrowseCustomBackupTarget"
+$btnSelectDriverBackupDir          = Get-Control "btnSelectDriverBackupDir"
 
 $btnBackupAllDrivers         = Get-Control "btnBackupAllDrivers"
 $btnBackupPrinterDrivers     = Get-Control "btnBackupPrinterDrivers"
@@ -3965,6 +3963,69 @@ if ($btnRefreshBackupDrives) {
 # Tự động nạp danh sách ổ đĩa đích ban đầu
 Refresh-VUONGTTBackupTargetDrives
 
+if ($btnBrowseCustomBackupTarget) {
+    $btnBrowseCustomBackupTarget.Add_Click({
+        $allDisks = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue
+        $diskInfoLines = @("DANH SÁCH CHI TIẾT TẤT CẢ Ổ ĐĨA TRÊN MÁY TÍNH:")
+        foreach ($dk in $allDisks) {
+            $fGB = if ($dk.FreeSpace) { [math]::Round($dk.FreeSpace / 1GB, 1) } else { 0 }
+            $tGB = if ($dk.Size) { [math]::Round($dk.Size / 1GB, 1) } else { 0 }
+            $typeStr = switch ($dk.DriveType) {
+                2 { "Ổ tháo rời (USB/Thẻ nhớ)" }
+                3 { "Ổ đĩa cứng (Fixed Disk/SSD/HDD)" }
+                4 { "Ổ đĩa mạng (Network Drive/Mapped)" }
+                5 { "Ổ đĩa quang / CD-ROM / Ảo (Read-Only)" }
+                default { "Loại $($dk.DriveType)" }
+            }
+            $diskInfoLines += "• [$($dk.DeviceID)] $($dk.VolumeName) ($($dk.FileSystem)) | Loại: $typeStr | Trống: $fGB GB / Tổng: $tGB GB"
+        }
+        $infoText = $diskInfoLines -join "`n"
+
+        $diagMsg = "$infoText`n`n" +
+                   "💡 Chú ý về ổ D: và các phân vùng:`n" +
+                   "- Nếu ổ D: là ổ đĩa ảo CD-ROM/ISO (Read-Only, dung lượng trống = 0), Windows không thể tạo System Image lên D:.`n" +
+                   "- Hệ thống đã tự động nhận diện và ưu tiên các phân vùng NTFS ghi được (như E:, USB ngoài...).`n`n" +
+                   "Bạn có muốn duyệt chọn thư mục hoặc ổ đĩa tùy chọn không?"
+        
+        $diagChoice = [System.Windows.MessageBox]::Show($window, $diagMsg, "Thông Tin Ổ Đĩa Toàn Hệ Thống", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
+        if ($diagChoice -eq [System.Windows.MessageBoxResult]::Yes) {
+            Add-Type -AssemblyName System.Windows.Forms
+            $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+            $fbd.Description = "Chọn ổ đĩa hoặc thư mục để lưu bản sao lưu Windows:"
+            if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                $selRoot = [System.IO.Path]::GetPathRoot($fbd.SelectedPath).TrimEnd('\')
+                if ($selRoot -eq $env:SystemDrive) {
+                    [System.Windows.MessageBox]::Show($window, "Không thể chọn ổ $env:SystemDrive làm nơi lưu trữ System Image cho chính nó.`nVui lòng chọn ổ đĩa khác (D:, E:, USB...)!", "Cảnh Báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                    return
+                }
+                $foundCandidate = $script:candidateBackupDrives | Where-Object { $_.DeviceID -eq $selRoot }
+                if (-not $foundCandidate) {
+                    $customObj = [PSCustomObject]@{
+                        DeviceID    = $selRoot
+                        VolumeName  = "Tùy Chọn"
+                        FileSystem  = "NTFS"
+                        FreeGB      = 999
+                        TotalGB     = 999
+                        IsNTFS      = $true
+                        IsFit       = $true
+                        DisplayText = "[$selRoot] Ổ đĩa tùy chọn do người dùng chỉ định"
+                    }
+                    $script:candidateBackupDrives += $customObj
+                    $cmbBackupTargetDrive.Items.Add($customObj.DisplayText) | Out-Null
+                }
+                for ($idx = 0; $idx -lt $script:candidateBackupDrives.Count; $idx++) {
+                    if ($script:candidateBackupDrives[$idx].DeviceID -eq $selRoot) {
+                        $cmbBackupTargetDrive.SelectedIndex = $idx
+                        break
+                    }
+                }
+                &$logSystemBackupMsg "[CHỌN Ổ ĐÍCH] Đã thiết lập ổ đĩa sao lưu: $selRoot"
+            }
+        }
+    })
+}
+
+
 if ($btnBackupFullWindowsSystem) {
     $btnBackupFullWindowsSystem.Add_Click({
         $candidates = $script:candidateBackupDrives
@@ -4096,20 +4157,121 @@ if ($btnClearAutoWinLog) {
     })
 }
 
+# ========================================================================================
+#   ĐỘNG CƠ SAO LƯU & KHÔI PHỤC DRIVER THÔNG MINH (ƯU TIÊN Ổ D/E, CHỐNG MẤT DỮ LIỆU)
+# ========================================================================================
+$script:SelectedDriverBackupDir = $null
+
+function Get-VUONGTTDefaultDriverBackupPath {
+    <#
+    .SYNOPSIS
+        Tự động tìm ổ đĩa sao lưu Driver tối ưu nhất (ưu tiên D:, E:, USB... có thể ghi được, dung lượng >= 1GB, khác ổ C: để chống mất dữ liệu khi cài lại Win).
+    #>
+    try {
+        $sysDrive = $env:SystemDrive # Thường là C:
+        
+        $disks = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue | Where-Object {
+            $_.DeviceID -and
+            $_.DeviceID -ne $sysDrive -and
+            $_.DriveType -in 2, 3 -and
+            $_.FreeSpace -ge 1073741824 # >= 1 GB
+        }
+
+        # 1. Ưu tiên ổ D:\ nếu thỏa mãn
+        $dDrive = $disks | Where-Object { $_.DeviceID -eq 'D:' } | Select-Object -First 1
+        if ($dDrive) {
+            return "D:\Backup_Drivers"
+        }
+
+        # 2. Nếu không có D:, lấy ổ đĩa ghi được đầu tiên (như E:, F:, USB...)
+        $otherDrive = $disks | Select-Object -First 1
+        if ($otherDrive) {
+            return "$($otherDrive.DeviceID)\Backup_Drivers"
+        }
+
+        # 3. Fallback duy nhất nếu máy chỉ có 1 ổ C:
+        return "$sysDrive\Backup_Drivers"
+    } catch {
+        return "$env:SystemDrive\Backup_Drivers"
+    }
+}
+
+if ($btnSelectDriverBackupDir) {
+    $btnSelectDriverBackupDir.Add_Click({
+        Add-Type -AssemblyName System.Windows.Forms
+        $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+        $fbd.Description = "Chọn thư mục hoặc ổ đĩa (D:, E:, USB...) để sao lưu Driver:"
+        $defaultPath = if ($script:SelectedDriverBackupDir) { $script:SelectedDriverBackupDir } else { Get-VUONGTTDefaultDriverBackupPath }
+        $fbd.SelectedPath = [System.IO.Path]::GetPathRoot($defaultPath)
+        $fbd.ShowNewFolderButton = $true
+        
+        if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            $chosenPath = $fbd.SelectedPath
+            if ($chosenPath -match '^[A-Za-z]:\\?$') {
+                $chosenPath = Join-Path $chosenPath.TrimEnd('\') "Backup_Drivers"
+            }
+            $script:SelectedDriverBackupDir = $chosenPath
+            if ($txtDriverLog) {
+                $txtDriverLog.Text = "[CHỌN THƯ MỤC] Đã thiết lập vị trí lưu Driver: $chosenPath`n$($txtDriverLog.Text)"
+            }
+            [System.Windows.MessageBox]::Show($window, "Đã chọn thư mục sao lưu Driver:`n$chosenPath`n`nBản sao lưu sẽ được xuất vào thư mục này để tránh mất dữ liệu khi cài lại Win.", "Đã Chọn Vị Trí Sao Lưu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+        }
+    })
+}
+
 if ($btnBackupAllDrivers) {
     $btnBackupAllDrivers.Add_Click({
-        if ($txtDriverLog) { $txtDriverLog.Text = "Đang quét và sao lưu toàn bộ Driver hệ thống bằng Export-WindowsDriver..." }
-        try {
-            $backupDir = "$env:SystemDrive\Backup_Drivers"
-            if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
-            Export-WindowsDriver -Online -Destination $backupDir -ErrorAction Stop | Out-Null
-            $count = (Get-ChildItem -Path $backupDir -Directory).Count
-            if ($txtDriverLog) {
-                $txtDriverLog.Text = "[THÀNH CÔNG] Đã sao lưu $count gói Driver phần cứng vào thư mục: $backupDir`nThời gian: $(Get-Date -Format 'HH:mm:ss dd/MM/yyyy')"
+        $destDir = if ($script:SelectedDriverBackupDir) { $script:SelectedDriverBackupDir } else { Get-VUONGTTDefaultDriverBackupPath }
+        
+        $driveLetter = [System.IO.Path]::GetPathRoot($destDir).TrimEnd('\')
+        $isNonCDrive = ($driveLetter -ne [System.IO.Path]::GetPathRoot($env:SystemDrive).TrimEnd('\'))
+        
+        $promptMsg = "BẠN CÓ MUỐN BẮT ĐẦU SAO LƯU TOÀN BỘ DRIVER HỆ THỐNG?`n`n" +
+                     "📁 Thư mục lưu trữ: $destDir`n"
+        if ($isNonCDrive) {
+            $promptMsg += "🛡️ Tối ưu: Đã tự động ưu tiên ổ đĩa ngoài $env:SystemDrive (ổ $driveLetter) để đảm bảo không bị mất Driver khi cài lại Windows hoặc format ổ C.`n`n"
+        } else {
+            $promptMsg += "⚠️ Lưu ý: Máy tính hiện chỉ có 1 ổ C: nên thư mục lưu tạm trên C:\. Bạn có thể bấm 'No' để cắm USB hoặc chọn ổ đĩa khác.`n`n"
+        }
+        $promptMsg += "• Bấm 'Yes' để tiến hành sao lưu vào: $destDir`n" +
+                      "• Bấm 'No' để tự duyệt chọn ổ đĩa/thư mục khác (D:, E:, USB...)`n" +
+                      "• Bấm 'Cancel' để hủy thao tác."
+
+        $choice = [System.Windows.MessageBox]::Show($window, $promptMsg, "Xác Nhận Nơi Sao Lưu Driver", [System.Windows.MessageBoxButton]::YesNoCancel, [System.Windows.MessageBoxImage]::Question)
+        if ($choice -eq [System.Windows.MessageBoxResult]::Cancel) {
+            return
+        }
+        if ($choice -eq [System.Windows.MessageBoxResult]::No) {
+            Add-Type -AssemblyName System.Windows.Forms
+            $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+            $fbd.Description = "Chọn thư mục lưu Driver (khuyên dùng ổ D:, E: hoặc USB):"
+            $fbd.SelectedPath = $driveLetter
+            $fbd.ShowNewFolderButton = $true
+            if ($fbd.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
+                return
             }
-            $txtFooterStatus.Text = "• [OK] Đã sao lưu xong toàn bộ driver hệ thống!"
+            $destDir = $fbd.SelectedPath
+            if ($destDir -match '^[A-Za-z]:\\?$') {
+                $destDir = Join-Path $destDir.TrimEnd('\') "Backup_Drivers"
+            }
+        }
+
+        $script:SelectedDriverBackupDir = $destDir
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang quét và sao lưu toàn bộ Driver hệ thống ra $destDir..." }
+        Invoke-VUONGTTDoEvents
+
+        try {
+            if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+            Export-WindowsDriver -Online -Destination $destDir -ErrorAction Stop | Out-Null
+            $count = (Get-ChildItem -Path $destDir -Directory -ErrorAction SilentlyContinue).Count
+            if ($txtDriverLog) {
+                $txtDriverLog.Text = "[THÀNH CÔNG] Đã sao lưu $count gói Driver phần cứng vào thư mục:`n$destDir`nThời gian: $(Get-Date -Format 'HH:mm:ss dd/MM/yyyy')`n`n💡 Driver được bảo toàn an toàn trên ổ đĩa dữ liệu, không bị mất khi cài lại Windows C:."
+            }
+            $txtFooterStatus.Text = "• [OK] Đã sao lưu xong $count gói Driver vào $destDir"
+            [System.Windows.MessageBox]::Show($window, "Đã sao lưu thành công $count gói Driver vào:`n$destDir`n`nBản sao lưu đã an toàn trên ổ dữ liệu, có thể dùng để khôi phục bất cứ lúc nào!", "Sao Lưu Driver Hoàn Tất", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
         } catch {
-            if ($txtDriverLog) { $txtDriverLog.Text = "[LỖI] $($_.Exception.Message)" }
+            if ($txtDriverLog) { $txtDriverLog.Text = "[LỖI SAO LƯU DRIVER] $($_.Exception.Message)" }
+            [System.Windows.MessageBox]::Show($window, "Không thể sao lưu Driver:`n$($_.Exception.Message)", "Lỗi Sao Lưu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
         }
     })
 }
@@ -4142,30 +4304,62 @@ if ($btnExportDriverList) {
 
 if ($btnOpenBackupFolder) {
     $btnOpenBackupFolder.Add_Click({
-        $backupDir = "$env:SystemDrive\Backup_Drivers"
-        if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
-        Start-Process "explorer.exe" -ArgumentList "`"$backupDir`""
-        $txtFooterStatus.Text = "• [OK] Đã mở thư mục lưu trữ Driver"
+        $candidates = @($script:SelectedDriverBackupDir, "D:\Backup_Drivers", "E:\Backup_Drivers", "$env:SystemDrive\Backup_Drivers")
+        $target = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+        if (-not $target) {
+            $target = if ($script:SelectedDriverBackupDir) { $script:SelectedDriverBackupDir } else { Get-VUONGTTDefaultDriverBackupPath }
+            if (-not (Test-Path $target)) { New-Item -ItemType Directory -Path $target -Force | Out-Null }
+        }
+        Start-Process "explorer.exe" -ArgumentList "`"$target`""
+        $txtFooterStatus.Text = "• [OK] Đã mở thư mục lưu trữ Driver: $target"
     })
 }
 
 if ($btnRestoreDrivers) {
     $btnRestoreDrivers.Add_Click({
-        $backupDir = "$env:SystemDrive\Backup_Drivers"
+        $candidates = @($script:SelectedDriverBackupDir, "D:\Backup_Drivers", "E:\Backup_Drivers", "$env:SystemDrive\Backup_Drivers")
+        $foundDir = $candidates | Where-Object { $_ -and (Test-Path $_) -and (Get-ChildItem -Path $_ -Filter "*.inf" -Recurse -ErrorAction SilentlyContinue) } | Select-Object -First 1
+        
+        $backupDir = $foundDir
+        if (-not $backupDir) {
+            Add-Type -AssemblyName System.Windows.Forms
+            $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+            $fbd.Description = "Chọn thư mục chứa các gói Driver đã sao lưu (tìm file *.inf):"
+            $fbd.ShowNewFolderButton = $false
+            if ($fbd.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
+                return
+            }
+            $backupDir = $fbd.SelectedPath
+        } else {
+            $ask = [System.Windows.MessageBox]::Show($window, "Hệ thống tìm thấy thư mục Driver Backup:`n$backupDir`n`nBạn có muốn khôi phục Driver từ thư mục này không?`n(Bấm 'No' để chọn thư mục khác)", "Khôi Phục Driver", [System.Windows.MessageBoxButton]::YesNoCancel, [System.Windows.MessageBoxImage]::Question)
+            if ($ask -eq [System.Windows.MessageBoxResult]::Cancel) { return }
+            if ($ask -eq [System.Windows.MessageBoxResult]::No) {
+                Add-Type -AssemblyName System.Windows.Forms
+                $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+                $fbd.Description = "Chọn thư mục chứa các gói Driver đã sao lưu:"
+                if ($fbd.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { return }
+                $backupDir = $fbd.SelectedPath
+            }
+        }
+
         if (-not (Test-Path $backupDir)) {
-            if ($txtDriverLog) { $txtDriverLog.Text = "[CHÚ Ý] Không tìm thấy thư mục sao lưu '$backupDir'. Vui lòng sao lưu trước khi khôi phục!" }
+            if ($txtDriverLog) { $txtDriverLog.Text = "[CHÚ Ý] Thư mục '$backupDir' không tồn tại!" }
             return
         }
-        if ($txtDriverLog) { $txtDriverLog.Text = "Đang tiến hành nạp lại các gói Driver bằng công cụ PnPUtil..." }
+
+        if ($txtDriverLog) { $txtDriverLog.Text = "Đang tiến hành nạp lại các gói Driver từ '$backupDir' bằng công cụ PnPUtil..." }
+        Invoke-VUONGTTDoEvents
         try {
             $res = pnputil.exe /add-driver "$backupDir\*.inf" /subdirs /install
             if ($txtDriverLog) { $txtDriverLog.Text = "[HOÀN TẤT KHÔI PHỤC DRIVER]`n" + ($res -join "`n") }
-            $txtFooterStatus.Text = "• [OK] Đã nạp lại Driver từ thư mục Backup"
+            $txtFooterStatus.Text = "• [OK] Đã nạp lại Driver từ thư mục: $backupDir"
+            [System.Windows.MessageBox]::Show($window, "Đã hoàn tất khôi phục và nạp lại toàn bộ Driver từ:`n$backupDir", "Khôi Phục Driver Xong", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
         } catch {
-            if ($txtDriverLog) { $txtDriverLog.Text = "[LỖI] $($_.Exception.Message)" }
+            if ($txtDriverLog) { $txtDriverLog.Text = "[LỖI KHÔI PHỤC DRIVER] $($_.Exception.Message)" }
         }
     })
 }
+
 
 if ($btnCheckMissingDrivers) {
     $btnCheckMissingDrivers.Add_Click({
@@ -7846,7 +8040,7 @@ Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay 
     }
 
     # Có mạng Internet -> Khởi chạy kiểm tra phiên bản mới qua Isolated PowerShell Runspace (Độc lập, không chặn UI, không crash)
-    $txtFooterStatus.Text = "• [Đang kiểm tra] Đang kết nối GitHub kiểm tra bản cập nhật mới nhất..."
+    # Tien trinh kiem tra cap nhat chay ngam tinh lang, khong lam nhap nhay footer
     try {
         $script:startupPs = [System.Management.Automation.PowerShell]::Create()
         $script:startupPs.AddScript({
