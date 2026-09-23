@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.909.16",
+    "version":  "20.5.909.18",
     "releaseDate":  "23/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Khắc phục triệt để lỗi không nhận diện ổ D: rời khi sao lưu toàn bộ hệ thống và lỗi popup khi sao lưu Driver: Khắc phục lỗi unwrap PSCustomObject trên PowerShell 5.1 khiến mảng 1 ổ đĩa bị mất thuộc tính .Count, nâng cấp động cơ quét ổ đĩa đa tầng (.NET DriveInfo + CIM Win32_LogicalDisk) tự động nhận diện 100% mọi ổ cứng rời/USB/External HDD D:; Loại bỏ hoàn toàn tham số owner $window trong các hộp thoại MessageBox ngăn chặn triệt để lỗi \u0027You cannot call a method on a null-valued expression\u0027.",
                       "Nâng cấp Động cơ Sao Lưu \u0026 Khôi Phục Driver thông minh: Tự động ưu tiên lưu vào phân vùng dữ liệu khác ổ C (D:\\Backup_Drivers hoặc E:\\Backup_Drivers) để bảo vệ toàn vẹn Driver khi cài lại Windows C:, bổ sung nút \u0027📁 Đổi Thư Mục Sao Lưu...\u0027 cho phép tùy chọn bất kỳ ổ đĩa/USB/thư mục tùy ý, cập nhật nút mở thư mục và khôi phục Driver đa ổ đĩa; Bổ sung nút \u0027📁 Chọn Ổ / Thư Mục...\u0027 cho Full Windows System Backup và cố định thanh trạng thái Footer 1 dòng duy nhất, loại bỏ triệt để hiện tượng nhấp nháy [OK] với kiểm tra cập nhật.",
                       "Khắc phục triệt để lỗi không sao lưu được Windows: Loại bỏ lỗi \u0027The request is not supported\u0027 do Verb RunAs khi gọi cmd, tích hợp bộ chọn ổ đĩa đích (Target Drive) trực quan ngay trên Card không dùng popup rời, tự động lọc bỏ ổ mạng mapped (Z:) tránh lỗi WBAdmin, cân chỉnh ngưỡng dung lượng thực tế của ổ E: (47.7 GB) đủ điều kiện sao lưu và kèm xác nhận trực quan chi tiết.",
                       "Chuyển toàn diện tính năng \u0027Sao Lưu \u0026 Khôi Phục Toàn Bộ Windows \u0026 Tệp Tin (Full System Image)\u0027 sang phân hệ Cài Win \u0026 Bypass: Khắc phục triệt để lỗi treo quét ổ đĩa, tối ưu hóa động cơ sao lưu WBAdmin (-quiet, -Verb RunAs), tự động kích hoạt VSS/System Protection khi tạo Restore Point, bổ sung tính năng quét kiểm tra các bản sao lưu đã tạo và quản lý độc lập.",

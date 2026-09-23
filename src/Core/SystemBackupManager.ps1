@@ -9,31 +9,85 @@ function Get-VUONGTTCandidateBackupDrives {
     <#
     .SYNOPSIS
         Quét và lấy danh sách các ổ đĩa khả dụng để sao lưu toàn bộ Windows và tệp tin.
+        Hỗ trợ đa tầng (.NET DriveInfo + CIM Win32_LogicalDisk) nhận diện mọi ổ cứng rời, USB, External HDD.
     #>
     try {
         $sysDrive = $env:SystemDrive # Thường là C:
-        $sysDisk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$sysDrive'" -ErrorAction SilentlyContinue
+        $sysDriveClean = $sysDrive.TrimEnd('\')
+        
         $sysUsedGB = 0
-        if ($sysDisk -and $sysDisk.Size -gt 0) {
-            $sysUsedGB = [math]::Round(($sysDisk.Size - $sysDisk.FreeSpace) / 1GB, 2)
+        try {
+            $sysDisk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$sysDrive'" -ErrorAction SilentlyContinue
+            if ($sysDisk -and $sysDisk.Size -gt 0) {
+                $sysUsedGB = [math]::Round(($sysDisk.Size - $sysDisk.FreeSpace) / 1GB, 2)
+            }
+        } catch {}
+        
+        if ($sysUsedGB -le 0) {
+            try {
+                $dC = [System.IO.DriveInfo]::GetDrives() | Where-Object { $_.Name.TrimEnd('\') -eq $sysDriveClean } | Select-Object -First 1
+                if ($dC -and $dC.TotalSize -gt 0) {
+                    $sysUsedGB = [math]::Round(($dC.TotalSize - $dC.AvailableFreeSpace) / 1GB, 2)
+                }
+            } catch {}
         }
-
-        $disks = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue | Where-Object {
-            $_.DeviceID -and
-            $_.DeviceID -ne $sysDrive -and 
-            $_.DriveType -in 2, 3
-        }
-
         if ($sysUsedGB -le 0) { $sysUsedGB = 35 }
-        $minRequiredGB = [math]::Max(15, [math]::Round($sysUsedGB * 0.25, 1))
+        $minRequiredGB = [math]::Max(10, [math]::Round($sysUsedGB * 0.25, 1))
+
+        # Thu thập danh sách ổ đĩa từ cả CIM và .NET DriveInfo để đảm bảo 100% không sót ổ rời/USB
+        $diskDict = @{}
+
+        # Tầng 1: Win32_LogicalDisk
+        try {
+            $wmiDisks = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue
+            foreach ($wd in $wmiDisks) {
+                if ($wd.DeviceID -and ($wd.DeviceID.TrimEnd('\') -ne $sysDriveClean) -and ($wd.DriveType -in 2, 3)) {
+                    $devId = $wd.DeviceID.TrimEnd('\')
+                    $diskDict[$devId] = @{
+                        DeviceID   = $devId
+                        VolumeName = if ($wd.VolumeName) { $wd.VolumeName } else { "Ổ Đĩa" }
+                        FileSystem = if ($wd.FileSystem) { $wd.FileSystem.ToUpper() } else { "UNKNOWN" }
+                        FreeGB     = if ($wd.FreeSpace) { [math]::Round($wd.FreeSpace / 1GB, 2) } else { 0 }
+                        TotalGB    = if ($wd.Size) { [math]::Round($wd.Size / 1GB, 2) } else { 0 }
+                    }
+                }
+            }
+        } catch {}
+
+        # Tầng 2: .NET DriveInfo (Bổ sung/cập nhật mọi ổ đĩa rời, USB cắm ngoài mà WMI có thể chưa nạp kịp)
+        try {
+            $netDrives = [System.IO.DriveInfo]::GetDrives()
+            foreach ($nd in $netDrives) {
+                if ($nd.IsReady) {
+                    $devId = $nd.Name.TrimEnd('\')
+                    $dTypeStr = $nd.DriveType.ToString()
+                    if ($devId -ne $sysDriveClean -and ($dTypeStr -in 'Fixed', 'Removable')) {
+                        $fGB = [math]::Round($nd.AvailableFreeSpace / 1GB, 2)
+                        $tGB = [math]::Round($nd.TotalSize / 1GB, 2)
+                        $fsName = if ($nd.DriveFormat) { $nd.DriveFormat.ToUpper() } else { "UNKNOWN" }
+                        $vLabel = if ($nd.VolumeLabel) { $nd.VolumeLabel } else { "Ổ Đĩa" }
+                        
+                        $diskDict[$devId] = @{
+                            DeviceID   = $devId
+                            VolumeName = $vLabel
+                            FileSystem = $fsName
+                            FreeGB     = $fGB
+                            TotalGB    = $tGB
+                        }
+                    }
+                }
+            }
+        } catch {}
 
         $results = @()
-        foreach ($d in $disks) {
-            $freeGB = if ($d.FreeSpace) { [math]::Round($d.FreeSpace / 1GB, 2) } else { 0 }
-            $totalGB = if ($d.Size) { [math]::Round($d.Size / 1GB, 2) } else { 0 }
-            $volName = if ($d.VolumeName) { $d.VolumeName } else { "Ổ Đĩa" }
-            $fs = if ($d.FileSystem) { $d.FileSystem.ToUpper() } else { "UNKNOWN" }
-            
+        foreach ($k in $diskDict.Keys) {
+            $d = $diskDict[$k]
+            $devId = $d.DeviceID
+            $volName = $d.VolumeName
+            $fs = $d.FileSystem
+            $freeGB = $d.FreeGB
+            $totalGB = $d.TotalGB
+
             $isNTFS = ($fs -in 'NTFS', 'REFS')
             $isFit = ($isNTFS -and ($freeGB -ge $minRequiredGB))
 
@@ -48,10 +102,10 @@ function Get-VUONGTTCandidateBackupDrives {
                 $statusText = "Dung lượng thấp (< 10 GB)"
             }
 
-            $displayText = "[$($d.DeviceID)] $volName ($fs) - Trống: $freeGB GB / Tổng: $totalGB GB | $statusText"
+            $displayText = "[$devId] $volName ($fs) - Trống: $freeGB GB / Tổng: $totalGB GB | $statusText"
 
             $results += [PSCustomObject]@{
-                DeviceID      = $d.DeviceID
+                DeviceID      = $devId
                 VolumeName    = $volName
                 FileSystem    = $fs
                 FreeGB        = $freeGB
@@ -62,8 +116,9 @@ function Get-VUONGTTCandidateBackupDrives {
                 SysUsedGB     = $sysUsedGB
             }
         }
-        $results = $results | Sort-Object -Property @{Expression={$_.IsFit}; Descending=$true}, @{Expression={$_.FreeGB}; Descending=$true}
-        return @($results)
+
+        $sortedResults = @($results | Sort-Object -Property @{Expression={$_.IsFit}; Descending=$true}, @{Expression={$_.FreeGB}; Descending=$true})
+        return $sortedResults
     } catch {
         return @()
     }
