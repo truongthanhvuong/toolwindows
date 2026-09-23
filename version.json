@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "20.5.909.10",
-    "releaseDate":  "22/09/2026",
+    "version":  "20.5.909.11",
+    "releaseDate":  "23/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
                       "Khôi phục hoàn toàn 100% động cơ Auto-Update chuẩn mực từ các phiên bản trước: Tích hợp vòng lặp kiểm tra giải phóng tiến trình :wait_loop độc lập, cơ chế sao chép an toàn copy /y và cổng dự phòng Fallback Downloads thông minh giúp 1.000 máy Client tự động cập nhật mượt mà không bao giờ bị kẹt.",
