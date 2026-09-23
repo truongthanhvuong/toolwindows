@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.12
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.13
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -3705,9 +3705,12 @@ $btnLaunchDriverAssistantOEM = Get-Control "btnLaunchDriverAssistantOEM"
 $btnOpenOEMDriverPortal      = Get-Control "btnOpenOEMDriverPortal"
 
 $btnBackupFullWindowsSystem        = Get-Control "btnBackupFullWindowsSystem"
+$btnCheckExistingBackups           = Get-Control "btnCheckExistingBackups"
 $btnCreateSystemRestorePoint       = Get-Control "btnCreateSystemRestorePoint"
+$btnOpenSystemProtectionSettings   = Get-Control "btnOpenSystemProtectionSettings"
 $btnOpenWindowsBackupRestoreWizard = Get-Control "btnOpenWindowsBackupRestoreWizard"
 $btnLaunchSystemImageRecovery      = Get-Control "btnLaunchSystemImageRecovery"
+$btnClearAutoWinLog                = Get-Control "btnClearAutoWinLog"
 
 $btnBackupAllDrivers         = Get-Control "btnBackupAllDrivers"
 $btnBackupPrinterDrivers     = Get-Control "btnBackupPrinterDrivers"
@@ -3920,9 +3923,19 @@ if ($btnClearDriverLog) {
     })
 }
 
+$logSystemBackupMsg = {
+    param([string]$msg)
+    if ($txtAutoWinLog) {
+        $txtAutoWinLog.Text = "$msg`n$($txtAutoWinLog.Text)"
+    } elseif ($txtDriverLog) {
+        $txtDriverLog.Text = "$msg`n$($txtDriverLog.Text)"
+    }
+    Invoke-VUONGTTDoEvents
+}
+
 if ($btnBackupFullWindowsSystem) {
     $btnBackupFullWindowsSystem.Add_Click({
-        if ($txtDriverLog) { $txtDriverLog.Text = "Đang quét các phân vùng lưu trữ khả dụng để sao lưu Windows & Tệp tin..." }
+        &$logSystemBackupMsg "[QUÉT PHÂN VÙNG] Đang kiểm tra các phân vùng lưu trữ để sao lưu Windows & Tệp tin..."
         $candidates = Get-VUONGTTCandidateBackupDrives
         
         $sysDrive = $env:SystemDrive
@@ -3930,8 +3943,9 @@ if ($btnBackupFullWindowsSystem) {
         $sysUsedGB = if ($sysDisk) { [math]::Round(($sysDisk.Size - $sysDisk.FreeSpace) / 1GB, 2) } else { 0 }
 
         if (-not $candidates -or $candidates.Count -eq 0) {
+            &$logSystemBackupMsg "[CẢNH BÁO] Không tìm thấy phân vùng nào khác ngoài ổ $sysDrive (hoặc các ổ khác chưa định dạng NTFS). Cần cắm thêm ổ ngoài hoặc chia thêm ổ đĩa."
             $msg = "Hệ thống không tìm thấy phân vùng nào khác ngoài ổ $sysDrive (hoặc các ổ khác không phải định dạng NTFS).`n`nTheo quy định của Windows, không thể lưu bản System Image của ổ $sysDrive lên chính ổ $sysDrive.`n`n👉 Giải pháp:`n1. Cắm thêm ổ cứng di động (USB / HDD ngoài) định dạng NTFS.`n2. Hoặc dùng tính năng 'Quản Lý Phân Vùng' để chia thêm một ổ đĩa mới (D:, E:).`n`nBạn có muốn mở giao diện Windows Backup Center để xem thêm tùy chọn không?"
-            $choice = [System.Windows.MessageBox]::Show($msg, "Không tìm thấy ổ đĩa đích khả dụng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+            $choice = [System.Windows.MessageBox]::Show($window, $msg, "Không tìm thấy ổ đĩa đích khả dụng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
             if ($choice -eq [System.Windows.MessageBoxResult]::Yes) {
                 Open-VUONGTTWindowsBackupCenter | Out-Null
             }
@@ -3940,10 +3954,12 @@ if ($btnBackupFullWindowsSystem) {
 
         # Tạo cửa sổ chọn ổ đĩa đích WPF chuyên nghiệp
         $dlg = New-Object System.Windows.Window
+        $dlg.Owner = $window
+        $dlg.Topmost = $true
         $dlg.Title = "🛡️ Sao Lưu Toàn Bộ Windows & Tệp Tin (Full System Image)"
-        $dlg.Width = 580
-        $dlg.Height = 380
-        $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+        $dlg.Width = 600
+        $dlg.Height = 410
+        $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
         $dlg.ResizeMode = [System.Windows.ResizeMode]::NoResize
         $dlg.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0F172A")
         $dlg.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F8FAFC")
@@ -4051,36 +4067,65 @@ if ($btnBackupFullWindowsSystem) {
 
         if ($script:selectedBackupDrive) {
             $drive = $script:selectedBackupDrive
+            &$logSystemBackupMsg "[BẮT ĐẦU] Đang khởi chạy tiến trình sao lưu sang ổ $drive..."
             $res = Start-VUONGTTFullWindowsBackup -TargetDrive $drive -OnProgress {
                 param($m)
-                if ($txtDriverLog) { $txtDriverLog.Text = "$m`n$($txtDriverLog.Text)" }
-                Invoke-VUONGTTDoEvents
+                &$logSystemBackupMsg "$m"
             }
-            if ($txtDriverLog) {
-                $txtDriverLog.Text = "$($res.Message)`n$($txtDriverLog.Text)"
+            &$logSystemBackupMsg "$($res.Message)"
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã khởi chạy sao lưu Windows & Tệp tin sang $drive" }
+        } else {
+            &$logSystemBackupMsg "[HỦY BỎ] Người dùng đã đóng bảng chọn ổ đĩa đích."
+        }
+    })
+}
+
+if ($btnCheckExistingBackups) {
+    $btnCheckExistingBackups.Add_Click({
+        &$logSystemBackupMsg "[QUÉT BẢN SAO LƯU] Đang quét các phân vùng để tìm bản sao lưu WindowsImageBackup..."
+        $backups = Get-VUONGTTExistingBackups
+        if ($backups -and $backups.Count -gt 0) {
+            $report = @("[THÀNH CÔNG] Tìm thấy $($backups.Count) bản sao lưu WindowsImageBackup trên máy:")
+            $i = 0
+            foreach ($b in $backups) {
+                $i++
+                $report += "  [$i] Ổ đĩa: $($b.Drive) | Máy: $($b.ComputerName) | Dung lượng: ~$($b.SizeGB) GB | Ngày tạo: $($b.LastModified.ToString('dd/MM/yyyy HH:mm'))"
+                $report += "      Đường dẫn: $($b.BackupPath)"
             }
-            $txtFooterStatus.Text = "• [OK] Đã khởi chạy sao lưu Windows & Tệp tin sang $drive"
+            $report += "👉 Bạn có thể khôi phục các bản sao lưu này bất cứ lúc nào qua WinRE hoặc nút 'Quản Lý Windows Backup'."
+            &$logSystemBackupMsg ($report -join "`n")
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Tìm thấy $($backups.Count) bản sao lưu WindowsImageBackup" }
+        } else {
+            &$logSystemBackupMsg "[KẾT QUẢ] Hiện chưa tìm thấy bản sao lưu WindowsImageBackup nào trên các ổ đĩa phụ.`n💡 Bạn hãy bấm 'Sao Lưu Toàn Bộ Windows & File' để tạo bản sao lưu toàn diện đầu tiên!"
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [INFO] Chưa có bản sao lưu WindowsImageBackup nào" }
         }
     })
 }
 
 if ($btnCreateSystemRestorePoint) {
     $btnCreateSystemRestorePoint.Add_Click({
-        if ($txtDriverLog) { $txtDriverLog.Text = "Đang kiểm tra System Protection và tạo Điểm Khôi Phục Hệ Thống (Restore Point)..." }
-        Invoke-VUONGTTDoEvents
+        &$logSystemBackupMsg "[RESTORE POINT] Đang kích hoạt System Protection và tạo Điểm Khôi Phục Hệ Thống..."
         $res = New-VUONGTTSystemRestorePoint
-        if ($txtDriverLog) {
-            $txtDriverLog.Text = "$($res.Message)`n$($txtDriverLog.Text)"
+        &$logSystemBackupMsg "$($res.Message)"
+        if ($txtFooterStatus) {
+            $txtFooterStatus.Text = if ($res.Success) { "• [OK] Đã tạo Restore Point thành công" } else { "• [LỖI] Không thể tạo Restore Point" }
         }
-        $txtFooterStatus.Text = if ($res.Success) { "• [OK] Đã tạo Restore Point thành công" } else { "• [LỖI] Không thể tạo Restore Point" }
+    })
+}
+
+if ($btnOpenSystemProtectionSettings) {
+    $btnOpenSystemProtectionSettings.Add_Click({
+        $res = Open-VUONGTTSystemProtectionSettings
+        &$logSystemBackupMsg "$res"
+        if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã mở bảng điều khiển System Protection" }
     })
 }
 
 if ($btnOpenWindowsBackupRestoreWizard) {
     $btnOpenWindowsBackupRestoreWizard.Add_Click({
         $res = Open-VUONGTTWindowsBackupCenter
-        if ($txtDriverLog) { $txtDriverLog.Text = "$res`n$($txtDriverLog.Text)" }
-        $txtFooterStatus.Text = "• [OK] Đã mở Windows Backup & Restore"
+        &$logSystemBackupMsg "$res"
+        if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã mở Windows Backup & Restore" }
     })
 }
 
@@ -4097,11 +4142,19 @@ if ($btnLaunchSystemImageRecovery) {
                    "👉 BẠN CÓ MUỐN KHỞI ĐỘNG LẠI MÁY TÍNH VÀO MÔI TRƯỜNG WINRE NGAY BÂY GIỜ KHÔNG?`n" +
                    "(Lưu ý: Hãy lưu tất cả công việc dang dở trước khi bấm Yes)."
 
-        $choice = [System.Windows.MessageBox]::Show($helpMsg, "Khôi Phục Toàn Bộ Windows & Tệp Tin (WinRE)", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+        $choice = [System.Windows.MessageBox]::Show($window, $helpMsg, "Khôi Phục Toàn Bộ Windows & Tệp Tin (WinRE)", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
         if ($choice -eq [System.Windows.MessageBoxResult]::Yes) {
-            if ($txtDriverLog) { $txtDriverLog.Text = "Đang yêu cầu Windows khởi động lại vào môi trường phục hồi WinRE...`n$($txtDriverLog.Text)" }
+            &$logSystemBackupMsg "Đang yêu cầu Windows khởi động lại vào môi trường phục hồi WinRE..."
             Start-Process "shutdown.exe" -ArgumentList "/r /o /f /t 02"
+        } else {
+            &$logSystemBackupMsg "[HỦY BỎ] Đã hủy khởi động lại vào WinRE."
         }
+    })
+}
+
+if ($btnClearAutoWinLog) {
+    $btnClearAutoWinLog.Add_Click({
+        if ($txtAutoWinLog) { $txtAutoWinLog.Text = "" }
     })
 }
 

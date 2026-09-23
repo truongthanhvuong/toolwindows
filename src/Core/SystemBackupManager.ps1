@@ -1,10 +1,14 @@
-﻿# VUONGTT Toolkit 2026 - Windows & Files Full System Backup Manager
-# Encoding: UTF-8 with BOM
+﻿# ========================================================================================
+#   VUONGTT TOOLKIT 2026 - WINDOWS & FILES FULL SYSTEM BACKUP MANAGER
+#   Chức năng: Sao lưu toàn diện nguyên trạng Windows (C:), Boot EFI, Registry và toàn bộ tệp tin
+#              Hỗ trợ System Image (WBAdmin), Restore Point, Backup Center và khôi phục WinRE
+#   Encoding: UTF-8 with BOM
+# ========================================================================================
 
 function Get-VUONGTTCandidateBackupDrives {
     <#
     .SYNOPSIS
-        Quét và lấy danh sách các ổ đĩa NTFS/ReFS khả dụng để sao lưu toàn bộ Windows và tệp tin.
+        Quét và lấy danh sách các ổ đĩa khả dụng để sao lưu toàn bộ Windows và tệp tin.
     #>
     try {
         $sysDrive = $env:SystemDrive # Thường là C:
@@ -16,26 +20,37 @@ function Get-VUONGTTCandidateBackupDrives {
 
         $disks = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue | Where-Object {
             $_.DeviceID -ne $sysDrive -and 
-            $_.DriveType -in 3, 2, 4 -and 
-            $_.FileSystem -in 'NTFS', 'ReFS'
+            $_.DriveType -in 2, 3, 4
         }
 
         $results = @()
         foreach ($d in $disks) {
-            $freeGB = [math]::Round($d.FreeSpace / 1GB, 2)
-            $totalGB = [math]::Round($d.Size / 1GB, 2)
+            $freeGB = if ($d.FreeSpace) { [math]::Round($d.FreeSpace / 1GB, 2) } else { 0 }
+            $totalGB = if ($d.Size) { [math]::Round($d.Size / 1GB, 2) } else { 0 }
             $volName = if ($d.VolumeName) { $d.VolumeName } else { "Local Disk" }
-            $isFit = ($freeGB -ge ($sysUsedGB * 0.7)) # Dự trù nén của VSS/wbadmin
+            $fs = if ($d.FileSystem) { $d.FileSystem.ToUpper() } else { "UNKNOWN" }
+            
+            $isNTFS = ($fs -in 'NTFS', 'REFS')
+            $isFit = ($isNTFS -and ($freeGB -ge ($sysUsedGB * 0.6))) # Dự trù nén của VSS/wbadmin
 
-            $statusText = if ($isFit) { "Đủ dung lượng (Khuyên dùng)" } else { "Cảnh báo: Có thể thiếu dung lượng" }
-            $displayText = "[$($d.DeviceID)] $volName - Trống: $freeGB GB / Tổng: $totalGB GB ($statusText)"
+            $statusText = ""
+            if (-not $isNTFS) {
+                $statusText = "Định dạng $fs (Cần NTFS để tạo System Image)"
+            } elseif ($isFit) {
+                $statusText = "Đủ dung lượng (Khuyên dùng)"
+            } else {
+                $statusText = "Cảnh báo: Có thể thiếu dung lượng (Cần ~$([math]::Round($sysUsedGB * 0.6, 1)) GB)"
+            }
+
+            $displayText = "[$($d.DeviceID)] $volName ($fs) - Trống: $freeGB GB / Tổng: $totalGB GB - $statusText"
 
             $results += [PSCustomObject]@{
                 DeviceID      = $d.DeviceID
                 VolumeName    = $volName
-                FileSystem    = $d.FileSystem
+                FileSystem    = $fs
                 FreeGB        = $freeGB
                 TotalGB       = $totalGB
+                IsNTFS        = $isNTFS
                 IsFit         = $isFit
                 DisplayText   = $displayText
                 SysUsedGB     = $sysUsedGB
@@ -59,13 +74,13 @@ function Start-VUONGTTFullWindowsBackup {
 
     try {
         if (-not $TargetDrive) {
-            return [PSCustomObject]@{ Success = $false; Message = "Chưa chọn ổ đĩa đích để lưu bản sao lưu Windows!" }
+            return [PSCustomObject]@{ Success = $false; Message = "[LỖI] Chưa chọn ổ đĩa đích để lưu bản sao lưu Windows!" }
         }
 
         # Đảm bảo target drive chuẩn format (ví dụ "E:" hoặc "E:\")
         $targetClean = $TargetDrive.TrimEnd('\')
         if ($targetClean -eq $env:SystemDrive) {
-            return [PSCustomObject]@{ Success = $false; Message = "Không thể lưu bản System Image của ổ $env:SystemDrive lên chính ổ $env:SystemDrive! Vui lòng chọn ổ đĩa khác (D:, E:, USB, HDD rời)." }
+            return [PSCustomObject]@{ Success = $false; Message = "[LỖI] Không thể lưu bản System Image của ổ $env:SystemDrive lên chính ổ $env:SystemDrive! Vui lòng chọn ổ đĩa khác (D:, E:, USB, HDD rời)." }
         }
 
         if ($OnProgress) { & $OnProgress "Đang chuẩn bị dịch vụ Volume Shadow Copy (VSS) và Windows Backup Engine..." }
@@ -98,14 +113,14 @@ echo   - Qua trinh sao luu co the mat tu 10 den 30 phut tuy thuoc toc do o dia v
 echo   - Vui long KHONG tat may tinh hoac rut o dia trong qua trinh sao luu!
 echo ==============================================================================
 echo.
-echo Dang goi wbadmin thuc thi Volume Shadow Copy tao System Image...
+echo Dang thuc thi lenh: wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet
 echo.
-wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy
+wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet
 set EXIT_CODE=%ERRORLEVEL%
 echo.
 if %EXIT_CODE% equ 0 (
     echo ==============================================================================
-    echo [THANH CONG] DA TAO HOAN TAT BAN SAO LUU TOAN BO WINDOWS VA TEP TIN!
+    echo [THANH CONG RUC RO] DA TAO HOAN TAT BAN SAO LUU TOAN BO WINDOWS VA TEP TIN!
     echo Thu muc luu tru: $targetClean\WindowsImageBackup
     echo Khi can khoi phuc lai toan bo may tinh, ban chi can khoi dong vao WinRE va
     echo chon System Image Recovery.
@@ -114,7 +129,7 @@ if %EXIT_CODE% equ 0 (
     echo ==============================================================================
     echo [CANH BAO] Tien trinh ket thuc voi ma thoat: %EXIT_CODE%
     echo Neu can ho tro, vui long kiem tra dung luong trong cua o dia dich hoac
-    echo dam bao khong co ung dung khac dang khoa Volume.
+    echo dam bao o dia dich da duoc format sang NTFS.
     echo ==============================================================================
 )
 echo.
@@ -125,17 +140,18 @@ pause >nul
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($tempBat, $scriptContent, $utf8NoBom)
 
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$tempBat`""
+        # Khởi chạy cmd với quyền Administrator
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$tempBat`"" -Verb RunAs
 
         return [PSCustomObject]@{
             Success     = $true
             TargetDrive = $targetClean
-            Message     = "Đã khởi chạy tiến trình sao lưu toàn bộ Windows & Tệp tin sang ổ $targetClean\`nTheo dõi tiến trình chi tiết trong cửa sổ nổi đang hiển thị."
+            Message     = "[KHỞI CHẠY THÀNH CÔNG] Đang sao lưu toàn bộ Windows sang ổ $targetClean\`nHãy theo dõi tiến trình trực tiếp trong cửa sổ dòng lệnh vừa xuất hiện."
         }
     } catch {
         return [PSCustomObject]@{
             Success = $false
-            Message = "Lỗi khởi chạy sao lưu: $($_.Exception.Message)"
+            Message = "[LỖI SAO LƯU] Không thể khởi chạy tiến trình: $($_.Exception.Message)"
         }
     }
 }
@@ -147,20 +163,40 @@ function New-VUONGTTSystemRestorePoint {
     #>
     try {
         $sysDrive = $env:SystemDrive
-        # Bật System Restore trên ổ C nếu đang tắt
+        
+        # 1. Kích hoạt dịch vụ Volume Shadow Copy và System Restore
+        try {
+            Set-Service -Name "VSS" -StartupType Manual -ErrorAction SilentlyContinue
+            Start-Service -Name "VSS" -ErrorAction SilentlyContinue
+            Set-Service -Name "srservice" -StartupType Automatic -ErrorAction SilentlyContinue
+            Start-Service -Name "srservice" -ErrorAction SilentlyContinue
+        } catch {}
+
+        # 2. Bật System Restore trên ổ C nếu đang tắt
         try {
             Enable-ComputerRestore -Drive "$sysDrive\" -ErrorAction SilentlyContinue
         } catch {}
 
-        # Cho phép tạo checkpoint liên tục mà không bị Windows chặn giới hạn tần suất 24h
+        # 3. Phân bổ dung lượng Shadow Storage tối thiểu 10% nếu chưa cấu hình
         try {
-            $regPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore"
-            if (Test-Path $regPath) {
-                Set-ItemProperty -Path $regPath -Name "SystemRestorePointCreationFrequency" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
-            }
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = "vssadmin.exe"
+            $psi.Arguments = "resize shadowstorage /for=$sysDrive /on=$sysDrive /maxsize=10%"
+            $psi.CreateNoWindow = $true
+            $psi.UseShellExecute = false
+            $proc = [System.Diagnostics.Process]::Start($psi)
+            if ($proc) { $proc.WaitForExit(3000) }
         } catch {}
 
-        $desc = "VUONGTT_QuickRestorePoint_$(Get-Date -Format 'ddMMyyyy_HHmmss')"
+        # 4. Tắt giới hạn tần suất tạo checkpoint 24h của Windows
+        try {
+            $regPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore"
+            if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+            Set-ItemProperty -Path $regPath -Name "SystemRestorePointCreationFrequency" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $regPath -Name "RPSessionInterval" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        } catch {}
+
+        $desc = "VUONGTT_RestorePoint_$(Get-Date -Format 'ddMMyyyy_HHmmss')"
         Checkpoint-Computer -Description $desc -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
 
         return [PSCustomObject]@{
@@ -170,7 +206,7 @@ function New-VUONGTTSystemRestorePoint {
     } catch {
         return [PSCustomObject]@{
             Success = $false
-            Message = "[LỖI TẠO RESTORE POINT] Không thể tạo điểm khôi phục: $($_.Exception.Message)`n(Có thể tính năng System Protection đang bị tắt hoặc bị hạn chế bởi Group Policy)."
+            Message = "[LỖI TẠO RESTORE POINT] Không thể tạo điểm khôi phục: $($_.Exception.Message)`n`n👉 Gợi ý: Hãy bấm nút 'Cấu Hình System Protection' để kiểm tra xem tính năng bảo vệ ổ C: đã được BẬT (Turn on system protection) trong Windows chưa."
         }
     }
 }
@@ -181,14 +217,63 @@ function Open-VUONGTTWindowsBackupCenter {
         Mở giao diện gốc Windows Backup and Restore Center
     #>
     try {
-        if (Test-Path "C:\Windows\System32\sdclt.exe") {
-            Start-Process "C:\Windows\System32\sdclt.exe"
-            return "Đã mở công cụ Windows Backup & Restore (Windows 7) của hệ thống!"
+        if (Test-Path "$env:SystemRoot\System32\sdclt.exe") {
+            Start-Process "$env:SystemRoot\System32\sdclt.exe"
+            return "[OK] Đã mở công cụ Windows Backup & Restore (Windows 7) của hệ thống!"
         } else {
             Start-Process "control.exe" -ArgumentList "/name Microsoft.BackupAndRestoreCenter"
-            return "Đã mở Windows Backup and Restore Center!"
+            return "[OK] Đã mở Windows Backup and Restore Center!"
         }
     } catch {
-        return "Không thể mở Windows Backup Center: $($_.Exception.Message)"
+        return "[LỖI] Không thể mở Windows Backup Center: $($_.Exception.Message)"
+    }
+}
+
+function Open-VUONGTTSystemProtectionSettings {
+    <#
+    .SYNOPSIS
+        Mở hộp thoại System Properties -> System Protection để cấu hình Restore Point
+    #>
+    try {
+        Start-Process "SystemPropertiesProtection.exe"
+        return "[OK] Đã mở bảng điều khiển System Protection & Restore Point!"
+    } catch {
+        return "[LỖI] Không thể mở SystemPropertiesProtection: $($_.Exception.Message)"
+    }
+}
+
+function Get-VUONGTTExistingBackups {
+    <#
+    .SYNOPSIS
+        Quét và liệt kê toàn bộ các bản sao lưu WindowsImageBackup có sẵn trên các ổ đĩa
+    #>
+    try {
+        $sysDrive = $env:SystemDrive
+        $disks = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue | Where-Object { $_.DeviceID -ne $sysDrive }
+        $backups = @()
+        foreach ($d in $disks) {
+            $imgPath = Join-Path $d.DeviceID "WindowsImageBackup"
+            if (Test-Path $imgPath) {
+                $compDirs = Get-ChildItem -Path $imgPath -Directory -ErrorAction SilentlyContinue
+                foreach ($cd in $compDirs) {
+                    $bFiles = Get-ChildItem -Path $cd.FullName -Recurse -Filter "*.vhdx" -ErrorAction SilentlyContinue
+                    $totalBytes = 0
+                    if ($bFiles) {
+                        $totalBytes = ($bFiles | Measure-Object -Property Length -Sum).Sum
+                    }
+                    $totalGB = if ($totalBytes) { [math]::Round($totalBytes / 1GB, 2) } else { 0 }
+                    $backups += [PSCustomObject]@{
+                        Drive        = $d.DeviceID
+                        ComputerName = $cd.Name
+                        BackupPath   = $cd.FullName
+                        SizeGB       = $totalGB
+                        LastModified = $cd.LastWriteTime
+                    }
+                }
+            }
+        }
+        return $backups
+    } catch {
+        return @()
     }
 }
