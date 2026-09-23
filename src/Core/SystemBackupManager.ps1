@@ -155,37 +155,41 @@ function Start-VUONGTTFullWindowsBackup {
             Start-Service -Name "wbengine" -ErrorAction SilentlyContinue
         } catch {}
 
-        if ($OnProgress) { & $OnProgress "Đang khởi chạy tiến trình tạo System Image qua WBAdmin sang ổ $targetClean..." }
+        if ($OnProgress) { & $OnProgress "Đang dọn dẹp rác tạm và chuẩn bị môi trường sao lưu..." }
 
-        $tempBat = Join-Path $env:TEMP "VUONGTT_FullWindowsBackup_$(Get-Date -Format 'yyyyMMdd_HHmmss').cmd"
+        # Dọn dẹp rác tạm an toàn trước bằng PowerShell (không làm lỗi file batch)
+        try {
+            Remove-Item -Path "$env:WINDIR\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path "$env:WINDIR\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+        } catch {}
+
+        # Lưu file batch ở thư mục an toàn ProgramData để không bao giờ bị xóa khi dọn dẹp Temp
+        $safeDir = Join-Path $env:ProgramData "VUONGTT_Toolkit"
+        if (-not (Test-Path $safeDir)) { New-Item -Path $safeDir -ItemType Directory -Force | Out-Null }
+        $tempBat = Join-Path $safeDir "VUONGTT_FullWindowsBackup.cmd"
+
         $scriptContent = @"
 @echo off
 chcp 65001 >nul
-title [VUONGTT TOOLKIT] DANG SAO LUU TOAN BO WINDOWS & PHAN MEM DA CAI...
+title [VUONGTT TOOLKIT 2026] SAO LUU NGUYEN TRANG WINDOWS & PHAN MEM DA CAI
 color 0A
 echo ==============================================================================
 echo   VUONGTT TOOLKIT 2026 - SAO LUU NGUYEN TRANG WINDOWS & PHAN MEM DA CAI
 echo ==============================================================================
 echo   * Pham vi sao luu:
-echo     - He dieu hanh Windows & Driver he thong (C:\Windows)
+echo     - He dieu hanh Windows & Driver he thong ($env:SystemDrive\Windows)
 echo     - Toan bo Phan Mem da cai dat (Program Files, Program Files x86, ProgramData)
 echo     - Phan vung khoi dong quan trong (EFI System Partition, WinRE Recovery, BCD)
-echo     - Ho so cau hinh nguoi dung (C:\Users, Desktop, Documents, AppData...)
+echo     - Ho so cau hinh nguoi dung ($env:SystemDrive\Users, Desktop, Documents, AppData...)
 echo   * O dia dich: $targetClean\WindowsImageBackup
 echo   * Thoi gian : %date% %time%
 echo ==============================================================================
 echo.
-echo [1/3] Dang don dep rac tam va cache cap nhat de toi uu dung luong ban sao luu...
-del /f /s /q "%TEMP%\*.*" >nul 2>&1
-del /f /s /q "%WINDIR%\Temp\*.*" >nul 2>&1
-del /f /s /q "%WINDIR%\SoftwareDistribution\Download\*.*" >nul 2>&1
-rd /s /q "%SYSTEMDRIVE%\`$Recycle.Bin" >nul 2>&1
-echo   -> [OK] Da giai phong rac tam, ban sao luu se chi chua Windows & Phan mem chuan!
-echo.
-echo [2/3] Dang quet online he thong tep $env:SystemDrive de tranh bi ket boi Bad Clusters...
+echo [1/2] Dang quet kiem tra truc tuyen he thong tep de ngan ngua Bad Clusters...
 chkdsk $env:SystemDrive /scan /perf
 echo.
-echo [3/3] Dang thuc thi lenh tao System Image WBAdmin (-allCritical -include:$env:SystemDrive)...
+echo [2/2] Dang thuc thi lenh tao System Image WBAdmin sang o $targetClean...
+echo       (Lenh: wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet)
 echo.
 wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet
 set EXIT_CODE=%ERRORLEVEL%
@@ -231,11 +235,11 @@ pause >nul
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($tempBat, $scriptContent, $utf8NoBom)
 
-        # Khởi chạy cmd hiển thị trực quan tiến trình sao lưu thời gian thực
+        # Khởi chạy cmd hiển thị trực quan tiến trình sao lưu thời gian thực (/k giữ cửa sổ luôn mở)
         try {
-            Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$tempBat`""
+            Start-Process -FilePath "cmd.exe" -ArgumentList "/k `"$tempBat`""
         } catch {
-            [System.Diagnostics.Process]::Start("cmd.exe", "/c `"$tempBat`"") | Out-Null
+            [System.Diagnostics.Process]::Start("cmd.exe", "/k `"$tempBat`"") | Out-Null
         }
 
         return [PSCustomObject]@{
