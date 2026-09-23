@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.909.13",
+    "version":  "20.5.909.14",
     "releaseDate":  "23/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Khắc phục triệt để lỗi không sao lưu được Windows: Loại bỏ lỗi \u0027The request is not supported\u0027 do Verb RunAs khi gọi cmd, tích hợp bộ chọn ổ đĩa đích (Target Drive) trực quan ngay trên Card không dùng popup rời, tự động lọc bỏ ổ mạng mapped (Z:) tránh lỗi WBAdmin, cân chỉnh ngưỡng dung lượng thực tế của ổ E: (47.7 GB) đủ điều kiện sao lưu và kèm xác nhận trực quan chi tiết.",
                       "Chuyển toàn diện tính năng \u0027Sao Lưu \u0026 Khôi Phục Toàn Bộ Windows \u0026 Tệp Tin (Full System Image)\u0027 sang phân hệ Cài Win \u0026 Bypass: Khắc phục triệt để lỗi treo quét ổ đĩa, tối ưu hóa động cơ sao lưu WBAdmin (-quiet, -Verb RunAs), tự động kích hoạt VSS/System Protection khi tạo Restore Point, bổ sung tính năng quét kiểm tra các bản sao lưu đã tạo và quản lý độc lập.",
                       "Trang bị Cơ Chế Cập Nhật Tự Động 2 Tầng Siêu An Toàn (Native C# Applier + PowerShell Pre-Download Staging): Khi mở tool, hệ thống tự động tải trước gói cập nhật về bộ nhớ đệm an toàn và chỉ thông báo khi file đã tải xong 100%, áp dụng tức thì trong 1 giây không cần chờ mạng và loại bỏ hoàn toàn nguy cơ đứt gãy cập nhật trên 1.000 máy Client.",
                       "Khôi phục hoàn toàn 100% động cơ Auto-Update chuẩn mực từ các phiên bản trước: Tích hợp vòng lặp kiểm tra giải phóng tiến trình :wait_loop độc lập, cơ chế sao chép an toàn copy /y và cổng dự phòng Fallback Downloads thông minh giúp 1.000 máy Client tự động cập nhật mượt mà không bao giờ bị kẹt.",

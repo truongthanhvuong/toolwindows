@@ -19,30 +19,36 @@ function Get-VUONGTTCandidateBackupDrives {
         }
 
         $disks = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue | Where-Object {
+            $_.DeviceID -and
             $_.DeviceID -ne $sysDrive -and 
-            $_.DriveType -in 2, 3, 4
+            $_.DriveType -in 2, 3
         }
+
+        if ($sysUsedGB -le 0) { $sysUsedGB = 35 }
+        $minRequiredGB = [math]::Max(15, [math]::Round($sysUsedGB * 0.25, 1))
 
         $results = @()
         foreach ($d in $disks) {
             $freeGB = if ($d.FreeSpace) { [math]::Round($d.FreeSpace / 1GB, 2) } else { 0 }
             $totalGB = if ($d.Size) { [math]::Round($d.Size / 1GB, 2) } else { 0 }
-            $volName = if ($d.VolumeName) { $d.VolumeName } else { "Local Disk" }
+            $volName = if ($d.VolumeName) { $d.VolumeName } else { "Ổ Đĩa" }
             $fs = if ($d.FileSystem) { $d.FileSystem.ToUpper() } else { "UNKNOWN" }
             
             $isNTFS = ($fs -in 'NTFS', 'REFS')
-            $isFit = ($isNTFS -and ($freeGB -ge ($sysUsedGB * 0.6))) # Dự trù nén của VSS/wbadmin
+            $isFit = ($isNTFS -and ($freeGB -ge $minRequiredGB))
 
             $statusText = ""
             if (-not $isNTFS) {
-                $statusText = "Định dạng $fs (Cần NTFS để tạo System Image)"
+                $statusText = "Định dạng $fs (Cần format NTFS để tạo System Image)"
             } elseif ($isFit) {
                 $statusText = "Đủ dung lượng (Khuyên dùng)"
+            } elseif ($freeGB -ge 10) {
+                $statusText = "Khả dụng (Còn trống $freeGB GB)"
             } else {
-                $statusText = "Cảnh báo: Có thể thiếu dung lượng (Cần ~$([math]::Round($sysUsedGB * 0.6, 1)) GB)"
+                $statusText = "Dung lượng thấp (< 10 GB)"
             }
 
-            $displayText = "[$($d.DeviceID)] $volName ($fs) - Trống: $freeGB GB / Tổng: $totalGB GB - $statusText"
+            $displayText = "[$($d.DeviceID)] $volName ($fs) - Trống: $freeGB GB / Tổng: $totalGB GB | $statusText"
 
             $results += [PSCustomObject]@{
                 DeviceID      = $d.DeviceID
@@ -56,7 +62,8 @@ function Get-VUONGTTCandidateBackupDrives {
                 SysUsedGB     = $sysUsedGB
             }
         }
-        return $results
+        $results = $results | Sort-Object -Property @{Expression={$_.IsFit}; Descending=$true}, @{Expression={$_.FreeGB}; Descending=$true}
+        return @($results)
     } catch {
         return @()
     }
@@ -140,8 +147,12 @@ pause >nul
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($tempBat, $scriptContent, $utf8NoBom)
 
-        # Khởi chạy cmd với quyền Administrator
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$tempBat`"" -Verb RunAs
+        # Khởi chạy cmd hiển thị trực quan tiến trình sao lưu thời gian thực
+        try {
+            Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$tempBat`""
+        } catch {
+            [System.Diagnostics.Process]::Start("cmd.exe", "/c `"$tempBat`"") | Out-Null
+        }
 
         return [PSCustomObject]@{
             Success     = $true
