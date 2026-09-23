@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.20
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.21
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -127,6 +127,17 @@ $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
 [xml]$xaml = Get-Content -Path $xamlFile -Raw -Encoding UTF8
 $reader = New-Object System.Xml.XmlNodeReader $xaml
 $window = [System.Windows.Markup.XamlReader]::Load($reader)
+
+# Ngan chan triet de hien tuong WPF tu dong khi MessageBox dong (ShutdownMode = OnExplicitShutdown)
+try {
+    if (-not [System.Windows.Application]::Current) {
+        $null = New-Object System.Windows.Application
+    }
+    if ([System.Windows.Application]::Current) {
+        [System.Windows.Application]::Current.ShutdownMode = [System.Windows.ShutdownMode]::OnExplicitShutdown
+        [System.Windows.Application]::Current.MainWindow = $window
+    }
+} catch {}
 
 function Get-Control {
     param([string]$Name)
@@ -3703,6 +3714,7 @@ $btnLaunchDriverAssistantOEM = Get-Control "btnLaunchDriverAssistantOEM"
 $btnOpenOEMDriverPortal      = Get-Control "btnOpenOEMDriverPortal"
 
 $btnBackupFullWindowsSystem        = Get-Control "btnBackupFullWindowsSystem"
+$btnRestoreFullSystemBackup       = Get-Control "btnRestoreFullSystemBackup"
 $btnCheckExistingBackups           = Get-Control "btnCheckExistingBackups"
 $btnCreateSystemRestorePoint       = Get-Control "btnCreateSystemRestorePoint"
 $btnOpenSystemProtectionSettings   = Get-Control "btnOpenSystemProtectionSettings"
@@ -4080,6 +4092,65 @@ if ($btnBackupFullWindowsSystem) {
         }
         &$logSystemBackupMsg "$($res.Message)"
         if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã khởi chạy sao lưu Windows & Tệp tin sang $targetDrive" }
+    })
+}
+
+if ($btnRestoreFullSystemBackup) {
+    $btnRestoreFullSystemBackup.Add_Click({
+        &$logSystemBackupMsg "[KHÔI PHỤC] Đang tìm kiếm các bản sao lưu WindowsImageBackup trên máy..."
+        $images = Find-VUONGTTBackupImagesInFolder
+
+        # Nếu chưa tìm thấy tự động -> hỏi người dùng có muốn duyệt chọn thư mục không
+        if (-not $images -or $images.Count -eq 0) {
+            $askBrowse = [System.Windows.MessageBox]::Show(
+                "Chưa tìm thấy tự động bản sao lưu WindowsImageBackup trên các ổ đĩa mặc định.`n`n" +
+                "Bạn có muốn duyệt tìm tới thư mục chứa bản sao lưu (trên USB, ổ cứng ngoài hoặc ổ D/E) không?",
+                "Tìm Bản Sao Lưu",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Question
+            )
+            if ($askBrowse -eq [System.Windows.MessageBoxResult]::Yes) {
+                Add-Type -AssemblyName System.Windows.Forms
+                $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+                $fbd.Description = "Chọn thư mục chứa bản sao lưu (WindowsImageBackup hoặc thư mục chứa file .vhdx/.vhd):"
+                $fbd.ShowNewFolderButton = $false
+                if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK -and $fbd.SelectedPath) {
+                    &$logSystemBackupMsg "[QUÉT] Đang tìm trong thư mục: $($fbd.SelectedPath)..."
+                    $images = Find-VUONGTTBackupImagesInFolder -FolderPath $fbd.SelectedPath
+                }
+            }
+        }
+
+        if (-not $images -or $images.Count -eq 0) {
+            &$logSystemBackupMsg "[KẾT QUẢ] Không tìm thấy tệp đĩa sao lưu (.vhdx/.vhd) nào."
+            [System.Windows.MessageBox]::Show("Không tìm thấy tệp đĩa sao lưu (.vhdx / .vhd) nào trong thư mục đã chọn.", "Thông Báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            return
+        }
+
+        # Hiển thị thông tin bản sao lưu tìm thấy
+        $firstImg = $images[0]
+        $msg = "ĐÃ TÌM THẤY BẢN SAO LƯU HỆ THỐNG!`n=====================================================`n" +
+               "• Tệp đĩa ảnh sao lưu: $($firstImg.FileName)`n" +
+               "• Dung lượng ảnh đĩa: $($firstImg.SizeGB) GB`n" +
+               "• Ngày tạo: $($firstImg.LastModified.ToString('dd/MM/yyyy HH:mm:ss'))`n" +
+               "• Vị trí lưu: $($firstImg.FilePath)`n`n" +
+               "=====================================================`n" +
+               "LỰA CHỌN KHÔI PHỤC:`n" +
+               "• Bấm 'Yes' để GẮN ĐĨA ẢO (MOUNT VHDX) NGAY: Mở trực tiếp ổ đĩa ảo trong Windows Explorer để xem, copy lại phần mềm, file tài liệu cá nhân tức thì không cần restart máy!`n`n" +
+               "• Bấm 'No' để KHỞI ĐỘNG VÀO WINRE: Khởi động máy vào Windows Recovery Environment để khôi phục đè toàn bộ Windows 100% nguyên trạng.`n`n" +
+               "• Bấm 'Cancel' để đóng thông báo này."
+
+        $act = [System.Windows.MessageBox]::Show($msg, "Khôi Phục Bản Sao Lưu Windows", [System.Windows.MessageBoxButton]::YesNoCancel, [System.Windows.MessageBoxImage]::Question)
+        if ($act -eq [System.Windows.MessageBoxResult]::Yes) {
+            &$logSystemBackupMsg "[MOUNT] Đang tiến hành gắn đĩa ảo VHDX vào File Explorer..."
+            $mRes = Mount-VUONGTTBackupImage -ImagePath $firstImg.FilePath
+            &$logSystemBackupMsg "$($mRes.Message)"
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã gắn đĩa ảo bản sao lưu thành công!" }
+            [System.Windows.MessageBox]::Show($mRes.Message, "Gắn Đĩa Ảo Bản Sao Lưu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } elseif ($act -eq [System.Windows.MessageBoxResult]::No) {
+            &$logSystemBackupMsg "[WINRE] Đang chuẩn bị khởi động vào WinRE Recovery..."
+            Start-Process "shutdown.exe" -ArgumentList "/r /o /f /t 02"
+        }
     })
 }
 
@@ -7981,7 +8052,9 @@ $window.Add_ContentRendered({
 Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay bây giờ không?
 (Bấm 'Yes' để áp dụng ngay trong 1 giây, hoặc 'No' để tiếp tục dùng và nâng cấp sau).
 "@
-                $ask = [System.Windows.MessageBox]::Show($msg, "VUONGTT Tool Pro 2026 - Bản Cập Nhật Đã Sẵn Sàng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
+                try {
+                    $ask = [System.Windows.MessageBox]::Show($msg, "VUONGTT Tool Pro 2026 - Bản Cập Nhật Đã Sẵn Sàng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
+                } catch { $ask = [System.Windows.MessageBoxResult]::No }
                 if ($ask -eq [System.Windows.MessageBoxResult]::Yes) {
                     $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang áp dụng bản cập nhật v$($uInfo.LatestVersion)..."
                     Invoke-VUONGTTDoEvents
@@ -7990,6 +8063,14 @@ Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay 
                         $txtFooterStatus.Text = "• [AUTO-UPDATE] $m"
                         Invoke-VUONGTTDoEvents
                     }
+                } else {
+                    $txtFooterStatus.Text = "• [OK] Đã hoãn cập nhật. Bạn đang tiếp tục dùng phiên bản hiện tại v$script:APP_CURRENT_VERSION."
+                    if ($btnCheckAppUpdate) {
+                        $btnCheckAppUpdate.Content = "🔥 CÓ BẢN MỚI v$($uInfo.LatestVersion)"
+                        $btnCheckAppUpdate.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BE123C")
+                        $btnCheckAppUpdate.Visibility = [System.Windows.Visibility]::Visible
+                    }
+                    Invoke-VUONGTTDoEvents
                 }
             }
             return
@@ -8199,6 +8280,9 @@ Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay 
             $syncWorkerTimer.Stop()
             if ($script:bgSyncState -and $script:bgSyncState.PowerShell) {
                 $script:bgSyncState.PowerShell.Dispose()
+            }
+            if ([System.Windows.Application]::Current) {
+                [System.Windows.Application]::Current.Shutdown()
             }
         } catch {}
     })

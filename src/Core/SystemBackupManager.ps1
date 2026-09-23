@@ -161,34 +161,41 @@ function Start-VUONGTTFullWindowsBackup {
         $scriptContent = @"
 @echo off
 chcp 65001 >nul
-title [VUONGTT TOOLKIT] DANG SAO LUU TOAN BO WINDOWS VA TEP TIN (SYSTEM IMAGE)...
+title [VUONGTT TOOLKIT] DANG SAO LUU TOAN BO WINDOWS & PHAN MEM DA CAI...
 color 0A
 echo ==============================================================================
-echo   VUONGTT TOOLKIT 2026 - SAO LUU TOAN BO WINDOWS & TEP TIN (FULL SYSTEM IMAGE)
+echo   VUONGTT TOOLKIT 2026 - SAO LUU NGUYEN TRANG WINDOWS & PHAN MEM DA CAI
 echo ==============================================================================
-echo   * O dia nguon : $env:SystemDrive (Bao gom Windows, Boot EFI, Toan bo du lieu tep tin)
-echo   * O dia dich  : $targetClean\WindowsImageBackup
-echo   * Thoi gian   : %date% %time%
-echo ==============================================================================
-echo   Luu y:
-echo   - Qua trinh sao luu co the mat tu 10 den 30 phut tuy thuoc toc do o dia va du lieu.
-echo   - Vui long KHONG tat may tinh hoac rut o dia trong qua trinh sao luu!
+echo   * Pham vi sao luu:
+echo     - He dieu hanh Windows & Driver he thong (C:\Windows)
+echo     - Toan bo Phan Mem da cai dat (Program Files, Program Files x86, ProgramData)
+echo     - Phan vung khoi dong quan trong (EFI System Partition, WinRE Recovery, BCD)
+echo     - Ho so cau hinh nguoi dung (C:\Users, Desktop, Documents, AppData...)
+echo   * O dia dich: $targetClean\WindowsImageBackup
+echo   * Thoi gian : %date% %time%
 echo ==============================================================================
 echo.
-echo [1/2] Dang quet online he thong tep $env:SystemDrive de tranh bi ket boi Bad Clusters...
+echo [1/3] Dang don dep rac tam va cache cap nhat de toi uu dung luong ban sao luu...
+del /f /s /q "%TEMP%\*.*" >nul 2>&1
+del /f /s /q "%WINDIR%\Temp\*.*" >nul 2>&1
+del /f /s /q "%WINDIR%\SoftwareDistribution\Download\*.*" >nul 2>&1
+rd /s /q "%SYSTEMDRIVE%\`$Recycle.Bin" >nul 2>&1
+echo   -> [OK] Da giai phong rac tam, ban sao luu se chi chua Windows & Phan mem chuan!
+echo.
+echo [2/3] Dang quet online he thong tep $env:SystemDrive de tranh bi ket boi Bad Clusters...
 chkdsk $env:SystemDrive /scan /perf
 echo.
-echo [2/2] Dang thuc thi lenh: wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet
+echo [3/3] Dang thuc thi lenh tao System Image WBAdmin (-allCritical -include:$env:SystemDrive)...
 echo.
 wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet
 set EXIT_CODE=%ERRORLEVEL%
 echo.
 if %EXIT_CODE% equ 0 (
     echo ==============================================================================
-    echo [THANH CONG RUC RO] DA TAO HOAN TAT BAN SAO LUU TOAN BO WINDOWS VA TEP TIN!
+    echo [THANH CONG RUC RO] DA TAO HOAN TAT BAN SAO LUU WINDOWS & PHAN MEM!
     echo Thu muc luu tru: $targetClean\WindowsImageBackup
-    echo Khi can khoi phuc lai toan bo may tinh, ban chi can khoi dong vao WinRE va
-    echo chon System Image Recovery.
+    echo Ban co the dung nut 'Khoi Phuc Ban Sao Luu' tren tool de gan o ao (Mount VHDX)
+    echo lay lai phan mem/du lieu, hoac khoi dong WinRE de khoi phuc toan dien 100%%.
     echo ==============================================================================
 ) else if %EXIT_CODE% equ -4 (
     echo ==============================================================================
@@ -441,3 +448,123 @@ pause >nul
         [System.Diagnostics.Process]::Start("cmd.exe", "/c `"$tempCmd`"") | Out-Null
     }
 }
+
+function Find-VUONGTTBackupImagesInFolder {
+    <#
+    .SYNOPSIS
+        Tìm kiếm các file ảnh đĩa (.vhdx, .vhd) của bản sao lưu trong thư mục chỉ định hoặc quét toàn bộ các ổ
+    #>
+    param([string]$FolderPath = "")
+
+    $results = @()
+    $foldersToScan = @()
+
+    if ($FolderPath -and (Test-Path $FolderPath)) {
+        $foldersToScan += $FolderPath
+    } else {
+        # Quét tự động tất cả các ổ đĩa có thư mục WindowsImageBackup
+        $sysDrive = $env:SystemDrive.TrimEnd('\')
+        try {
+            $drives = [System.IO.DriveInfo]::GetDrives()
+            foreach ($d in $drives) {
+                if ($d.IsReady) {
+                    $wib = Join-Path $d.Name "WindowsImageBackup"
+                    if (Test-Path $wib) { $foldersToScan += $wib }
+                }
+            }
+        } catch {}
+    }
+
+    foreach ($folder in $foldersToScan) {
+        try {
+            $vhdxFiles = Get-ChildItem -Path $folder -Recurse -Include "*.vhdx", "*.vhd" -File -ErrorAction SilentlyContinue
+            foreach ($vf in $vhdxFiles) {
+                # Lọc bỏ các file quá nhỏ (< 500MB) không phải system image
+                if ($vf.Length -ge 500MB) {
+                    $sizeGB = [math]::Round($vf.Length / 1GB, 2)
+                    $results += [PSCustomObject]@{
+                        FileName     = $vf.Name
+                        FilePath     = $vf.FullName
+                        Directory    = $vf.DirectoryName
+                        SizeGB       = $sizeGB
+                        LastModified = $vf.LastWriteTime
+                        Drive        = [System.IO.Path]::GetPathRoot($vf.FullName).TrimEnd('\')
+                    }
+                }
+            }
+        } catch {}
+    }
+
+    return @($results | Sort-Object -Property LastModified -Descending)
+}
+
+function Mount-VUONGTTBackupImage {
+    <#
+    .SYNOPSIS
+        Gắn file đĩa ảo VHDX của bản sao lưu thành ổ đĩa ảo ngay trong Windows Explorer
+    #>
+    param([string]$ImagePath)
+
+    if (-not $ImagePath -or -not (Test-Path $ImagePath)) {
+        return [PSCustomObject]@{ Success = $false; Message = "[LỖI] Tệp tin đĩa sao lưu (.vhdx/.vhd) không tồn tại!" }
+    }
+
+    try {
+        # Sử dụng PowerShell Mount-DiskImage
+        $diskImg = Mount-DiskImage -ImagePath $ImagePath -StorageType VHDX -Access ReadOnly -PassThru -ErrorAction Stop
+        Start-Sleep -Milliseconds 800
+
+        # Tìm ổ đĩa ký tự vừa được gán
+        $vol = $diskImg | Get-Disk | Get-Partition | Get-Volume | Where-Object { $_.DriveLetter } | Select-Object -First 1
+        $assignedDrive = if ($vol -and $vol.DriveLetter) { "$($vol.DriveLetter):" } else { "" }
+
+        if ($assignedDrive) {
+            # Mở ngay Explorer tại ổ đĩa vừa gắn
+            Start-Process "explorer.exe" -ArgumentList $assignedDrive
+            return [PSCustomObject]@{
+                Success     = $true
+                DriveLetter = $assignedDrive
+                ImagePath   = $ImagePath
+                Message     = "[THÀNH CÔNG] Đã gắn đĩa ảo thành ổ $assignedDrive\`n• Bạn có thể xem và lấy lại bất kỳ phần mềm, file dữ liệu nào ngay lập tức!`n• Khi dùng xong, bạn có thể tháo đĩa ảo bất kỳ lúc nào."
+            }
+        } else {
+            return [PSCustomObject]@{
+                Success     = $true
+                DriveLetter = ""
+                ImagePath   = $ImagePath
+                Message     = "[OK] Đã gắn đĩa ảo vào hệ thống (Đang ở chế độ ReadOnly). Bạn có thể mở Disk Management (diskmgmt.msc) để kiểm tra."
+            }
+        }
+    } catch {
+        return [PSCustomObject]@{
+            Success = $false
+            Message = "[LỖI GẮN ĐĨA ẢO] Không thể gắn file VHDX: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Dismount-VUONGTTBackupImage {
+    <#
+    .SYNOPSIS
+        Tháo đĩa ảo VHDX của bản sao lưu
+    #>
+    param([string]$ImagePath)
+
+    if (-not $ImagePath) {
+        return [PSCustomObject]@{ Success = $false; Message = "[LỖI] Chưa chỉ định file đĩa ảo để tháo!" }
+    }
+
+    try {
+        Dismount-DiskImage -ImagePath $ImagePath -ErrorAction Stop
+        return [PSCustomObject]@{
+            Success = $true
+            Message = "[THÀNH CÔNG] Đã tháo đĩa ảo an toàn khỏi hệ thống!"
+        }
+    } catch {
+        return [PSCustomObject]@{
+            Success = $false
+            Message = "[LỖI THÁO ĐĨA] Không thể tháo đĩa ảo: $($_.Exception.Message)"
+        }
+    }
+}
+
