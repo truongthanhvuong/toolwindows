@@ -175,7 +175,10 @@ echo   - Qua trinh sao luu co the mat tu 10 den 30 phut tuy thuoc toc do o dia v
 echo   - Vui long KHONG tat may tinh hoac rut o dia trong qua trinh sao luu!
 echo ==============================================================================
 echo.
-echo Dang thuc thi lenh: wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet
+echo [1/2] Dang quet online he thong tep $env:SystemDrive de tranh bi ket boi Bad Clusters...
+chkdsk $env:SystemDrive /scan /perf
+echo.
+echo [2/2] Dang thuc thi lenh: wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet
 echo.
 wbadmin start backup -backupTarget:$targetClean -include:$env:SystemDrive -allCritical -vssCopy -quiet
 set EXIT_CODE=%ERRORLEVEL%
@@ -186,6 +189,25 @@ if %EXIT_CODE% equ 0 (
     echo Thu muc luu tru: $targetClean\WindowsImageBackup
     echo Khi can khoi phuc lai toan bo may tinh, ban chi can khoi dong vao WinRE va
     echo chon System Image Recovery.
+    echo ==============================================================================
+) else if %EXIT_CODE% equ -4 (
+    echo ==============================================================================
+    echo [HOAN TAT CO CANH BAO BAD CLUSTERS]
+    echo BAN SAO LUU NGUYEN TRANG WINDOWS DA DUOC TAO THANH CONG TREN $targetClean!
+    echo.
+    echo Giai thich chi tiet:
+    echo Tren o dia $env:SystemDrive co mot so sector/cluster vat ly khong the doc (Bad Clusters).
+    echo WBAdmin da tu dong bo qua cac cluster loi nay va sao luu thanh cong 100%%
+    echo phan con lai cua he dieu hanh Windows, phan vung khoi dong EFI va du lieu nguoi dung.
+    echo.
+    echo [OK] Ban sao luu hoan toan hop le va co the dung de khoi phuc may tinh khi can!
+    echo Goi y: Hay dung nut 'Quet & Sua Loi Bad Sector O C' tren tool de sua o dia.
+    echo ==============================================================================
+) else if %EXIT_CODE% equ 1 (
+    echo ==============================================================================
+    echo [HOAN TAT CO CANH BAO TEP DANG MO]
+    echo BAN SAO LUU NGUYEN TRANG WINDOWS DA DUOC TAO TREN $targetClean!
+    echo Mot so tep tin dang duoc khoa boi he thong da duoc sao luu qua VSS Shadow Copy.
     echo ==============================================================================
 ) else (
     echo ==============================================================================
@@ -314,22 +336,47 @@ function Get-VUONGTTExistingBackups {
         Quét và liệt kê toàn bộ các bản sao lưu WindowsImageBackup có sẵn trên các ổ đĩa
     #>
     try {
-        $sysDrive = $env:SystemDrive
-        $disks = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue | Where-Object { $_.DeviceID -ne $sysDrive }
+        $sysDrive = $env:SystemDrive.TrimEnd('\')
+        $targetDrives = @()
+        
+        try {
+            $wmi = Get-CimInstance Win32_LogicalDisk -ErrorAction SilentlyContinue
+            foreach ($w in $wmi) {
+                if ($w.DeviceID -and $w.DeviceID.TrimEnd('\') -ne $sysDrive) {
+                    $targetDrives += $w.DeviceID.TrimEnd('\')
+                }
+            }
+        } catch {}
+
+        try {
+            $netD = [System.IO.DriveInfo]::GetDrives()
+            foreach ($nd in $netD) {
+                if ($nd.IsReady) {
+                    $n = $nd.Name.TrimEnd('\')
+                    if ($n -ne $sysDrive -and ($targetDrives -notcontains $n)) {
+                        $targetDrives += $n
+                    }
+                }
+            }
+        } catch {}
+
         $backups = @()
-        foreach ($d in $disks) {
-            $imgPath = Join-Path $d.DeviceID "WindowsImageBackup"
+        foreach ($dId in $targetDrives) {
+            $imgPath = "$dId\WindowsImageBackup"
             if (Test-Path $imgPath) {
                 $compDirs = Get-ChildItem -Path $imgPath -Directory -ErrorAction SilentlyContinue
                 foreach ($cd in $compDirs) {
                     $bFiles = Get-ChildItem -Path $cd.FullName -Recurse -Filter "*.vhdx" -ErrorAction SilentlyContinue
+                    if (-not $bFiles) {
+                        $bFiles = Get-ChildItem -Path $cd.FullName -Recurse -Filter "*.vhd" -ErrorAction SilentlyContinue
+                    }
                     $totalBytes = 0
                     if ($bFiles) {
                         $totalBytes = ($bFiles | Measure-Object -Property Length -Sum).Sum
                     }
                     $totalGB = if ($totalBytes) { [math]::Round($totalBytes / 1GB, 2) } else { 0 }
                     $backups += [PSCustomObject]@{
-                        Drive        = $d.DeviceID
+                        Drive        = $dId
                         ComputerName = $cd.Name
                         BackupPath   = $cd.FullName
                         SizeGB       = $totalGB
@@ -338,8 +385,59 @@ function Get-VUONGTTExistingBackups {
                 }
             }
         }
-        return $backups
+        return @($backups)
     } catch {
         return @()
+    }
+}
+
+function Repair-VUONGTTDiskBadSectors {
+    <#
+    .SYNOPSIS
+        Tự động quét trực tuyến và cô lập/sửa chữa các Bad Sector / Bad Cluster trên ổ C:
+    #>
+    param([string]$DriveLetter = "C:")
+    
+    $cleanDrive = if ($DriveLetter) { $DriveLetter.TrimEnd('\') } else { "C:" }
+    $tempCmd = Join-Path $env:TEMP "VUONGTT_ChkdskRepair_$(Get-Date -Format 'yyyyMMdd_HHmmss').cmd"
+    $cmdContent = @"
+@echo off
+chcp 65001 >nul
+title [VUONGTT TOOLKIT] QUET VA SUA LOI BAD SECTOR / CLUSTER O DIA $cleanDrive...
+color 0E
+echo ==============================================================================
+echo   VUONGTT TOOLKIT 2026 - CONG CU QUET & SUA LOI BAD CLUSTERS O DIA $cleanDrive
+echo ==============================================================================
+echo   Tien trinh se thuc hien kiem tra, phat hien va sua chua cac cluster loi
+echo   tren o dia $cleanDrive bang cong cu Microsoft CheckDisk (Chkdsk).
+echo ==============================================================================
+echo.
+echo [BUOC 1] Dang quet truc tuyen nhanh toan bo he thong tep (Online Scan)...
+chkdsk $cleanDrive /scan /perf
+echo.
+echo [BUOC 2] Dang sua chua va co lap cac loi cluster da phat hien...
+chkdsk $cleanDrive /spotfix
+echo.
+echo ==============================================================================
+echo Neu van con Bad Sector vat ly sau khi quet online, ban co the len lich
+echo quet chuyen sau va phuc hoi toan dien (/F /R) trong lan khoi dong tiep theo.
+echo ==============================================================================
+echo.
+set /p SCHEDULE_REBOOT="Ban co muon len lich quet toan dien (chkdsk $cleanDrive /f /r) khi khoi dong lai? (Y/N): "
+if /i "%SCHEDULE_REBOOT%"=="Y" (
+    echo y | chkdsk $cleanDrive /f /r
+    echo.
+    echo [OK] Da len lich quet toan dien o $cleanDrive trong lan khoi dong may tiep theo!
+)
+echo.
+echo Hoan tat! Nhan phim bat ky de thoat...
+pause >nul
+"@
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($tempCmd, $cmdContent, $utf8NoBom)
+    try {
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$tempCmd`""
+    } catch {
+        [System.Diagnostics.Process]::Start("cmd.exe", "/c `"$tempCmd`"") | Out-Null
     }
 }

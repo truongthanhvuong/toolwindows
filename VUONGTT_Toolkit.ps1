@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.18
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.20
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -3713,6 +3713,7 @@ $cmbBackupTargetDrive              = Get-Control "cmbBackupTargetDrive"
 $btnRefreshBackupDrives            = Get-Control "btnRefreshBackupDrives"
 $btnBrowseCustomBackupTarget       = Get-Control "btnBrowseCustomBackupTarget"
 $btnSelectDriverBackupDir          = Get-Control "btnSelectDriverBackupDir"
+$btnRepairDiskBadSectors           = Get-Control "btnRepairDiskBadSectors"
 
 $btnBackupAllDrivers         = Get-Control "btnBackupAllDrivers"
 $btnBackupPrinterDrivers     = Get-Control "btnBackupPrinterDrivers"
@@ -4101,6 +4102,14 @@ if ($btnCheckExistingBackups) {
             &$logSystemBackupMsg "[KẾT QUẢ] Hiện chưa tìm thấy bản sao lưu WindowsImageBackup nào trên các ổ đĩa phụ.`n💡 Bạn hãy bấm 'Sao Lưu Toàn Bộ Windows & File' để tạo bản sao lưu toàn diện đầu tiên!"
             if ($txtFooterStatus) { $txtFooterStatus.Text = "• [INFO] Chưa có bản sao lưu WindowsImageBackup nào" }
         }
+    })
+}
+
+if ($btnRepairDiskBadSectors) {
+    $btnRepairDiskBadSectors.Add_Click({
+        &$logSystemBackupMsg "[QUÉT & SỬA ĐĨA] Đang khởi chạy công cụ CheckDisk để kiểm tra và sửa Bad Sector ổ C:..."
+        Repair-VUONGTTDiskBadSectors -DriveLetter $env:SystemDrive
+        &$logSystemBackupMsg "[OK] Cửa sổ quét và sửa lỗi đĩa đã được mở."
     })
 }
 

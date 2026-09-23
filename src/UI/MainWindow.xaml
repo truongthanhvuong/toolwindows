@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.18"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.20"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -330,7 +330,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.18 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.20 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -3165,6 +3165,7 @@
                                 <WrapPanel>
                                     <Button x:Name="btnBackupFullWindowsSystem" Content="🛡️ Sao Lưu Toàn Bộ Windows &amp; File (System Image)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="340" Height="36" FontWeight="Bold" Padding="16,0,16,0" Margin="0,0,8,6" ToolTip="Sao lưu toàn bộ Windows, phân vùng EFI và toàn bộ tệp tin dữ liệu ổ C: sang ổ đĩa đích bằng WBAdmin System Image"/>
                                     <Button x:Name="btnCheckExistingBackups" Content="🔍 Kiểm Tra Bản Sao Lưu Đã Tạo" Background="#0284C7" Style="{StaticResource ActionBtn}" MinWidth="230" Height="36" Padding="14,0,14,0" Margin="0,0,8,6" ToolTip="Quét và kiểm tra danh sách các bản System Image đã tạo trên các ổ đĩa"/>
+                                    <Button x:Name="btnRepairDiskBadSectors" Content="🧹 Quét &amp; Sửa Bad Sector Ổ C: (Chkdsk)" Background="#7C3AED" Style="{StaticResource ActionBtn}" MinWidth="290" Height="36" Padding="14,0,14,0" Margin="0,0,8,6" ToolTip="Tự động quét trực tuyến và cô lập các Bad Cluster / Sector hỏng trên ổ C: để sao lưu trơn tru"/>
                                     <Button x:Name="btnCreateSystemRestorePoint" Content="📍 Tạo Điểm Khôi Phục Nhanh (Restore Point)" Background="#2563EB" Style="{StaticResource ActionBtn}" MinWidth="280" Height="36" Padding="14,0,14,0" Margin="0,0,8,6" ToolTip="Tự động kích hoạt VSS và tạo điểm khôi phục nhanh Windows System Restore Point tức thì ngay trên ổ C:"/>
                                     <Button x:Name="btnOpenSystemProtectionSettings" Content="⚙️ Cấu Hình System Protection" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="220" Height="36" Padding="14,0,14,0" Margin="0,0,8,6" ToolTip="Mở hộp thoại thiết lập dung lượng và cấu hình bật/tắt System Protection của Windows"/>
                                     <Button x:Name="btnOpenWindowsBackupRestoreWizard" Content="📂 Mở Windows Backup Center" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="230" Height="36" Padding="14,0,14,0" Margin="0,0,8,6" ToolTip="Mở giao diện gốc Windows Backup and Restore Center của Windows để quản lý"/>
@@ -3553,7 +3554,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.18" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.20" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>
