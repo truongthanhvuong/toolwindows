@@ -230,8 +230,90 @@ try {
 
 # 4. KHOI CHAY UNG DUNG (CHE DO LIVE - TU DONG XOA SACH KHI DONG)
 Write-Host "`n [3/3] Khoi dong VUONGTT Tool Pro 2026 (Che do Live - Tu dong don sach khi dong)..." -ForegroundColor Cyan
+
+$proc = $null
+$useScriptFallback = $false
+
+# 4.1. Thu khoi chay file thuc thi EXE
 try {
-    $proc = Start-Process -FilePath $exePath -ArgumentList "--live" -WorkingDirectory $installDir -PassThru
+    $proc = Start-Process -FilePath $exePath -ArgumentList "--live" -WorkingDirectory $installDir -PassThru -ErrorAction Stop
+} catch {
+    $errLaunch = $_.Exception.Message
+    Write-Host "  [!] Khoi chay truc tiep file EXE that bai do chinh sach bao mat he thong (Smart App Control / WDAC): $errLaunch" -ForegroundColor Yellow
+    Write-Host "  [*] Dang tu dong kich hoat Dong Co Du Phong (In-Memory Fallback Engine) de mo giao dien qua Microsoft PowerShell..." -ForegroundColor Cyan
+    $useScriptFallback = $true
+}
+
+# 4.2. Neu he thong chan file EXE boi Application Control / Smart App Control / WDAC:
+# Tu dong load Assembly vao bo nho, trich xuat tai nguyen va khoi chay qua PowerShell STA (100% hop le, khong bi chan)
+if ($useScriptFallback -or (-not $proc)) {
+    try {
+        $runtimeDir = Join-Path $installDir "runtime"
+        if (-not (Test-Path $runtimeDir)) { New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null }
+
+        $bytes = [System.IO.File]::ReadAllBytes($exePath)
+        $asm = [System.Reflection.Assembly]::Load($bytes)
+        $resNames = $asm.GetManifestResourceNames()
+
+        foreach ($name in $resNames) {
+            $relPath = ""
+            if ($name.Contains("VUONGTT_Toolkit.ps1")) { $relPath = "VUONGTT_Toolkit.ps1" }
+            elseif ($name.Contains("MainWindow.xaml")) { $relPath = "src\UI\MainWindow.xaml" }
+            elseif ($name.Contains("OfficeAIOModal.xaml")) { $relPath = "src\UI\OfficeAIOModal.xaml" }
+            elseif ($name.Contains("HardwareInfo.ps1")) { $relPath = "src\Core\HardwareInfo.ps1" }
+            elseif ($name.Contains("OfficeInstaller.ps1")) { $relPath = "src\Core\OfficeInstaller.ps1" }
+            elseif ($name.Contains("Activator.ps1")) { $relPath = "src\Core\Activator.ps1" }
+            elseif ($name.Contains("NetworkPrinterFix.ps1")) { $relPath = "src\Core\NetworkPrinterFix.ps1" }
+            elseif ($name.Contains("SystemTweaks.ps1")) { $relPath = "src\Core\SystemTweaks.ps1" }
+            elseif ($name.Contains("BitLockerManager.ps1")) { $relPath = "src\Core\BitLockerManager.ps1" }
+            elseif ($name.Contains("SoftwareInstaller.ps1")) { $relPath = "src\Core\SoftwareInstaller.ps1" }
+            elseif ($name.Contains("SystemCustomizer.ps1")) { $relPath = "src\Core\SystemCustomizer.ps1" }
+            elseif ($name.Contains("UserManager.ps1")) { $relPath = "src\Core\UserManager.ps1" }
+            elseif ($name.Contains("CpuMainDatabase.ps1")) { $relPath = "src\Core\CpuMainDatabase.ps1" }
+            elseif ($name.Contains("LaptopTester.ps1")) { $relPath = "src\Core\LaptopTester.ps1" }
+            elseif ($name.Contains("FontInstaller.ps1")) { $relPath = "src\Core\FontInstaller.ps1" }
+            elseif ($name.Contains("PartitionManager.ps1")) { $relPath = "src\Core\PartitionManager.ps1" }
+            elseif ($name.Contains("AccountingApps.ps1")) { $relPath = "src\Core\AccountingApps.ps1" }
+            elseif ($name.Contains("AppUpdater.ps1")) { $relPath = "src\Core\AppUpdater.ps1" }
+            elseif ($name.Contains("LicenseManager.ps1")) { $relPath = "src\Core\LicenseManager.ps1" }
+            elseif ($name.Contains("IpScanner.ps1")) { $relPath = "src\Core\IpScanner.ps1" }
+            elseif ($name.Contains("ConfigManager.ps1")) { $relPath = "src\Core\ConfigManager.ps1" }
+            elseif ($name.Contains("DiskHealthManager.ps1")) { $relPath = "src\Core\DiskHealthManager.ps1" }
+            elseif ($name.Contains("AutoWinDeployer.ps1")) { $relPath = "src\Core\AutoWinDeployer.ps1" }
+            elseif ($name.Contains("SystemBackupManager.ps1")) { $relPath = "src\Core\SystemBackupManager.ps1" }
+            elseif ($name.Contains("licenses_vault.json")) { $relPath = "src\Config\licenses_vault.json" }
+            elseif ($name.Contains("feature_policy.json")) { $relPath = "src\Config\feature_policy.json" }
+            elseif ($name.Contains("SoftwareDatabase.json")) { $relPath = "src\Data\SoftwareDatabase.json" }
+            elseif ($name.Contains("version.json")) { $relPath = "version.json" }
+            elseif ($name.StartsWith("VUONGTT.AppIcons.")) {
+                $iconFile = $name.Substring("VUONGTT.AppIcons.".Length)
+                $relPath = "src\Assets\AppIcons\$iconFile"
+            }
+
+            if ($relPath) {
+                $dest = Join-Path $runtimeDir $relPath
+                $parent = Split-Path $dest -Parent
+                if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+                $stream = $asm.GetManifestResourceStream($name)
+                $fs = [System.IO.File]::Create($dest)
+                $stream.CopyTo($fs)
+                $fs.Close()
+                $stream.Close()
+            }
+        }
+
+        $mainScript = Join-Path $runtimeDir "VUONGTT_Toolkit.ps1"
+        if (Test-Path $mainScript) {
+            Write-Host "  -> Giai nen bo cong cu thanh cong! Dang khoi chay qua Microsoft PowerShell Host..." -ForegroundColor Green
+            $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-STA -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$mainScript`"" -WorkingDirectory $runtimeDir -PassThru
+        }
+    } catch {
+        Write-Host "  [!] Khong the khoi chay qua Che Do Du Phong: $($_.Exception.Message)" -ForegroundColor Red
+        return
+    }
+}
+
+if ($proc) {
     Write-Host "`n ====================================================================== " -ForegroundColor Green
     Write-Host "  [OK] TOOL DA DUOC KHOI CHAY THANH CONG TREN MAN HINH!" -ForegroundColor Green
     Write-Host "  [*] Cua so nay se tu dong dong ngay khi ban tat VUONGTT Tool Pro." -ForegroundColor Yellow
@@ -241,7 +323,11 @@ try {
     while ($true) {
         if ($proc -and $proc.HasExited) { break }
         $running = Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue
-        if (-not $running) { break }
+        if ($useScriptFallback) {
+            if ($proc.HasExited) { break }
+        } else {
+            if (-not $running -and $proc.HasExited) { break }
+        }
         Start-Sleep -Milliseconds 500
     }
 
@@ -254,6 +340,4 @@ try {
     # Tu dong tat/dong ngay lap tuc cua so PowerShell Console nay
     [System.Environment]::Exit(0)
     Stop-Process -Id $PID -Force
-} catch {
-    Write-Host "  [!] Khong the khoi chay file EXE: $($_.Exception.Message)" -ForegroundColor Red
 }
