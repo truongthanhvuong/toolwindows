@@ -5,6 +5,105 @@
 #   Encoding: UTF-8 with BOM
 # ========================================================================================
 
+
+# ========================================================================================
+#   CAC HAM XU LY CHON O DIA SAO LUU DRIVER & WINDOWS HE THONG
+# ========================================================================================
+
+function Resolve-VUONGTTDriverBackupTarget {
+    <#
+    .SYNOPSIS
+        Kiem tra va chuan hoa duong dan thu muc sao luu Driver do nguoi dung chon.
+    #>
+    param(
+        [string]$SelectedPath,
+        [string]$SystemDrive = $env:SystemDrive
+    )
+    if ([string]::IsNullOrWhiteSpace($SelectedPath)) {
+        return [PSCustomObject]@{
+            Success       = $false
+            Reason        = "UserCancelled"
+            TargetPath    = $null
+            IsSystemDrive = $false
+            DriveRoot     = $null
+        }
+    }
+    $cleanPath = $SelectedPath.TrimEnd('\')
+    if ($cleanPath -match '^[A-Za-z]:$') {
+        $cleanPath = "$cleanPath\Backup_Drivers"
+    }
+    $rootDrive = [System.IO.Path]::GetPathRoot($cleanPath).TrimEnd('\')
+    $sysClean = if ($SystemDrive) { $SystemDrive.TrimEnd('\') } else { "C:" }
+    $isSys = ($rootDrive -ieq $sysClean)
+
+    return [PSCustomObject]@{
+        Success       = $true
+        Reason        = "OK"
+        TargetPath    = $cleanPath
+        IsSystemDrive = $isSys
+        DriveRoot     = $rootDrive
+    }
+}
+
+function Test-VUONGTTWindowsBackupTargetDrive {
+    <#
+    .SYNOPSIS
+        Kiem tra tinh hop le cua o dia dich khi sao luu toan bo Windows (WBAdmin System Image).
+    #>
+    param(
+        [string]$SelectedDriveOrPath,
+        [string]$FileSystem = "",
+        [string]$SystemDrive = $env:SystemDrive
+    )
+    if ([string]::IsNullOrWhiteSpace($SelectedDriveOrPath)) {
+        return [PSCustomObject]@{
+            Valid      = $false
+            Error      = "UserCancelled"
+            DriveRoot  = $null
+            FileSystem = $null
+        }
+    }
+    $driveRoot = [System.IO.Path]::GetPathRoot($SelectedDriveOrPath).TrimEnd('\')
+    $sysClean = if ($SystemDrive) { $SystemDrive.TrimEnd('\') } else { "C:" }
+    if ($driveRoot -ieq $sysClean) {
+        return [PSCustomObject]@{
+            Valid      = $false
+            Error      = "CannotBackupToSystemDrive"
+            DriveRoot  = $driveRoot
+            FileSystem = $FileSystem
+        }
+    }
+
+    $fs = if ($FileSystem) { $FileSystem.ToUpper() } else { "" }
+    if (-not $fs) {
+        try {
+            $di = [System.IO.DriveInfo]::GetDrives() | Where-Object { $_.Name.TrimEnd('\') -ieq $driveRoot } | Select-Object -First 1
+            if ($di -and $di.DriveFormat) { $fs = $di.DriveFormat.ToUpper() }
+        } catch {}
+        if (-not $fs) {
+            try {
+                $cim = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$driveRoot'" -ErrorAction SilentlyContinue
+                if ($cim -and $cim.FileSystem) { $fs = $cim.FileSystem.ToUpper() }
+            } catch {}
+        }
+    }
+    if ($fs -and $fs -ne "NTFS") {
+        return [PSCustomObject]@{
+            Valid      = $false
+            Error      = "RequireNTFS"
+            DriveRoot  = $driveRoot
+            FileSystem = $fs
+        }
+    }
+
+    return [PSCustomObject]@{
+        Valid      = $true
+        Error      = $null
+        DriveRoot  = $driveRoot
+        FileSystem = if ($fs) { $fs } else { "NTFS" }
+    }
+}
+
 function Get-VUONGTTCandidateBackupDrives {
     <#
     .SYNOPSIS
@@ -572,3 +671,181 @@ function Dismount-VUONGTTBackupImage {
     }
 }
 
+# ========================================================================================
+#   HAM THUC THI GIAO DIEN CHON O DIA CHO SAO LUU DRIVER VA TOAN BO WINDOWS
+# ========================================================================================
+
+function Invoke-VUONGTTBackupDriverWithFolderPicker {
+    <#
+    .SYNOPSIS
+        Mo hop thoai chon o dia/thu muc va tien hanh sao luu toan bo Driver phan cung.
+    #>
+    param(
+        [ScriptBlock]$LogAction,
+        [ScriptBlock]$StatusAction
+    )
+    Add-Type -AssemblyName System.Windows.Forms
+    $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+    $fbd.Description = "Chon o dia hoac thu muc (D:, E:, USB...) de sao luu toan bo Driver:"
+    $defaultPath = if ($script:SelectedDriverBackupDir) { $script:SelectedDriverBackupDir } else { Get-VUONGTTDefaultDriverBackupPath }
+    if ($defaultPath) {
+        $fbd.SelectedPath = [System.IO.Path]::GetPathRoot($defaultPath)
+    }
+    $fbd.ShowNewFolderButton = $true
+
+    if ($fbd.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
+        if ($LogAction) { &$LogAction "[HUY BO] Nguoi dung da huy chon vi tri sao luu Driver." }
+        return
+    }
+
+    $resTarget = Resolve-VUONGTTDriverBackupTarget -SelectedPath $fbd.SelectedPath
+    if (-not $resTarget.Success) {
+        if ($LogAction) { &$LogAction "[HUY BO] Thu muc da chon khong hop le." }
+        return
+    }
+
+    $destDir = $resTarget.TargetPath
+    $driveLetter = $resTarget.DriveRoot
+
+    if ($resTarget.IsSystemDrive) {
+        $warnSys = [System.Windows.MessageBox]::Show(
+            "CANH BAO O DIA HE THONG:`n`nBan dang chon luu Driver len o $env:SystemDrive (o dia cai Windows).`nKhi cai lai Windows hoac format o C:, toan bo ban sao luu Driver nay se BI MAT!`n`nBan co chac chan muon tiep tuc luu tren o $env:SystemDrive khong?",
+            "Canh Bao Vi Tri Luu",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Warning
+        )
+        if ($warnSys -ne [System.Windows.MessageBoxResult]::Yes) {
+            if ($LogAction) { &$LogAction "[HUY BO] Da huy sao luu do chon o he thong C:." }
+            return
+        }
+    }
+
+    $confirmMsg = "XAC NHAN BAT DAU SAO LUU TOAN BO DRIVER HE THONG`n`n" +
+                  "- Thu muc luu tru: $destDir`n" +
+                  "- O dia dich: $driveLetter`n`n" +
+                  "Bam 'Yes' de bat dau sao luu Driver ngay bay gio!"
+
+    $choice = [System.Windows.MessageBox]::Show($confirmMsg, "Xac Nhan Sao Luu Driver", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+    if ($choice -ne [System.Windows.MessageBoxResult]::Yes) {
+        if ($LogAction) { &$LogAction "[HUY BO] Nguoi dung da huy xac nhan sao luu Driver." }
+        return
+    }
+
+    $script:SelectedDriverBackupDir = $destDir
+    if ($LogAction) { &$LogAction "Dang quet va sao luu toan bo Driver he thong ra $destDir..." }
+    if (Get-Command "Invoke-VUONGTTDoEvents" -ErrorAction SilentlyContinue) { Invoke-VUONGTTDoEvents }
+
+    try {
+        if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+        Export-WindowsDriver -Online -Destination $destDir -ErrorAction Stop | Out-Null
+        $count = (Get-ChildItem -Path $destDir -Directory -ErrorAction SilentlyContinue).Count
+        $msgSuccess = "[THANH CONG] Da sao luu $count goi Driver phan cung vao thu muc:`n$destDir`nThoi gian: $(Get-Date -Format 'HH:mm:ss dd/MM/yyyy')`n`nDriver da duoc bao toan an toan tren o dia du lieu, khong bi mat khi cai lai Windows C:."
+        if ($LogAction) { &$LogAction $msgSuccess }
+        if ($StatusAction) { &$StatusAction "- [OK] Da sao luu xong $count goi Driver vao $destDir" }
+        [System.Windows.MessageBox]::Show("Da sao luu thanh cong $count goi Driver vao:`n$destDir`n`nBan sao luu da an toan tren o du lieu, co the dung de khoi phuc bat cu luc nao!", "Sao Luu Driver Hoan Tat", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+    } catch {
+        $errText = "[LOI SAO LUU DRIVER] $($_.Exception.Message)"
+        if ($LogAction) { &$LogAction $errText }
+        [System.Windows.MessageBox]::Show("Khong the sao luu Driver:`n$($_.Exception.Message)", "Loi Sao Luu", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
+    }
+}
+
+function Invoke-VUONGTTBackupWindowsWithDrivePicker {
+    <#
+    .SYNOPSIS
+        Mo hop thoai chon o dia tren may va tien hanh sao luu toan bo Windows (WBAdmin System Image).
+    #>
+    param(
+        [ScriptBlock]$LogAction,
+        [ScriptBlock]$StatusAction,
+        $TargetDriveComboBox = $null
+    )
+    Add-Type -AssemblyName System.Windows.Forms
+    $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+    $fbd.Description = "CHON O DIA DICH DE LUU BAN SAO LUU TOAN BO WINDOWS (SYSTEM IMAGE):`n(Chon o dia D:, E:, USB hoac o cung ngoai khac o C:)"
+    $fbd.ShowNewFolderButton = $false
+
+    # Goi y o dia mac dinh: uu tien lay tu ComboBox hoac o candidate dau tien
+    $defaultDrive = "D:\"
+    if ($TargetDriveComboBox -and $script:candidateBackupDrives -and $script:candidateBackupDrives.Count -gt 0) {
+        $selIdx = $TargetDriveComboBox.SelectedIndex
+        if ($selIdx -ge 0 -and $selIdx -lt $script:candidateBackupDrives.Count) {
+            $defaultDrive = "$($script:candidateBackupDrives[$selIdx].DeviceID)\"
+        }
+    }
+    if (Test-Path $defaultDrive) { $fbd.SelectedPath = $defaultDrive }
+
+    if ($fbd.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
+        if ($LogAction) { &$LogAction "[HUY BO] Nguoi dung da huy chon o dia sao luu Windows." }
+        return
+    }
+
+    $checkDrive = Test-VUONGTTWindowsBackupTargetDrive -SelectedDriveOrPath $fbd.SelectedPath
+    if (-not $checkDrive.Valid) {
+        if ($checkDrive.Error -eq "CannotBackupToSystemDrive") {
+            [System.Windows.MessageBox]::Show("Khong the chon o $env:SystemDrive lam noi luu tru System Image cho chinh no theo quy dinh cua Windows.`nVui long chon o dia khac (D:, E:, USB...)!", "Canh Bao O Dia", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+        } elseif ($checkDrive.Error -eq "RequireNTFS") {
+            [System.Windows.MessageBox]::Show("O dia $($checkDrive.DriveRoot) dang co dinh dang $($checkDrive.FileSystem).`n`nCong cu Windows System Image (WBAdmin) yeu cau o dia dich phai duoc dinh dang NTFS.`nVui long format o $($checkDrive.DriveRoot) sang NTFS hoac chon o dia khac.", "Can Dinh Dang NTFS", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+        }
+        return
+    }
+
+    $targetDrive = $checkDrive.DriveRoot
+
+    # Dong bo vao danh sach ComboBox va ung vien sao luu
+    if ($TargetDriveComboBox) {
+        $foundCandidate = $script:candidateBackupDrives | Where-Object { $_.DeviceID -eq $targetDrive }
+        if (-not $foundCandidate) {
+            $customObj = [PSCustomObject]@{
+                DeviceID    = $targetDrive
+                VolumeName  = "Tuy Chon"
+                FileSystem  = "NTFS"
+                FreeGB      = 999
+                TotalGB     = 999
+                IsNTFS      = $true
+                IsFit       = $true
+                DisplayText = "[$targetDrive] O dia tuy chon do nguoi dung chi dinh"
+            }
+            $script:candidateBackupDrives += $customObj
+            $TargetDriveComboBox.Items.Add($customObj.DisplayText) | Out-Null
+        }
+        for ($idx = 0; $idx -lt $script:candidateBackupDrives.Count; $idx++) {
+            if ($script:candidateBackupDrives[$idx].DeviceID -eq $targetDrive) {
+                $TargetDriveComboBox.SelectedIndex = $idx
+                break
+            }
+        }
+    }
+
+    # Lay thong so dung luong thuc te
+    $freeGB = 0; $totalGB = 0
+    try {
+        $dInfo = [System.IO.DriveInfo]::GetDrives() | Where-Object { $_.Name.TrimEnd('\') -ieq $targetDrive } | Select-Object -First 1
+        if ($dInfo) {
+            $freeGB = [math]::Round($dInfo.AvailableFreeSpace / 1GB, 1)
+            $totalGB = [math]::Round($dInfo.TotalSize / 1GB, 1)
+        }
+    } catch {}
+
+    $sysDrive = $env:SystemDrive
+    $confirmMsg = "BAN CO MUON BAT DAU SAO LUU NGUYEN TRANG TOAN BO WINDOWS & TEP TIN?`n`n" +
+                  "- Noi luu tru ban sao luu: $targetDrive\WindowsImageBackup`n" +
+                  "- Trang thai o dich: Trong $freeGB GB / Tong $totalGB GB (NTFS)`n" +
+                  "- Nguon sao luu: O $sysDrive (He dieu hanh Windows, Boot EFI, Toan bo du lieu nguoi dung)`n`n" +
+                  "Qua trinh sao luu se chay trong cua so dong lenh truc quan thoi gian thuc (10 - 25 phut).`n`n" +
+                  "Bam 'Yes' de bat dau sao luu ngay bay gio!"
+
+    $confirm = [System.Windows.MessageBox]::Show($confirmMsg, "Xac Nhan Sao Luu Toan Bo Windows", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+    if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) {
+        if ($LogAction) { &$LogAction "[HUY BO] Nguoi dung da huy xac nhan sao luu." }
+        return
+    }
+
+    if ($LogAction) { &$LogAction "[BAT DAU] Dang khoi chay tien trinh sao luu toan bo Windows sang o $targetDrive..." }
+    $res = Start-VUONGTTFullWindowsBackup -TargetDrive $targetDrive -OnProgress {
+        param($m)
+        if ($LogAction) { &$LogAction "$m" }
+    }
+    if ($LogAction) { &$LogAction "$($res.Message)" }
+    if ($StatusAction) { &$StatusAction "- [OK] Da khoi chay sao luu Windows sang $targetDrive" }
+}
