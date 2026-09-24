@@ -641,7 +641,9 @@ namespace VUONGTT
         Get-ItemProperty $p -ErrorAction SilentlyContinue | ForEach-Object {
             $name = $_.DisplayName
             $uninst = $_.UninstallString
-            if ($name -and ($name.Trim().Length -gt 0) -and (-not $_.SystemComponent) -and (-not $_.ParentKeyName)) {
+            $isTeamsApp = ($name -and ($name -like "*Teams*" -or $_.PSChildName -like "*Teams*"))
+            $isAllowed = (-not $_.ParentKeyName) -and ((-not $_.SystemComponent) -or $isTeamsApp)
+            if ($name -and ($name.Trim().Length -gt 0) -and $isAllowed) {
                 # Loại trừ các bản vá Windows Hotfix / Security Update nhỏ
                 if ($name -like "KB[0-9]*" -or $name -like "Security Update for *" -or $name -like "Update for Windows *") {
                     return
@@ -680,6 +682,123 @@ namespace VUONGTT
             }
         }
     }
+
+    # Quét thêm Modern Store / AppX Packages (New Microsoft Teams, Skype, WhatsApp, ...)
+    try {
+        $appxList = Get-AppxPackage -ErrorAction SilentlyContinue | Where-Object {
+            (-not $_.IsFramework) -and ($_.NonRemovable -ne $true)
+        }
+
+        $appxFriendlyNames = @{
+            "MSTeams"                               = "Microsoft Teams (work or school)"
+            "MicrosoftTeams"                        = "Microsoft Teams"
+            "Microsoft.Teams"                       = "Microsoft Teams"
+            "Microsoft.SkypeApp"                    = "Skype"
+            "Microsoft.OneDriveSync"                = "Microsoft OneDrive"
+            "Microsoft.Todos"                       = "Microsoft To Do"
+            "Microsoft.Whiteboard"                  = "Microsoft Whiteboard"
+            "Microsoft.Paint"                       = "Paint (Store)"
+            "Microsoft.MSPaint"                     = "Paint 3D / Paint"
+            "Microsoft.WindowsTerminal"             = "Windows Terminal"
+            "Microsoft.PowerToys"                   = "Microsoft PowerToys"
+            "SpotifyAB.SpotifyMusic"                = "Spotify"
+            "5319275A.WhatsAppDesktop"              = "WhatsApp Desktop"
+            "TelegramMessengerLLP.TelegramDesktop"  = "Telegram Desktop"
+        }
+
+        foreach ($pkg in $appxList) {
+            $pName = $pkg.Name
+            $fullName = $pkg.PackageFullName
+
+            # Bỏ qua các runtime / framework ngầm của Windows
+            if ($pName -like "Microsoft.VCLibs*" -or $pName -like "Microsoft.NET.Native*" -or
+                $pName -like "Microsoft.UI.Xaml*" -or $pName -like "*LanguageExperiencePack*" -or
+                $pName -like "*BrokerPlugin*" -or $pName -like "windows.*" -or
+                $pName -like "Microsoft.Windows.ContentDeliveryManager*") {
+                continue
+            }
+
+            $displayName = ""
+            if ($appxFriendlyNames.ContainsKey($pName)) {
+                $displayName = $appxFriendlyNames[$pName]
+            } elseif ($pName -match 'Teams') {
+                $displayName = "Microsoft Teams"
+            } else {
+                $displayName = $pName -replace '^Microsoft\.', '' -replace '^[0-9A-Za-z]+\.', ''
+                $displayName = $displayName -replace '([a-z])([A-Z])', '$1 $2'
+            }
+
+            if (-not $displayName) { $displayName = $pName }
+
+            $keyUnique = "$displayName|$($pkg.Version)"
+            if (-not $seen.Contains($keyUnique)) {
+                $null = $seen.Add($keyUnique)
+
+                $appItem = [VUONGTT.InstalledAppItem]::new()
+                $appItem.IsChecked            = $false
+                $appItem.DisplayName          = $displayName.Trim()
+                $appItem.DisplayVersion       = if ($pkg.Version) { "$($pkg.Version)".Trim() } else { "--" }
+                $appItem.Publisher            = if ($pkg.PublisherId -eq "8wekyb3d8bbwe") { "Microsoft Corporation" } else { "Microsoft Store / UWP" }
+                $appItem.InstallDate          = "--"
+                $appItem.SizeMb               = 120
+                $appItem.SizeFormatted        = "120 MB"
+                $appItem.InstallLocation      = if ($pkg.InstallLocation) { $pkg.InstallLocation } else { "" }
+                $appItem.UninstallString      = "AppX:$fullName"
+                $appItem.QuietUninstallString = "AppX:$fullName"
+                $appItem.RegistryPath         = "AppX:\$fullName"
+                $appItem.RegistryKeyName      = $fullName
+                $appItem.DisplayIcon          = ""
+
+                $apps.Add($appItem)
+            }
+        }
+    } catch {}
+
+    # Thăm dò dự phòng chuyên biệt cho Microsoft Teams (Disk Executables & Provisioned Packages)
+    try {
+        $hasTeamsInList = ($apps | Where-Object { $_.DisplayName -match 'Teams' -and $_.DisplayName -notmatch 'Add-in' }).Count -gt 0
+        if (-not $hasTeamsInList) {
+            # 1. Kiểm tra Teams Squirrel Classic trên đĩa
+            $teamsExe = "$env:LOCALAPPDATA\Microsoft\Teams\current\Teams.exe"
+            $teamsUpdateExe = "$env:LOCALAPPDATA\Microsoft\Teams\Update.exe"
+            if (Test-Path $teamsExe -ErrorAction SilentlyContinue) {
+                $ver = try { (Get-Item $teamsExe -ErrorAction SilentlyContinue).VersionInfo.ProductVersion } catch { "--" }
+                $appItem = [VUONGTT.InstalledAppItem]::new()
+                $appItem.IsChecked            = $false
+                $appItem.DisplayName          = "Microsoft Teams (Classic)"
+                $appItem.DisplayVersion       = if ($ver) { $ver } else { "--" }
+                $appItem.Publisher            = "Microsoft Corporation"
+                $appItem.InstallDate          = "--"
+                $appItem.SizeMb               = 180
+                $appItem.SizeFormatted        = "180 MB"
+                $appItem.InstallLocation      = "$env:LOCALAPPDATA\Microsoft\Teams"
+                $appItem.UninstallString      = if (Test-Path $teamsUpdateExe) { "`"$teamsUpdateExe`" --uninstall -s" } else { "cmd.exe /c rmdir /s /q `"$env:LOCALAPPDATA\Microsoft\Teams`"" }
+                $appItem.QuietUninstallString = $appItem.UninstallString
+                $appItem.RegistryPath         = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Teams"
+                $appItem.RegistryKeyName      = "Teams"
+                $apps.Add($appItem)
+            }
+
+            # 2. Kiểm tra New Teams MSIX trong WindowsApps
+            $newTeamsExe = Get-ChildItem -Path "$env:ProgramFiles\WindowsApps" -Filter "ms-teams.exe" -Recurse -Depth 2 -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($newTeamsExe) {
+                $appItem = [VUONGTT.InstalledAppItem]::new()
+                $appItem.IsChecked            = $false
+                $appItem.DisplayName          = "Microsoft Teams (work or school)"
+                $appItem.DisplayVersion       = try { (Get-Item $newTeamsExe.FullName -ErrorAction SilentlyContinue).VersionInfo.ProductVersion } catch { "--" }
+                $appItem.Publisher            = "Microsoft Corporation"
+                $appItem.InstallDate          = "--"
+                $appItem.SizeMb               = 150
+                $appItem.SizeFormatted        = "150 MB"
+                $appItem.InstallLocation      = Split-Path $newTeamsExe.FullName -Parent
+                $appItem.UninstallString      = "AppX:MSTeams"
+                $appItem.QuietUninstallString = "AppX:MSTeams"
+                $appItem.RegistryPath         = "AppX:\MSTeams"
+                $appItem.RegistryKeyName      = "MSTeams"
+                $apps.Add($appItem)
+            }
+        }
+    } catch {}
 
     $sorted = $apps | Sort-Object DisplayName
 
@@ -1037,8 +1156,41 @@ function Invoke-VUONGTTUninstallSoftware {
     } else {
         Write-LogMsg "• Lệnh gỡ bỏ phát hiện: $uninstCmd"
         try {
-            # 3.1: Xử lý Windows Installer (MSI GUID)
-            if ($uninstCmd -match '\{[0-9A-Fa-f\-]{36}\}') {
+            # 3.0: Xử lý Modern Store / AppX / MSIX Package (New Microsoft Teams, Skype, ...)
+            if ($uninstCmd -like "AppX:*") {
+                $pkgFullName = $uninstCmd -replace '^AppX:', ''
+                Write-LogMsg "• Phát hiện gói ứng dụng Modern Store/AppX: $pkgFullName"
+                Write-LogMsg "• Đang thực hiện gỡ bỏ gói AppX qua PowerShell..."
+                try {
+                    Remove-AppxPackage -Package $pkgFullName -ErrorAction Stop
+                    Write-LogMsg "✅ [THÀNH CÔNG] Đã gỡ bỏ AppX Package: $pkgFullName"
+                } catch {
+                    Write-LogMsg "⚠️ Gỡ AppX User: $($_.Exception.Message)"
+                }
+
+                # Nếu có quyền Administrator, gỡ cho AllUsers
+                try {
+                    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+                    if ($isAdmin) {
+                        Remove-AppxPackage -Package $pkgFullName -AllUsers -ErrorAction SilentlyContinue
+                        Write-LogMsg "✅ [ADMIN] Đã gỡ bỏ AppX Package trên phạm vi All Users."
+                    }
+                } catch {}
+
+                # Nếu là Microsoft Teams, dọn dẹp thêm Provisioned Package
+                if ($pkgFullName -like "*Teams*" -or $appName -like "*Teams*") {
+                    try {
+                        Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object {
+                            $_.DisplayName -match 'Teams' -or $_.PackageName -like "*Teams*"
+                        } | ForEach-Object {
+                            Write-LogMsg "• Đang gỡ bỏ AppX Provisioned Package: $($_.DisplayName)..."
+                            Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null
+                            Write-LogMsg "✅ [ĐÃ XÓA PROVISIONED] $($_.DisplayName)"
+                        }
+                    } catch {}
+                }
+            } elseif ($uninstCmd -match '\{[0-9A-Fa-f\-]{36}\}') {
+                # 3.1: Xử lý Windows Installer (MSI GUID)
                 $guid = $matches[0]
                 Write-LogMsg "• Phát hiện gói MSI Installer ($guid). Đang gọi MsiExec..."
                 $msiArgs = if ($CleanDeepScan) { "/X$guid /qn /norestart" } else { "/X$guid /passive /norestart" }
@@ -1118,6 +1270,53 @@ function Invoke-VUONGTTUninstallSoftware {
                     } else {
                         Write-LogMsg "⚠️ [ĐÃ ĐỔI TÊN/ĐÁNH DẤU XÓA] File bị khóa trong: $dir"
                     }
+                }
+            }
+        }
+
+        # TẦNG 4.1: XỬ LÝ DỌN DẸP TẬN GỐC CHUYÊN BIỆT CHO MICROSOFT TEAMS (WIN32 + APPX/MSIX)
+        if ($appName -like "*Teams*" -or $uninstCmd -like "*Teams*") {
+            Write-LogMsg "• Kích hoạt quy trình dọn dẹp chuyên sâu tận gốc Microsoft Teams..."
+            
+            # Dập tắt các tiến trình Teams còn sót
+            Get-Process -Name "teams", "ms-teams", "msteams" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            
+            # Gỡ bỏ toàn bộ gói AppX Teams còn lưu
+            Get-AppxPackage -Name "*Teams*" -ErrorAction SilentlyContinue | ForEach-Object {
+                Remove-AppxPackage -Package $_.PackageFullName -ErrorAction SilentlyContinue
+                Write-LogMsg "✅ [ĐÃ XÓA GÓI APPX TEAMS] $($_.PackageFullName)"
+            }
+
+            # Xóa các thư mục rác chuyên biệt của Teams
+            $teamsTrashDirs = @(
+                "$env:LOCALAPPDATA\Microsoft\Teams",
+                "$env:LOCALAPPDATA\Microsoft\TeamsMeetingAddin",
+                "$env:LOCALAPPDATA\Microsoft\TeamsPresenceAddin",
+                "$env:APPDATA\Microsoft\Teams",
+                "$env:ProgramData\Microsoft\Teams",
+                "C:\Program Files (x86)\Teams Installer"
+            )
+            Get-ChildItem -Path "$env:LOCALAPPDATA\Packages" -Directory -Filter "*Teams*" -ErrorAction SilentlyContinue | ForEach-Object {
+                $teamsTrashDirs += $_.FullName
+            }
+
+            foreach ($td in $teamsTrashDirs) {
+                if (Test-Path $td -ErrorAction SilentlyContinue) {
+                    Remove-VUONGTTDirectoryThorough -Path $td | Out-Null
+                    Write-LogMsg "✅ [ĐÃ XÓA THƯ MỤC TEAMS] $td"
+                }
+            }
+
+            # Xóa autostart Run key của Teams
+            $teamsRunKeys = @(
+                "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+                "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
+            )
+            foreach ($rk in $teamsRunKeys) {
+                if (Test-Path $rk -ErrorAction SilentlyContinue) {
+                    Remove-ItemProperty -Path $rk -Name "com.squirrel.Teams.Teams" -Force -ErrorAction SilentlyContinue
+                    Remove-ItemProperty -Path $rk -Name "Teams" -Force -ErrorAction SilentlyContinue
+                    Remove-ItemProperty -Path $rk -Name "MSTeams" -Force -ErrorAction SilentlyContinue
                 }
             }
         }
