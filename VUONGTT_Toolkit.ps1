@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.22
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.23
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -5724,7 +5724,7 @@ $fixCheckBoxNames = @(
     "chk_FixSystemFiles", "chk_FixWindowsUpdate", "chk_FixNetwork", "chk_FixPrintSpooler",
     "chk_FixExplorer", "chk_FixSearch", "chk_FixStore", "chk_FixAudio", "chk_FixNtp",
     "chk_FixTempFiles", "chk_FixWinGet", "chk_FixFirewall", "chk_FixHostsFile", "chk_FixAutoLogon",
-    "chk_FixClassicContextMenu", "chk_FixDefender", "chk_FixWinInstaller", "chk_FixIconCache",
+    "chk_FixClassicContextMenu", "chk_FixDefender", "chk_FixDefenderExclusion", "chk_FixWinInstaller", "chk_FixIconCache",
     "chk_FixBluetooth", "chk_FixLanDiscovery", "chk_FixSleepPower", "chk_FixWmiRepo",
     "chk_FixSketchUpOpenGL", "chk_FixHighPerfGpu"
 )
@@ -5910,6 +5910,23 @@ if ($btnRunSelectedFixes) {
                 & $onLiveLog "$res`r`n"
             }
 
+            # 16b. Windows Defender Exclusion (Chong xoa Tool)
+            $chkDefExcl = Get-Control "chk_FixDefenderExclusion"
+            if ($chkDefExcl -and $chkDefExcl.IsChecked) {
+                & $onLiveLog "-> [16b/25] Dang dang ky ngoai le Windows Defender (Chong xoa Tool)..."
+                try {
+                    $installDir = Join-Path $env:ProgramData "VUONGTT_Toolkit"
+                    if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir -Force | Out-Null }
+                    $currentDir = $PSScriptRoot
+                    if (-not $currentDir) { $currentDir = (Get-Location).Path }
+                    Add-MpPreference -ExclusionPath $installDir -ErrorAction SilentlyContinue
+                    Add-MpPreference -ExclusionPath $currentDir -ErrorAction SilentlyContinue
+                    Add-MpPreference -ExclusionProcess "VUONGTT_Toolkit.exe" -ErrorAction SilentlyContinue
+                    & $onLiveLog "[OK] Da them ngoai le an toan cho VUONGTT Toolkit trong Windows Defender!"
+                } catch {
+                    & $onLiveLog "[!] Khong the them ngoai le Windows Defender hoac Defender da bi tat."
+                }
+            }
             # 17. Windows Installer (.msi)
             $chkMsi = Get-Control "chk_FixWinInstaller"
             if ($chkMsi -and $chkMsi.IsChecked) {

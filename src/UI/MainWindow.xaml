@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.22"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.23"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -330,7 +330,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.22 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.23 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -2485,6 +2485,7 @@
                                             <CheckBox x:Name="chk_FixAutoLogon" Content="🔑 Cấu Hình AutoLogon" Margin="0,3,4,3"/>
                                             <CheckBox x:Name="chk_FixClassicContextMenu" Content="🖱️ Menu Chuột Phải Win 10" Margin="0,3,4,3"/>
                                             <CheckBox x:Name="chk_FixDefender" Content="🛡️ Khôi Phục Windows Defender" Margin="0,3,4,3"/>
+                                            <CheckBox x:Name="chk_FixDefenderExclusion" Content="🛡️ Ngoại Lệ Defender (Chống Xóa Tool)" Margin="0,3,4,3" ToolTip="Tự động thêm thư mục cài đặt VUONGTT Toolkit và các file thực thi kỹ thuật viên vào ngoại lệ của Windows Defender để chống bị xóa nhầm"/>
                                             <CheckBox x:Name="chk_FixWinInstaller" Content="📦 Sửa Lỗi Windows Installer (.msi)" Margin="0,3,4,3"/>
                                             <CheckBox x:Name="chk_FixIconCache" Content="🖼️ Sửa Lỗi Mất Icon / Icon Trắng" Margin="0,3,4,3"/>
                                             <CheckBox x:Name="chk_FixBluetooth" Content="📶 Sửa Lỗi Dịch Vụ Bluetooth" Margin="0,3,4,3"/>
@@ -3555,7 +3556,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.22" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.23" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

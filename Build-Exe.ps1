@@ -182,6 +182,35 @@ Write-Host ">>> Bat dau dong goi VUONGTT_Toolkit.exe..." -ForegroundColor Yellow
 $proc = Start-Process -FilePath $cscPath -ArgumentList $argsList -NoNewWindow -Wait -PassThru
 
 if ($proc.ExitCode -eq 0 -and (Test-Path $outputExe)) {
+    # Tu dong ky chu ky so Authenticode chong Windows Defender & SmartScreen nhan nham (Anti-False-Positive)
+    try {
+        Write-Host ">>> Dang kiem tra va ap dung chu ky so Authenticode..." -ForegroundColor Cyan
+        $certSubject = "CN=VUONGTT Software Digital Authority 2026, O=VUONGTT Software, C=VN"
+        $cert = Get-ChildItem -Path Cert:\LocalMachine\My, Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue | Where-Object { $_.Subject -like "*VUONGTT*" } | Select-Object -First 1
+        if (-not $cert) {
+            Write-Host " -> Dang tao chung chi so Code Signing: VUONGTT Software Digital Authority 2026" -ForegroundColor Gray
+            try {
+                $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $certSubject -CertStoreLocation Cert:\CurrentUser\My -NotAfter (Get-Date).AddYears(5) -ErrorAction Stop
+            } catch {
+                $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $certSubject -CertStoreLocation Cert:\LocalMachine\My -NotAfter (Get-Date).AddYears(5) -ErrorAction SilentlyContinue
+            }
+            try {
+                $pubStore = New-Object System.Security.Cryptography.X509Certificates.X509Store("TrustedPublisher", "CurrentUser")
+                $pubStore.Open("ReadWrite")
+                $pubStore.Add($cert)
+                $pubStore.Close()
+            } catch {}
+        }
+
+        if ($cert) {
+            Write-Host " -> Dang ky so Authenticode cho $outputExe..." -ForegroundColor Gray
+            $sigRes = Set-AuthenticodeSignature -FilePath $outputExe -Certificate $cert -HashAlgorithm SHA256 -ErrorAction SilentlyContinue
+            Write-Host " -> Ket qua ky so: $($sigRes.Status) - $($sigRes.SignerCertificate.Subject)" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host " [!] Bo qua ky so: $($_.Exception.Message)" -ForegroundColor Gray
+    }
+
     $size = (Get-Item $outputExe).Length / 1KB
     Write-Host "==========================================================" -ForegroundColor Green
     Write-Host "[THANH CONG] Da tao thanh cong file: VUONGTT_Toolkit.exe" -ForegroundColor Green

