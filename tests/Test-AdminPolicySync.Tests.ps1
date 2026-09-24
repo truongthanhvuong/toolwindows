@@ -32,16 +32,16 @@ $mainContent = [System.IO.File]::ReadAllText($mainScriptPath, [System.Text.Encod
 # ------------------------------------------------------------------------------
 # 1. KIỂM THỬ ĐỒNG BỘ TRỰC TIẾP VÀO GIT REPO KHI LƯU CẤU HÌNH ADMIN
 # ------------------------------------------------------------------------------
-$hasDevRepoSync = ($licContent -match 'Save-VUONGTTFeaturePolicies' -and ($licContent -match 'Sync-VUONGTTLocalGitFile' -or $licContent -match 'E:\\toolwindows\\src\\Config'))
-Assert-Condition -TestName "1.1: Save-VUONGTTFeaturePolicies phải đồng bộ trực tiếp vào Git workspace file" `
-    -Condition ($hasDevRepoSync) `
-    -Message "Chưa có đường dẫn đồng bộ trực tiếp vào git workspace"
+$hasDevRepoSync = [bool]($licContent -match 'Save-VUONGTTFeaturePolicies' -and ($licContent -match 'Sync-VUONGTTLocalGitFile' -or $licContent -match 'E:\\toolwindows\\src\\Config'))
+Assert-Condition -TestName "1.1: Save-VUONGTTFeaturePolicies phải đồng bộ trực tiếp vào Git workspace file" -Condition $hasDevRepoSync -Message "Chưa có đường dẫn đồng bộ trực tiếp vào git workspace"
 
 # Kiểm tra đồng bộ License Vault vào Git Workspace
-$hasVaultGitSync = ($licContent -match 'Save-VUONGTTLicenseVault' -and ($licContent -match 'E:\\toolwindows\\src\\Config\\licenses_vault\.json' -or $licContent -match 'licenses_vault\.json'))
-Assert-Condition -TestName "1.2: Save-VUONGTTLicenseVault phải đồng bộ trực tiếp vào Git workspace licenses_vault.json" `
-    -Condition ($hasVaultGitSync) `
-    -Message "Chưa có cơ chế đồng bộ kho License Key vào git workspace"
+$hasVaultGitSync = [bool]($licContent -match 'Save-VUONGTTLicenseVault' -and ($licContent -match 'E:\\toolwindows\\src\\Config\\licenses_vault\.json' -or $licContent -match 'licenses_vault\.json'))
+Assert-Condition -TestName "1.2: Save-VUONGTTLicenseVault phải đồng bộ trực tiếp vào Git workspace licenses_vault.json" -Condition $hasVaultGitSync -Message "Chưa có cơ chế đồng bộ kho License Key vào git workspace"
+
+# Kiểm tra cơ chế tự động commit vào local git repository
+$hasLocalGitCommit = [bool]($licContent -match 'git\.exe.+commit' -or $licContent -match 'commit -m')
+Assert-Condition -TestName "1.3: Sync-VUONGTTLocalGitFile phải tự động commit vào git history cục bộ" -Condition $hasLocalGitCommit -Message "Chưa có lệnh git commit tự động trong Sync-VUONGTTLocalGitFile"
 
 # ------------------------------------------------------------------------------
 # 2. KIEM THU CO CHE BAO VE CHONG HA CAP BOI CLOUD (TIER PRESERVATION)

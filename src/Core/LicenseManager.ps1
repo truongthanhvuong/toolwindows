@@ -253,7 +253,7 @@ function Sync-VUONGTTLocalGitFile {
         } catch {}
     }
 
-    # Tự động cập nhật Git tracking (git add) tại Dev Repo để không bao giờ bị mất
+    # Tự động cập nhật Git tracking (git add & commit) tại Dev Repo để lưu trữ vĩnh viễn trong Git
     foreach ($rDir in ($gitRepoDirs | Select-Object -Unique)) {
         try {
             $psi = New-Object System.Diagnostics.ProcessStartInfo
@@ -264,6 +264,15 @@ function Sync-VUONGTTLocalGitFile {
             $psi.UseShellExecute = $false
             $proc = [System.Diagnostics.Process]::Start($psi)
             if ($proc.WaitForExit(3000)) { $proc.Dispose() } else { try { $proc.Kill() } catch {} }
+
+            $psiCommit = New-Object System.Diagnostics.ProcessStartInfo
+            $psiCommit.FileName = "git.exe"
+            $psiCommit.Arguments = "commit -m `"sync(admin): auto-save $fileName from Admin Portal`""
+            $psiCommit.WorkingDirectory = $rDir
+            $psiCommit.CreateNoWindow = $true
+            $psiCommit.UseShellExecute = $false
+            $procC = [System.Diagnostics.Process]::Start($psiCommit)
+            if ($procC.WaitForExit(3000)) { $procC.Dispose() } else { try { $procC.Kill() } catch {} }
         } catch {}
     }
 }
