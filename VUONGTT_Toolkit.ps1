@@ -3012,6 +3012,19 @@ if ($btnOpenAppFolder) {
         }
 
         $folder = $selected.InstallLocation
+        # Nếu là AppX và thư mục WindowsApps bị bảo vệ, ưu tiên mở thư mục dữ liệu AppData tương ứng
+        if ($selected.RegistryPath -like "AppX:*" -or -not (Test-Path $folder -ErrorAction SilentlyContinue)) {
+            $pkgName = $selected.RegistryKeyName
+            $dataDir = Get-ChildItem -Path "$env:LOCALAPPDATA\Packages" -Directory -Filter "*$($selected.DisplayName)*" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $dataDir -and $selected.DisplayName -match 'Teams') {
+                $dataDir = Get-ChildItem -Path "$env:LOCALAPPDATA\Packages" -Directory -Filter "*Teams*" -ErrorAction SilentlyContinue | Select-Object -First 1
+                if (-not $dataDir -and (Test-Path "$env:LOCALAPPDATA\Microsoft\Teams")) {
+                    $folder = "$env:LOCALAPPDATA\Microsoft\Teams"
+                }
+            }
+            if ($dataDir) { $folder = $dataDir.FullName }
+        }
+
         if ($folder -and (Test-Path $folder -ErrorAction SilentlyContinue)) {
             Start-Process "explorer.exe" -ArgumentList "`"$folder`""
         } else {
@@ -3030,7 +3043,15 @@ if ($btnOpenAppRegistry) {
         }
 
         try {
-            $cleanReg = $selected.RegistryPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', ''
+            $regPath = $selected.RegistryPath
+            if ($regPath -like "AppX:*") {
+                $pkgName = $selected.RegistryKeyName
+                $regPath = "HKLM:\SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\PackageRepository\Packages\$pkgName"
+                if (-not (Test-Path $regPath -ErrorAction SilentlyContinue)) {
+                    $regPath = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages\$pkgName"
+                }
+            }
+            $cleanReg = $regPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', '' -replace '^HKLM:', 'HKEY_LOCAL_MACHINE' -replace '^HKCU:', 'HKEY_CURRENT_USER'
             Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit" -Name "LastKey" -Value $cleanReg -ErrorAction SilentlyContinue
             Start-Process "regedit.exe"
         } catch {
