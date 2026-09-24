@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.27
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.28
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -357,7 +357,7 @@ function Switch-Tab {
     }
 
     # -------------------------------------------------------------
-    # GATEKEEPER 2: PRO FEATURE ACCESS CONTROL
+    # GATEKEEPER 2: FEATURE ACCESS CONTROL (FREE vs PRO vs ADMIN)
     # -------------------------------------------------------------
     if ($TargetTag -ne "AdminPortal") {
         # NẾU ADMIN ĐANG ĐĂNG NHẬP ($global:isAdminAuthenticated = $true):
@@ -365,7 +365,15 @@ function Switch-Tab {
         if (-not $global:isAdminAuthenticated) {
             $policies = Get-VUONGTTFeaturePolicies
             $policy = $policies | Where-Object { $_.Id -eq $TargetTag }
-            if ($policy -and $policy.Tier -eq "PRO") {
+            if ($policy -and $policy.Tier -eq "ADMIN") {
+                $featureName = if ($pageTitlesVI.ContainsKey($TargetTag)) { $pageTitlesVI[$TargetTag].Title } else { $TargetTag }
+                Show-VUONGTTAdminLoginModal -TargetNextTab $TargetTag
+                if ($lblAdminLoginNotice) {
+                    $lblAdminLoginNotice.Text = "Chức năng '$featureName' chỉ dành riêng cho Quản Trị Viên (Admin)! Vui lòng nhập mật khẩu Quản Trị Viên để tiếp tục."
+                }
+                return
+            }
+            elseif ($policy -and $policy.Tier -eq "PRO") {
                 $isPro = (Test-VUONGTTProLicense).IsPro
                 if (-not $isPro) {
                     $featureName = if ($pageTitlesVI.ContainsKey($TargetTag)) { $pageTitlesVI[$TargetTag].Title } else { $TargetTag }
@@ -7143,7 +7151,7 @@ function Render-VUONGTTAdminPolicies {
         $grid.Children.Add($spLeft) | Out-Null
 
         $cmb = New-Object System.Windows.Controls.ComboBox
-        $cmb.Width = 95
+        $cmb.Width = 105
         $cmb.Height = 28
         $cmb.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
         
@@ -7157,9 +7165,19 @@ function Render-VUONGTTAdminPolicies {
         $itemPro.FontWeight = [System.Windows.FontWeights]::Bold
         $itemPro.Foreground = $conv.ConvertFromString("#B45309")
 
+        $itemAdmin = New-Object System.Windows.Controls.ComboBoxItem
+        $itemAdmin.Content = "👑 ADMIN"
+        $itemAdmin.FontWeight = [System.Windows.FontWeights]::Bold
+        $itemAdmin.Foreground = $conv.ConvertFromString("#BE123C")
+
         $cmb.Items.Add($itemFree) | Out-Null
         $cmb.Items.Add($itemPro) | Out-Null
-        $cmb.SelectedIndex = if ($f.Tier -eq "PRO") { 1 } else { 0 }
+        $cmb.Items.Add($itemAdmin) | Out-Null
+        $cmb.SelectedIndex = switch ($f.Tier) {
+            "ADMIN" { 2 }
+            "PRO"   { 1 }
+            default { 0 }
+        }
 
         $script:adminPolicyCombos[$f.Id] = $cmb
         [System.Windows.Controls.Grid]::SetColumn($cmb, 1)
@@ -7382,7 +7400,11 @@ if ($btnSavePolicies) {
         $policies = Get-VUONGTTFeaturePolicies
         foreach ($fid in $script:adminPolicyCombos.Keys) {
             $cmb = $script:adminPolicyCombos[$fid]
-            $tier = if ($cmb.SelectedIndex -eq 1) { "PRO" } else { "FREE" }
+            $tier = switch ($cmb.SelectedIndex) {
+                1 { "PRO" }
+                2 { "ADMIN" }
+                default { "FREE" }
+            }
             foreach ($p in $policies) {
                 if ($p.Id -eq $fid) { $p.Tier = $tier }
             }

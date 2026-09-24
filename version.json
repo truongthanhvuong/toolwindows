@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.909.27",
+    "version":  "20.5.909.28",
     "releaseDate":  "24/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Bổ sung phân quyền ADMIN (Tier ADMIN) trong Admin Portal và Gatekeeper: Cho phép Quản trị viên phân quyền các tính năng nhạy cảm chỉ dành riêng cho Admin (bên cạnh Free và Pro); Khi người dùng thường hoặc máy đã kích hoạt Pro truy cập tính năng Admin, hệ thống tự động chặn lại và hiển thị hộp thoại yêu cầu xác thực mật khẩu Quản trị viên, đảm bảo an toàn tuyệt đối.",
                       "Khắc phục triệt để lỗi khi bấm Yes cấp quyền Administrator nhưng bị báo từ chối: Nâng cấp cơ chế UAC Elevation sử dụng chuỗi mã hóa an toàn Base64 (-EncodedCommand) ngăn ngừa hoàn toàn lỗi vỡ command-line syntax do quote lồng nhau, tự động đóng cửa sổ PowerShell cũ ngay khi tiến trình Administrator được kích hoạt thành công, đồng thời phân biệt chính xác mã lỗi hủy thao tác (1223) và lỗi hệ thống để hướng dẫn người dùng giải pháp thay thế.",
                       "Khắc phục triệt để lỗi cửa sổ PowerShell không tự động tắt khi đóng tool: Tự động vô hiệu hóa QuickEdit mode trên Windows Console ngăn chặn hoàn toàn việc click chuột vô tình làm đóng băng (freeze) tiến trình, nâng cấp vòng lặp giám sát đa tầng tự động phát hiện khi cửa sổ tool đóng, dọn sạch 100% file rác tạm và đóng ngay lập tức cửa sổ console bằng lệnh thoát dứt khoát.",
                       "Nâng cấp tính năng tùy chọn ổ đĩa sao lưu Driver và Windows System Image: Khi bấm \u0027Sao Lưu Driver\u0027 (btnBackupAllDrivers), hệ thống trực tiếp hiển thị hộp thoại chọn ổ đĩa/thư mục đích trước khi sao lưu (tự động chuẩn hóa ổ đĩa, cảnh báo nếu chọn ổ hệ thống C:, ngăn chặn mất dữ liệu và dừng lại an toàn khi bấm Cancel); Tương tự, khi bấm \u0027Sao Lưu Toàn Bộ Windows\u0027 (btnBackupFullWindowsSystem), hệ thống trực tiếp mở hộp thoại cho phép tùy chọn ổ đĩa trên máy (D:, E:, USB...), tự động kiểm tra định dạng NTFS, tính toán dung lượng trống thực tế và đồng bộ giao diện trước khi khởi chạy WBAdmin.",

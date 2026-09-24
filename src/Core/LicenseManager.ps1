@@ -171,7 +171,7 @@ function Set-VUONGTTAdminPassword {
 }
 
 # -------------------------------------------------------------------------
-# 3. FEATURE POLICY ENGINE (FREE VS PRO TIERS)
+# 3. FEATURE POLICY ENGINE (FREE, PRO, ADMIN TIERS)
 # -------------------------------------------------------------------------
 function Get-VUONGTTDefaultFeatures {
     return @(
@@ -239,7 +239,7 @@ function Save-VUONGTTFeaturePolicies {
 function Set-VUONGTTFeaturePolicy {
     param(
         [string]$FeatureId,
-        [string]$Tier, # "FREE" or "PRO"
+        [string]$Tier, # "FREE", "PRO", or "ADMIN"
         [switch]$SkipCloudPush
     )
     Init-VUONGTTFeaturePolicies
