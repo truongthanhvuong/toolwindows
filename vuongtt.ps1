@@ -1,25 +1,11 @@
-﻿<#
-================================================================================
-  VUONGTT TOOL PRO 2026 - OFFICIAL 1-CLICK CLOUD BOOTSTRAPPER
-  Chay 1 dong lenh duy nhat trong PowerShell tuong tu Chris Titus WinUtil:
-  irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/vuongtt.ps1 | iex
-================================================================================
-#>
-
-[CmdletBinding()]
-param(
-    [switch]$ForceDownload = $false,
-    [switch]$NoRun = $false
-)
-
-$Host.UI.RawUI.WindowTitle = "⚡ VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
+$Host.UI.RawUI.WindowTitle = "VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13 -bor [System.Net.SecurityProtocolType]::Tls
 
 Clear-Host
 Write-Host ""
 Write-Host " ====================================================================== " -ForegroundColor DarkYellow
-Write-Host "       ⚡ VUONGTT TOOL PRO 2026 - HE THONG KY THUAT VIEN DA NANG       " -ForegroundColor Yellow -BackgroundColor Black
+Write-Host "       VUONGTT TOOL PRO 2026 - HE THONG KY THUAT VIEN DA NANG       " -ForegroundColor Yellow -BackgroundColor Black
 Write-Host " ====================================================================== " -ForegroundColor DarkYellow
 Write-Host "   Phat trien boi: Truong Thanh Vuong                                   " -ForegroundColor Gray
 Write-Host "   Kho luu tru:    https://github.com/truongthanhvuong/toolwindows      " -ForegroundColor DarkCyan
@@ -31,7 +17,7 @@ if (-not $isAdmin) {
     Write-Host "`n [*] Dang yeu cau quyen quan tri vien (Run as Administrator)..." -ForegroundColor Yellow
     Write-Host " [*] Vui long bam 'YES' tren hop thoai UAC de cap phep hoat dong.`n" -ForegroundColor Cyan
     
-    $psBootstrapCmd = "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/vuongtt.ps1 | iex }"
+    $psBootstrapCmd = "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongtool | iex }"
     try {
         Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"$psBootstrapCmd`"" -Verb RunAs
         Exit
@@ -136,18 +122,14 @@ try {
     Write-Host "  [!] Khong the tao shortcut: $($_.Exception.Message)" -ForegroundColor Gray
 }
 
-# 5. KHOI CHAY ỨNG DỤNG
+# 5. KHOI CHAY UNG DUNG
 Write-Host "`n [4/4] Khoi dong VUONGTT Tool Pro 2026..." -ForegroundColor Cyan
-if (-not $NoRun) {
-    try {
-        Start-Process -FilePath $exePath -WorkingDirectory $installDir
-        Write-Host "`n ====================================================================== " -ForegroundColor Green
-        Write-Host "  ✔ KHOI CHAY THANH CONG! VUONGTT TOOL PRO 2026 DA DUOC MO TREN MAN HINH" -ForegroundColor Green
-        Write-Host "  ✔ Lan sau ban chi can click dup vao bieu tuong ngoai Desktop." -ForegroundColor Yellow
-        Write-Host " ====================================================================== `n" -ForegroundColor Green
-    } catch {
-        Write-Host "  [!] Khong the khoi chay file EXE: $($_.Exception.Message)" -ForegroundColor Red
-    }
-} else {
-    Write-Host "  -> Hoan tat cai dat (Che do NoRun)." -ForegroundColor Green
+try {
+    Start-Process -FilePath $exePath -WorkingDirectory $installDir
+    Write-Host "`n ====================================================================== " -ForegroundColor Green
+    Write-Host "  [OK] KHOI CHAY THANH CONG! VUONGTT TOOL PRO 2026 DA DUOC MO TREN MAN HINH" -ForegroundColor Green
+    Write-Host "  [OK] Lan sau ban chi can click dup vao bieu tuong ngoai Desktop." -ForegroundColor Yellow
+    Write-Host " ====================================================================== `n" -ForegroundColor Green
+} catch {
+    Write-Host "  [!] Khong the khoi chay file EXE: $($_.Exception.Message)" -ForegroundColor Red
 }
