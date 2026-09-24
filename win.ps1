@@ -247,6 +247,9 @@ try {
 # 4. KHOI CHAY UNG DUNG (CHE DO LIVE - TU DONG XOA SACH KHI DONG)
 Write-Host "`n [3/3] Khoi dong VUONGTT Tool Pro 2026 (Che do Live - Tu dong don sach khi dong)..." -ForegroundColor Cyan
 
+# Thiet lap bien moi truong Live Mode de toan bo ung dung chay doc lap, khong bao gio hien popup cap nhat
+$env:VUONGTT_LIVE_MODE = "1"
+
 $proc = $null
 $useScriptFallback = $false
 
@@ -320,8 +323,8 @@ if ($useScriptFallback -or (-not $proc)) {
 
         $mainScript = Join-Path $runtimeDir "VUONGTT_Toolkit.ps1"
         if (Test-Path $mainScript) {
-            Write-Host "  -> Giai nen bo cong cu thanh cong! Dang khoi chay qua Microsoft PowerShell Host..." -ForegroundColor Green
-            $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-STA -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$mainScript`"" -WorkingDirectory $runtimeDir -PassThru
+            Write-Host "  -> Giai nen bo cong cu thanh cong! Dang khoi chay qua Microsoft PowerShell Host (Che do Live doc lap)..." -ForegroundColor Green
+            $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-STA -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$mainScript`" -Live" -WorkingDirectory $runtimeDir -PassThru
         }
     } catch {
         Write-Host "  [!] Khong the khoi chay qua Che Do Du Phong: $($_.Exception.Message)" -ForegroundColor Red

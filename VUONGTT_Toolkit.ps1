@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.31
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.32
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -100,6 +100,15 @@ if (-not $ScriptDir -or -not (Test-Path (Join-Path $ScriptDir "src\UI\MainWindow
 }
 $global:ScriptDir  = $ScriptDir
 $script:appRootDir = $ScriptDir
+
+# Nhận diện chế độ chạy Live Mode độc lập (irm tinyurl.com/vuongwin | iex)
+$script:isLiveMode = ($args -contains "--live") -or ($args -contains "-Live") -or ($args -contains "--ephemeral") -or ($env:VUONGTT_LIVE_MODE -eq "1")
+$global:VUONGTT_LIVE_MODE = $script:isLiveMode
+if ($script:isLiveMode) {
+    try {
+        Get-ChildItem -Path $env:TEMP -Filter "VUONGTT_Toolkit_v*_READY.exe" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+    } catch {}
+}
 
 # Import Core Modules
 $corePath = Join-Path $ScriptDir "src\Core"
@@ -7941,6 +7950,13 @@ $window.Add_ContentRendered({
     $startupCheckTimer.Add_Tick({
         $startupCheckTimer.Stop()
 
+        # Khi chạy ở chế độ Live Mode (irm tinyurl.com/vuongwin | iex):
+        # Chạy hoàn toàn độc lập, luôn sử dụng bản mới nhất vừa tải từ Cloud và không bao giờ hiện popup cập nhật
+        if ($script:isLiveMode) {
+            $txtFooterStatus.Text = "• [LIVE] Đang chạy VUONGTT Tool Pro 2026 phiên bản Cloud mới nhất độc lập."
+            return
+        }
+
         $hasNet = [System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()
         if (-not $hasNet) {
             $txtFooterStatus.Text = "• [OFFLINE] VUONGTT Tool Pro 2026 sẵn sàng (Chế độ ngoại tuyến - Không có kết nối mạng)."
@@ -7954,7 +7970,7 @@ $window.Add_ContentRendered({
 
     $script:TriggerPreDownloadAndNotify = {
         param($uInfo)
-        if (-not $uInfo -or -not $uInfo.HasUpdate) { return }
+        if ($script:isLiveMode -or -not $uInfo -or -not $uInfo.HasUpdate) { return }
 
         $stagedPath = "$env:TEMP\VUONGTT_Toolkit_v$($uInfo.LatestVersion)_READY.exe"
         $isAlreadyReady = $false
