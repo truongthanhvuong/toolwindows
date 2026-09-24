@@ -1,4 +1,4 @@
-$Host.UI.RawUI.WindowTitle = "VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
+﻿$Host.UI.RawUI.WindowTitle = "VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13 -bor [System.Net.SecurityProtocolType]::Tls
 
@@ -110,13 +110,21 @@ try {
     }
 } catch {}
 
-# 4. KHOI CHAY UNG DUNG
-Write-Host "`n [3/3] Khoi dong VUONGTT Tool Pro 2026..." -ForegroundColor Cyan
+# 4. KHOI CHAY UNG DUNG (CHE DO LIVE - TU DONG XOA SACH KHI DONG)
+Write-Host "`n [3/3] Khoi dong VUONGTT Tool Pro 2026 (Che do Live - Tu dong don sach khi dong)..." -ForegroundColor Cyan
 try {
-    Start-Process -FilePath $exePath -WorkingDirectory $installDir
+    $proc = Start-Process -FilePath $exePath -ArgumentList "--live" -WorkingDirectory $installDir -PassThru
     Write-Host "`n ====================================================================== " -ForegroundColor Green
-    Write-Host "  [OK] KHOI CHAY THANH CONG! VUONGTT TOOL PRO 2026 DA DUOC MO TREN MAN HINH" -ForegroundColor Green
+    Write-Host "  [OK] TOOL DA DUOC KHOI CHAY THANH CONG TREN MAN HINH!" -ForegroundColor Green
+    Write-Host "  [*] Khi ban dong cua so tool, he thong se tu dong don dep sach se file." -ForegroundColor Yellow
     Write-Host " ====================================================================== `n" -ForegroundColor Green
+
+    $proc.WaitForExit()
+
+    Start-Sleep -Milliseconds 600
+    Remove-Item -Path $exePath -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $installDir "runtime") -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "`n [OK] Da tu dong don dep sach se file khoi may tinh!`n" -ForegroundColor Green
 } catch {
     Write-Host "  [!] Khong the khoi chay file EXE: $($_.Exception.Message)" -ForegroundColor Red
 }

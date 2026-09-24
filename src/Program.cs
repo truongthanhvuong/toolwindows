@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.23")]
-[assembly: AssemblyFileVersion("20.5.909.23")]
+[assembly: AssemblyVersion("20.5.909.24")]
+[assembly: AssemblyFileVersion("20.5.909.24")]
 
 namespace VUONGTT
 {
@@ -115,6 +115,7 @@ namespace VUONGTT
         static void Main(string[] args)
         {
             bool isSmokeTest = false;
+            bool isLiveMode = false;
             if (args != null && args.Length > 0)
             {
                 for (int i = 0; i < args.Length; i++)
@@ -122,7 +123,12 @@ namespace VUONGTT
                     if (string.Equals(args[i], "--smoke-test", StringComparison.OrdinalIgnoreCase))
                     {
                         isSmokeTest = true;
-                        break;
+                    }
+                    else if (string.Equals(args[i], "--live", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(args[i], "--ephemeral", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(args[i], "--clean-on-exit", StringComparison.OrdinalIgnoreCase))
+                    {
+                        isLiveMode = true;
                     }
                 }
             }
@@ -175,6 +181,8 @@ namespace VUONGTT
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 string scriptPath = Path.Combine(baseDir, "VUONGTT_Toolkit.ps1");
 
+                string extractedRuntimeDir = "";
+
                 // Nếu chạy file .exe độc lập (không có source cạnh bên), giải nén tài nguyên vào thư mục an toàn ProgramData
                 if (!File.Exists(scriptPath))
                 {
@@ -191,6 +199,7 @@ namespace VUONGTT
                         secureDir = Path.Combine(Path.GetTempPath(), "VUONGTT_Toolkit_Runtime");
                         if (!Directory.Exists(secureDir)) Directory.CreateDirectory(secureDir);
                     }
+                    extractedRuntimeDir = secureDir;
                     string tempDir = secureDir;
 
                     Assembly asm = Assembly.GetExecutingAssembly();
@@ -335,6 +344,10 @@ namespace VUONGTT
                             {
                                 proc.Kill();
                             }
+                            if (isLiveMode)
+                            {
+                                CleanupOnExit(currentExe, extractedRuntimeDir);
+                            }
                         }
                         catch { }
                     };
@@ -363,6 +376,10 @@ namespace VUONGTT
                         else
                         {
                             // Tiến trình PowerShell đã chủ động kết thúc hợp lệ (ví dụ: chuyển giao cho kịch bản Self-Update)
+                            if (isLiveMode)
+                            {
+                                CleanupOnExit(currentExe, extractedRuntimeDir);
+                            }
                             Environment.Exit(0);
                             return;
                         }
@@ -372,6 +389,10 @@ namespace VUONGTT
                         // Ứng dụng đã vượt qua giai đoạn khởi động an toàn và đang chạy bình thường.
                         // Tiếp tục giữ tiến trình C# đồng hành cho đến khi người dùng chủ động đóng tool.
                         proc.WaitForExit();
+                        if (isLiveMode)
+                        {
+                            CleanupOnExit(currentExe, extractedRuntimeDir);
+                        }
                     }
                 }
             }
@@ -647,6 +668,28 @@ namespace VUONGTT
                 });
                 tDef.IsBackground = true;
                 tDef.Start();
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Tự động xóa sạch file EXE và thư mục runtime khi thoát tool (Chế độ Live / Ephemeral Mode)
+        /// </summary>
+        private static void CleanupOnExit(string exePath, string runtimeDir)
+        {
+            try
+            {
+                string safeExe = exePath.Replace("\"", "\\\"");
+                string safeDir = string.IsNullOrEmpty(runtimeDir) ? "" : runtimeDir.Replace("\"", "\\\"");
+                string cmd = string.Format(
+                    "/c timeout /t 1 /nobreak >nul & del /f /q \"{0}\" >nul 2>&1 & if exist \"{1}\" rd /s /q \"{1}\" >nul 2>&1",
+                    safeExe, safeDir);
+
+                ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", cmd);
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = true;
+                Process.Start(psi);
             }
             catch { }
         }
