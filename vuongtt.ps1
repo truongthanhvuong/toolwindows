@@ -80,57 +80,140 @@ try {
     Write-Host "  -> Khong the goi Add-MpPreference (Co the Defender da bi tat hoac dung AV khac)" -ForegroundColor Gray
 }
 
-# 3. KIEM TRA VA TAI BAN MOI NHAT TU GITHUB / CDN
+# 3. KIEM TRA VA TAI BAN MOI NHAT TU GITHUB / CDN (CHONG STALE CACHE & CHECK VERSION)
 Write-Host "`n [2/3] Dang kiem tra va dong bo ban phat hanh moi nhat tu Cloud..." -ForegroundColor Cyan
 
-$urls = @(
-    "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
-    "https://cdn.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/VUONGTT_Toolkit.exe"
-)
-
-$downloadSuccess = $false
-$tempDownload = Join-Path $installDir "VUONGTT_Toolkit_dl.exe"
-if (Test-Path $tempDownload) { Remove-Item $tempDownload -Force -ErrorAction SilentlyContinue }
-
-foreach ($url in $urls) {
+# 3.1. Kiem tra phien ban hien co tren may (neu co)
+$localVersion = $null
+if (Test-Path $exePath) {
     try {
-        Write-Host "  -> Dang ket noi: $url" -ForegroundColor Gray
-        $wc = New-Object System.Net.WebClient
-        $wc.Headers.Add("User-Agent", "VUONGTT-Cloud-Bootstrapper/2026")
-        $wc.DownloadFile($url, $tempDownload)
-
-        if ((Test-Path $tempDownload) -and ((Get-Item $tempDownload).Length -gt 500000)) {
-            $downloadSuccess = $true
-            break
+        $localInfo = (Get-Item $exePath).VersionInfo
+        if ($localInfo -and $localInfo.ProductVersion) {
+            $localVersion = $localInfo.ProductVersion.Trim()
+            Write-Host "  -> Phien ban hien co tren may: v$localVersion" -ForegroundColor Gray
         }
-    } catch {
-        Write-Host "  [!] Ket noi link nay khong thanh cong, dang thu nguon du phong..." -ForegroundColor DarkYellow
-    }
+    } catch {}
 }
 
-if ($downloadSuccess) {
-    try {
-        # Unblock file truoc khi di chuyen (Xoa co Mark-of-the-Web Zone.Identifier)
-        Unblock-File -Path $tempDownload -ErrorAction SilentlyContinue
+# 3.2. Truy van Commit SHA va version.json moi nhat tu Cloud de chong stale cache
+$latestSha = ""
+$latestVer = ""
 
-        # Neu tien trinh cu dang chay, dung lai de ghi de
-        Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Milliseconds 400
-
-        Move-Item -Path $tempDownload -Destination $exePath -Force
-        Unblock-File -Path $exePath -ErrorAction SilentlyContinue
-
-        $sizeMb = [math]::Round(((Get-Item $exePath).Length / 1MB), 2)
-        Write-Host "  -> Tai ve thanh cong! Dung luong: $sizeMb MB" -ForegroundColor Green
-    } catch {
-        Write-Host "  [!] Khong the ghi de file EXE: $($_.Exception.Message)" -ForegroundColor Red
+try {
+    $wcApi = New-Object System.Net.WebClient
+    $wcApi.Headers.Add("User-Agent", "VUONGTT-Cloud-Bootstrapper/2026")
+    $jsonCommits = $wcApi.DownloadString("https://api.github.com/repos/truongthanhvuong/toolwindows/commits/main")
+    $objCommits = ConvertFrom-Json $jsonCommits
+    if ($objCommits -and $objCommits.sha) {
+        $latestSha = $objCommits.sha
     }
-} else {
-    if (Test-Path $exePath) {
-        Write-Host "  -> Khong the tai ban moi nhung da co ban cai dat san truoc do. Su dung ban hien co." -ForegroundColor Yellow
+} catch {}
+
+# Lay thong tin version.json tu Cloud (Uu tien dung duong dan SHA de 0s cache)
+$tStamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$verUrls = @()
+if ($latestSha) {
+    $verUrls += "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/$latestSha/version.json"
+}
+$verUrls += "https://cdn.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/version.json?t=$tStamp"
+$verUrls += "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$tStamp"
+
+foreach ($vUrl in $verUrls) {
+    try {
+        $wcVer = New-Object System.Net.WebClient
+        $wcVer.Encoding = [System.Text.Encoding]::UTF8
+        $wcVer.Headers.Add("User-Agent", "VUONGTT-Cloud-Bootstrapper/2026")
+        $vContent = $wcVer.DownloadString($vUrl)
+        $vObj = ConvertFrom-Json $vContent
+        if ($vObj -and $vObj.version) {
+            $latestVer = $vObj.version.Trim()
+            Write-Host "  -> Phien ban moi nhat tren Cloud: v$latestVer" -ForegroundColor Green
+            break
+        }
+    } catch {}
+}
+
+# 3.3. Xac dinh co can tai ban moi khong
+# Neu da co file va version khop voi ban moi nhat tren Cloud -> Bo qua buoc tai de tiet kiem thoi gian
+$needDownload = $true
+if ($localVersion -and $latestVer -and ($localVersion -eq $latestVer) -and ((Get-Item $exePath).Length -gt 1000000)) {
+    Write-Host "  [OK] May tinh da co san phien ban moi nhat v$localVersion! San sang khoi chay." -ForegroundColor Green
+    $needDownload = $false
+} elseif ($localVersion -and $latestVer -and ($localVersion -ne $latestVer)) {
+    Write-Host "  [*] Phat hien phien ban moi (v$localVersion -> v$latestVer), dang tien hanh cap nhat..." -ForegroundColor Yellow
+}
+
+if ($needDownload) {
+    # 3.4. Xay dung danh sach URL tai (Uu tien duong dan Commit SHA de chong 100% cache cu cua Fastly)
+    $urls = @()
+    if ($latestSha) {
+        $urls += "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/$latestSha/VUONGTT_Toolkit.exe"
+    }
+    $urls += "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe?t=$tStamp"
+    $urls += "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe"
+
+    $downloadSuccess = $false
+    $tempDownload = Join-Path $installDir "VUONGTT_Toolkit_dl.exe"
+    if (Test-Path $tempDownload) { Remove-Item $tempDownload -Force -ErrorAction SilentlyContinue }
+
+    foreach ($url in $urls) {
+        try {
+            Write-Host "  -> Dang ket noi may chu: $url" -ForegroundColor Gray
+            $wc = New-Object System.Net.WebClient
+            $wc.Headers.Add("User-Agent", "VUONGTT-Cloud-Bootstrapper/2026")
+            $wc.DownloadFile($url, $tempDownload)
+
+            if ((Test-Path $tempDownload) -and ((Get-Item $tempDownload).Length -gt 1000000)) {
+                $downloadSuccess = $true
+                break
+            }
+        } catch {
+            Write-Host "  [!] Ket noi link nay khong thanh cong, dang thu nguon du phong..." -ForegroundColor DarkYellow
+        }
+    }
+
+    if ($downloadSuccess) {
+        try {
+            Unblock-File -Path $tempDownload -ErrorAction SilentlyContinue
+
+            # Neu tien trinh cu dang chay, dung lai va cho giai phong file lock triet de
+            $stopAttempts = 10
+            while ((Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue) -and ($stopAttempts -gt 0)) {
+                Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 300
+                $stopAttempts--
+            }
+
+            # Thu ghi de file voi vong lap thu lai neu con bi lock boi he thong
+            $overwriteOk = $false
+            for ($attempt = 1; $attempt -le 5; $attempt++) {
+                try {
+                    Move-Item -Path $tempDownload -Destination $exePath -Force
+                    $overwriteOk = $true
+                    break
+                } catch {
+                    Start-Sleep -Milliseconds 400
+                }
+            }
+
+            if ($overwriteOk) {
+                Unblock-File -Path $exePath -ErrorAction SilentlyContinue
+                $sizeMb = [math]::Round(((Get-Item $exePath).Length / 1MB), 2)
+                $finalVer = (Get-Item $exePath).VersionInfo.ProductVersion
+                Write-Host "  -> Cap nhat thanh cong ban moi nhat v$finalVer ($sizeMb MB)!" -ForegroundColor Green
+            } else {
+                Write-Host "  [!] Khong the ghi de file do he thong dang khoa file, dang dung file hien co..." -ForegroundColor Red
+            }
+        } catch {
+            Write-Host "  [!] Khong the ghi de file EXE: $($_.Exception.Message)" -ForegroundColor Red
+        }
     } else {
-        Write-Host "  [LOI NGUY HIEM] Khong the tai duoc VUONGTT_Toolkit.exe tu may chu Cloud! Vui long kiem tra mang." -ForegroundColor Red
-        return
+        if (Test-Path $exePath) {
+            Write-Host "  [!] Khong the tai ban moi tu Cloud do loi mang. May tinh se tam thoi su dung ban san co tren may." -ForegroundColor Yellow
+        } else {
+            Write-Host "  [LOI NGUY HIEM] Khong the tai duoc VUONGTT_Toolkit.exe tu may chu Cloud! Vui long kiem tra ket noi mang." -ForegroundColor Red
+            return
+        }
     }
 }
 

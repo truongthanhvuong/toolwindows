@@ -1,8 +1,9 @@
 ﻿{
-    "version":  "20.5.909.28",
+    "version":  "20.5.909.29",
     "releaseDate":  "24/09/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
+                      "Khắc phục triệt để lỗi khi chạy qua irm tinyurl.com/vuongwin | iex trên máy đã có sẵn tool bị mở bản cũ: Tích hợp động cơ kiểm tra và đối soát phiên bản đa tầng (ProductVersion check), tự động truy vấn Commit SHA mới nhất từ GitHub API để tải file trực tiếp theo đường dẫn commit SHA giúp triệt tiêu 100% hiện tượng stale cache của CDN Fastly, loại bỏ link jsDelivr bị chặn 403, bổ sung vòng lặp giải phóng tiến trình và file lock an toàn chống lỗi ghi đè, đảm bảo máy khách luôn khởi chạy chính xác phiên bản mới nhất.",
                       "Bổ sung phân quyền ADMIN (Tier ADMIN) trong Admin Portal và Gatekeeper: Cho phép Quản trị viên phân quyền các tính năng nhạy cảm chỉ dành riêng cho Admin (bên cạnh Free và Pro); Khi người dùng thường hoặc máy đã kích hoạt Pro truy cập tính năng Admin, hệ thống tự động chặn lại và hiển thị hộp thoại yêu cầu xác thực mật khẩu Quản trị viên, đảm bảo an toàn tuyệt đối.",
                       "Khắc phục triệt để lỗi khi bấm Yes cấp quyền Administrator nhưng bị báo từ chối: Nâng cấp cơ chế UAC Elevation sử dụng chuỗi mã hóa an toàn Base64 (-EncodedCommand) ngăn ngừa hoàn toàn lỗi vỡ command-line syntax do quote lồng nhau, tự động đóng cửa sổ PowerShell cũ ngay khi tiến trình Administrator được kích hoạt thành công, đồng thời phân biệt chính xác mã lỗi hủy thao tác (1223) và lỗi hệ thống để hướng dẫn người dùng giải pháp thay thế.",
                       "Khắc phục triệt để lỗi cửa sổ PowerShell không tự động tắt khi đóng tool: Tự động vô hiệu hóa QuickEdit mode trên Windows Console ngăn chặn hoàn toàn việc click chuột vô tình làm đóng băng (freeze) tiến trình, nâng cấp vòng lặp giám sát đa tầng tự động phát hiện khi cửa sổ tool đóng, dọn sạch 100% file rác tạm và đóng ngay lập tức cửa sổ console bằng lệnh thoát dứt khoát.",
