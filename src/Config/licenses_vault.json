@@ -28,5 +28,25 @@
         "UsedHWID":  "HWID-4475-C9AC-57FC-0FFF",
         "UsedPCName":  "VUONGTT",
         "ActivatedDate":  "19/09/2026 11:36:46"
+    },
+    {
+        "Key":  "VUONG-LQPK-3X96-WDXR-WVUG",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "23/09/2026 23:32:09",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
+    },
+    {
+        "Key":  "VUONG-LCQC-R7G7-8PP8-U35V",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "30 Ngày",
+        "CreatedDate":  "23/09/2026 23:32:19",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
     }
 ]
