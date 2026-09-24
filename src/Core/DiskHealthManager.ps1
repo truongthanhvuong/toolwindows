@@ -521,6 +521,116 @@ function Get-VUONGTTSystemBootDiagnostics {
     }
 }
 
+function Get-VUONGTTRealisticHealthScore {
+    [CmdletBinding()]
+    param(
+        [double]$PowerOnHours = 0,
+        [double]$PowerOnCount = 0,
+        [int]$Wear = -1,
+        [double]$SizeGB = 0,
+        [double]$TotalHostWritesGB = 0,
+        [double]$UnsafeShutdowns = 0,
+        [uint64]$Realloc = 0,
+        [uint64]$Pending = 0,
+        [uint64]$Uncorrectable = 0,
+        [string]$HealthStatus = "Healthy",
+        [string]$OperationalStatus = "OK"
+    )
+
+    # 1. HAO MÒN FLASH NAND CƠ BẢN (NATIVE WEAR HOẶC ƯỚC TÍNH TBW)
+    $nandWear = 0
+    if ($Wear -ne $null -and $Wear -gt 0) {
+        $nandWear = $Wear
+    } elseif ($TotalHostWritesGB -gt 0 -and $SizeGB -gt 0) {
+        # Định mức TBW ước lượng theo dung lượng SSD: 512GB ~ 300 TBW (307,200 GB)
+        $ratedTBW_GB = [math]::Max(100, $SizeGB * 600)
+        $nandWear = [math]::Min(95, [int][math]::Round(($TotalHostWritesGB / $ratedTBW_GB) * 100))
+    }
+
+    # 2. SUY HAO TỰ NHIÊN THEO THỜI GIAN VẬN HÀNH (POWER-ON AGING - HARD DISK SENTINEL STANDARD)
+    # Tuổi thọ thiết kế trung bình của linh kiện điện tử SSD/HDD là 25,000 - 30,000 giờ chạy.
+    # Sau mỗi 2,400 giờ chạy (~100 ngày chạy liên tục 24/7), linh kiện chịu mức hao mòn tự nhiên khoảng 1%.
+    $agingPenalty = 0
+    if ($PowerOnHours -ge 1000) {
+        $agingPenalty = [math]::Min(15, [int][math]::Floor($PowerOnHours / 2400))
+    }
+
+    # 3. TÁC ĐỘNG CỦA CHU KỲ BẬT/TẮT NGUỒN (POWER CYCLES)
+    # Số lần bật tắt gây ra sốc xung nhiệt và dòng điện khởi động.
+    # >= 1,000 lần bật: trừ 1%
+    $cyclePenalty = 0
+    if ($PowerOnCount -ge 1000) {
+        $cyclePenalty = [math]::Min(3, [int][math]::Floor($PowerOnCount / 1000))
+    }
+
+    # 4. TÁC ĐỘNG CỦA TẮT NGUỒN ĐỘT NGỘT (UNSAFE SHUTDOWNS / CÚP ĐIỆN)
+    # Tắt nóng làm giảm độ tin cậy của tụ controller và khối NAND. Cứ mỗi 50 lần tắt nóng trừ 1%.
+    $unsafePenalty = 0
+    if ($UnsafeShutdowns -ge 50) {
+        $unsafePenalty = [math]::Min(5, [int][math]::Floor($UnsafeShutdowns / 50))
+    }
+
+    # Tổng mức suy hao tự nhiên do vận hành
+    $totalOperationalDeduction = $nandWear + $agingPenalty + $cyclePenalty + $unsafePenalty
+    $healthPct = [math]::Max(5, 100 - $totalOperationalDeduction)
+
+    # 5. ĐÁNH GIÁ SECTOR LỖI VẬT LÝ S.M.A.R.T (NẾU CÓ BAD SECTOR SẼ TRỪ NẶNG)
+    $hasPhysicalError = $false
+    if ($Pending -gt 0 -or $Realloc -ge 10 -or $Uncorrectable -gt 0) {
+        $hasPhysicalError = $true
+        $penalty = ($Realloc * 1.5) + ($Pending * 5) + ($Uncorrectable * 6)
+        $healthPct = [math]::Max(5, [math]::Min(90, [int](100 - $penalty)))
+    } elseif ($Realloc -gt 0) {
+        $hasPhysicalError = $true
+        $healthPct = [math]::Max(60, [math]::Min(95, [int](100 - ($Realloc * 2))))
+    }
+
+    # Phân loại mức sức khỏe
+    $healthLevel = "GOOD"
+    $healthText  = "TỐT (GOOD)"
+    $healthColor = "#047857" # Green
+    $healthDesc  = ""
+
+    if ($healthPct -le 40 -or $Pending -ge 10 -or $Realloc -ge 50 -or $HealthStatus -eq "Unhealthy" -or $OperationalStatus -like "*Error*") {
+        $healthLevel = "BAD"
+        $healthText  = "NGUY HIỂM (BAD)"
+        $healthColor = "#BE123C"
+        $healthDesc  = "NGUY CƠ HỎNG Ổ CỨNG: Phát hiện $Realloc sector tái phân bổ, $Pending sector lỗi chờ xử lý. Cần sao lưu dữ liệu khẩn cấp và thay thế ổ đĩa ngay!"
+    } elseif ($healthPct -lt 80 -or $hasPhysicalError -or $HealthStatus -ne "Healthy" -or $OperationalStatus -ne "OK") {
+        $healthLevel = "CAUTION"
+        $healthText  = "CẢNH BÁO SỨC KHỎE (CAUTION)"
+        $healthColor = "#B45309"
+        $healthDesc  = "CẢNH BÁO SỨC KHỎE: Phát hiện dấu hiệu suy giảm hiệu năng hoặc sector lỗi ($Realloc reallocated, $Pending pending). Khuyến nghị sao lưu dữ liệu định kỳ."
+    } else {
+        # Mức GOOD
+        $healthLevel = "GOOD"
+        $healthText  = "TỐT (GOOD)"
+        $healthColor = "#047857"
+        if ($totalOperationalDeduction -gt 0) {
+            $pohDays = [math]::Round($PowerOnHours / 24, 0)
+            $pohFormatted = [string]::Format('{0:N0}', $PowerOnHours)
+            $pocFormatted = [string]::Format('{0:N0}', $PowerOnCount)
+            $healthDesc = "Ổ cứng hoạt động tốt, đạt chuẩn an toàn S.M.A.R.T, không có bad sector. Mức tiêu hao tự nhiên theo $pohFormatted giờ vận hành (~$pohDays ngày) và $pocFormatted chu kỳ bật/tắt là ~$totalOperationalDeduction%."
+        } else {
+            $healthDesc = "Ổ cứng hoạt động hoàn hảo như mới, đạt chuẩn S.M.A.R.T, không có lỗi bad sector."
+        }
+    }
+
+    return [PSCustomObject]@{
+        HealthPct          = $healthPct
+        HealthLevel        = $healthLevel
+        HealthText         = $healthText
+        HealthColor        = $healthColor
+        HealthDescription  = $healthDesc
+        Description        = $healthDesc
+        NandWear           = $nandWear
+        AgingPenalty       = $agingPenalty
+        CyclePenalty       = $cyclePenalty
+        UnsafePenalty      = $unsafePenalty
+        TotalDeduction     = $totalOperationalDeduction
+    }
+}
+
 $script:cachedDiskHealthList = $null
 
 function Get-VUONGTTDiskHealthList {
@@ -700,62 +810,34 @@ function Get-VUONGTTDiskHealthList {
             }
 
             # TÍNH TOÁN SỨC KHỎE SÂU (DEEP S.M.A.R.T HEALTH ENGINE - CRYSTALDISKINFO / HARD DISK SENTINEL STANDARD)
-            $healthPct = 100
-            $healthLevel = "GOOD"
-            $healthText = "TỐT (GOOD)"
-            $healthColor = "#047857" # Green
-            $healthDesc = "Ổ cứng hoạt động hoàn hảo, đạt chuẩn S.M.A.R.T, không có lỗi bad sector."
+            $totalHostWrites = if ($smartNative) { $smartNative.TotalHostWritesGB } else { 0 }
+            $unsafeShutdowns = if ($smartNative) { $smartNative.UnsafeShutdowns } else { 0 }
 
-            if ($wear -ne $null -and $wear -ge 0) {
-                $healthPct = [math]::Max(0, 100 - $wear)
-            }
+            $calcHealth = Get-VUONGTTRealisticHealthScore `
+                -PowerOnHours $powerHours `
+                -PowerOnCount $powerCount `
+                -Wear (if ($wear -ne $null) { [int]$wear } else { -1 }) `
+                -SizeGB $sizeGB `
+                -TotalHostWritesGB $totalHostWrites `
+                -UnsafeShutdowns $unsafeShutdowns `
+                -Realloc $realloc `
+                -Pending $pending `
+                -Uncorrectable $uncorrectable `
+                -HealthStatus $healthStatus `
+                -OperationalStatus $operationalStatus
 
-            # 1. ĐÁNH GIÁ SECTOR LỖI VẬT LÝ (Bad Sectors / Pending / Reallocated)
-            if ($pending -gt 0 -or $realloc -ge 10 -or $uncorrectable -gt 0) {
-                $penalty = ($realloc * 1.5) + ($pending * 5) + ($uncorrectable * 6)
-                $healthPct = [math]::Max(5, [math]::Min(90, [int](100 - $penalty)))
-                if ($healthPct -le 40 -or $pending -ge 10 -or $realloc -ge 50) {
-                    $healthLevel = "BAD"
-                    $healthText = "NGUY HIỂM (BAD)"
-                    $healthColor = "#BE123C"
-                    $healthDesc = "NGUY CƠ HỎNG Ổ CỨNG: Phát hiện $realloc sector tái phân bổ (Reallocated), $pending sector lỗi chờ xử lý (Pending), $uncorrectable sector lỗi vật lý. Cần sao lưu dữ liệu khẩn cấp và thay thế ổ đĩa ngay!"
-                } else {
-                    $healthLevel = "CAUTION"
-                    $healthText = "CẢNH BÁO SỨC KHỎE (CAUTION)"
-                    $healthColor = "#B45309"
-                    $healthDesc = "CẢNH BÁO SỨC KHỎE: Phát hiện $realloc sector tái phân bổ (Reallocated), $pending sector nghi ngờ chờ xử lý (Pending). Ổ cứng có dấu hiệu bad sector, khuyến nghị sao lưu dữ liệu quan trọng!"
-                }
-            } elseif ($realloc -gt 0) {
-                $healthPct = [math]::Max(60, [math]::Min(95, [int](100 - ($realloc * 2))))
-                $healthLevel = "CAUTION"
-                $healthText = "CẢNH BÁO NHẸ (CAUTION)"
-                $healthColor = "#D97706"
-                $healthDesc = "Đã có $realloc sector bị lỗi và được chuyển vùng dự phòng (Reallocated). Hiện chưa có pending sector mới, cần theo dõi định kỳ."
-            }
+            $healthPct   = $calcHealth.HealthPct
+            $healthLevel = $calcHealth.HealthLevel
+            $healthText  = $calcHealth.HealthText
+            $healthColor = $calcHealth.HealthColor
+            $healthDesc  = $calcHealth.HealthDescription
 
-            # 2. Đánh giá nhiệt độ
+            # Đánh giá nhiệt độ
             if ($tempC -and $tempC -ge 65) {
                 $healthLevel = "CAUTION"
                 $healthText = "CẢNH BÁO NHIỆT ĐỘ (CAUTION)"
                 $healthColor = "#B45309"
                 $healthDesc = "Nhiệt độ ổ cứng đang ở mức cao ($tempText). Hãy kiểm tra lại quạt tản nhiệt hoặc thông gió máy tính."
-            }
-
-            # 3. Đánh giá lỗi I/O đọc ghi
-            if ($healthStatus -ne "Healthy" -or $operationalStatus -ne "OK" -or $readErrors -gt 100 -or $writeErrors -gt 100) {
-                $healthPct = [math]::Min($healthPct, 55)
-                $healthLevel = "CAUTION"
-                $healthText = "CẢNH BÁO SỨC KHỎE (CAUTION)"
-                $healthColor = "#B45309"
-                $healthDesc = "Phát hiện dấu hiệu suy giảm hiệu năng hoặc lỗi I/O đọc ghi (Read Errors: $readErrors). Khuyến nghị sao lưu dữ liệu quan trọng."
-            }
-
-            if ($healthStatus -eq "Unhealthy" -or $operationalStatus -like "*Degraded*" -or $operationalStatus -like "*Error*") {
-                $healthPct = [math]::Min($healthPct, 15)
-                $healthLevel = "BAD"
-                $healthText = "NGUY HIỂM (BAD)"
-                $healthColor = "#BE123C"
-                $healthDesc = "Ổ cứng sắp hỏng hoặc phát hiện lỗi phần cứng nghiêm trọng! Hãy sao lưu dữ liệu ngay lập tức!"
             }
 
             # Danh gia muc do ben theo so gio chay
