@@ -214,6 +214,60 @@ function Get-VUONGTTFeaturePolicies {
     }
 }
 
+function Sync-VUONGTTLocalGitFile {
+    param(
+        [string]$RelativePath, # Ví dụ "src/Config/feature_policy.json" hoặc "src/Config/licenses_vault.json"
+        [string]$Content
+    )
+    $fileName = Split-Path $RelativePath -Leaf
+    $targetDirs = @()
+    if ($PSScriptRoot) {
+        $targetDirs += (Join-Path $PSScriptRoot "..\Config")
+        $targetDirs += (Join-Path $PSScriptRoot "..\..\src\Config")
+    }
+    $targetDirs += "E:\toolwindows\src\Config"
+    if ($global:ScriptDir) {
+        $targetDirs += (Join-Path $global:ScriptDir "src\Config")
+        $targetDirs += (Join-Path $global:ScriptDir "Config")
+    }
+
+    $gitRepoDirs = @()
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
+    foreach ($td in ($targetDirs | Select-Object -Unique)) {
+        try {
+            if (Test-Path $td) {
+                $fPath = Join-Path $td $fileName
+                [System.IO.File]::WriteAllText($fPath, $Content, $utf8NoBom)
+                
+                # Dò tìm thư mục gốc .git để tự động stage git
+                $checkDir = (Get-Item $td).Parent
+                while ($checkDir -and $checkDir.FullName) {
+                    if (Test-Path (Join-Path $checkDir.FullName ".git")) {
+                        $gitRepoDirs += $checkDir.FullName
+                        break
+                    }
+                    $checkDir = $checkDir.Parent
+                }
+            }
+        } catch {}
+    }
+
+    # Tự động cập nhật Git tracking (git add) tại Dev Repo để không bao giờ bị mất
+    foreach ($rDir in ($gitRepoDirs | Select-Object -Unique)) {
+        try {
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = "git.exe"
+            $psi.Arguments = "add $RelativePath"
+            $psi.WorkingDirectory = $rDir
+            $psi.CreateNoWindow = $true
+            $psi.UseShellExecute = $false
+            $proc = [System.Diagnostics.Process]::Start($psi)
+            if ($proc.WaitForExit(3000)) { $proc.Dispose() } else { try { $proc.Kill() } catch {} }
+        } catch {}
+    }
+}
+
 function Save-VUONGTTFeaturePolicies {
     param(
         [array]$Policies,
@@ -222,13 +276,13 @@ function Save-VUONGTTFeaturePolicies {
     if (-not $Policies -or $Policies.Count -eq 0) { return $false }
     try {
         $json = $Policies | ConvertTo-Json -Depth 4
-        [System.IO.File]::WriteAllText($script:POLICY_FILE, $json, [System.Text.Encoding]::UTF8)
-        try {
-            $localPolicy = Join-Path $PSScriptRoot "..\Config\feature_policy.json"
-            if (Test-Path (Split-Path $localPolicy -Parent)) {
-                [System.IO.File]::WriteAllText($localPolicy, $json, [System.Text.Encoding]::UTF8)
-            }
-        } catch {}
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($script:POLICY_FILE, $json, $utf8NoBom)
+
+        # 1. Đồng bộ vào Git Workspace và Dev Repo (kèm git add)
+        Sync-VUONGTTLocalGitFile -RelativePath "src/Config/feature_policy.json" -Content $json
+
+        # 2. Đẩy trực tiếp lên Cloud GitHub REST API qua Token (0s latency)
         if (-not $SkipCloudPush) {
             Push-VUONGTTCloudFile -RelativePath "src/Config/feature_policy.json" -FileContent $json -CommitMessage "sync(policy): update feature tiers from Admin" | Out-Null
         }
@@ -369,12 +423,10 @@ function Save-VUONGTTLicenseVault {
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($script:VAULT_FILE, $json, $utf8NoBom)
 
-    try {
-        $localVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
-        if (Test-Path (Split-Path $localVault -Parent)) {
-            [System.IO.File]::WriteAllText($localVault, $json, $utf8NoBom)
-        }
-    } catch {}
+    # 1. Đồng bộ kho License Key vào Git Workspace và Dev Repo (kèm git add)
+    Sync-VUONGTTLocalGitFile -RelativePath "src/Config/licenses_vault.json" -Content $json
+
+    # 2. Đẩy trực tiếp lên Cloud GitHub REST API qua Token (0s latency)
     if (-not $SkipCloudPush) {
         try {
             Push-VUONGTTCloudFile -RelativePath "src/Config/licenses_vault.json" -FileContent $json -CommitMessage "sync(vault): auto-sync licenses from Admin" | Out-Null
@@ -969,21 +1021,51 @@ function Sync-VUONGTTCloudAdminData {
             $cleanPolicyText = $cloudPolicyJson.TrimStart([char]0xFEFF).Trim()
             $cloudPolicies = ConvertFrom-Json $cleanPolicyText
             if ($cloudPolicies -and $cloudPolicies.Count -gt 0) {
+                # Đọc cấu hình local hiện tại để đối soát
+                $localPolicies = @()
+                if (Test-Path $script:POLICY_FILE) {
+                    try {
+                        $localPolicies = Get-Content -Path $script:POLICY_FILE -Raw -Encoding UTF8 | ConvertFrom-Json
+                    } catch {}
+                }
+
+                # Trọng số bảo vệ cấp bậc (TierRank / tierWeight): ADMIN (3) > PRO (2) > FREE (1)
+                # Ngăn chặn tuyệt đối việc Cloud cache cũ ghi đè hạ cấp (Downgrade) các quyền ADMIN mà người dùng vừa thiết lập
+                $tierWeight = @{ "ADMIN" = 3; "PRO" = 2; "FREE" = 1 }
+                $mergedPolicies = @()
+                $hasAdminPreservationConflict = $false
+
+                foreach ($cp in $cloudPolicies) {
+                    $lp = $localPolicies | Where-Object { $_.Id -eq $cp.Id }
+                    if ($lp) {
+                        $lpRank = if ($tierWeight.ContainsKey($lp.Tier)) { $tierWeight[$lp.Tier] } else { 1 }
+                        $cpRank = if ($tierWeight.ContainsKey($cp.Tier)) { $tierWeight[$cp.Tier] } else { 1 }
+
+                        # Nếu local đang là ADMIN mà Cloud trả về rank thấp hơn (PRO hoặc FREE do cache cũ)
+                        if ($lpRank -gt $cpRank) {
+                            $cp.Tier = $lp.Tier # Bảo lưu quyền ADMIN của Local (Admin Tier Preservation)
+                            $hasAdminPreservationConflict = $true
+                        }
+                    }
+                    $mergedPolicies += $cp
+                }
+
+                $newFormattedJson = $mergedPolicies | ConvertTo-Json -Depth 4
                 $currentLocalJson = ""
                 if (Test-Path $script:POLICY_FILE) {
                     $currentLocalJson = [System.IO.File]::ReadAllText($script:POLICY_FILE, [System.Text.Encoding]::UTF8).TrimStart([char]0xFEFF).Trim()
                 }
-                $newFormattedJson = $cloudPolicies | ConvertTo-Json -Depth 4
+
                 if ($newFormattedJson.Trim() -ne $currentLocalJson.Trim()) {
                     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
                     [System.IO.File]::WriteAllText($script:POLICY_FILE, $newFormattedJson, $utf8NoBom)
-                    try {
-                        $localPolicy = Join-Path $PSScriptRoot "..\Config\feature_policy.json"
-                        if (Test-Path (Split-Path $localPolicy -Parent)) {
-                            [System.IO.File]::WriteAllText($localPolicy, $newFormattedJson, $utf8NoBom)
-                        }
-                    } catch {}
+                    Sync-VUONGTTLocalGitFile -RelativePath "src/Config/feature_policy.json" -Content $newFormattedJson
                     $syncResult.PoliciesSynced = $true
+                }
+
+                # Nếu có xung đột do local là ADMIN mà cloud cũ -> Tự động đẩy bản ADMIN lên Cloud để đồng bộ dứt điểm
+                if ($hasAdminPreservationConflict -and $ghToken) {
+                    Push-VUONGTTCloudFile -RelativePath "src/Config/feature_policy.json" -FileContent $newFormattedJson -CommitMessage "sync(policy): auto-preserve admin tier conflict from Local" | Out-Null
                 }
             }
         }

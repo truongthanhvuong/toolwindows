@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.35
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.36
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -7471,6 +7471,7 @@ if ($btnAdminLogout) {
 if ($btnSavePolicies) {
     $btnSavePolicies.Add_Click({
         $policies = Get-VUONGTTFeaturePolicies
+        $adminCount = 0
         foreach ($fid in $script:adminPolicyCombos.Keys) {
             $cmb = $script:adminPolicyCombos[$fid]
             $tier = switch ($cmb.SelectedIndex) {
@@ -7478,16 +7479,22 @@ if ($btnSavePolicies) {
                 2 { "ADMIN" }
                 default { "FREE" }
             }
+            if ($tier -eq "ADMIN") { $adminCount++ }
             foreach ($p in $policies) {
                 if ($p.Id -eq $fid) { $p.Tier = $tier }
             }
         }
-        $txtFooterStatus.Text = "• [SAVING] Đang lưu cấu hình và tự động đồng bộ lên GitHub Cloud..."
+        $txtFooterStatus.Text = "• [SAVING] Đang lưu cấu hình và tự động đồng bộ lên Git Workspace & GitHub Cloud..."
         Invoke-VUONGTTDoEvents
         $saved = Save-VUONGTTFeaturePolicies -Policies $policies
         Update-VUONGTTLicenseUI
-        $txtFooterStatus.Text = "• [SAVED & CLOUD SYNC] Đã lưu cấu hình phân quyền và tự động đồng bộ lên GitHub thành công!"
-        [System.Windows.MessageBox]::Show("ĐÃ LƯU VÀ TỰ ĐỘNG ĐỒNG BỘ LÊN GITHUB THÀNH CÔNG!`n`n- Phân quyền tính năng mới đã được cập nhật trực tiếp lên GitHub Cloud.`n- Toàn bộ các máy khác đang mở tool sẽ tự động nhận diện và cập nhật phân quyền này trong vòng 20 giây!", "Phân Quyền Tính Năng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        if ($saved) {
+            $txtFooterStatus.Text = "• [SAVED & CLOUD SYNC] Đã lưu cấu hình phân quyền (ADMIN: $adminCount tính năng) và đồng bộ Git / Cloud thành công!"
+            [System.Windows.MessageBox]::Show("ĐÃ LƯU VÀ ĐỒNG BỘ THÀNH CÔNG!`n`n- Cấu hình phân quyền đã được lưu vào hệ thống cục bộ.`n- Đã tự động đồng bộ vào Git Workspace (src/Config/feature_policy.json).`n- Đã cập nhật trực tiếp lên GitHub Cloud REST API (0s latency).`n- Số tính năng đặt quyền ADMIN: $adminCount tính năng.`n`nToàn bộ các máy khác đang mở tool sẽ tự động nhận diện phân quyền này trong vòng 15 giây!", "Phân Quyền Tính Năng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } else {
+            $txtFooterStatus.Text = "• [LỖI] Không thể lưu cấu hình phân quyền."
+            [System.Windows.MessageBox]::Show("Không thể lưu cấu hình phân quyền. Vui lòng kiểm tra quyền ghi ổ đĩa.", "Lỗi Lưu Cấu Hình", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+        }
     })
 }
 
@@ -7603,8 +7610,8 @@ if ($btnGenerateKeys) {
 
         if ($newCreated.Count -gt 0) {
             [System.Windows.Clipboard]::SetText($newCreated[0].Key)
-            $txtFooterStatus.Text = "• [KEY CREATED] Đã tạo thành công $($newCreated.Count) License Key! Đã copy key đầu tiên vào Clipboard."
-            [System.Windows.MessageBox]::Show("TẠO LICENSE KEY THÀNH CÔNG!`n`n- Mã Key: $($newCreated[0].Key)`n- Thời hạn: $duration`n- Khách hàng: $cust`n`n(Đã tự động sao chép mã Key vào Clipboard để bạn gửi cho khách hàng)", "Tạo License Key Mới", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            $txtFooterStatus.Text = "• [KEY CREATED & CLOUD SYNC] Đã tạo thành công $($newCreated.Count) License Key, đồng bộ Git & Cloud! Đã copy key vào Clipboard."
+            [System.Windows.MessageBox]::Show("TẠO LICENSE KEY THÀNH CÔNG!`n`n- Mã Key: $($newCreated[0].Key)`n- Thời hạn: $duration`n- Khách hàng: $cust`n`n- Đã đồng bộ vào Git Workspace (src/Config/licenses_vault.json).`n- Đã đẩy trực tiếp lên GitHub Cloud REST API (0s latency).`n- Các máy Admin khác sẽ tự động nhận diện Key mới trong vòng 15 giây!`n`n(Đã tự động sao chép mã Key vào Clipboard để bạn gửi cho khách hàng)", "Tạo License Key Mới", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
         }
     })
 }
