@@ -181,7 +181,13 @@ function Restore-SystemCustomizerInfo {
 }
 
 function Invoke-VUONGTTRenameComputer {
-    param([string]$NewName)
+    param(
+        [string]$NewName,
+        [string]$DomainName = "",
+        [string]$DomainUser = "",
+        [string]$DomainPassword = "",
+        [System.Management.Automation.PSCredential]$Credential = $null
+    )
     if ([string]::IsNullOrWhiteSpace($NewName)) {
         return @{ Success = $false; Message = "Tên máy tính không được để trống!" }
     }
@@ -196,16 +202,50 @@ function Invoke-VUONGTTRenameComputer {
         return @{ Success = $true; Message = "Tên máy tính hiện tại đã là '$cleanName'." }
     }
 
+    # 1. Chuẩn bị Credential nếu có
+    $targetCred = $Credential
+    if (-not $targetCred -and -not [string]::IsNullOrWhiteSpace($DomainUser)) {
+        try {
+            $formattedUser = $DomainUser.Trim()
+            if (-not [string]::IsNullOrWhiteSpace($DomainName) -and $formattedUser -notmatch '[\@\\]') {
+                $formattedUser = "$($DomainName.Trim())\$formattedUser"
+            }
+            $secPass = ConvertTo-SecureString $DomainPassword -AsPlainText -Force
+            $targetCred = New-Object System.Management.Automation.PSCredential($formattedUser, $secPass)
+        } catch {
+            $targetCred = $null
+        }
+    }
+
+    # 2. Kiểm tra máy có đang thuộc Domain không
+    $cs = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue
+    $isPartOfDomain = if ($cs) { [bool]$cs.PartOfDomain } else { $false }
+
     try {
-        Rename-Computer -NewName $cleanName -Force -ErrorAction Stop
+        if ($targetCred) {
+            # Khi có credential, truyền vào -DomainCredential
+            Rename-Computer -NewName $cleanName -DomainCredential $targetCred -Force -ErrorAction Stop
+        } elseif ($isPartOfDomain) {
+            # Máy thuộc domain nhưng chưa có credential -> thử lệnh chuẩn, nếu lỗi sẽ catch và hướng dẫn
+            Rename-Computer -NewName $cleanName -Force -ErrorAction Stop
+        } else {
+            # Máy Workgroup thông thường
+            Rename-Computer -NewName $cleanName -Force -ErrorAction Stop
+        }
+
         return @{
             Success = $true
             Message = "ĐÃ ĐỔI TÊN MÁY TÍNH THÀNH CÔNG SANG: $cleanName`n(Lưu ý: Tên mới sẽ có hiệu lực sau khi bạn khởi động lại máy tính)."
         }
     } catch {
+        $errMsg = $_.Exception.Message
+        $helpNote = ""
+        if ($errMsg -match 'user name or password' -or $errMsg -match 'Access is denied' -or $errMsg -match 'credential' -or $isPartOfDomain) {
+            $helpNote = "`n`n💡 GỢI Ý KHẮC PHỤC:`n1. Máy tính này đang thuộc mạng Domain (Active Directory). Để đổi tên máy, bạn cần nhập tài khoản Domain Admin (ví dụ: Administrator hoặc TênDomain\UserAdmin) và mật khẩu chính xác.`n2. Bạn có thể bấm nút '🌐 Hộp Thoại Windows' phía trên để đổi tên máy trực tiếp bằng giao diện gốc của Windows (SystemPropertiesComputerName.exe hoặc sysdm.cpl).`n3. Kiểm tra kết nối mạng LAN/Wi-Fi tới máy chủ Domain Controller."
+        }
         return @{
             Success = $false
-            Message = "Lỗi khi đổi tên máy tính: $($_.Exception.Message)"
+            Message = "Lỗi khi đổi tên máy tính: $errMsg$helpNote"
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.33
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.35
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -1488,14 +1488,70 @@ if ($btnOpenSystemPropertiesComputerName) {
 # Rename Computer
 if ($btnRenameComputerDirect) {
     $btnRenameComputerDirect.Add_Click({
-        $newName = if ($txtCustomComputerName) { $txtCustomComputerName.Text } else { "" }
-        $res = Invoke-VUONGTTRenameComputer -NewName $newName
+        $newName = if ($txtCustomComputerName) { $txtCustomComputerName.Text.Trim() } else { "" }
+        if ([string]::IsNullOrWhiteSpace($newName)) {
+            [System.Windows.MessageBox]::Show("Vui lòng nhập tên máy tính mới!", "Thiếu Thông Tin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+
+        # Thu thập thông tin Domain nếu người dùng đã nhập trên form
+        $dName = if ($txtDomainName) { $txtDomainName.Text.Trim() } else { "" }
+        $dUser = if ($txtDomainUser) { $txtDomainUser.Text.Trim() } else { "" }
+        $dPass = if ($pwdDomainPass) { $pwdDomainPass.Password } else { "" }
+        $isDomainMode = ($rbMemberDomain -and $rbMemberDomain.IsChecked)
+
+        # Kiểm tra máy có đang thuộc Domain không
+        $cs = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue
+        $isPartOfDomain = if ($cs) { [bool]$cs.PartOfDomain } else { $false }
+
+        $cred = $null
+        # Nếu máy thuộc Domain hoặc đang chọn Domain nhưng chưa có tài khoản mật khẩu:
+        # Bật hộp thoại hỏi giống Windows cho nhập tài khoản hoặc mở cửa sổ Windows
+        if (($isPartOfDomain -or $isDomainMode) -and ([string]::IsNullOrWhiteSpace($dUser) -or [string]::IsNullOrWhiteSpace($dPass))) {
+            $askChoice = [System.Windows.MessageBox]::Show(
+                "Máy tính này đang tham gia mạng Domain (Active Directory) hoặc đang chọn chế độ Domain.`n`nĐể đổi tên máy trong Domain, Windows yêu cầu tài khoản Quản trị viên Domain (Domain Admin).`n`n• Bấm [Yes] để nhập tài khoản / mật khẩu Domain (Hộp thoại Windows Security)`n• Bấm [No] để mở trực tiếp Cửa sổ đổi tên máy chuẩn của Windows (System Properties)`n• Bấm [Cancel] để quay lại",
+                "Xác Thực Quyền Đổi Tên Máy Domain",
+                [System.Windows.MessageBoxButton]::YesNoCancel,
+                [System.Windows.MessageBoxImage]::Question
+            )
+            if ($askChoice -eq [System.Windows.MessageBoxResult]::Cancel) { return }
+            if ($askChoice -eq [System.Windows.MessageBoxResult]::No) {
+                Open-VUONGTTSystemPropertiesComputerNameDialog
+                return
+            }
+            # Nếu chọn Yes, gọi popup Get-Credential chuẩn Windows
+            try {
+                $targetDomainPrefix = if ($dName) { "$dName\" } else { "" }
+                $cred = Get-Credential -UserName "$targetDomainPrefix$dUser" -Message "Nhập tài khoản Domain Admin để đổi tên máy '$env:COMPUTERNAME' sang '$newName':"
+                if (-not $cred) { return }
+            } catch {
+                return
+            }
+        }
+
+        $res = Invoke-VUONGTTRenameComputer -NewName $newName -DomainName $dName -DomainUser $dUser -DomainPassword $dPass -Credential $cred
         if ($txtCustomizeLog) { $txtCustomizeLog.Text = $res.Message }
         if ($res.Success) {
             if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đổi tên máy thành công (Cần khởi động lại máy)" }
-            [System.Windows.MessageBox]::Show($res.Message, "Thông Báo Đổi Tên Máy", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            $restartChoice = [System.Windows.MessageBox]::Show(
+                "$($res.Message)`n`nBạn có muốn khởi động lại máy tính ngay bây giờ để áp dụng tên mới không?",
+                "Thông Báo Đổi Tên Máy Thành Công",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Information
+            )
+            if ($restartChoice -eq [System.Windows.MessageBoxResult]::Yes) {
+                Restart-Computer -Force
+            }
         } else {
-            [System.Windows.MessageBox]::Show($res.Message, "Cảnh Báo Đổi Tên Máy", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            $errResult = [System.Windows.MessageBox]::Show(
+                "$($res.Message)`n`nBạn có muốn mở Hộp Thoại Đổi Tên Máy chuẩn của Windows (System Properties) để đổi tên trực tiếp không?",
+                "Cảnh Báo Đổi Tên Máy",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Warning
+            )
+            if ($errResult -eq [System.Windows.MessageBoxResult]::Yes) {
+                Open-VUONGTTSystemPropertiesComputerNameDialog
+            }
         }
     })
 }
@@ -3025,21 +3081,26 @@ function Refresh-BatteryDisplay {
             return
         }
 
-        $lblBatteryStatus.Text    = "Tình trạng: $($bat.BatteryStatus) ($($bat.EstimatedChargeRemaining))"
+        $techStr = if ($bat.Chemistry -and $bat.Chemistry -ne "N/A") { " | Pin: $($bat.Chemistry)" } else { "" }
+        $voltStr = if ($bat.Voltage -and $bat.Voltage -ne "N/A") { " ($($bat.Voltage))" } else { "" }
+        $lblBatteryStatus.Text    = "Tình trạng: $($bat.BatteryStatus) ($($bat.EstimatedChargeRemaining))$techStr$voltStr"
         $lblBatteryDesignCap.Text = "Dung lượng thiết kế: $($bat.DesignCapacity)"
         
         $fullCapStr = "Dung lượng sạc đầy: $($bat.FullChargeCapacity)"
         if ($bat.CycleCount -and $bat.CycleCount -ne "N/A") {
-            $fullCapStr += " | Số lần sạc (Chu kỳ): $($bat.CycleCount)"
+            $fullCapStr += " | Số lần sạc (Chu kỳ): $($bat.CycleCount) lần"
         }
         $lblBatteryFullCap.Text   = $fullCapStr
 
         if ($null -ne $bat.WearLevelPercent -and $bat.DesignCapacityValue -gt 0) {
-            $lblBatteryWear.Text = "Độ chai pin: $($bat.WearLevelPercent)% (Sức khỏe: $($bat.HealthPercent)%)"
-            if ($bat.WearLevelPercent -gt 35) {
+            $ratingStr = if ($bat.BatteryWearRating) { " - $($bat.BatteryWearRating)" } else { "" }
+            $lblBatteryWear.Text = "Độ chai pin: $($bat.WearLevelPercent)% (Sức khỏe: $($bat.HealthPercent)%)$ratingStr"
+            if ($bat.WearLevelPercent -gt 50) {
                 $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::Crimson
-            } elseif ($bat.WearLevelPercent -gt 15) {
+            } elseif ($bat.WearLevelPercent -gt 30) {
                 $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::DarkOrange
+            } elseif ($bat.WearLevelPercent -gt 15) {
+                $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
             } else {
                 $lblBatteryWear.Foreground = [System.Windows.Media.Brushes]::ForestGreen
             }

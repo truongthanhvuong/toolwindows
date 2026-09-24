@@ -14,6 +14,8 @@ function Get-LaptopBatteryHealth {
     $designCap = 0
     $fullCap = 0
     $cycleCount = "N/A"
+    $chemistry = ""
+    $voltage = ""
     $hasBattery = $false
     $batterySource = "Unknown"
     $batteryStatusStr = "Bình thường"
@@ -50,6 +52,20 @@ function Get-LaptopBatteryHealth {
             if ($battery.FullChargeCapacity -and [int]$battery.FullChargeCapacity -gt 0) {
                 $fullCap = [int]$battery.FullChargeCapacity
             }
+            if ($battery.Chemistry) {
+                $chemistry = switch ($battery.Chemistry) {
+                    3 { "Lead Acid" }
+                    4 { "Nickel Cadmium (NiCd)" }
+                    5 { "Nickel Metal Hydride (NiMH)" }
+                    6 { "Lithium-ion (Li-ion)" }
+                    7 { "Zinc air" }
+                    8 { "Lithium Polymer (Li-Po)" }
+                    default { "Lithium-ion (Li-ion)" }
+                }
+            }
+            if ($battery.DesignVoltage -and [int]$battery.DesignVoltage -gt 0) {
+                $voltage = "$([math]::Round($battery.DesignVoltage / 1000, 2)) V"
+            }
         }
     } catch {}
 
@@ -79,6 +95,21 @@ function Get-LaptopBatteryHealth {
                 } elseif ($staticData.DesignCapacity -and [int]$staticData.DesignCapacity -gt 0) {
                     $designCap = [int]$staticData.DesignCapacity
                 }
+            }
+            if (-not $chemistry -and $staticData.Chemistry) {
+                try {
+                    $chemChars = [System.Text.Encoding]::ASCII.GetString($staticData.Chemistry).Trim([char]0, ' ')
+                    if ($chemChars -match '(?i)li[-_]?i|lion') {
+                        $chemistry = "Lithium-ion (Li-ion)"
+                    } elseif ($chemChars -match '(?i)lip|poly') {
+                        $chemistry = "Lithium Polymer (Li-Po)"
+                    } elseif ($chemChars) {
+                        $chemistry = $chemChars
+                    }
+                } catch {}
+            }
+            if (-not $voltage -and $staticData.DesignedVoltage -and [int]$staticData.DesignedVoltage -gt 0) {
+                $voltage = "$([math]::Round($staticData.DesignedVoltage / 1000, 2)) V"
             }
         }
 
@@ -180,6 +211,16 @@ function Get-LaptopBatteryHealth {
                                     $cycleCount = "$rawC"
                                 }
                             }
+                            if (-not $chemistry -and $bNode.Chemistry) {
+                                $cVal = "$($bNode.Chemistry)".Trim()
+                                if ($cVal -match '(?i)li[-_]?i|lion') {
+                                    $chemistry = "Lithium-ion (Li-ion)"
+                                } elseif ($cVal -match '(?i)lip|poly') {
+                                    $chemistry = "Lithium Polymer (Li-Po)"
+                                } elseif ($cVal) {
+                                    $chemistry = $cVal
+                                }
+                            }
                         }
                     }
                     Remove-Item -LiteralPath $tempXml -Force -ErrorAction SilentlyContinue
@@ -198,7 +239,7 @@ function Get-LaptopBatteryHealth {
     # =========================================================================
     # TẦNG 5: NẾU VẪN THIẾU -> FALLBACK THỬ POWERCFG HTML REPORT & REGEX PARSE
     # =========================================================================
-    if (($designCap -le 0 -or $fullCap -le 0) -and $hasBattery) {
+    if (($designCap -le 0 -or $fullCap -le 0 -or -not $chemistry) -and $hasBattery) {
         $tempHtml = [System.IO.Path]::Combine($env:TEMP, "vuongtt_bat_html_$([Guid]::NewGuid().ToString('N')).html")
         try {
             $psi2 = New-Object System.Diagnostics.ProcessStartInfo
@@ -227,6 +268,17 @@ function Get-LaptopBatteryHealth {
                         if ($cycleCount -eq "N/A" -and $htmlContent -match "(?i)CYCLE\s+COUNT[\s\S]*?<td[^>]*>\s*([\d,]+)") {
                             $valStr = $matches[1] -replace '[^\d]'
                             if ($valStr) { $cycleCount = $valStr }
+                        }
+                        # Regex tìm CHEMISTRY
+                        if (-not $chemistry -and $htmlContent -match "(?i)CHEMISTRY[\s\S]*?<td[^>]*>\s*([^<]+)\s*</td>") {
+                            $cVal = $matches[1].Trim()
+                            if ($cVal -match '(?i)li[-_]?i|lion') {
+                                $chemistry = "Lithium-ion (Li-ion)"
+                            } elseif ($cVal -match '(?i)lip|poly') {
+                                $chemistry = "Lithium Polymer (Li-Po)"
+                            } elseif ($cVal) {
+                                $chemistry = $cVal
+                            }
                         }
                     }
                     Remove-Item -LiteralPath $tempHtml -Force -ErrorAction SilentlyContinue
@@ -269,6 +321,10 @@ function Get-LaptopBatteryHealth {
                 HealthPercent            = $null
                 HealthStatus             = "Cần kiểm tra pin vật lý hoặc driver ACPI"
                 CycleCount               = "N/A"
+                Chemistry                = "N/A"
+                Voltage                  = "N/A"
+                BatteryWearRating        = "Không xác định (Pin bị tháo hoặc chai kiệt)"
+                WearAdvice               = "Pin có thể đã bị tháo rời hoặc chai kiệt 0V. Vui lòng kiểm tra lại phần cứng hoặc kết nối socket pin."
                 EstimatedChargeRemaining = "Cắm nguồn AC"
                 BatteryStatus            = "Không nhận diện được cell pin (Cắm sạc trực tiếp)"
             }
@@ -288,6 +344,10 @@ function Get-LaptopBatteryHealth {
             HealthPercent            = 100
             HealthStatus             = "N/A - Desktop PC"
             CycleCount               = "N/A"
+            Chemistry                = "N/A"
+            Voltage                  = "N/A"
+            BatteryWearRating        = "N/A - Desktop PC"
+            WearAdvice               = "Máy tính để bàn hoạt động với nguồn điện xoay chiều AC trực tiếp, không sử dụng pin."
             EstimatedChargeRemaining = "N/A"
             BatteryStatus            = "Cắm nguồn AC trực tiếp"
         }
@@ -296,10 +356,20 @@ function Get-LaptopBatteryHealth {
     }
 
     # =========================================================================
-    # TẦNG 7: TÍNH TOÁN ĐỘ CHAI PIN & SỨC KHỎE
+    # TẦNG 7: TÍNH TOÁN ĐỘ CHAI PIN, PHÂN LOẠI & LỜI KHUYÊN KỸ THUẬT
     # =========================================================================
+    if (-not $chemistry) {
+        $chemistry = "Lithium-ion (Li-ion)"
+    }
+    if (-not $voltage) {
+        $voltage = "11.4 V (Tiêu chuẩn)"
+    }
+
     $wearLevel = $null
     $healthPercent = $null
+    $wearRating = "Chưa thể đo"
+    $wearAdvice = "Cần cắm sạc hoặc dùng pin thêm để hệ điều hành cập nhật dữ liệu ACPI."
+
     if ($designCap -gt 0 -and $fullCap -gt 0) {
         if ($designCap -ge $fullCap) {
             $wearLevel = [math]::Round((($designCap - $fullCap) / $designCap) * 100, 1)
@@ -308,6 +378,20 @@ function Get-LaptopBatteryHealth {
             # Pin mới sạc đầy vượt thiết kế ban đầu
             $wearLevel = 0.0
             $healthPercent = 100.0
+        }
+
+        if ($wearLevel -le 15.0) {
+            $wearRating = "Pin Rất Tốt (Như mới)"
+            $wearAdvice = "Pin hoạt động hoàn hảo, cell pin còn nguyên dung lượng thiết kế ban đầu."
+        } elseif ($wearLevel -le 30.0) {
+            $wearRating = "Pin Tốt / Bình Thường (Ổn định)"
+            $wearAdvice = "Pin duy trì hiệu năng tốt, thời lượng sử dụng ổn định cho công việc hàng ngày."
+        } elseif ($wearLevel -le 50.0) {
+            $wearRating = "Pin Chai Khá Nhiều (Thời lượng giảm)"
+            $wearAdvice = "Thời lượng dùng pin đã giảm từ 30% - 50%. Khuyến nghị cắm sạc khi xử lý đồ họa hoặc tác vụ nặng."
+        } else {
+            $wearRating = "Chai Nặng - Khuyến nghị thay cell pin mới"
+            $wearAdvice = "CẢNH BÁO NGUY HIỂM: Pin đã chai vượt 50%, tiềm ẩn nguy cơ phồng pin làm cấn touchpad/bàn phím hoặc sập nguồn đột ngột. Khuyến nghị thay thế cell pin mới."
         }
     }
 
@@ -326,6 +410,10 @@ function Get-LaptopBatteryHealth {
         HealthPercent            = $healthPercent
         HealthStatus             = $healthStr
         CycleCount               = $cycleCount
+        Chemistry                = $chemistry
+        Voltage                  = $voltage
+        BatteryWearRating        = $wearRating
+        WearAdvice               = $wearAdvice
         EstimatedChargeRemaining = $estimatedChargeStr
         BatteryStatus            = $batteryStatusStr
     }
