@@ -108,7 +108,7 @@
         "Id":  "Activation",
         "Name":  "Kích Hoạt Bản Quyền Số",
         "Icon":  "🔑",
-        "Tier":  "PRO",
+        "Tier":  "ADMIN",
         "Description":  "Kích hoạt bản quyền kỹ thuật số vĩnh viễn cho Windows \u0026 Office"
     },
     {
