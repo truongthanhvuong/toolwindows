@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.30
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.31
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -88,8 +88,11 @@ function global:Start-VUONGTTProcessResponsive {
 }
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$pdRuntime = Join-Path $env:ProgramData "VUONGTT_Toolkit\runtime"
 if (-not $ScriptDir -or -not (Test-Path (Join-Path $ScriptDir "src\UI\MainWindow.xaml"))) {
-    if (Test-Path "E:\toolwindows\src\UI\MainWindow.xaml") {
+    if (Test-Path (Join-Path $pdRuntime "src\UI\MainWindow.xaml")) {
+        $ScriptDir = $pdRuntime
+    } elseif (Test-Path "E:\toolwindows\src\UI\MainWindow.xaml") {
         $ScriptDir = "E:\toolwindows"
     } elseif (Test-Path "$env:TEMP\VUONGTT_Toolkit_Runtime\src\UI\MainWindow.xaml") {
         $ScriptDir = "$env:TEMP\VUONGTT_Toolkit_Runtime"

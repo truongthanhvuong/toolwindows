@@ -80,6 +80,22 @@ try {
     Write-Host "  -> Khong the goi Add-MpPreference (Co the Defender da bi tat hoac dung AV khac)" -ForegroundColor Gray
 }
 
+# Don dep cache rac tu cac phien ban cu trong TEMP va ProgramData de chong xung dot phien ban
+try {
+    $staleTempRuntime = Join-Path $env:TEMP "VUONGTT_Toolkit_Runtime"
+    if (Test-Path $staleTempRuntime) {
+        Remove-Item -Path $staleTempRuntime -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Get-ChildItem -Path $env:TEMP -Filter "VUONGTT_Toolkit_v*_READY.exe" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $env:TEMP -Filter "VUONGTT_HotSwap_*.cmd" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+
+    # Neu co file script cu nam lac ngoai runtime trong ProgramData\VUONGTT_Toolkit, don sach
+    $staleRootScript = Join-Path $installDir "VUONGTT_Toolkit.ps1"
+    if (Test-Path $staleRootScript) {
+        Remove-Item -Path $staleRootScript -Force -ErrorAction SilentlyContinue
+    }
+} catch {}
+
 # 3. KIEM TRA VA TAI BAN MOI NHAT TU GITHUB / CDN (CHONG STALE CACHE & CHECK VERSION)
 Write-Host "`n [2/3] Dang kiem tra va dong bo ban phat hanh moi nhat tu Cloud..." -ForegroundColor Cyan
 

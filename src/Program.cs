@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.30")]
-[assembly: AssemblyFileVersion("20.5.909.30")]
+[assembly: AssemblyVersion("20.5.909.31")]
+[assembly: AssemblyFileVersion("20.5.909.31")]
 
 namespace VUONGTT
 {
@@ -183,8 +183,13 @@ namespace VUONGTT
 
                 string extractedRuntimeDir = "";
 
-                // Nếu chạy file .exe độc lập (không có source cạnh bên), giải nén tài nguyên vào thư mục an toàn ProgramData
-                if (!File.Exists(scriptPath))
+                // Kiểm tra xem có đang chạy trong môi trường phát triển (Dev Repository) hay không
+                bool isDevRepo = File.Exists(Path.Combine(baseDir, "VUONGTT_Toolkit.ps1")) &&
+                                 (Directory.Exists(Path.Combine(baseDir, ".git")) || File.Exists(Path.Combine(baseDir, "Build-Exe.ps1")));
+
+                // Nếu chạy file .exe độc lập trên máy client (không phải dev repo),
+                // luôn giải nén tài nguyên mới nhất từ file EXE vào thư mục an toàn ProgramData runtime
+                if (!isDevRepo)
                 {
                     string secureDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "VUONGTT_Toolkit", "runtime");
                     try

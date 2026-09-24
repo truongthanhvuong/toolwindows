@@ -1,16 +1,16 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.909.30"
+$script:APP_CURRENT_VERSION = "20.5.909.31"
 
 # Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {
-    $verJsonCandidates = @(
-        "$env:TEMP\VUONGTT_Toolkit_Runtime\version.json"
-    )
+    $verJsonCandidates = @()
     if ($global:ScriptDir) {
         $verJsonCandidates += (Join-Path $global:ScriptDir "version.json")
     }
+    $verJsonCandidates += (Join-Path $env:ProgramData "VUONGTT_Toolkit\runtime\version.json")
+    $verJsonCandidates += "E:\toolwindows\version.json"
     foreach ($vf in $verJsonCandidates) {
         if ($vf -and (Test-Path $vf -ErrorAction SilentlyContinue)) {
             $parsedVer = Get-Content $vf -Raw -Encoding UTF8 -ErrorAction SilentlyContinue | ConvertFrom-Json -ErrorAction SilentlyContinue
