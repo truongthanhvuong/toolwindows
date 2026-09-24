@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.25
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.26
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -8209,3 +8209,7 @@ Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay 
 
 # Hiển thị cửa sổ giao diện ngay lập tức
 $window.ShowDialog() | Out-Null
+
+# Dam bao thoat dut khoat toan bo tien trinh khi cua so bi dong
+try { Stop-VUONGTTMetricsWorker } catch {}
+[System.Environment]::Exit(0)

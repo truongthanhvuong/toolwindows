@@ -3,6 +3,28 @@
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13 -bor [System.Net.SecurityProtocolType]::Tls
 
 Clear-Host
+# Vo hieu hoa QuickEdit Mode tren Console de ngan chan freeze tien trinh khi click chuot
+try {
+    $consoleTypeDef = @"
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr GetStdHandle(int nStdHandle);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+"@
+    if (-not ([System.Management.Automation.PSTypeName]'VUONGTT.Win32Console').Type) {
+        Add-Type -MemberDefinition $consoleTypeDef -Name "Win32Console" -Namespace "VUONGTT" -ErrorAction SilentlyContinue
+    }
+    $hIn = [VUONGTT.Win32Console]::GetStdHandle(-10) # STD_INPUT_HANDLE
+    $mode = 0
+    if ([VUONGTT.Win32Console]::GetConsoleMode($hIn, [ref]$mode)) {
+        # 0x0040 = ENABLE_QUICK_EDIT_MODE, 0x0080 = ENABLE_EXTENDED_FLAGS
+        $newMode = ($mode -band (-bnot 0x0040)) -bor 0x0080
+        [VUONGTT.Win32Console]::SetConsoleMode($hIn, $newMode) | Out-Null
+    }
+} catch {}
+
 Write-Host ""
 Write-Host " ====================================================================== " -ForegroundColor DarkYellow
 Write-Host "       VUONGTT TOOL PRO 2026 - HE THONG KY THUAT VIEN DA NANG       " -ForegroundColor Yellow -BackgroundColor Black
@@ -116,15 +138,26 @@ try {
     $proc = Start-Process -FilePath $exePath -ArgumentList "--live" -WorkingDirectory $installDir -PassThru
     Write-Host "`n ====================================================================== " -ForegroundColor Green
     Write-Host "  [OK] TOOL DA DUOC KHOI CHAY THANH CONG TREN MAN HINH!" -ForegroundColor Green
-    Write-Host "  [*] Khi ban dong cua so tool, he thong se tu dong don dep sach se file." -ForegroundColor Yellow
+    Write-Host "  [*] Cua so nay se tu dong dong ngay khi ban tat VUONGTT Tool Pro." -ForegroundColor Yellow
     Write-Host " ====================================================================== `n" -ForegroundColor Green
 
-    $proc.WaitForExit()
+    # Theo doi tien trinh tool: khi nao tool dong thi tu dong don dep va dong cua so
+    while ($true) {
+        if ($proc -and $proc.HasExited) { break }
+        $running = Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue
+        if (-not $running) { break }
+        Start-Sleep -Milliseconds 500
+    }
 
     Start-Sleep -Milliseconds 600
     Remove-Item -Path $exePath -Force -ErrorAction SilentlyContinue
     Remove-Item -Path (Join-Path $installDir "runtime") -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "`n [OK] Da tu dong don dep sach se file khoi may tinh!`n" -ForegroundColor Green
+    Write-Host "`n [OK] Da tu dong don dep sach se file khoi may tinh! Dang dong cua so..." -ForegroundColor Green
+    Start-Sleep -Milliseconds 500
+
+    # Tu dong tat/dong ngay lap tuc cua so PowerShell Console nay
+    [System.Environment]::Exit(0)
+    Stop-Process -Id $PID -Force
 } catch {
     Write-Host "  [!] Khong the khoi chay file EXE: $($_.Exception.Message)" -ForegroundColor Red
 }

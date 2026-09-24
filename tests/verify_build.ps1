@@ -1,4 +1,4 @@
-$f = Get-Item "E:\toolwindows\VUONGTT_Toolkit.exe"
+﻿$f = Get-Item "E:\toolwindows\VUONGTT_Toolkit.exe"
 $fvi = (Get-Command "E:\toolwindows\VUONGTT_Toolkit.exe").FileVersionInfo
 
 [PSCustomObject]@{
