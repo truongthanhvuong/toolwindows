@@ -39,12 +39,25 @@ if (-not $isAdmin) {
     Write-Host "`n [*] Dang yeu cau quyen quan tri vien (Run as Administrator)..." -ForegroundColor Yellow
     Write-Host " [*] Vui long bam 'YES' tren hop thoai UAC de cap phep hoat dong.`n" -ForegroundColor Cyan
     
-    $psBootstrapCmd = "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex }"
+    # Su dung -EncodedCommand (Base64 UTF-16LE) de tranh tuyet doi loi parse quote/ky tu dac biet
+    $bootstrapRaw = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex"
+    $bytes = [System.Text.Encoding]::Unicode.GetBytes($bootstrapRaw)
+    $encodedCmd = [Convert]::ToBase64String($bytes)
+
     try {
-        Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"$psBootstrapCmd`"" -Verb RunAs
+        Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd" -Verb RunAs
+        # Khi da kich hoat tien trinh Administrator thanh cong, tu dong dong ngay cua so console cu
+        Stop-Process -Id $PID -Force
         Exit
     } catch {
-        Write-Host " [!] Ban da tu choi cap quyen Administrator. Bo cong cu yeu cau quyen Admin de can thiep he thong!" -ForegroundColor Red
+        $exMsg = $_.Exception.Message
+        $isCancelled = ($_.Exception -is [System.ComponentModel.Win32Exception] -and $_.Exception.NativeErrorCode -eq 1223) -or ($exMsg -match "canceled by the user")
+        if ($isCancelled) {
+            Write-Host " [!] Ban da bam 'No' (Tu choi) tren hop thoai UAC. Bo cong cu yeu cau quyen Admin de can thiep he thong!" -ForegroundColor Red
+        } else {
+            Write-Host " [!] Khong the tu dong nang quyen: $exMsg" -ForegroundColor Red
+            Write-Host " ðŸ‘‰ Giai phap: Hay mo PowerShell bang cach nhap chuot phai chon 'Run as Administrator', sau do dan lai lenh:`n    irm tinyurl.com/vuongwin | iex`n" -ForegroundColor Yellow
+        }
         return
     }
 }
