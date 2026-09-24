@@ -1,58 +1,83 @@
 [
     {
-        "value":  [
-                      {
-                          "Key":  "VUONG-LS3W-MF5D-N42M-ANBR",
-                          "Customer":  "Khách Hàng VIP",
-                          "Duration":  "Lifetime",
-                          "CreatedDate":  "19/09/2026 14:24:51",
-                          "IsUsed":  false,
-                          "UsedHWID":  "",
-                          "UsedPCName":  "",
-                          "ActivatedDate":  ""
-                      },
-                      {
-                          "Key":  "VUONG-LVDT-5BR8-2N5J-W6UQ",
-                          "Customer":  "Khách Hàng VIP",
-                          "Duration":  "Lifetime",
-                          "CreatedDate":  "19/09/2026 13:44:14",
-                          "IsUsed":  true,
-                          "UsedHWID":  "HWID-A7C5-5014-F6D9-1E08",
-                          "UsedPCName":  "DESKTOP-8P5CKNF",
-                          "ActivatedDate":  "19/09/2026 13:45:09"
-                      },
-                      {
-                          "Key":  "VUONG-4P34-HE36-5B74-FHCV",
-                          "Customer":  "Khách Hàng VIP",
-                          "Duration":  "Lifetime",
-                          "CreatedDate":  "19/09/2026 08:56:12",
-                          "IsUsed":  true,
-                          "UsedHWID":  "HWID-4475-C9AC-57FC-0FFF",
-                          "UsedPCName":  "VUONGTT",
-                          "ActivatedDate":  "19/09/2026 11:36:46"
-                      },
-                      {
-                          "Key":  "VUONG-LQPK-3X96-WDXR-WVUG",
-                          "Customer":  "Khách Hàng VIP",
-                          "Duration":  "Vĩnh viễn (Lifetime)",
-                          "CreatedDate":  "23/09/2026 23:32:09",
-                          "IsUsed":  false,
-                          "UsedHWID":  "",
-                          "UsedPCName":  "",
-                          "ActivatedDate":  ""
-                      },
-                      {
-                          "Key":  "VUONG-LCQC-R7G7-8PP8-U35V",
-                          "Customer":  "Khách Hàng VIP",
-                          "Duration":  "30 Ngày",
-                          "CreatedDate":  "23/09/2026 23:32:19",
-                          "IsUsed":  false,
-                          "UsedHWID":  "",
-                          "UsedPCName":  "",
-                          "ActivatedDate":  ""
-                      }
-                  ],
-        "Count":  5
+        "Key":  "VUONG-4P34-HE36-5B74-FHCV",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "19/09/2026 11:36:46",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-4475-C9AC-57FC-0FFF",
+        "UsedPCName":  "VUONGTT",
+        "ActivatedDate":  "19/09/2026 11:36:46"
+    },
+    {
+        "Key":  "VUONG-LVDT-5BR8-2N5J-W6UQ",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "19/09/2026 13:44:14",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-A7C5-5014-F6D9-1E08",
+        "UsedPCName":  "DESKTOP-8P5CKNF",
+        "ActivatedDate":  "19/09/2026 13:45:09"
+    },
+    {
+        "Key":  "VUONG-LS3W-MF5D-N42M-ANBR",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "19/09/2026 14:24:51",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
+    },
+    {
+        "Key":  "VUONG-LZBZ-9TVJ-NAMA-8KZM",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "21/09/2026 11:49:18",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
+    },
+    {
+        "Key":  "VUONG-LGAC-52WK-PPWJ-V7YN",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "22/09/2026 13:42:47",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-5941-0247-F735-CB0F",
+        "UsedPCName":  "DESKTOP-CLIENT1",
+        "ActivatedDate":  "22/09/2026 13:45:10"
+    },
+    {
+        "Key":  "VUONG-LJ3L-GSWM-KL8S-9ZBW",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "22/09/2026 13:43:01",
+        "IsUsed":  true,
+        "UsedHWID":  "HWID-82C1-3914-A2D5-07FE",
+        "UsedPCName":  "DESKTOP-CLIENT2",
+        "ActivatedDate":  "22/09/2026 13:46:25"
+    },
+    {
+        "Key":  "VUONG-LQPK-3X96-WDXR-WVUG",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "Vĩnh viễn (Lifetime)",
+        "CreatedDate":  "23/09/2026 23:32:09",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
+    },
+    {
+        "Key":  "VUONG-LCQC-R7G7-8PP8-U35V",
+        "Customer":  "Khách Hàng VIP",
+        "Duration":  "30 Ngày",
+        "CreatedDate":  "23/09/2026 23:32:19",
+        "IsUsed":  false,
+        "UsedHWID":  "",
+        "UsedPCName":  "",
+        "ActivatedDate":  ""
     },
     {
         "Key":  "VUONG-L5Y7-Q2VR-FZ9U-DNF3",
