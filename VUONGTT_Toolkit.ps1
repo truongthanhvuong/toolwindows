@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.40
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.41
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -8241,7 +8241,8 @@ Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay 
         PowerShell  = $null
         AsyncHandle = $null
     }
-    $script:lastSyncTime = [DateTime]::UtcNow
+    # Khởi tạo $script:lastSyncTime quá hạn để kích hoạt đồng bộ ngầm ngay trong 10-15 giây đầu tiên khi mở tool
+    $script:lastSyncTime = [DateTime]::UtcNow.AddSeconds(-900)
 
     $bgWorkerScript = {
         param($appRoot)
@@ -8314,9 +8315,9 @@ Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay 
             return
         }
 
-        # 2. Kích hoạt lượt đồng bộ mới nếu đã đủ chu kỳ 900 giây (15 phút)
+        # 2. Kích hoạt lượt đồng bộ mới nếu đã đủ chu kỳ (mặc định mỗi 180 giây = 3 phút thay vì 15 phút)
         $elapsed = ([DateTime]::UtcNow - $script:lastSyncTime).TotalSeconds
-        if ($elapsed -ge 900) {
+        if ($elapsed -ge 180) {
             $script:bgSyncState.IsBusy = $true
             try {
                 $ps = [System.Management.Automation.PowerShell]::Create()

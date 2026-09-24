@@ -119,6 +119,19 @@ Assert-Condition -TestName "5.1: UI kiem tra `$res.Success truoc khi hien popup 
     -Condition ($hasSuccessCheckInUi) `
     -Message "UI van luon hien popup thanh cong du Sync-VUONGTTCloudAdminData that bai"
 
+# ------------------------------------------------------------------------------
+# 6. REALTIME BACKGROUND AUTO-SYNC TREN MOI MAY CLIENT KHI KET NOI TOOL
+# ------------------------------------------------------------------------------
+$hasStartupAutoSync = [bool]($mainScriptContent -match 'AddSeconds\(-900\)' -or $mainScriptContent -match 'MinValue')
+Assert-Condition -TestName "6.1: VUONGTT_Toolkit.ps1 phai kich hoat dong bo ngam ngay khi khoi dong tool" `
+    -Condition ($hasStartupAutoSync) `
+    -Message "Tool chua khoi tao dong bo ngam ngay luc khoi dong"
+
+$hasShortSyncInterval = [bool]($mainScriptContent -match '\$elapsed\s*-ge\s*180')
+Assert-Condition -TestName "6.2: Chu ky dong bo Cloud ngam duoc toi uu xuong 180 giay (3 phut)" `
+    -Condition ($hasShortSyncInterval) `
+    -Message "Chu ky dong bo Cloud chua duoc toi uu xuong 180s"
+
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "KET QUA: PASS = $testsPassed | FAIL = $testsFailed" -ForegroundColor $(if ($testsFailed -eq 0) { "Green" } else { "Red" })
 
