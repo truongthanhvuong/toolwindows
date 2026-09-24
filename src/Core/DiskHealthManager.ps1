@@ -813,10 +813,11 @@ function Get-VUONGTTDiskHealthList {
             $totalHostWrites = if ($smartNative) { $smartNative.TotalHostWritesGB } else { 0 }
             $unsafeShutdowns = if ($smartNative) { $smartNative.UnsafeShutdowns } else { 0 }
 
+            $wearParam = if ($wear -ne $null) { [int]$wear } else { -1 }
             $calcHealth = Get-VUONGTTRealisticHealthScore `
                 -PowerOnHours $powerHours `
                 -PowerOnCount $powerCount `
-                -Wear (if ($wear -ne $null) { [int]$wear } else { -1 }) `
+                -Wear $wearParam `
                 -SizeGB $sizeGB `
                 -TotalHostWritesGB $totalHostWrites `
                 -UnsafeShutdowns $unsafeShutdowns `

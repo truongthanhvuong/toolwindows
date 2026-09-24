@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.38
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.39
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -1285,11 +1285,12 @@ function Show-VUONGTTDriverDoctorModal {
             if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = ($lines -join "`n") }
             if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Phát hiện $($diag.IssueCount) thiết bị phần cứng cần xử lý Driver." }
         } else {
+            $serialTag = if ($diag.SerialNumber) { " (Serial/Tag: $($diag.SerialNumber))" } else { "" }
             $msg = "=== TOÀN BỘ DRIVER PHẦN CỨNG HOẠT ĐỘNG HOÀN HẢO ===`n`n" +
                    "• Đã quét kiểm tra sâu: $($diag.TotalDevices) thiết bị PnP.`n" +
                    "• Thiết bị lỗi / chấm than vàng (Code 28, 10, 43...): 0 thiết bị.`n" +
                    "• Card màn hình (GPU): $($diag.GpuStatus)`n" +
-                   "• Thông tin máy: $($diag.Manufacturer) $($diag.Model)" + (if ($diag.SerialNumber) { " (Serial/Tag: $($diag.SerialNumber))" } else { "" }) + "`n`n" +
+                   "• Thông tin máy: $($diag.Manufacturer) $($diag.Model)$serialTag`n`n" +
                    "Chúc mừng! Máy tính của bạn đã được cài đặt đầy đủ tất cả các driver tối ưu."
             if ($txtDriverDoctorDetails) { $txtDriverDoctorDetails.Text = $msg }
             if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Không có thiết bị nào bị lỗi hoặc thiếu driver." }
