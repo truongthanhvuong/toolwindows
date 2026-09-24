@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.32"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.33"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -258,12 +258,13 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Margin" Value="3"/>
-            <Setter Property="Width" Value="216"/>
-            <Setter Property="Height" Value="46"/>
+            <Setter Property="Width" Value="236"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=Content}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <Border x:Name="CardBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="6,4,6,4">
+                        <Border x:Name="CardBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="6,4,6,4" ToolTip="{TemplateBinding Content}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -273,7 +274,7 @@
                                 <Border x:Name="IconBadge" Width="30" Height="30" CornerRadius="6" Background="Transparent" Margin="0,0,7,0" VerticalAlignment="Center">
                                     <Image Source="{Binding Path=Tag, RelativeSource={RelativeSource TemplatedParent}}" Width="24" Height="24" RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Grid.Column="1" Text="{TemplateBinding Content}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="{TemplateBinding Content}" FontWeight="SemiBold" FontSize="11.5" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" LineHeight="13.5" LineStackingStrategy="BlockLineHeight" Foreground="{DynamicResource TextPrimaryBrush}" ToolTip="{TemplateBinding Content}"/>
                                 <Border x:Name="CheckBadge" Grid.Column="2" Width="18" Height="18" CornerRadius="9" Background="#E2E8F0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,0,0">
                                     <TextBlock x:Name="CheckMark" Text="✓" FontSize="11" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
                                 </Border>
@@ -330,7 +331,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.32 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.33 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -603,7 +604,7 @@
                                     </Border>
                                     <TextBlock x:Name="txtGaugeCpuSub" Text="2.90 GHz · 28°C" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                     <TextBlock Text="CPU" FontSize="12.5" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="txtGaugeCpuName" Text="Intel Core i5-9400" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock x:Name="txtGaugeCpuName" Text="Intel Core i5-9400" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
                                 </StackPanel>
                             </Border>
 
@@ -627,7 +628,7 @@
                                     </Border>
                                     <TextBlock x:Name="txtGaugeGpuVram" Text="3.0 GB VRAM" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                     <TextBlock Text="GPU" FontSize="12.5" FontWeight="Bold" HorizontalAlignment="Center"/>
-                                    <TextBlock x:Name="txtGaugeGpuName" Text="NVIDIA Quadro / RTX" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock x:Name="txtGaugeGpuName" Text="NVIDIA Quadro / RTX" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
                                 </StackPanel>
                             </Border>
 
@@ -910,11 +911,11 @@
                                         </Grid>
                                         <Grid Margin="0,2,0,4">
                                             <TextBlock Text="Hãng &amp; Model máy:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
-                                            <TextBlock x:Name="lblMachineModel" Text="Đang đọc..." FontWeight="Bold" HorizontalAlignment="Right" FontSize="13" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                                            <TextBlock x:Name="lblMachineModel" Text="Đang đọc..." FontWeight="Bold" HorizontalAlignment="Right" FontSize="13" TextTrimming="CharacterEllipsis" MaxWidth="280" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
                                         </Grid>
                                         <Grid Margin="0,2,0,4">
                                             <TextBlock Text="Bo mạch chủ (Main):" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
-                                            <TextBlock x:Name="lblMachineBoard" Text="Đang đọc..." FontWeight="Bold" HorizontalAlignment="Right" FontSize="13" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                                            <TextBlock x:Name="lblMachineBoard" Text="Đang đọc..." FontWeight="Bold" HorizontalAlignment="Right" FontSize="13" TextTrimming="CharacterEllipsis" MaxWidth="280" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
                                         </Grid>
                                         <Grid Margin="0,2,0,4">
                                             <TextBlock Text="Serial Bo mạch chủ:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
@@ -930,7 +931,7 @@
                                         </Grid>
                                         <Grid Margin="0,2,0,4">
                                             <TextBlock Text="UUID Hệ thống:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
-                                            <TextBlock x:Name="lblSystemUUID" Text="Đang đọc..." FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" FontFamily="Consolas, monospace" TextTrimming="CharacterEllipsis" MaxWidth="250"/>
+                                            <TextBlock x:Name="lblSystemUUID" Text="Đang đọc..." FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" FontFamily="Consolas, monospace" TextTrimming="CharacterEllipsis" MaxWidth="250" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
                                         </Grid>
                                         <Grid Margin="0,2,0,2">
                                             <TextBlock Text="Kiểm tra Serial:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
@@ -2124,12 +2125,36 @@
                                                 </DataTemplate>
                                             </GridViewColumn.CellTemplate>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="Tên Phần Mềm" Width="300" DisplayMemberBinding="{Binding DisplayName}"/>
-                                        <GridViewColumn Header="Phiên Bản" Width="105" DisplayMemberBinding="{Binding DisplayVersion}"/>
-                                        <GridViewColumn Header="Nhà Phát Triển" Width="160" DisplayMemberBinding="{Binding Publisher}"/>
+                                        <GridViewColumn Header="Tên Phần Mềm" Width="300">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Phiên Bản" Width="135">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding DisplayVersion}" ToolTip="{Binding DisplayVersion}" TextTrimming="CharacterEllipsis"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Nhà Phát Triển" Width="160">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Publisher}" ToolTip="{Binding Publisher}" TextTrimming="CharacterEllipsis"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
                                         <GridViewColumn Header="Ngày Cài" Width="95" DisplayMemberBinding="{Binding InstallDate}"/>
                                         <GridViewColumn Header="Dung Lượng" Width="90" DisplayMemberBinding="{Binding SizeFormatted}"/>
-                                        <GridViewColumn Header="Thư Mục Cài Đặt" Width="240" DisplayMemberBinding="{Binding InstallLocation}"/>
+                                        <GridViewColumn Header="Thư Mục Cài Đặt" Width="240">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding InstallLocation}" ToolTip="{Binding InstallLocation}" TextTrimming="CharacterEllipsis"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
                                     </GridView>
                                 </ListView.View>
                             </ListView>
@@ -2883,7 +2908,7 @@
                                         </StackPanel>
                                         <StackPanel Grid.Column="3">
                                             <TextBlock Text="CARD MÀN HÌNH (VGA)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                            <TextBlock x:Name="txtDriverGpuStatus" Text="--" FontSize="13" FontWeight="SemiBold" Foreground="#047857" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock x:Name="txtDriverGpuStatus" Text="--" FontSize="13" FontWeight="SemiBold" Foreground="#047857" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -3556,7 +3581,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.32" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.33" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>
@@ -3708,7 +3733,7 @@
                         <Border Grid.Column="4" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                             <StackPanel>
                                 <TextBlock Text="DRIVER ĐỒ HỌA (GPU)" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBlock x:Name="lblDriverDoctorGpu" Text="Tối ưu [OK]" FontSize="13" FontWeight="Bold" Foreground="#047857" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="lblDriverDoctorGpu" Text="Tối ưu [OK]" FontSize="13" FontWeight="Bold" Foreground="#047857" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
                                 <TextBlock Text="Tăng tốc phần cứng 3D" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>                        </Border>
 
@@ -3716,7 +3741,7 @@
                         <Border Grid.Column="6" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                             <StackPanel>
                                 <TextBlock Text="HÃNG &amp; SERVICE TAG" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBlock x:Name="lblDriverDoctorMachine" Text="VMware / PC" FontSize="13" FontWeight="Bold" Foreground="#B45309" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="lblDriverDoctorMachine" Text="VMware / PC" FontSize="13" FontWeight="Bold" Foreground="#B45309" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
                                 <TextBlock Text="Tự dò cổng chính hãng" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>                        </Border>
                     </Grid>

@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.32
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.33
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -7460,7 +7460,12 @@ if ($btnSyncCloudKeys) {
         Render-VUONGTTAdminKeys
         Render-VUONGTTAdminPolicies
         $txtFooterStatus.Text = "• [CLOUD SYNC] " + $res.Message
-        [System.Windows.MessageBox]::Show("ĐÃ ĐỒNG BỘ ĐÁM MÂY THÀNH CÔNG!`n`n- Tổng số License Key trong kho: $($res.TotalKeys) key`n- Số key mới gộp thêm từ máy khác/Cloud: $($res.KeysMerged) key`n- Phân quyền tính năng: Đã đồng bộ`n`nToàn bộ dữ liệu Admin giữa 2 máy đã được hợp nhất hoàn toàn!", "Đồng Bộ Cloud Admin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        if ($res -and $res.Success) {
+            [System.Windows.MessageBox]::Show("ĐÃ ĐỒNG BỘ ĐÁM MÂY THÀNH CÔNG!`n`n- Tổng số License Key trong kho: $($res.TotalKeys) key`n- Số key mới gộp thêm từ máy khác/Cloud: $($res.KeysMerged) key`n- Phân quyền tính năng: Đã đồng bộ`n`nToàn bộ dữ liệu Admin giữa 2 máy đã được hợp nhất hoàn toàn!", "Đồng Bộ Cloud Admin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } else {
+            $errMsg = if ($res -and $res.Message) { $res.Message } else { "Không thể kết nối máy chủ Cloud hoặc lỗi xác thực." }
+            [System.Windows.MessageBox]::Show("KHÔNG THỂ ĐỒNG BỘ VỚI CLOUD!`n`nChi tiết: $errMsg`n`nVui lòng kiểm tra lại kết nối Internet và thử lại.", "Lỗi Đồng Bộ Cloud", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        }
     })
 }
 

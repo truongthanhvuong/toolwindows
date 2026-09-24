@@ -274,9 +274,17 @@ function Reset-VUONGTTFeaturePoliciesToDefault {
 $script:LICENSE_MASTER_SECRET = "VUONGTT_SECRET_HMAC_MASTER_KEY_2026_PRO_EDITION"
 $script:LICENSE_CHARSET       = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" # 32 ký tự, loại bỏ O, 0, I, 1
 
-# Danh sách Key Master phê duyệt trước (chứa mã key đã tạo của khách hàng trong ảnh)
+# Danh sách Key Master phê duyệt trước (đảm bảo đầy đủ các key của hệ thống)
 $script:PREAPPROVED_MASTER_KEYS = @(
     @{ Key = "VUONG-4P34-HE36-5B74-FHCV"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-LVDT-5BR8-2N5J-W6UQ"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-LS3W-MF5D-N42M-ANBR"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-LZBZ-9TVJ-NAMA-8KZM"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-LGAC-52WK-PPWJ-V7YN"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-LJ3L-GSWM-KL8S-9ZBW"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-LQPK-3X96-WDXR-WVUG"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-LCQC-R7G7-8PP8-U35V"; Duration = "30 Ngày"; Customer = "Khách Hàng VIP" },
+    @{ Key = "VUONG-L5Y7-Q2VR-FZ9U-DNF3"; Duration = "Lifetime"; Customer = "Khách Hàng VIP" },
     @{ Key = "VUONG-PRO2026-VIP888-MASTER"; Duration = "Lifetime"; Customer = "VIP Master" },
     @{ Key = "VUONG-L999-PRO8-LIFETIME-VIP"; Duration = "Lifetime"; Customer = "VIP Khách Hàng" }
 )
@@ -375,8 +383,8 @@ function Save-VUONGTTLicenseVault {
 }
 
 function Init-VUONGTTLicenseVault {
+    $localVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
     if (-not (Test-Path $script:VAULT_FILE)) {
-        $localVault = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
         if (Test-Path $localVault) {
             try {
                 Copy-Item -Path $localVault -Destination $script:VAULT_FILE -Force
@@ -386,19 +394,59 @@ function Init-VUONGTTLicenseVault {
         # Tự động nạp sẵn các key pre-approved để Admin luôn nhìn thấy trong kho
         $initList = @()
         foreach ($k in $script:PREAPPROVED_MASTER_KEYS) {
-            $initList += [PSCustomObject]@{
-                Key           = $k.Key
-                Customer      = $k.Customer
-                Duration      = $k.Duration
-                CreatedDate   = "19/09/2026 08:56:12"
-                IsUsed        = $false
-                UsedHWID      = ""
-                UsedPCName    = ""
-                ActivatedDate = ""
+            if ($k.Key -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$') {
+                $initList += [PSCustomObject]@{
+                    Key           = $k.Key
+                    Customer      = $k.Customer
+                    Duration      = $k.Duration
+                    CreatedDate   = "19/09/2026 08:56:12"
+                    IsUsed        = $false
+                    UsedHWID      = ""
+                    UsedPCName    = ""
+                    ActivatedDate = ""
+                }
             }
         }
-        Save-VUONGTTLicenseVault -KeyList $initList
+        Save-VUONGTTLicenseVault -KeyList $initList -SkipCloudPush
+        return
     }
+
+    # Nếu $script:VAULT_FILE đã tồn tại, tự động gộp các key mới từ ..\Config\licenses_vault.json nếu có (Union-Merge cục bộ an toàn)
+    try {
+        if (Test-Path $localVault) {
+            $cfgRaw = [System.IO.File]::ReadAllText($localVault, [System.Text.Encoding]::UTF8).TrimStart([char]0xFEFF).Trim()
+            $cfgItems = @(ConvertFrom-Json $cfgRaw)
+            $progRaw = [System.IO.File]::ReadAllText($script:VAULT_FILE, [System.Text.Encoding]::UTF8).TrimStart([char]0xFEFF).Trim()
+            $progItems = @(ConvertFrom-Json $progRaw)
+
+            $mergedMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+            foreach ($k in $progItems) {
+                if ($k -and $k.Key -and ($k.Key.Trim().Length -eq 25)) { $mergedMap[$k.Key.Trim()] = $k }
+            }
+            $needsUpdate = $false
+            foreach ($ck in $cfgItems) {
+                if ($ck -and $ck.Key -and ($ck.Key.Trim().Length -eq 25)) {
+                    $cKey = $ck.Key.Trim()
+                    if (-not $mergedMap.ContainsKey($cKey)) {
+                        $mergedMap[$cKey] = $ck
+                        $needsUpdate = $true
+                    } else {
+                        $ex = $mergedMap[$cKey]
+                        if ($ck.IsUsed -and -not $ex.IsUsed) {
+                            $ex.IsUsed = $true
+                            $ex.UsedHWID = $ck.UsedHWID
+                            $ex.UsedPCName = $ck.UsedPCName
+                            $ex.ActivatedDate = $ck.ActivatedDate
+                            $needsUpdate = $true
+                        }
+                    }
+                }
+            }
+            if ($needsUpdate) {
+                Save-VUONGTTLicenseVault -KeyList @($mergedMap.Values) -SkipCloudPush
+            }
+        }
+    } catch {}
 }
 
 function New-VUONGTTLicenseKey {
@@ -697,24 +745,41 @@ function Sync-VUONGTTCloudAdminData {
         # 1. ĐỒNG BỘ KHO LICENSE KEYS
         $cloudVaultJson = ""
 
-        # Tầng 1: jsDelivr CDN toàn cầu không bị Fastly Edge Cache 15 phút
-        try {
-            $jsBust = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-            $jsVaultUrl = "https://cdn.jsdelivr.net/gh/$RepoOwner/$RepoName@$Branch/src/Config/licenses_vault.json?t=$jsBust"
-            $wcJs = New-Object System.Net.WebClient
-            $wcJs.Proxy = $null
-            $wcJs.Encoding = [System.Text.Encoding]::UTF8
-            $wcJs.Headers.Add("User-Agent", "VUONGTT-AdminCloudSync/2026")
-            $wcJs.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
-            $wcJs.Headers.Add("Pragma", "no-cache")
-            $jsDownloaded = $wcJs.DownloadString($jsVaultUrl)
-            if ($jsDownloaded -and $jsDownloaded.Length -gt 20) {
-                $cloudVaultJson = $jsDownloaded.TrimStart([char]0xFEFF).Trim()
-            }
-        } catch {}
+        $cloudFetchSuccess = $false
+        $ghToken = Get-VUONGTTGitHubToken
+
+        # Tầng 1: GitHub Contents REST API qua Token (Nguồn sự thật tức thì, 0s cache)
+        if ($ghToken) {
+            try {
+                $apiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/licenses_vault.json"
+                $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
+                $apiReq.Proxy = $null
+                $apiReq.Timeout = 6000
+                $apiReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
+                $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                $apiReq.Headers.Add("Pragma", "no-cache")
+                $apiReq.Headers.Add("Authorization", "token $ghToken")
+                $apiResp = $apiReq.GetResponse()
+                $apiReader = New-Object System.IO.StreamReader($apiResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $apiRaw = $apiReader.ReadToEnd()
+                $apiReader.Close(); $apiResp.Close()
+                $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
+                if ($apiObj -and $apiObj.content) {
+                    $cleanBase64 = $apiObj.content -replace '\s+', ''
+                    $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+                        $bytes = $bytes[3..($bytes.Length - 1)]
+                    }
+                    $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes).Trim()
+                    if ($cloudVaultJson -and $cloudVaultJson.Length -ge 2) {
+                        $cloudFetchSuccess = $true
+                    }
+                }
+            } catch {}
+        }
 
         # Tầng 2: GitHub Commits API để lấy Commit SHA mới nhất của licenses_vault.json (Bất biến 100%)
-        if (-not $cloudVaultJson -or $ForceApi) {
+        if (-not $cloudFetchSuccess -or $ForceApi) {
             try {
                 $cApiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/commits?path=src/Config/licenses_vault.json&page=1&per_page=1"
                 $cReq = [System.Net.HttpWebRequest]::Create($cApiUrl)
@@ -723,7 +788,6 @@ function Sync-VUONGTTCloudAdminData {
                 $cReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
                 $cReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
                 $cReq.Headers.Add("Pragma", "no-cache")
-                $ghToken = Get-VUONGTTGitHubToken
                 if ($ghToken) { $cReq.Headers.Add("Authorization", "token $ghToken") }
 
                 $cResp = $cReq.GetResponse()
@@ -737,49 +801,26 @@ function Sync-VUONGTTCloudAdminData {
                     $wcSha.Proxy = $null
                     $wcSha.Encoding = [System.Text.Encoding]::UTF8
                     $wcSha.Headers.Add("User-Agent", "VUONGTT-AdminCloudSync/2026")
+                    $wcSha.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                    $wcSha.Headers.Add("Pragma", "no-cache")
                     $shaRaw = $wcSha.DownloadString("https://raw.githubusercontent.com/$RepoOwner/$RepoName/$vSha/src/Config/licenses_vault.json")
-                    if ($shaRaw -and $shaRaw.Length -gt 20) {
+                    if ($shaRaw -and $shaRaw.Length -ge 2) {
                         $cloudVaultJson = $shaRaw.TrimStart([char]0xFEFF).Trim()
+                        $cloudFetchSuccess = $true
                     }
                 }
             } catch {}
         }
 
-        # Tầng 3: GitHub Contents REST API qua Token
-        if (-not $cloudVaultJson) {
-            $ghToken = Get-VUONGTTGitHubToken
-            if ($ghToken) {
-                try {
-                    $apiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/licenses_vault.json"
-                    $apiReq = [System.Net.HttpWebRequest]::Create($apiUrl)
-                    $apiReq.Proxy = $null
-                    $apiReq.Timeout = 6000
-                    $apiReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
-                    $apiReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
-                    $apiReq.Headers.Add("Pragma", "no-cache")
-                    $apiReq.Headers.Add("Authorization", "token $ghToken")
-                    $apiResp = $apiReq.GetResponse()
-                    $apiReader = New-Object System.IO.StreamReader($apiResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
-                    $apiRaw = $apiReader.ReadToEnd()
-                    $apiReader.Close(); $apiResp.Close()
-                    $apiObj = ConvertFrom-Json ($apiRaw.TrimStart([char]0xFEFF).Trim())
-                    if ($apiObj -and $apiObj.content) {
-                        $cleanBase64 = $apiObj.content -replace '\s+', ''
-                        $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
-                            $bytes = $bytes[3..($bytes.Length - 1)]
-                        }
-                        $cloudVaultJson = [System.Text.Encoding]::UTF8.GetString($bytes).Trim()
-                    }
-                } catch {}
-            }
-        }
-
-        # Tầng 4: Fallback sang Fastly CDN Raw URL nếu các tầng trên chưa lấy được
-        if (-not $cloudVaultJson) {
+        # Tầng 3: Fallback sang GitHub Raw URL trực tiếp nếu các tầng trên chưa lấy được
+        if (-not $cloudFetchSuccess) {
             try {
                 $vaultUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/licenses_vault.json?nocache=$ts"
-                $cloudVaultJson = $wc.DownloadString($vaultUrl).TrimStart([char]0xFEFF).Trim()
+                $rawDownloaded = $wc.DownloadString($vaultUrl).TrimStart([char]0xFEFF).Trim()
+                if ($rawDownloaded -and $rawDownloaded.Length -ge 2) {
+                    $cloudVaultJson = $rawDownloaded
+                    $cloudFetchSuccess = $true
+                }
             } catch {}
         }
 
@@ -794,23 +835,48 @@ function Sync-VUONGTTCloudAdminData {
         }
 
         $cloudItems = @()
-        if ($cloudVaultJson) {
-            $cleanVaultText = $cloudVaultJson.TrimStart([char]0xFEFF).Trim()
-            $cloudItems = @(ConvertFrom-Json $cleanVaultText)
+        if ($cloudFetchSuccess -and $cloudVaultJson) {
+            try {
+                $cleanVaultText = $cloudVaultJson.TrimStart([char]0xFEFF).Trim()
+                $parsedJson = ConvertFrom-Json $cleanVaultText
+                $candidates = @()
+                if ($parsedJson -is [System.Collections.IEnumerable] -and -not ($parsedJson -is [string])) {
+                    $candidates = @($parsedJson)
+                } else {
+                    $candidates = @($parsedJson)
+                }
+                foreach ($cand in $candidates) {
+                    if ($cand -and ($cand.PSObject.Properties.Name -contains "value") -and ($cand.value -is [System.Collections.IEnumerable])) {
+                        foreach ($sub in $cand.value) {
+                            if ($sub -and $sub.Key) { $cloudItems += $sub }
+                        }
+                    } elseif ($cand -and $cand.Key) {
+                        $cloudItems += $cand
+                    }
+                }
+            } catch {
+                $cloudFetchSuccess = $false
+            }
+        }
+
+        if ($cloudFetchSuccess) {
             $cloudKeySet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
             foreach ($ck in $cloudItems) {
-                if ($ck -and $ck.Key -and ($ck.Key.Trim().Length -eq 25) -and ($ck.Key.Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
-                    $cKeyClean = $ck.Key.Trim()
+                if ($ck -and $ck.Key -and ($ck.Key.ToString().Trim().Length -eq 25) -and ($ck.Key.ToString().Trim() -match '^VUONG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$')) {
+                    $cKeyClean = $ck.Key.ToString().Trim()
                     $cloudKeySet.Add($cKeyClean) | Out-Null
                     if ($mergedMap.ContainsKey($cKeyClean)) {
                         $ex = $mergedMap[$cKeyClean]
+                        # NGUYÊN TẮC BẤT BIẾN: IsUsed = true ở bất kỳ máy nào hoặc Cloud luôn được bảo toàn
                         if ($ck.IsUsed -and -not $ex.IsUsed) {
                             $ex.IsUsed = $true
-                            $ex.UsedHWID = $ck.UsedHWID
-                            $ex.UsedPCName = $ck.UsedPCName
-                            $ex.ActivatedDate = $ck.ActivatedDate
+                            $ex.UsedHWID = [string]$ck.UsedHWID
+                            $ex.UsedPCName = [string]$ck.UsedPCName
+                            $ex.ActivatedDate = [string]$ck.ActivatedDate
                             $syncResult.VaultUpdated = $true
                         }
+                        if (-not $ex.Duration -and $ck.Duration) { $ex.Duration = [string]$ck.Duration }
+                        if (-not $ex.Customer -and $ck.Customer) { $ex.Customer = [string]$ck.Customer }
                     } else {
                         $mergedMap[$cKeyClean] = $ck
                         $syncResult.KeysMerged++
@@ -824,7 +890,7 @@ function Sync-VUONGTTCloudAdminData {
                     $localKeysMissingOnCloud = $true
                     break
                 } elseif ($localItem.IsUsed) {
-                    $cMatch = $cloudItems | Where-Object { $_.Key -and ($_.Key.Trim() -eq $lk) }
+                    $cMatch = $cloudItems | Where-Object { $_ -and $_.Key -and ($_.Key.ToString().Trim() -eq $lk) }
                     if ($cMatch -and -not $cMatch.IsUsed) {
                         # Local máy đã kích hoạt nhưng Cloud chưa ghi nhận -> Tự động đẩy trạng thái kích hoạt lên Cloud
                         $localKeysMissingOnCloud = $true
@@ -835,71 +901,71 @@ function Sync-VUONGTTCloudAdminData {
         }
 
         $allKeysList = @($mergedMap.Values)
-        $cloudHasDirtyItems = ($cloudItems.Count -ne $allKeysList.Count)
-        if ($localKeysMissingOnCloud -or $cloudHasDirtyItems -or $syncResult.VaultUpdated) {
-            Save-VUONGTTLicenseVault -KeyList $allKeysList
+        $syncResult.TotalKeys = $allKeysList.Count
+
+        # BẢO VỆ CHỐNG GHI ĐÈ THU HẸP (DESTRUCTIVE TRUNCATION PROTECTION):
+        # Nếu Cloud có N keys ($cloudItems.Count > 0) mà danh sách sau khi gộp ít hơn Cloud -> TUYỆT ĐỐI KHÔNG PUSH!
+        $shouldPushToCloud = ($localKeysMissingOnCloud -or $syncResult.VaultUpdated)
+        if ($shouldPushToCloud -and $cloudFetchSuccess) {
+            if ($cloudItems.Count -gt 0 -and $allKeysList.Count -lt $cloudItems.Count) {
+                # Chống ghi đè thu hẹp: Danh sách gộp bị ít hơn số key trên Cloud -> Từ chối ghi đè lên Cloud
+                Save-VUONGTTLicenseVault -KeyList $allKeysList -SkipCloudPush
+            } else {
+                Save-VUONGTTLicenseVault -KeyList $allKeysList
+            }
         } else {
             Save-VUONGTTLicenseVault -KeyList $allKeysList -SkipCloudPush
         }
-        $syncResult.TotalKeys = $allKeysList.Count
 
-        # 2. ĐỒNG BỘ CHÍNH SÁCH PHÂN QUYỀN (FREE VS PRO)
+        # -----------------------------------------------------------------
+        # 2. ĐỒNG BỘ CHÍNH SÁCH PHÂN QUYỀN (FREE VS PRO) TỪ GITHUB REST API
+        # -----------------------------------------------------------------
         $cloudPolicyJson = ""
+        $policyFetchSuccess = $false
 
-        # Tầng 1: jsDelivr CDN toàn cầu
-        try {
-            $jsPolUrl = "https://cdn.jsdelivr.net/gh/$RepoOwner/$RepoName@$Branch/src/Config/feature_policy.json?t=$ts"
-            $wcPol = New-Object System.Net.WebClient
-            $wcPol.Proxy = $null
-            $wcPol.Encoding = [System.Text.Encoding]::UTF8
-            $wcPol.Headers.Add("User-Agent", "VUONGTT-AdminCloudSync/2026")
-            $wcPol.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
-            $wcPol.Headers.Add("Pragma", "no-cache")
-            $pDownloaded = $wcPol.DownloadString($jsPolUrl)
-            if ($pDownloaded -and $pDownloaded.Length -gt 20) {
-                $cloudPolicyJson = $pDownloaded.TrimStart([char]0xFEFF).Trim()
-            }
-        } catch {}
-
-        # Tầng 2: GitHub Contents API qua Token
-        if (-not $cloudPolicyJson) {
-            $ghToken = Get-VUONGTTGitHubToken
-            if ($ghToken) {
-                try {
-                    $policyApiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/feature_policy.json"
-                    $pReq = [System.Net.HttpWebRequest]::Create($policyApiUrl)
-                    $pReq.Proxy = $null
-                    $pReq.Timeout = 6000
-                    $pReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
-                    $pReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
-                    $pReq.Headers.Add("Pragma", "no-cache")
-                    $pReq.Headers.Add("Authorization", "token $ghToken")
-                    $pResp = $pReq.GetResponse()
-                    $pReader = New-Object System.IO.StreamReader($pResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
-                    $pRaw = $pReader.ReadToEnd()
-                    $pReader.Close(); $pResp.Close()
-                    $pObj = ConvertFrom-Json ($pRaw.TrimStart([char]0xFEFF).Trim())
-                    if ($pObj -and $pObj.content) {
-                        $cleanBase64 = $pObj.content -replace '\s+', ''
-                        $bytes = [System.Convert]::FromBase64String($cleanBase64)
-                        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
-                            $bytes = $bytes[3..($bytes.Length - 1)]
-                        }
-                        $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes).Trim()
-                    }
-                } catch {}
-            }
-        }
-
-        # Tầng 3: Fallback sang Fastly CDN Raw URL cho cấu hình phân quyền nếu REST API không tải được
-        if (-not $cloudPolicyJson) {
+        # Tầng 1: GitHub Contents REST API qua Token (0s cache)
+        if ($ghToken) {
             try {
-                $policyRawUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/feature_policy.json?nocache=$ts"
-                $cloudPolicyJson = $wc.DownloadString($policyRawUrl).TrimStart([char]0xFEFF).Trim()
+                $policyApiUrl = "https://api.github.com/repos/$RepoOwner/$RepoName/contents/src/Config/feature_policy.json"
+                $pReq = [System.Net.HttpWebRequest]::Create($policyApiUrl)
+                $pReq.Proxy = $null
+                $pReq.Timeout = 6000
+                $pReq.UserAgent = "VUONGTT-AdminCloudSync/2026"
+                $pReq.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                $pReq.Headers.Add("Pragma", "no-cache")
+                $pReq.Headers.Add("Authorization", "token $ghToken")
+                $pResp = $pReq.GetResponse()
+                $pReader = New-Object System.IO.StreamReader($pResp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $pRaw = $pReader.ReadToEnd()
+                $pReader.Close(); $pResp.Close()
+                $pObj = ConvertFrom-Json ($pRaw.TrimStart([char]0xFEFF).Trim())
+                if ($pObj -and $pObj.content) {
+                    $cleanBase64 = $pObj.content -replace '\s+', ''
+                    $bytes = [System.Convert]::FromBase64String($cleanBase64)
+                    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+                        $bytes = $bytes[3..($bytes.Length - 1)]
+                    }
+                    $cloudPolicyJson = [System.Text.Encoding]::UTF8.GetString($bytes).Trim()
+                    if ($cloudPolicyJson -and $cloudPolicyJson.Length -ge 2) {
+                        $policyFetchSuccess = $true
+                    }
+                }
             } catch {}
         }
 
-        if ($cloudPolicyJson) {
+        # Tầng 2: Fallback sang GitHub Raw URL trực tiếp kèm tham số chống cache
+        if (-not $policyFetchSuccess) {
+            try {
+                $policyRawUrl = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$Branch/src/Config/feature_policy.json?nocache=$ts"
+                $pDownloaded = $wc.DownloadString($policyRawUrl).TrimStart([char]0xFEFF).Trim()
+                if ($pDownloaded -and $pDownloaded.Length -ge 2) {
+                    $cloudPolicyJson = $pDownloaded
+                    $policyFetchSuccess = $true
+                }
+            } catch {}
+        }
+
+        if ($policyFetchSuccess -and $cloudPolicyJson) {
             $cleanPolicyText = $cloudPolicyJson.TrimStart([char]0xFEFF).Trim()
             $cloudPolicies = ConvertFrom-Json $cleanPolicyText
             if ($cloudPolicies -and $cloudPolicies.Count -gt 0) {
@@ -922,8 +988,13 @@ function Sync-VUONGTTCloudAdminData {
             }
         }
 
-        $syncResult.Success = $true
-        $syncResult.Message = "Đồng bộ đám mây thành công! Tổng số License Key trong kho: $($syncResult.TotalKeys) key."
+        if ($cloudFetchSuccess -or $policyFetchSuccess) {
+            $syncResult.Success = $true
+            $syncResult.Message = "Đồng bộ đám mây thành công! Tổng số License Key trong kho: $($syncResult.TotalKeys) key."
+        } else {
+            $syncResult.Success = $false
+            $syncResult.Message = "Không thể kết nối đến máy chủ Cloud GitHub (Vui lòng kiểm tra kết nối mạng hoặc Token)."
+        }
         return $syncResult
     } catch {
         $syncResult.Success = $false
