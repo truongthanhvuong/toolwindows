@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.43")]
-[assembly: AssemblyFileVersion("20.5.909.43")]
+[assembly: AssemblyVersion("20.5.909.44")]
+[assembly: AssemblyFileVersion("20.5.909.44")]
 
 namespace VUONGTT
 {
@@ -46,7 +46,7 @@ namespace VUONGTT
                     lblTitle.AutoSize = true;
 
                     Label lblSub = new Label();
-                    lblSub.Text = "Đang khởi động hệ thống siêu tốc... Vui lòng chờ!";
+                    lblSub.Text = "Đang khởi động VUONGTT TOOL... Vui lòng chờ!";
                     lblSub.ForeColor = Color.FromArgb(226, 232, 240);
                     lblSub.Font = new Font("Segoe UI", 9, FontStyle.Regular);
                     lblSub.Location = new Point(22, 48);
