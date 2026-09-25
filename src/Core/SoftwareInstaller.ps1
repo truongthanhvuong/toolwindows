@@ -159,6 +159,7 @@ $script:APP_EXEC_MAP = @{
     "vnpttoken"       = @{ Exe = "vnpt-ca_cl.exe"; ProcessName = "vnpt-ca_cl"; CommonPaths = @("${env:ProgramFiles(x86)}\VNPT-CA\VNPT-CA Token Manager\vnpt-ca_cl.exe", "$env:ProgramFiles\VNPT-CA\VNPT-CA Token Manager\vnpt-ca_cl.exe") }
     "misakyso"        = @{ Exe = "MISA.KySo.exe"; ProcessName = "MISA.KySo"; CommonPaths = @("${env:ProgramFiles(x86)}\MISA JSC\MISA KySo\MISA.KySo.exe", "$env:ProgramFiles\MISA JSC\MISA KySo\MISA.KySo.exe") }
     "esigner"         = @{ Exe = "eSigner.exe"; ProcessName = "eSigner"; CommonPaths = @("${env:ProgramFiles(x86)}\eSigner\eSigner.exe", "$env:ProgramFiles\eSigner\eSigner.exe", "${env:ProgramFiles(x86)}\eSigner Java\eSigner.exe") }
+    "files"           = @{ Exe = "Files.exe"; ProcessName = "Files"; CommonPaths = @("$env:LOCALAPPDATA\Microsoft\WindowsApps\files.exe", "$env:ProgramFiles\WindowsApps\FilesCommunity.Files*\Files.exe"); Protocol = "files-uwp:"; AppxName = "*FilesCommunity.Files*" }
     "netfx35"         = @{ Exe = ""; ProcessName = ""; CommonPaths = @("$env:SystemRoot\Microsoft.NET\Framework\v3.5", "$env:SystemRoot\Microsoft.NET\Framework64\v3.5") }
 }
 
@@ -263,6 +264,32 @@ function Start-VUONGTTInstalledApp {
         $cleanId = $AppId.Trim().ToLower()
         $map = $script:APP_EXEC_MAP[$cleanId]
 
+        # 0. Uu tien AppX / UWP / MSIX Package (Giai phong UAC Token, chay qua Explorer an toan khong bi xung dot quyen Administrator)
+        if ($map -and ($map.Protocol -or $map.AppxName)) {
+            try {
+                if ($map.AppxName) {
+                    $pkg = Get-AppxPackage -Name $map.AppxName -ErrorAction SilentlyContinue | Select-Object -First 1
+                    if ($pkg) {
+                        $manifest = Get-AppxPackageManifest -Package $pkg -ErrorAction SilentlyContinue
+                        $appIdXml = $manifest.Package.Applications.Application.Id
+                        if ($appIdXml) {
+                            $aumid = "$($pkg.PackageFamilyName)!$appIdXml"
+                            if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy AppX UWP qua Shell: $aumid" }
+                            Start-Process "explorer.exe" -ArgumentList "shell:AppsFolder\$aumid"
+                            return $true
+                        }
+                    }
+                }
+                if ($map.Protocol) {
+                    if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy qua URI Protocol: $($map.Protocol)" }
+                    Start-Process "explorer.exe" -ArgumentList "$($map.Protocol)"
+                    return $true
+                }
+            } catch {
+                if ($OnLog) { & $OnLog "  -> [CẢNH BÁO MỞ APPX] $($_.Exception.Message)" }
+            }
+        }
+
         # 1. Thu tim theo danh sach duong dan chuan
         if ($map -and $map.CommonPaths) {
             foreach ($path in $map.CommonPaths) {
@@ -270,12 +297,16 @@ function Start-VUONGTTInstalledApp {
                     $expanded = Resolve-Path $path -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path -First 1
                     if ($expanded -and (Test-Path $expanded)) {
                         if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Đang khởi chạy: $expanded" }
-                        Start-Process -FilePath $expanded
+                        Start-Process "explorer.exe" -ArgumentList "`"$expanded`""
                         return $true
                     }
                 } elseif (Test-Path $path) {
                     if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Đang khởi chạy: $path" }
-                    Start-Process -FilePath $path
+                    if ($path -like "*\Microsoft\WindowsApps\*") {
+                        Start-Process "explorer.exe" -ArgumentList "`"$path`""
+                    } else {
+                        Start-Process -FilePath $path
+                    }
                     return $true
                 }
             }
@@ -292,21 +323,48 @@ function Start-VUONGTTInstalledApp {
                 $val = (Get-ItemProperty -Path $rk -ErrorAction SilentlyContinue).'(default)'
                 if ($val -and (Test-Path $val)) {
                     if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy từ App Paths: $val" }
-                    Start-Process -FilePath $val
+                    Start-Process "explorer.exe" -ArgumentList "`"$val`""
                     return $true
                 }
             }
         }
 
-        # 3. Thu tim qua System PATH
+        # 3. Thu tim qua System PATH (Dac biet xu ly Microsoft\WindowsApps an toan)
         $cmd = Get-Command $targetExe -ErrorAction SilentlyContinue
         if ($cmd -and $cmd.Source -and (Test-Path $cmd.Source)) {
-            if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy từ System PATH: $($cmd.Source)" }
-            Start-Process -FilePath $cmd.Source
-            return $true
+            if ($cmd.Source -like "*\Microsoft\WindowsApps\*") {
+                if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy WindowsApp Alias qua Shell: $($cmd.Source)" }
+                Start-Process "explorer.exe" -ArgumentList "`"$($cmd.Source)`""
+                return $true
+            } else {
+                if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy từ System PATH: $($cmd.Source)" }
+                Start-Process -FilePath $cmd.Source
+                return $true
+            }
         }
 
-        # 4. Quet Shortcut (.lnk) trong Start Menu va Desktop
+        # 4. Do tim bo sung AppX Package chung tren may
+        try {
+            $appxSearch = Get-AppxPackage -Name "*$cleanId*" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $appxSearch -and $HintName) {
+                $cleanHint = ($HintName -replace "[^\w]", "")
+                if ($cleanHint.Length -ge 3) {
+                    $appxSearch = Get-AppxPackage -Name "*$cleanHint*" -ErrorAction SilentlyContinue | Select-Object -First 1
+                }
+            }
+            if ($appxSearch) {
+                $manifest = Get-AppxPackageManifest -Package $appxSearch -ErrorAction SilentlyContinue
+                $appIdXml = $manifest.Package.Applications.Application.Id
+                if ($appIdXml) {
+                    $aumid = "$($appxSearch.PackageFamilyName)!$appIdXml"
+                    if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy ứng dụng Windows App ($cleanId): $aumid" }
+                    Start-Process "explorer.exe" -ArgumentList "shell:AppsFolder\$aumid"
+                    return $true
+                }
+            }
+        } catch {}
+
+        # 5. Quet Shortcut (.lnk) trong Start Menu va Desktop
         $searchTerms = @($cleanId)
         if ($map -and $map.ProcessName) { $searchTerms += $map.ProcessName }
         if ($HintName) { $searchTerms += ($HintName -replace "[^\w\s]", "").Split(' ')[0] }
@@ -325,7 +383,7 @@ function Start-VUONGTTInstalledApp {
                     $lnk = Get-ChildItem -Path $folder -Filter "*$term*.lnk" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                     if ($lnk) {
                         if ($OnLog) { & $OnLog "  -> [TỰ ĐỘNG MỞ] Khởi chạy từ Shortcut: $($lnk.Name)" }
-                        Start-Process -FilePath $lnk.FullName
+                        Start-Process "explorer.exe" -ArgumentList "`"$($lnk.FullName)`""
                         return $true
                     }
                 }
@@ -588,7 +646,7 @@ function Install-VUONGTTApp {
     if ($hasWinget -and -not [string]::IsNullOrEmpty($app.WingetId)) {
         if ($OnProgress) { & $OnProgress "Đang cài đặt $($app.Name) qua Winget (Phiên bản mới nhất)..." }
         try {
-            $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --force"
+            $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --force"
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $arg -OnOutputLine $OnProgress
             if ($exitCode -in $wingetOkCodes) {
                 if ($AutoLaunch) {
@@ -598,7 +656,7 @@ function Install-VUONGTTApp {
             } else {
                 # Nếu đã có bản cũ, thử lệnh upgrade để cập nhật bản mới nhất
                 if ($OnProgress) { & $OnProgress "  -> Thử cập nhật bản mới nhất qua Winget upgrade..." }
-                $upgArg = "upgrade --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements"
+                $upgArg = "upgrade --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
                 $upgExitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $upgArg -OnOutputLine $OnProgress
                 if ($upgExitCode -in $wingetOkCodes) {
                     if ($AutoLaunch) {

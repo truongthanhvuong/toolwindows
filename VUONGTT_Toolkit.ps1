@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.48
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.49
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -2621,12 +2621,23 @@ $btnInstallSelectedApps.Add_Click({
         if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
         & $streamLog "`r`n=== [HOÀN TẤT TOÀN BỘ CÀI ĐẶT] ==="
 
-        [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng đã chọn!`nCác ứng dụng đã được tự động mở sẵn sàng sử dụng.", "Tải Ứng Dụng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        if ($window) {
+            [System.Windows.MessageBox]::Show($window, "Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng đã chọn!`nCác ứng dụng đã được tự động mở sẵn sàng sử dụng.", "Tải Ứng Dụng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+        } else {
+            [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng đã chọn!`nCác ứng dụng đã được tự động mở sẵn sàng sử dụng.", "Tải Ứng Dụng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+        }
     } catch {
         if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("`r`n[LỖI HỆ THỐNG]: $($_.Exception.Message)`r`n") }
-        [System.Windows.MessageBox]::Show("Đã xảy ra sự cố trong quá trình cài đặt: $($_.Exception.Message)", "Thông Báo Lỗi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+        if ($window) {
+            [System.Windows.MessageBox]::Show($window, "Đã xảy ra sự cố trong quá trình cài đặt: $($_.Exception.Message)", "Thông Báo Lỗi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
+        } else {
+            [System.Windows.MessageBox]::Show("Đã xảy ra sự cố trong quá trình cài đặt: $($_.Exception.Message)", "Thông Báo Lỗi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
+        }
     } finally {
         $btnInstallSelectedApps.IsEnabled = $true
+        if ($window) {
+            try { $window.Activate() | Out-Null } catch {}
+        }
     }
 })
 
@@ -8584,7 +8595,15 @@ $window.Add_ContentRendered({
 })
 
 # Hiển thị cửa sổ giao diện ngay lập tức
-$window.ShowDialog() | Out-Null
+$window.Add_Closed({
+    try {
+        if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher) {
+            [System.Windows.Threading.Dispatcher]::CurrentDispatcher.InvokeShutdown()
+        }
+    } catch {}
+})
+$window.Show()
+[System.Windows.Threading.Dispatcher]::Run()
 
 # Dam bao thoat dut khoat toan bo tien trinh khi cua so bi dong
 try { Stop-VUONGTTMetricsWorker } catch {}
