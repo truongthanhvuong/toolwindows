@@ -21,7 +21,7 @@ $script:VUONGTT_APPS = @(
 
     # --- 2. BO GO & FONT ---
     [PSCustomObject]@{ Id="unikey";      Name="UniKey (Gõ Tiếng Việt Chuẩn)";        Category="Bộ gõ";     WingetId="UniKey.UniKey"; Url="https://www.unikey.org/assets/release/unikey43RC5-200929-win64.zip"; Silent=""; IsZip=$true },
-    [PSCustomObject]@{ Id="evkey";       Name="EVKey (Bộ gõ Chống kẹt phím)";        Category="Bộ gõ";     WingetId="lamquangminh.EVKey"; Url="https://github.com/lamquangminh/EVKey/releases/download/v5.0.0/EVKey.zip"; Silent=""; IsZip=$true },
+    [PSCustomObject]@{ Id="evkey";       Name="EVKey (Bộ gõ Chống kẹt phím)";        Category="Bộ gõ";     WingetId="lamquangminh.EVKey"; Url="https://github.com/lamquangminh/EVKey/releases/download/Release/EVKey.zip"; Silent=""; IsZip=$true },
 
     # --- 3. TRINH DUYET WEB ---
     [PSCustomObject]@{ Id="chrome";      Name="Google Chrome (Mới Nhất)";            Category="Trình duyệt"; WingetId="Google.Chrome"; Url="https://dl.google.com/chrome/install/standalonesetup64.exe"; Silent="/silent /install" },
@@ -54,8 +54,8 @@ $script:VUONGTT_APPS = @(
     # --- 8. LAP TRINH & CONG CU HE THONG ---
     [PSCustomObject]@{ Id="everything";  Name="Everything Search (Tìm kiếm siêu tốc)"; Category="Kỹ thuật"; WingetId="voidtools.Everything"; Url="https://www.voidtools.com/Everything-1.4.1.1026.x64-Setup.exe"; Silent="/S" },
     [PSCustomObject]@{ Id="fdm";         Name="Free Download Manager (FDM)";         Category="Kỹ thuật"; WingetId="SoftDeluxe.FreeDownloadManager"; Url="https://dn3.freedownloadmanager.org/6/latest/fdm_x64_setup.exe"; Silent="/VERYSILENT" },
-    [PSCustomObject]@{ Id="crystaldiskmark"; Name="CrystalDiskMark (Đo tốc độ SSD)"; Category="Kỹ thuật"; WingetId="CrystalDewWorld.CrystalDiskMark"; Url="https://sourceforge.net/projects/crystaldiskmark/files/latest/download"; Silent=""; IsZip=$true },
-    [PSCustomObject]@{ Id="crystaldisk"; Name="CrystalDiskInfo (Sức khỏe ổ cứng)";  Category="Kỹ thuật"; WingetId="CrystalDewWorld.CrystalDiskInfo"; Url="https://sourceforge.net/projects/crystaldiskinfo/files/latest/download"; Silent=""; IsZip=$true },
+    [PSCustomObject]@{ Id="crystaldiskmark"; Name="CrystalDiskMark (Đo tốc độ SSD)"; Category="Kỹ thuật"; WingetId="CrystalDewWorld.CrystalDiskMark"; Url="https://crystalmark.info/redirect.php?product=CrystalDiskMark"; Silent=""; IsZip=$true },
+    [PSCustomObject]@{ Id="crystaldisk"; Name="CrystalDiskInfo (Sức khỏe ổ cứng)";  Category="Kỹ thuật"; WingetId="CrystalDewWorld.CrystalDiskInfo"; Url="https://crystalmark.info/redirect.php?product=CrystalDiskInfo"; Silent=""; IsZip=$true },
     [PSCustomObject]@{ Id="notepadplus"; Name="Notepad++ 64-bit (Mới Nhất)";         Category="Lập trình"; WingetId="Notepad++.Notepad++"; Url="https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.6.9/npp.8.6.9.Installer.x64.exe"; Silent="/S" },
     [PSCustomObject]@{ Id="vscode";      Name="Visual Studio Code (Mới Nhất)";       Category="Lập trình"; WingetId="Microsoft.VisualStudioCode"; Url="https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user"; Silent="/VERYSILENT /NORESTART /MERGETASKS=!runcode,addcontextmenufiles,addcontextmenufolders" },
     [PSCustomObject]@{ Id="git";         Name="Git for Windows (Mới Nhất)";          Category="Lập trình"; WingetId="Git.Git"; Url="https://github.com/git-for-windows/git/releases/download/v2.46.0.windows.1/Git-2.46.0-64-bit.exe"; Silent="/VERYSILENT /NORESTART" },
@@ -76,18 +76,40 @@ $script:VUONGTT_APPS = @(
     [PSCustomObject]@{ Id="netfx35";     Name=".NET Framework 3.5 (.NET 2.0 & 3.0)"; Category="Kỹ thuật"; WingetId="Microsoft.DotNet.Framework.DeveloperPack_3"; Url="https://dotnet.microsoft.com"; IsFeature=$true }
 )
 
-# Load Complete 240+ Software Database from JSON if available
-$dbCandidatePaths = @(
-    (Join-Path (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)) "src\Data\SoftwareDatabase.json"),
-    "E:\toolwindows\src\Data\SoftwareDatabase.json",
-    "$env:TEMP\VUONGTT_Toolkit_Runtime\src\Data\SoftwareDatabase.json"
-)
+# Load Complete 254+ Software Database from JSON with robust multi-directory probe and smart-merge
+$dbCandidatePaths = @()
+if ($ScriptDir) { $dbCandidatePaths += Join-Path $ScriptDir "src\Data\SoftwareDatabase.json" }
+if ($PSScriptRoot) {
+    $dbCandidatePaths += Join-Path $PSScriptRoot "..\Data\SoftwareDatabase.json"
+    $dbCandidatePaths += Join-Path (Split-Path -Parent $PSScriptRoot) "Data\SoftwareDatabase.json"
+}
+$dbCandidatePaths += Join-Path $env:ProgramData "VUONGTT_Toolkit\runtime\src\Data\SoftwareDatabase.json"
+$dbCandidatePaths += "E:\toolwindows\src\Data\SoftwareDatabase.json"
+$dbCandidatePaths += "$env:TEMP\VUONGTT_Toolkit_Runtime\src\Data\SoftwareDatabase.json"
+$dbCandidatePaths += Join-Path (Get-Location).Path "src\Data\SoftwareDatabase.json"
+
 foreach ($dbp in $dbCandidatePaths) {
     if ($dbp -and (Test-Path $dbp)) {
         try {
             $jsonApps = Get-Content $dbp -Raw -Encoding UTF8 | ConvertFrom-Json
             if ($jsonApps -and $jsonApps.Count -gt 0) {
-                $script:VUONGTT_APPS = @($jsonApps)
+                # SMART MERGE: Bao toan 100% Direct URLs, Silent switches va IsZip cua danh sach goc
+                $appsMap = @{}
+                foreach ($a in $script:VUONGTT_APPS) {
+                    $appsMap[$a.Id.ToLower()] = $a
+                }
+                foreach ($j in $jsonApps) {
+                    $jId = $j.Id.ToLower()
+                    if ($appsMap.ContainsKey($jId)) {
+                        $existing = $appsMap[$jId]
+                        if (-not [string]::IsNullOrWhiteSpace($j.WingetId)) { $existing.WingetId = $j.WingetId }
+                        if ([string]::IsNullOrWhiteSpace($existing.Url) -and -not [string]::IsNullOrWhiteSpace($j.Url)) { $existing.Url = $j.Url }
+                        if ([string]::IsNullOrWhiteSpace($existing.Category) -and -not [string]::IsNullOrWhiteSpace($j.Category)) { $existing.Category = $j.Category }
+                    } else {
+                        $appsMap[$jId] = $j
+                    }
+                }
+                $script:VUONGTT_APPS = @($appsMap.Values)
                 break
             }
         } catch {}
@@ -591,6 +613,14 @@ function Install-VUONGTTApp {
     }
 
     # Fallback direct download
+    if ([string]::IsNullOrWhiteSpace($app.Url)) {
+        if (-not [string]::IsNullOrEmpty($app.WingetId)) {
+            return "Phần mềm '$($app.Name)' yêu cầu tiện ích WinGet trên Windows để cài đặt tự động (Mã gói: $($app.WingetId)). Vui lòng kiểm tra dịch vụ WinGet trên máy."
+        } else {
+            return "Chưa cấu hình liên kết tải trực tiếp cho '$($app.Name)'."
+        }
+    }
+
     $destFolder = "$env:TEMP\VUONGTT_Apps"
     if (-not (Test-Path $destFolder)) { New-Item -ItemType Directory -Path $destFolder -Force | Out-Null }
 

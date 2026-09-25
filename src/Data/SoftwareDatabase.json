@@ -41,7 +41,8 @@
         "DirectUrl":  "https://github.com/lamquangminh/EVKey/releases/download/v5.0.0/EVKey.zip",
         "Silent":  null,
         "IsZip":  true,
-        "Icon":  "src\\Assets\\AppIcons\\evkey.png"
+        "Icon":  "src\\Assets\\AppIcons\\evkey.png",
+        "Url":  "https://github.com/lamquangminh/EVKey/releases/download/Release/EVKey.zip"
     },
     {
         "Id":  "ultraviewer",
@@ -133,7 +134,7 @@
     },
     {
         "Id":  "vietteltoken",
-        "Name":  "Viettel-CA Token Manager v2 (Ký Số Nhà Nước & Thuế)",
+        "Name":  "Viettel-CA Token Manager v2 (Ký Số Nhà Nước \u0026 Thuế)",
         "Category":  "Accounting",
         "WingetId":  "",
         "Link":  "https://viettel-ca.vn",
@@ -155,7 +156,7 @@
     },
     {
         "Id":  "misakyso",
-        "Name":  "MISA Ký Số (Hóa Đơn, Thuế & Dịch Vụ Công)",
+        "Name":  "MISA Ký Số (Hóa Đơn, Thuế \u0026 Dịch Vụ Công)",
         "Category":  "Accounting",
         "WingetId":  "",
         "Link":  "https://esign.misa.vn",
@@ -524,8 +525,9 @@
         "Link":  "https://crystalmark.info/en/software/crystaldiskmark/",
         "DirectUrl":  "",
         "Silent":  "",
-        "IsZip":  false,
-        "Icon":  "src\\Assets\\AppIcons\\crystaldiskmark.png"
+        "IsZip":  true,
+        "Icon":  "src\\Assets\\AppIcons\\crystaldiskmark.png",
+        "Url":  "https://crystalmark.info/redirect.php?product=CrystalDiskMark"
     },
     {
         "Id":  "cursor",
@@ -606,7 +608,7 @@
     },
     {
         "Id":  "netfx35",
-        "Name":  ".NET Framework 3.5 (.NET 2.0 & 3.0)",
+        "Name":  ".NET Framework 3.5 (.NET 2.0 \u0026 3.0)",
         "Category":  "Microsoft Tools",
         "WingetId":  "Microsoft.DotNet.Framework.DeveloperPack_3",
         "Link":  "https://dotnet.microsoft.com",
@@ -743,9 +745,10 @@
         "WingetId":  "FilesCommunity.Files",
         "Link":  "https://files.community",
         "DirectUrl":  "",
-        "Silent":  "",
+        "Silent":  "/silent",
         "IsZip":  false,
-        "Icon":  "src\\Assets\\AppIcons\\files.png"
+        "Icon":  "src\\Assets\\AppIcons\\files.png",
+        "Url":  "https://github.com/files-community/Files/releases/latest"
     },
     {
         "Id":  "fileconverter",
@@ -2748,5 +2751,37 @@
         "Silent":  "",
         "IsZip":  false,
         "Icon":  "src\\Assets\\AppIcons\\cloudflarewarp.png"
+    },
+    {
+        "Id":  "claude_code",
+        "Name":  "Claude Code CLI",
+        "Category":  "Dev",
+        "WingetId":  "Anthropic.ClaudeCode",
+        "Url":  "https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview",
+        "Silent":  ""
+    },
+    {
+        "Id":  "pdf_xchange",
+        "Name":  "PDF-XChange Editor",
+        "Category":  "Docs",
+        "WingetId":  "TrackerSoftware.PDF-XChangeEditor",
+        "Url":  "https://downloads.pdf-xchange.com/PDFXve10.exe",
+        "Silent":  "/VERYSILENT /NORESTART"
+    },
+    {
+        "Id":  "es_de",
+        "Name":  "EmulationStation Desktop Edition",
+        "Category":  "Games",
+        "WingetId":  "ES-DE.EmulationStation-DE",
+        "Url":  "https://gitlab.com/es-de/emulationstation-de/-/releases",
+        "Silent":  "/S"
+    },
+    {
+        "Id":  "mpc_qt",
+        "Name":  "Media Player Classic Qute Theater",
+        "Category":  "Media",
+        "WingetId":  "cmdr2.mpc-qt",
+        "Url":  "https://github.com/cmdr2/mpc-qt/releases/latest",
+        "Silent":  "/VERYSILENT"
     }
 ]
