@@ -605,6 +605,17 @@
         "Icon":  "src\\Assets\\AppIcons\\dockerdesktop.png"
     },
     {
+        "Id":  "netfx35",
+        "Name":  ".NET Framework 3.5 (.NET 2.0 & 3.0)",
+        "Category":  "Microsoft Tools",
+        "WingetId":  "Microsoft.DotNet.Framework.DeveloperPack_3",
+        "Link":  "https://dotnet.microsoft.com",
+        "DirectUrl":  "",
+        "Silent":  "",
+        "IsZip":  false,
+        "Icon":  "src\\Assets\\AppIcons\\netfx35.png"
+    },
+    {
         "Id":  "dotnet6",
         "Name":  ".NET Desktop Runtime 6",
         "Category":  "Microsoft Tools",

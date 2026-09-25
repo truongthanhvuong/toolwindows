@@ -72,8 +72,8 @@ $script:VUONGTT_APPS = @(
     [PSCustomObject]@{ Id="dvcplugin";   Name="Plugin Ký Số Cổng Dịch Vụ Công Quốc Gia"; Category="Kế toán"; WingetId=""; Url="https://dichvucong.gov.vn/pki/VNPT_Plugin.exe"; Silent="/VERYSILENT /NORESTART /SP-" },
     [PSCustomObject]@{ Id="vietteltoken";Name="Viettel-CA Token Manager v2 (Ký Số Nhà Nước & Thuế)"; Category="Kế toán"; WingetId=""; Url="https://viettel-ca.vn/download/Viettel-CA_v2_setup.exe"; Silent="/S" },
     [PSCustomObject]@{ Id="vnpttoken";   Name="VNPT-CA Token Manager AN (Ký Số Thuế, BHXH, DVC)"; Category="Kế toán"; WingetId=""; Url="https://vnpt-ca.vn:443/documents/download?fileNameDownload=documents/15012026160533.exe"; Silent="/S" },
-    [PSCustomObject]@{ Id="misakyso";    Name="MISA Ký Số (Hóa Đơn, Thuế & Dịch Vụ Công)"; Category="Kế toán"; WingetId=""; Url="https://product.misa.vn/misasoftware/MISAKyso/MISA.KySo_Setup_latest.exe"; Silent="/silent" },
-    [PSCustomObject]@{ Id="esigner";     Name="eSigner TCT (Ký Số Thuế Điện Tử Tổng Cục Thuế)"; Category="Kế toán"; WingetId=""; Url="https://thuedientu.gdt.gov.vn/download/eSigner_1.0.8_setup.exe"; Silent="/VERYSILENT /NORESTART /SP-" }
+    [PSCustomObject]@{ Id="esigner";     Name="eSigner TCT (Ký Số Thuế Điện Tử Tổng Cục Thuế)"; Category="Kế toán"; WingetId=""; Url="https://thuedientu.gdt.gov.vn/download/eSigner_1.0.8_setup.exe"; Silent="/VERYSILENT /NORESTART /SP-" },
+    [PSCustomObject]@{ Id="netfx35";     Name=".NET Framework 3.5 (.NET 2.0 & 3.0)"; Category="Kỹ thuật"; WingetId="Microsoft.DotNet.Framework.DeveloperPack_3"; Url="https://dotnet.microsoft.com"; IsFeature=$true }
 )
 
 # Load Complete 240+ Software Database from JSON if available
@@ -137,6 +137,7 @@ $script:APP_EXEC_MAP = @{
     "vnpttoken"       = @{ Exe = "vnpt-ca_cl.exe"; ProcessName = "vnpt-ca_cl"; CommonPaths = @("${env:ProgramFiles(x86)}\VNPT-CA\VNPT-CA Token Manager\vnpt-ca_cl.exe", "$env:ProgramFiles\VNPT-CA\VNPT-CA Token Manager\vnpt-ca_cl.exe") }
     "misakyso"        = @{ Exe = "MISA.KySo.exe"; ProcessName = "MISA.KySo"; CommonPaths = @("${env:ProgramFiles(x86)}\MISA JSC\MISA KySo\MISA.KySo.exe", "$env:ProgramFiles\MISA JSC\MISA KySo\MISA.KySo.exe") }
     "esigner"         = @{ Exe = "eSigner.exe"; ProcessName = "eSigner"; CommonPaths = @("${env:ProgramFiles(x86)}\eSigner\eSigner.exe", "$env:ProgramFiles\eSigner\eSigner.exe", "${env:ProgramFiles(x86)}\eSigner Java\eSigner.exe") }
+    "netfx35"         = @{ Exe = ""; ProcessName = ""; CommonPaths = @("$env:SystemRoot\Microsoft.NET\Framework\v3.5", "$env:SystemRoot\Microsoft.NET\Framework64\v3.5") }
 }
 
 function Get-VUONGTTAppList {
@@ -371,12 +372,160 @@ function Install-VUONGTTCustomApp {
     }
 }
 
+function Get-VUONGTTNetFx35Status {
+    [CmdletBinding()]
+    param()
+
+    $isInstalled = $false
+    $state = "Disabled"
+    $details = ""
+
+    try {
+        # 1. Kiem tra nhanh qua Registry NDP v3.5
+        $regKey = "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v3.5"
+        if (Test-Path $regKey) {
+            $inst = (Get-ItemProperty -Path $regKey -Name "Install" -ErrorAction SilentlyContinue).Install
+            if ($inst -eq 1) {
+                $isInstalled = $true
+                $state = "Enabled"
+                $details = "Đã cài đặt hoàn chỉnh (.NET Framework 2.0, 3.0, 3.5)"
+            }
+        }
+
+        # 2. Kiem tra bo sung qua Windows Optional Feature
+        if (-not $isInstalled) {
+            $feat = Get-WindowsOptionalFeature -Online -FeatureName "NetFx3" -ErrorAction SilentlyContinue
+            if ($feat -and $feat.State -eq "Enabled") {
+                $isInstalled = $true
+                $state = "Enabled"
+                $details = "Tính năng Windows NetFx3 đang ở trạng thái Enabled"
+            } elseif ($feat) {
+                $state = $feat.State.ToString()
+                $details = "Tính năng Windows NetFx3: $state"
+            }
+        }
+    } catch {
+        $details = $_.Exception.Message
+    }
+
+    return [PSCustomObject]@{
+        IsInstalled = $isInstalled
+        State       = $state
+        Details     = $details
+    }
+}
+
+function Install-VUONGTTNetFx35 {
+    [CmdletBinding()]
+    param(
+        [scriptblock]$OnProgress = $null
+    )
+
+    $log = @()
+    $msg = "Bắt đầu kiểm tra và cài đặt .NET Framework 3.5 (.NET 2.0 & 3.0)..."
+    $log += $msg
+    if ($OnProgress) { & $OnProgress $msg }
+
+    # 1. Kiem tra xem may da co .NET 3.5 chua
+    $status = Get-VUONGTTNetFx35Status
+    if ($status.IsInstalled) {
+        $msgOk = "[OK] .NET Framework 3.5 đã được cài đặt sẵn trên máy tính này!"
+        $log += $msgOk
+        if ($OnProgress) { & $OnProgress $msgOk }
+        return $msgOk
+    }
+
+    # 2. Tu dong kiem tra va khoi dong Windows Update service (wuauserv) neu bi tat
+    try {
+        $wuSvc = Get-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+        if ($wuSvc) {
+            if ($wuSvc.StartType -eq "Disabled") {
+                if ($OnProgress) { & $OnProgress "  -> Kích hoạt lại dịch vụ Windows Update (wuauserv)..." }
+                Set-Service -Name "wuauserv" -StartupType Manual -ErrorAction SilentlyContinue
+            }
+            if ($wuSvc.Status -ne "Running") {
+                Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+            }
+        }
+    } catch {}
+
+    # 3. Kiem tra va bypass tam thoi WSUS (UseWUServer) neu co de tranh loi 0x800F0954
+    $wsusKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"
+    $origUseWUServer = $null
+    $hasBypassedWsus = $false
+    try {
+        if (Test-Path $wsusKey) {
+            $origUseWUServer = (Get-ItemProperty -Path $wsusKey -Name "UseWUServer" -ErrorAction SilentlyContinue).UseWUServer
+            if ($origUseWUServer -eq 1) {
+                if ($OnProgress) { & $OnProgress "  -> Phát hiện chính sách WSUS nội bộ. Đang tạm thời chuyển sang Microsoft Update..." }
+                Set-ItemProperty -Path $wsusKey -Name "UseWUServer" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
+                $hasBypassedWsus = $true
+            }
+        }
+    } catch {}
+
+    try {
+        $msgDism = "Đang kích hoạt gói tính năng .NET Framework 3.5 từ máy chủ Microsoft (DISM)..."
+        $log += $msgDism
+        if ($OnProgress) { & $OnProgress $msgDism }
+
+        # Chay DISM de Enable-Feature NetFx3
+        $dismArgs = "/online /enable-feature /featurename:NetFx3 /all /norestart"
+        $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+            Start-VUONGTTProcessResponsive -FilePath "dism.exe" -ArgumentList $dismArgs -TimeoutSeconds 900 -NoNewWindow $true
+        } else {
+            (Start-Process -FilePath "dism.exe" -ArgumentList $dismArgs -Wait -PassThru -NoNewWindow).ExitCode
+        }
+
+        # Kiem tra ket qua
+        if ($exitCode -eq 0 -or $exitCode -eq 3010) {
+            $msgSucc = "[OK] Đã kích hoạt và cài đặt thành công .NET Framework 3.5 (.NET 2.0 & 3.0)!"
+            $log += $msgSucc
+            if ($OnProgress) { & $OnProgress $msgSucc }
+            return $msgSucc
+        }
+
+        # Fallback qua PowerShell Enable-WindowsOptionalFeature
+        if ($OnProgress) { & $OnProgress "  -> DISM trả về mã $exitCode. Đang thử phương án dự phòng WindowsOptionalFeature..." }
+        try {
+            $featRes = Enable-WindowsOptionalFeature -Online -FeatureName "NetFx3" -All -NoRestart -ErrorAction Stop
+            if ($featRes -and ($featRes.RestartNeeded -or $featRes.Online)) {
+                $msgSucc2 = "[OK] Cài đặt thành công .NET Framework 3.5 qua WindowsOptionalFeature!"
+                $log += $msgSucc2
+                if ($OnProgress) { & $OnProgress $msgSucc2 }
+                return $msgSucc2
+            }
+        } catch {
+            $log += "[CẢNH BÁO] OptionalFeature error: $($_.Exception.Message)"
+        }
+
+        $msgFail = "[LỖI] Cài đặt .NET Framework 3.5 không thành công (DISM ExitCode: $exitCode). Vui lòng kiểm tra kết nối mạng Internet hoặc tường lửa."
+        $log += $msgFail
+        if ($OnProgress) { & $OnProgress $msgFail }
+        return $msgFail
+
+    } finally {
+        # Khoi phuc lai gia tri WSUS goc neu da bypass
+        if ($hasBypassedWsus -and $origUseWUServer -ne $null) {
+            try {
+                Set-ItemProperty -Path $wsusKey -Name "UseWUServer" -Value $origUseWUServer -Type DWord -Force -ErrorAction SilentlyContinue
+                Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
+            } catch {}
+        }
+    }
+}
+
 function Install-VUONGTTApp {
     param(
         [string]$AppId,
         [scriptblock]$OnProgress = $null,
         [switch]$AutoLaunch = $true
     )
+
+    if ($AppId -in @("netfx35", "dotnet35")) {
+        return Install-VUONGTTNetFx35 -OnProgress $OnProgress
+    }
 
     if ($AppId -in @("htkk", "itaxviewer", "misasme", "meinvoice", "kbhxh", "javatax", "dvcplugin", "vietteltoken", "vnpttoken", "misakyso", "esigner")) {
         if ([bool](Get-Command "Install-VUONGTTAccountingApp" -ErrorAction SilentlyContinue)) {

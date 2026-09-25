@@ -5,6 +5,10 @@
 
 function Enable-VUONGTTOptionalFeature {
     param([string]$FeatureName)
+    if ($FeatureName -eq "NetFx3" -and (Get-Command "Install-VUONGTTNetFx35" -ErrorAction SilentlyContinue)) {
+        return Install-VUONGTTNetFx35
+    }
+
     $log = @()
     try {
         $log += "[BẮT ĐẦU] Đang bật tính năng Windows: $FeatureName ..."
