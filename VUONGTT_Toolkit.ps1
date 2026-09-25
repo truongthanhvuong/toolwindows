@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.41
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.42
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -148,7 +148,34 @@ try {
     if ([System.Windows.Application]::Current) {
         [System.Windows.Application]::Current.ShutdownMode = [System.Windows.ShutdownMode]::OnExplicitShutdown
         [System.Windows.Application]::Current.MainWindow = $window
+
+        # BẢO VỆ TOÀN DIỆN CHỐNG SẬP ỨNG DỤNG (GLOBAL EXCEPTION SHIELD)
+        [System.Windows.Application]::Current.Add_DispatcherUnhandledException({
+            param($sender, $e)
+            try {
+                $e.Handled = $true
+                $errMsg = "WPF Dispatcher Exception: $($e.Exception.Message)`n$($e.Exception.StackTrace)"
+                $logDir = Join-Path $env:TEMP "VUONGTT_Toolkit"
+                if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+                Add-Content -Path (Join-Path $logDir "crash_shield.log") -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $errMsg" -ErrorAction SilentlyContinue
+            } catch {}
+        })
     }
+    [System.AppDomain]::CurrentDomain.add_UnhandledException({
+        param($sender, $e)
+        try {
+            $ex = $e.ExceptionObject
+            $logDir = Join-Path $env:TEMP "VUONGTT_Toolkit"
+            if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+            Add-Content -Path (Join-Path $logDir "crash_shield.log") -Value "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] AppDomain Unhandled: $($ex.ToString())" -ErrorAction SilentlyContinue
+        } catch {}
+    })
+    [System.Threading.Tasks.TaskScheduler]::add_UnobservedTaskException({
+        param($sender, $e)
+        try {
+            $e.SetObserved()
+        } catch {}
+    })
 } catch {}
 
 function Get-Control {
@@ -3420,7 +3447,11 @@ function Select-VUONGTTDiskIndex {
         $txtPowerHoursRating.Text = if ($d.PowerHoursRating) { $d.PowerHoursRating } else { "Tốt • Bền Bỉ" }
     }
     if ($txtRemainingLife) {
-        $txtRemainingLife.Text = "$($d.HealthPct)% (Tuổi thọ chip Flash)"
+        if ($d.MediaType -eq "HDD" -or ($d.BusType -eq "SATA" -and $d.MediaType -ne "SSD")) {
+            $txtRemainingLife.Text = "$($d.HealthPct)% (Sức khỏe đĩa cơ HDD)"
+        } else {
+            $txtRemainingLife.Text = "$($d.HealthPct)% (Tuổi thọ chip Flash SSD)"
+        }
         $txtRemainingLife.Foreground = $conv.ConvertFromString($d.HealthColor)
     }
     if ($txtBusInterface) {
@@ -3497,23 +3528,30 @@ function Select-VUONGTTDiskIndex {
     }
 }
 
+$script:suppressDiskSelection = $false
 function Refresh-VUONGTTDiskHealthUI {
     param([switch]$ForceRefresh)
     $script:cachedDiskHealthList = Get-VUONGTTDiskHealthList -ForceRefresh:$ForceRefresh
-    if ($cmbDiskSelect) {
-        $cmbDiskSelect.Items.Clear()
-        foreach ($d in $script:cachedDiskHealthList) {
-            $cmbDiskSelect.Items.Add("[Disk $($d.DeviceId)] $($d.Model) ($($d.SizeGB) GB) - $($d.HealthText)") | Out-Null
+    $script:suppressDiskSelection = $true
+    try {
+        if ($cmbDiskSelect) {
+            $cmbDiskSelect.Items.Clear()
+            foreach ($d in $script:cachedDiskHealthList) {
+                $cmbDiskSelect.Items.Add("[Disk $($d.DeviceId)] $($d.Model) ($($d.SizeGB) GB) - $($d.HealthText)") | Out-Null
+            }
+            if ($cmbDiskSelect.Items.Count -gt 0) {
+                $cmbDiskSelect.SelectedIndex = 0
+            }
         }
-        if ($cmbDiskSelect.Items.Count -gt 0) {
-            $cmbDiskSelect.SelectedIndex = 0
-        }
+    } finally {
+        $script:suppressDiskSelection = $false
     }
     Select-VUONGTTDiskIndex -Index 0
 }
 
 if ($cmbDiskSelect) {
     $cmbDiskSelect.Add_SelectionChanged({
+        if ($script:suppressDiskSelection) { return }
         if ($cmbDiskSelect.SelectedIndex -ge 0) {
             Select-VUONGTTDiskIndex -Index $cmbDiskSelect.SelectedIndex
         }

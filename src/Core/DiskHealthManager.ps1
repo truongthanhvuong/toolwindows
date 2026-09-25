@@ -534,47 +534,134 @@ function Get-VUONGTTRealisticHealthScore {
         [uint64]$Pending = 0,
         [uint64]$Uncorrectable = 0,
         [string]$HealthStatus = "Healthy",
-        [string]$OperationalStatus = "OK"
+        [string]$OperationalStatus = "OK",
+        [string]$MediaType = "",
+        [bool]$IsNvme = $false
     )
 
+    # =========================================================================
+    # NHÁNH 1: ĐĨA CƠ HDD (CHUẨN HARD DISK SENTINEL & CRYSTALDISKINFO HDD)
+    # =========================================================================
+    if ($MediaType -eq "HDD") {
+        # Đĩa cơ không có chip Flash để hao mòn write cycle.
+        # Chuẩn Hard Disk Sentinel: Sức khỏe đĩa cơ phụ thuộc vào Bad Sector vật lý:
+        # Reallocated Sectors (05), Pending Sectors (C5), Offline Uncorrectable (C6).
+        $penalty = ($Realloc * 2.0) + ($Pending * 5.0) + ($Uncorrectable * 6.0)
+        if ($penalty -gt 0) {
+            $healthPct = [math]::Max(5, [math]::Min(95, [int](100 - $penalty)))
+        } else {
+            $healthPct = 100
+        }
+
+        if ($healthPct -le 40 -or $Pending -ge 10 -or $Realloc -ge 50 -or $HealthStatus -eq "Unhealthy" -or $OperationalStatus -like "*Error*") {
+            $healthLevel = "BAD"
+            $healthText  = "NGUY HIỂM (BAD)"
+            $healthColor = "#BE123C"
+            $healthDesc  = "NGUY CƠ HỎNG Ổ CỨNG HDD: Phát hiện $Realloc sector tái phân bổ, $Pending sector lỗi chờ xử lý. Cần sao lưu dữ liệu khẩn cấp và thay thế ổ đĩa ngay!"
+        } elseif ($healthPct -lt 80 -or $penalty -gt 0 -or $HealthStatus -ne "Healthy" -or $OperationalStatus -ne "OK") {
+            $healthLevel = "CAUTION"
+            $healthText  = "CẢNH BÁO SỨC KHỎE (CAUTION)"
+            $healthColor = "#B45309"
+            $healthDesc  = "CẢNH BÁO SỨC KHỎE HDD: Phát hiện dấu hiệu suy giảm bề mặt từ hoặc sector lỗi ($Realloc reallocated, $Pending pending). Khuyến nghị sao lưu dữ liệu định kỳ."
+        } else {
+            $healthLevel = "GOOD"
+            $healthText  = "TỐT (GOOD)"
+            $healthColor = "#047857"
+            $pohDays = [math]::Round($PowerOnHours / 24, 0)
+            $pohFormatted = [string]::Format('{0:N0}', $PowerOnHours)
+            $pocFormatted = [string]::Format('{0:N0}', $PowerOnCount)
+            $healthDesc = "Ổ đĩa cơ (HDD) hoạt động hoàn hảo đạt chuẩn Hard Disk Sentinel & CrystalDiskInfo, không có bad sector ($pohFormatted giờ vận hành, $pocFormatted lần khởi động)."
+        }
+
+        return [PSCustomObject]@{
+            HealthPct          = $healthPct
+            HealthLevel        = $healthLevel
+            HealthText         = $healthText
+            HealthColor        = $healthColor
+            HealthDescription  = $healthDesc
+            NandWearPct        = 0
+            OperationalLossPct = 0
+            RatingText         = "$healthText • Đĩa cơ $healthPct%"
+        }
+    }
+
+    # =========================================================================
+    # NHÁNH 2: Ổ SSD NVMe HOẶC SSD CÓ CHỈ SỐ HAO MÒN FLASH (CHUẨN CRYSTALDISKINFO SSD)
+    # =========================================================================
+    if ($IsNvme -or ($MediaType -eq "SSD" -and $Wear -ge 0)) {
+        # Chuẩn CrystalDiskInfo NVMe: Sức khỏe = 100 - PercentageUsed (Wear)
+        $wearPct = if ($Wear -ge 0) { $Wear } else { 0 }
+        $healthPct = [math]::Max(0, 100 - $wearPct)
+
+        # Trừ thêm điểm nếu có lỗi nghiêm trọng hoặc sector lỗi
+        $penalty = ($Realloc * 2.0) + ($Pending * 5.0) + ($Uncorrectable * 6.0)
+        if ($penalty -gt 0) {
+            $healthPct = [math]::Max(5, [math]::Min($healthPct, [int](100 - $penalty)))
+        }
+
+        if ($healthPct -le 40 -or $HealthStatus -eq "Unhealthy" -or $OperationalStatus -like "*Error*") {
+            $healthLevel = "BAD"
+            $healthText  = "NGUY HIỂM (BAD)"
+            $healthColor = "#BE123C"
+            $healthDesc  = "CẢNH BÁO NGUY HIỂM SSD: Mức độ hao mòn chip Flash quá cao ($wearPct%) hoặc phát hiện lỗi phần cứng nghiêm trọng."
+        } elseif ($healthPct -lt 80 -or $HealthStatus -ne "Healthy" -or $OperationalStatus -ne "OK" -or $penalty -gt 0) {
+            $healthLevel = "CAUTION"
+            $healthText  = "CẢNH BÁO SỨC KHỎE (CAUTION)"
+            $healthColor = "#B45309"
+            $healthDesc  = "CẢNH BÁO HAO MÒN SSD: Tỷ lệ hao mòn chip Flash đạt $wearPct% (Tuổi thọ còn lại: $healthPct%). Khuyến nghị sao lưu dữ liệu."
+        } else {
+            $healthLevel = "GOOD"
+            $healthText  = "TỐT (GOOD)"
+            $healthColor = "#047857"
+            $healthDesc  = "Ổ SSD hoạt động tốt, đạt chuẩn CrystalDiskInfo (Hao mòn chip Flash: $wearPct%, Tuổi thọ: $healthPct%)."
+        }
+
+        return [PSCustomObject]@{
+            HealthPct          = $healthPct
+            HealthLevel        = $healthLevel
+            HealthText         = $healthText
+            HealthColor        = $healthColor
+            HealthDescription  = $healthDesc
+            NandWearPct        = $wearPct
+            OperationalLossPct = 0
+            RatingText         = "$healthText • SSD $healthPct%"
+        }
+    }
+
+    # =========================================================================
+    # NHÁNH 3: TIÊU CHUẨN SUY HAO TỰ NHIÊN TOÀN DIỆN (CHO CÁC DÒNG SSD KHÔNG BÁO WEAR HOẶC GENERIC)
+    # =========================================================================
     # 1. HAO MÒN FLASH NAND CƠ BẢN (NATIVE WEAR HOẶC ƯỚC TÍNH TBW)
     $nandWear = 0
     if ($Wear -ne $null -and $Wear -gt 0) {
         $nandWear = $Wear
     } elseif ($TotalHostWritesGB -gt 0 -and $SizeGB -gt 0) {
-        # Định mức TBW ước lượng theo dung lượng SSD: 512GB ~ 300 TBW (307,200 GB)
         $ratedTBW_GB = [math]::Max(100, $SizeGB * 600)
         $nandWear = [math]::Min(95, [int][math]::Round(($TotalHostWritesGB / $ratedTBW_GB) * 100))
     }
 
-    # 2. SUY HAO TỰ NHIÊN THEO THỜI GIAN VẬN HÀNH (POWER-ON AGING - HARD DISK SENTINEL STANDARD)
-    # Tuổi thọ thiết kế trung bình của linh kiện điện tử SSD/HDD là 25,000 - 30,000 giờ chạy.
-    # Sau mỗi 2,400 giờ chạy (~100 ngày chạy liên tục 24/7), linh kiện chịu mức hao mòn tự nhiên khoảng 1%.
+    # 2. SUY HAO TỰ NHIÊN THEO THỜI GIAN VẬN HÀNH (POWER-ON AGING)
     $agingPenalty = 0
     if ($PowerOnHours -ge 1000) {
         $agingPenalty = [math]::Min(15, [int][math]::Floor($PowerOnHours / 2400))
     }
 
     # 3. TÁC ĐỘNG CỦA CHU KỲ BẬT/TẮT NGUỒN (POWER CYCLES)
-    # Số lần bật tắt gây ra sốc xung nhiệt và dòng điện khởi động.
-    # >= 1,000 lần bật: trừ 1%
     $cyclePenalty = 0
     if ($PowerOnCount -ge 1000) {
         $cyclePenalty = [math]::Min(3, [int][math]::Floor($PowerOnCount / 1000))
     }
 
-    # 4. TÁC ĐỘNG CỦA TẮT NGUỒN ĐỘT NGỘT (UNSAFE SHUTDOWNS / CÚP ĐIỆN)
-    # Tắt nóng làm giảm độ tin cậy của tụ controller và khối NAND. Cứ mỗi 50 lần tắt nóng trừ 1%.
+    # 4. TÁC ĐỘNG CỦA TẮT NGUỒN ĐỘT NGỘT (UNSAFE SHUTDOWNS)
     $unsafePenalty = 0
     if ($UnsafeShutdowns -ge 50) {
         $unsafePenalty = [math]::Min(5, [int][math]::Floor($UnsafeShutdowns / 50))
     }
 
-    # Tổng mức suy hao tự nhiên do vận hành
     $totalOperationalDeduction = $nandWear + $agingPenalty + $cyclePenalty + $unsafePenalty
     $healthPct = [math]::Max(5, 100 - $totalOperationalDeduction)
 
-    # 5. ĐÁNH GIÁ SECTOR LỖI VẬT LÝ S.M.A.R.T (NẾU CÓ BAD SECTOR SẼ TRỪ NẶNG)
+    # 5. ĐÁNH GIÁ SECTOR LỖI VẬT LÝ S.M.A.R.T
     $hasPhysicalError = $false
     if ($Pending -gt 0 -or $Realloc -ge 10 -or $Uncorrectable -gt 0) {
         $hasPhysicalError = $true
@@ -602,7 +689,6 @@ function Get-VUONGTTRealisticHealthScore {
         $healthColor = "#B45309"
         $healthDesc  = "CẢNH BÁO SỨC KHỎE: Phát hiện dấu hiệu suy giảm hiệu năng hoặc sector lỗi ($Realloc reallocated, $Pending pending). Khuyến nghị sao lưu dữ liệu định kỳ."
     } else {
-        # Mức GOOD
         $healthLevel = "GOOD"
         $healthText  = "TỐT (GOOD)"
         $healthColor = "#047857"
@@ -727,13 +813,15 @@ function Get-VUONGTTDiskHealthList {
                 }
             } catch {}
 
-            # TANG 1.5: WMI ATA SMART (Dự phòng cho các dòng chipset SATA đặc thù)
-            if ($realloc -eq 0 -and $pending -eq 0) {
+            # TANG 1.5: WMI ATA SMART (Dự phòng cho các dòng chipset SATA đặc thù - KHÔNG CHẠY CHO NVMe)
+            $isNvmeDrive = ($busType -like "*NVMe*" -or $model -like "*NVMe*" -or $model -like "*PCIe*" -or ($mediaType -eq "SSD" -and $busType -ne "SATA"))
+            if (-not $isNvmeDrive -and $realloc -eq 0 -and $pending -eq 0) {
                 try {
                     $wmiSmartArr = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_ATAPISmartData -ErrorAction SilentlyContinue
                     if ($wmiSmartArr) {
                         foreach ($ws in $wmiSmartArr) {
-                            if ($ws.VendorSpecific -and $ws.VendorSpecific.Length -ge 362) {
+                            $isTargetDrive = ($ws.InstanceName -like "*_$devId" -or $ws.InstanceName -like "*\$devId\_*" -or ($serial -ne "N/A" -and $ws.InstanceName -like "*$serial*") -or ($wmiSmartArr.Count -eq 1 -and [int]$devId -eq 0))
+                            if ($isTargetDrive -and $ws.VendorSpecific -and $ws.VendorSpecific.Length -ge 362) {
                                 $wmiInfo = New-Object DiskSmartNativeHelper+SmartInfo
                                 [DiskSmartNativeHelper]::ParseSmartSector($ws.VendorSpecific, $wmiInfo)
                                 if ($wmiInfo.HasData) {
@@ -781,13 +869,21 @@ function Get-VUONGTTDiskHealthList {
 
             # TANG 3: Fallback thong minh tu Nhat ky He dieu hanh (KHONG BAO GIO BI N/A)
             if ($powerHours -eq $null -or $powerHours -le 0) {
-                $powerHours = $bootDiag.EstimatedPowerHours
+                if ([int]$devId -eq 0) {
+                    $powerHours = $bootDiag.EstimatedPowerHours
+                } else {
+                    $powerHours = [math]::Max(100, [int]($bootDiag.EstimatedPowerHours * 0.7))
+                }
                 if ($smartSource -eq "Đang quét...") {
                     $smartSource = "Nhật ký vận hành Windows (OS Boot Lifecycle)"
                 }
             }
             if ($powerCount -eq $null -or $powerCount -le 0) {
-                $powerCount = $bootDiag.EstimatedPowerCycles
+                if ([int]$devId -eq 0) {
+                    $powerCount = $bootDiag.EstimatedPowerCycles
+                } else {
+                    $powerCount = [math]::Max(50, [int]($bootDiag.EstimatedPowerCycles * 0.7))
+                }
             }
             if ($tempC -eq $null) {
                 $tempC = 36
@@ -813,6 +909,7 @@ function Get-VUONGTTDiskHealthList {
             $totalHostWrites = if ($smartNative) { $smartNative.TotalHostWritesGB } else { 0 }
             $unsafeShutdowns = if ($smartNative) { $smartNative.UnsafeShutdowns } else { 0 }
 
+            $isNvmeFlag = ($busType -like "*NVMe*" -or $model -like "*NVMe*" -or $model -like "*PCIe*" -or ($smartNative -and $smartNative.IsNvme))
             $wearParam = if ($wear -ne $null) { [int]$wear } else { -1 }
             $calcHealth = Get-VUONGTTRealisticHealthScore `
                 -PowerOnHours $powerHours `
@@ -825,7 +922,9 @@ function Get-VUONGTTDiskHealthList {
                 -Pending $pending `
                 -Uncorrectable $uncorrectable `
                 -HealthStatus $healthStatus `
-                -OperationalStatus $operationalStatus
+                -OperationalStatus $operationalStatus `
+                -MediaType $mediaType `
+                -IsNvme $isNvmeFlag
 
             $healthPct   = $calcHealth.HealthPct
             $healthLevel = $calcHealth.HealthLevel
@@ -899,7 +998,7 @@ function Get-VUONGTTDiskHealthList {
             }
 
             # Tao danh sach cac chi so S.M.A.R.T chi tiet
-            $smartList = Get-VUONGTTSmartAttributes -Disk $pd -HealthLevel $healthLevel -TempC $tempC -PowerHours $powerHours -Wear $wear -ReadErrors $readErrors -SmartNative $smartNative -Realloc $realloc -Pending $pending -Uncorrectable $uncorrectable -UdmaCrc $udmaCrc
+            $smartList = Get-VUONGTTSmartAttributes -Disk $pd -HealthLevel $healthLevel -TempC $tempC -PowerHours $powerHours -PowerCount $powerCount -Wear $wear -ReadErrors $readErrors -SmartNative $smartNative -Realloc $realloc -Pending $pending -Uncorrectable $uncorrectable -UdmaCrc $udmaCrc
 
             $results += [PSCustomObject]@{
                 DeviceId          = $devId
@@ -967,7 +1066,7 @@ function Get-VUONGTTDiskHealthList {
                 }
             }
 
-            $smartList = Get-VUONGTTSmartAttributes -Disk $null -HealthLevel "GOOD" -TempC 36 -PowerHours $poh -Wear 0 -ReadErrors 0
+            $smartList = Get-VUONGTTSmartAttributes -Disk $null -HealthLevel "GOOD" -TempC 36 -PowerHours $poh -PowerCount $poc -Wear 0 -ReadErrors 0
 
             $results += [PSCustomObject]@{
                 DeviceId          = $devId
@@ -1008,6 +1107,7 @@ function Get-VUONGTTSmartAttributes {
         [string]$HealthLevel = "GOOD",
         $TempC = $null,
         $PowerHours = $null,
+        $PowerCount = $null,
         $Wear = $null,
         $ReadErrors = 0,
         $SmartNative = $null,
@@ -1019,7 +1119,7 @@ function Get-VUONGTTSmartAttributes {
 
     $rawErrors = if ($ReadErrors -gt 0) { [string]$ReadErrors } else { "000000000000" }
     $pHours = if ($PowerHours) { $PowerHours } else { 1250 }
-    $pCount = if ($PowerHours) { [math]::Max(50, [int]($PowerHours / 2.5)) } else { 450 }
+    $pCount = if ($PowerCount -ne $null -and $PowerCount -gt 0) { $PowerCount } elseif ($PowerHours) { [math]::Max(50, [int]($PowerHours / 2.5)) } else { 450 }
     $tVal = if ($TempC) { "$($TempC)°C" } else { "36°C" }
     $ssdLife = if ($Wear -ne $null -and $Wear -ge 0) { "$([math]::Max(0, 100 - $Wear))%" } else { "100%" }
     $isNvmeDisk = ($Disk -and ($Disk.BusType -like "*NVMe*" -or $Disk.Model -like "*NVMe*" -or ($SmartNative -and $SmartNative.IsNvme)))
