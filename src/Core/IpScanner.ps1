@@ -40,6 +40,74 @@ namespace VUONGTT.Network
             IsCancelled = true;
         }
 
+        private static bool ProbePort(string ip, int port, int timeoutMs)
+        {
+            Socket socket = null;
+            try
+            {
+                IPAddress addr;
+                if (!IPAddress.TryParse(ip, out addr)) return false;
+                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Blocking = false;
+                try
+                {
+                    socket.Connect(new IPEndPoint(addr, port));
+                    return true;
+                }
+                catch (SocketException se)
+                {
+                    if (se.NativeErrorCode == 10035) // WSAEWOULDBLOCK
+                    {
+                        bool canWrite = socket.Poll(timeoutMs * 1000, SelectMode.SelectWrite);
+                        if (canWrite)
+                        {
+                            int error = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error);
+                            return error == 0;
+                        }
+                    }
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (socket != null)
+                {
+                    try { socket.Close(0); } catch { }
+                    try { socket.Dispose(); } catch { }
+                }
+            }
+        }
+
+        private static string SafeGetHostname(string ip, int timeoutMs)
+        {
+            string host = ip;
+            try
+            {
+                IPAddress addr;
+                if (!IPAddress.TryParse(ip, out addr)) return ip;
+
+                var ar = Dns.BeginGetHostEntry(addr, null, null);
+                if (ar.AsyncWaitHandle.WaitOne(timeoutMs))
+                {
+                    try
+                    {
+                        var entry = Dns.EndGetHostEntry(ar);
+                        if (entry != null && !string.IsNullOrEmpty(entry.HostName))
+                        {
+                            host = entry.HostName;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+            return host;
+        }
+
         public static void StartScan(string prefix, int from, int to, Dictionary<string, string> arpMap, Dictionary<string, string> vendorMap)
         {
             IsCancelled = false;
@@ -50,122 +118,94 @@ namespace VUONGTT.Network
             DiscoveredDevice dummy;
             while (DiscoveredQueue.TryDequeue(out dummy)) { }
 
-            Task.Run(async () =>
+            Task.Run(() =>
             {
                 try
                 {
-                    var semaphore = new SemaphoreSlim(64);
-                    var tasks = new List<Task>();
-
-                    for (int i = from; i <= to; i++)
+                    var po = new ParallelOptions
                     {
-                        if (IsCancelled) break;
-                        int currentIpNum = i;
-                        string ip = string.Format("{0}.{1}", prefix, currentIpNum);
+                        MaxDegreeOfParallelism = 32
+                    };
 
-                        tasks.Add(Task.Run(async () =>
+                    Parallel.For(from, to + 1, po, (i, loopState) =>
+                    {
+                        if (IsCancelled)
                         {
-                            if (IsCancelled) return;
-                            await semaphore.WaitAsync();
-                            try
+                            loopState.Stop();
+                            return;
+                        }
+
+                        string ip = string.Format("{0}.{1}", prefix, i);
+                        try
+                        {
+                            using (var ping = new Ping())
                             {
-                                if (IsCancelled) return;
-                                using (var ping = new Ping())
+                                PingReply reply = null;
+                                try
                                 {
-                                    var reply = await ping.SendPingAsync(ip, 250);
-                                    if (reply.Status == IPStatus.Success)
+                                    reply = ping.Send(ip, 200);
+                                }
+                                catch
+                                {
+                                    reply = null;
+                                }
+
+                                if (reply != null && reply.Status == IPStatus.Success)
+                                {
+                                    long rtt = reply.RoundtripTime;
+                                    string mac = "-";
+                                    string vendor = "Thiết bị mạng";
+                                    if (arpMap != null && arpMap.ContainsKey(ip))
                                     {
-                                        long rtt = reply.RoundtripTime;
-                                        string mac = "-";
-                                        string vendor = "Thiết bị mạng";
-                                        if (arpMap != null && arpMap.ContainsKey(ip))
+                                        mac = arpMap[ip];
+                                        string cleanMac = mac.Replace("-", "").Replace(":", "").ToUpper();
+                                        if (cleanMac.Length >= 6)
                                         {
-                                            mac = arpMap[ip];
-                                            string cleanMac = mac.Replace("-", "").Replace(":", "").ToUpper();
-                                            if (cleanMac.Length >= 6)
+                                            string prefixMac = cleanMac.Substring(0, 6);
+                                            if (vendorMap != null && vendorMap.ContainsKey(prefixMac))
                                             {
-                                                string prefixMac = cleanMac.Substring(0, 6);
-                                                if (vendorMap != null && vendorMap.ContainsKey(prefixMac))
-                                                {
-                                                    vendor = vendorMap[prefixMac];
-                                                }
-                                                else
-                                                {
-                                                    vendor = string.Format("Card Mạng ({0})", prefixMac);
-                                                }
+                                                vendor = vendorMap[prefixMac];
+                                            }
+                                            else
+                                            {
+                                                vendor = string.Format("Card Mạng ({0})", prefixMac);
                                             }
                                         }
-
-                                        // Fast hostname lookup with 200ms timeout
-                                        string host = ip;
-                                        try
-                                        {
-                                            var dnsTask = Dns.GetHostEntryAsync(ip);
-                                            if (await Task.WhenAny(dnsTask, Task.Delay(200)) == dnsTask)
-                                            {
-                                                var entry = await dnsTask;
-                                                if (entry != null && !string.IsNullOrEmpty(entry.HostName))
-                                                {
-                                                    host = entry.HostName;
-                                                }
-                                            }
-                                        }
-                                        catch { }
-
-                                        // Fast port probe for common LAN services
-                                        var openPorts = new List<string>();
-                                        int[] portsToCheck = new int[] { 445, 80, 9100, 3389 };
-                                        foreach (int port in portsToCheck)
-                                        {
-                                            if (IsCancelled) break;
-                                            try
-                                            {
-                                                using (var client = new TcpClient())
-                                                {
-                                                    var connectTask = client.ConnectAsync(ip, port);
-                                                    if (await Task.WhenAny(connectTask, Task.Delay(75)) == connectTask)
-                                                    {
-                                                        if (client.Connected)
-                                                        {
-                                                            if (port == 445) openPorts.Add("SMB");
-                                                            else if (port == 80) openPorts.Add("Web");
-                                                            else if (port == 9100) openPorts.Add("In(9100)");
-                                                            else if (port == 3389) openPorts.Add("RDP");
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            catch { }
-                                        }
-
-                                        string portStr = openPorts.Count > 0 ? string.Join(", ", openPorts.ToArray()) : "ICMP";
-
-                                        var dev = new DiscoveredDevice
-                                        {
-                                            Status = "🟢 Online",
-                                            IP = ip,
-                                            Hostname = host,
-                                            MacAddress = mac,
-                                            Vendor = vendor,
-                                            Ports = portStr,
-                                            PingTime = string.Format("{0} ms", rtt)
-                                        };
-
-                                        DiscoveredQueue.Enqueue(dev);
                                     }
+
+                                    string host = SafeGetHostname(ip, 150);
+
+                                    var openPorts = new List<string>();
+                                    if (ProbePort(ip, 445, 60)) openPorts.Add("SMB");
+                                    if (ProbePort(ip, 80, 60)) openPorts.Add("Web");
+                                    if (ProbePort(ip, 9100, 60)) openPorts.Add("In(9100)");
+                                    if (ProbePort(ip, 3389, 60)) openPorts.Add("RDP");
+
+                                    string portStr = openPorts.Count > 0 ? string.Join(", ", openPorts.ToArray()) : "ICMP";
+
+                                    var dev = new DiscoveredDevice
+                                    {
+                                        Status = "🟢 Online",
+                                        IP = ip,
+                                        Hostname = host,
+                                        MacAddress = mac,
+                                        Vendor = vendor,
+                                        Ports = portStr,
+                                        PingTime = string.Format("{0} ms", rtt)
+                                    };
+
+                                    DiscoveredQueue.Enqueue(dev);
                                 }
                             }
-                            catch { }
-                            finally
-                            {
-                                semaphore.Release();
-                                Interlocked.Increment(ref CompletedCount);
-                            }
-                        }));
-                    }
-
-                    await Task.WhenAll(tasks);
+                        }
+                        catch { }
+                        finally
+                        {
+                            Interlocked.Increment(ref CompletedCount);
+                        }
+                    });
                 }
+                catch { }
                 finally
                 {
                     IsRunning = false;

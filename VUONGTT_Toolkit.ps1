@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.49
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.50
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -8161,47 +8161,55 @@ if ($btnStartIpScan) {
                 $script:ipScanTimer = New-Object System.Windows.Threading.DispatcherTimer
                 $script:ipScanTimer.Interval = [TimeSpan]::FromMilliseconds(50)
                 $script:ipScanTimer.Add_Tick({
-                    $dev = $null
-                    $addedAny = $false
-                    while ([VUONGTT.Network.FastScanner]::DiscoveredQueue.TryDequeue([ref]$dev)) {
-                        if ($dev) {
-                            $row = [PSCustomObject]@{
-                                Status     = $dev.Status
-                                IP         = $dev.IP
-                                Hostname   = $dev.Hostname
-                                MacAddress = $dev.MacAddress
-                                Vendor     = $dev.Vendor
-                                Ports      = $dev.Ports
-                                Ping       = $dev.PingTime
+                    try {
+                        $dev = $null
+                        $addedAny = $false
+                        while ([VUONGTT.Network.FastScanner]::DiscoveredQueue.TryDequeue([ref]$dev)) {
+                            if ($dev) {
+                                $row = [PSCustomObject]@{
+                                    Status     = $dev.Status
+                                    IP         = $dev.IP
+                                    Hostname   = $dev.Hostname
+                                    MacAddress = $dev.MacAddress
+                                    Vendor     = $dev.Vendor
+                                    Ports      = $dev.Ports
+                                    Ping       = $dev.PingTime
+                                }
+                                if ($global:scannedDevicesList) { $global:scannedDevicesList.Add($row) | Out-Null }
+                                if ($lstIpDevices) { $lstIpDevices.Items.Add($row) | Out-Null }
+                                $addedAny = $true
                             }
-                            $global:scannedDevicesList.Add($row) | Out-Null
-                            if ($lstIpDevices) { $lstIpDevices.Items.Add($row) | Out-Null }
-                            $addedAny = $true
                         }
-                    }
-                    if ($addedAny -and $lblIpScanStats) {
-                        $lblIpScanStats.Text = "Tổng thiết bị Online: $($global:scannedDevicesList.Count)"
-                    }
-
-                    $tot = [VUONGTT.Network.FastScanner]::TotalCount
-                    $done = [VUONGTT.Network.FastScanner]::CompletedCount
-                    if ($tot -gt 0 -and $prgIpScan) {
-                        $pct = [math]::Min(100, [math]::Round(($done / $tot) * 100))
-                        $prgIpScan.Value = $pct
-                    }
-
-                    if (-not [VUONGTT.Network.FastScanner]::IsRunning) {
-                        $script:ipScanTimer.Stop()
-                        $btnStartIpScan.IsEnabled = $true
-                        $btnStopIpScan.IsEnabled  = $false
-
-                        if ([VUONGTT.Network.FastScanner]::IsCancelled) {
-                            if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đã dừng quét IP. Tìm thấy $($global:scannedDevicesList.Count) thiết bị Online." }
-                            $txtFooterStatus.Text = "• [Dừng] Đã dừng quét IP!"
-                        } else {
-                            if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Quét hoàn tất 100%! Đã tìm thấy $($global:scannedDevicesList.Count) thiết bị Online." }
-                            $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét IP mạng LAN siêu tốc!"
+                        if ($addedAny -and $lblIpScanStats) {
+                            $lblIpScanStats.Text = "Tổng thiết bị Online: $($global:scannedDevicesList.Count)"
                         }
+
+                        $tot = [VUONGTT.Network.FastScanner]::TotalCount
+                        $done = [VUONGTT.Network.FastScanner]::CompletedCount
+                        if ($tot -gt 0 -and $prgIpScan) {
+                            $pct = [math]::Min(100, [math]::Max(0, [math]::Round(($done / $tot) * 100)))
+                            $prgIpScan.Value = $pct
+                        }
+
+                        if (-not [VUONGTT.Network.FastScanner]::IsRunning) {
+                            if ($script:ipScanTimer) { $script:ipScanTimer.Stop() }
+                            if ($btnStartIpScan) { $btnStartIpScan.IsEnabled = $true }
+                            if ($btnStopIpScan) { $btnStopIpScan.IsEnabled  = $false }
+
+                            if ([VUONGTT.Network.FastScanner]::IsCancelled) {
+                                if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Đã dừng quét IP. Tìm thấy $($global:scannedDevicesList.Count) thiết bị Online." }
+                                if ($txtFooterStatus) { $txtFooterStatus.Text = "• [Dừng] Đã dừng quét IP!" }
+                            } else {
+                                if ($lblIpScanStatus) { $lblIpScanStatus.Text = "Quét hoàn tất 100%! Đã tìm thấy $($global:scannedDevicesList.Count) thiết bị Online." }
+                                if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã hoàn tất quét IP mạng LAN siêu tốc!" }
+                            }
+                        }
+                    } catch {
+                        try {
+                            if ($script:ipScanTimer) { $script:ipScanTimer.Stop() }
+                            if ($btnStartIpScan) { $btnStartIpScan.IsEnabled = $true }
+                            if ($btnStopIpScan) { $btnStopIpScan.IsEnabled  = $false }
+                        } catch { }
                     }
                 })
             }

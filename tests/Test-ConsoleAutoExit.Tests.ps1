@@ -47,9 +47,9 @@ Assert-Equal $hasWConsoleExit $true "1.3: win.ps1 co lenh tu dong dong cua so co
 $hasWDisableQuickEdit = ($wContent -match 'SetConsoleMode' -or $wContent -match '0x0040' -or $wContent -match 'QuickEdit')
 Assert-Equal $hasWDisableQuickEdit $true "1.4: win.ps1 co co che chong freeze click chuot QuickEdit"
 
-# 5. Kiem tra VUONGTT_Toolkit.ps1 co lenh thoat dut khoat sau ShowDialog()
-$hasShowDialogExit = ($mContent -match '\$window\.ShowDialog\(\)[\s\S]*?\[System\.Environment\]::Exit\(0\)')
-Assert-Equal $hasShowDialogExit $true "1.5: VUONGTT_Toolkit.ps1 co lenh Exit(0) dut khoat sau khi dong cua so ShowDialog()"
+# 5. Kiem tra VUONGTT_Toolkit.ps1 co lenh thoat dut khoat sau khi dong cua so
+$hasShowDialogExit = ($mContent -match '(\$window\.ShowDialog\(\)|\$window\.Show\(\)[\s\S]*?Dispatcher\]::Run\(\))[\s\S]*?\[System\.Environment\]::Exit\(0\)')
+Assert-Equal $hasShowDialogExit $true "1.5: VUONGTT_Toolkit.ps1 co lenh Exit(0) dut khoat sau khi dong cua so giao dien"
 
 Write-Host "`n========================================================" -ForegroundColor Cyan
 Write-Host "KET QUA TEST: $script:PassedTests / $script:TotalTests bai test dat." -ForegroundColor $(if ($script:FailedTests -eq 0) { "Green" } else { "Red" })
