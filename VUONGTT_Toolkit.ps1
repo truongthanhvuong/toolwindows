@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.45
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.46
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -568,11 +568,19 @@ function Switch-Tab {
 foreach ($btnName in $menuButtons) {
     $btn = Get-Control $btnName
     if ($btn) {
+        $targetTag = [string]$btn.Tag
         $btn.Add_Click({
-            param($sender, $e)
-            Switch-Tab -TargetTag $sender.Tag
-        })
+            Switch-Tab -TargetTag $targetTag
+        }.GetNewClosure())
     }
+}
+
+# Dedicated handler for btnMenuSoftware to guarantee 100% navigation
+$btnMenuSoftware = Get-Control "btnMenuSoftware"
+if ($btnMenuSoftware) {
+    $btnMenuSoftware.Add_Click({
+        Switch-Tab -TargetTag "Software"
+    })
 }
 
 # =========================================================================
@@ -7050,23 +7058,205 @@ if ($btnGetRecoveryKey) {
     })
 }
 
+function Show-VUONGTTUpdateChangelogWindow {
+    param(
+        [string]$CurrentVersion,
+        [string]$LatestVersion,
+        [string]$ReleaseDate,
+        [string]$ChangelogText,
+        [bool]$HasUpdate = $false
+    )
+
+    $dialog = New-Object System.Windows.Window
+    $dialog.Title = "Bảng Nâng Cấp & Kiểm Tra Cập Nhật"
+    $dialog.Width = 860
+    $dialog.Height = 640
+    $dialog.MinWidth = 720
+    $dialog.MinHeight = 500
+    $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+    $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F8FAFC")
+    if ($window) { $dialog.Owner = $window }
+
+    $script:updateModalChoice = $false
+
+    # Main Grid layout
+    $rootGrid = New-Object System.Windows.Controls.Grid
+    $r0 = New-Object System.Windows.Controls.RowDefinition; $r0.Height = [System.Windows.GridLength]::Auto
+    $r1 = New-Object System.Windows.Controls.RowDefinition; $r1.Height = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+    $r2 = New-Object System.Windows.Controls.RowDefinition; $r2.Height = [System.Windows.GridLength]::Auto
+    $rootGrid.RowDefinitions.Add($r0)
+    $rootGrid.RowDefinitions.Add($r1)
+    $rootGrid.RowDefinitions.Add($r2)
+
+    # 1. Header Banner
+    $headerBorder = New-Object System.Windows.Controls.Border
+    $headerBorder.Background = if ($HasUpdate) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFBEB") } else { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#EFF6FF") }
+    $headerBorder.BorderBrush = if ($HasUpdate) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FCD34D") } else { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#BFDBFE") }
+    $headerBorder.BorderThickness = New-Object System.Windows.Thickness(0, 0, 0, 1)
+    $headerBorder.Padding = New-Object System.Windows.Thickness(18, 14, 18, 14)
+    [System.Windows.Controls.Grid]::SetRow($headerBorder, 0)
+
+    $headerGrid = New-Object System.Windows.Controls.Grid
+    $hCol0 = New-Object System.Windows.Controls.ColumnDefinition; $hCol0.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+    $hCol1 = New-Object System.Windows.Controls.ColumnDefinition; $hCol1.Width = [System.Windows.GridLength]::Auto
+    $headerGrid.ColumnDefinitions.Add($hCol0)
+    $headerGrid.ColumnDefinitions.Add($hCol1)
+
+    $titlePanel = New-Object System.Windows.Controls.StackPanel
+    $titlePanel.Orientation = [System.Windows.Controls.Orientation]::Vertical
+
+    $lblTitle = New-Object System.Windows.Controls.TextBlock
+    $lblTitle.Text = if ($HasUpdate) { "🚀 ĐÃ CÓ BẢN CẬP NHẬT MỚI (v$LatestVersion)!" } else { "✅ BẠN ĐANG SỬ DỤNG PHIÊN BẢN MỚI NHẤT" }
+    $lblTitle.FontSize = 16
+    $lblTitle.FontWeight = [System.Windows.FontWeights]::Bold
+    $lblTitle.Foreground = if ($HasUpdate) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#B45309") } else { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1D4ED8") }
+    $titlePanel.Children.Add($lblTitle)
+
+    $lblMeta = New-Object System.Windows.Controls.TextBlock
+    $lblMeta.Text = "• Phiên bản trên máy: v$CurrentVersion   |   • Phiên bản máy chủ GitHub: v$LatestVersion   |   • Phát hành: $ReleaseDate"
+    $lblMeta.FontSize = 12
+    $lblMeta.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
+    $lblMeta.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#475569")
+    $titlePanel.Children.Add($lblMeta)
+
+    [System.Windows.Controls.Grid]::SetColumn($titlePanel, 0)
+    $headerGrid.Children.Add($titlePanel)
+
+    # Top Close (✕) Button
+    $btnCloseX = New-Object System.Windows.Controls.Button
+    $btnCloseX.Content = "✕"
+    $btnCloseX.FontSize = 15
+    $btnCloseX.FontWeight = [System.Windows.FontWeights]::Bold
+    $btnCloseX.Width = 32
+    $btnCloseX.Height = 32
+    $btnCloseX.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+    $btnCloseX.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#475569")
+    $btnCloseX.BorderThickness = New-Object System.Windows.Thickness(0)
+    $btnCloseX.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnCloseX.ToolTip = "Đóng cửa sổ (ESC)"
+    $btnCloseX.Add_Click({ $dialog.Close() })
+    [System.Windows.Controls.Grid]::SetColumn($btnCloseX, 1)
+    $headerGrid.Children.Add($btnCloseX)
+
+    $headerBorder.Child = $headerGrid
+    $rootGrid.Children.Add($headerBorder)
+
+    # 2. Body: ScrollViewer containing Changelog
+    $scroll = New-Object System.Windows.Controls.ScrollViewer
+    $scroll.VerticalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $scroll.HorizontalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Disabled
+    $scroll.Padding = New-Object System.Windows.Thickness(18, 14, 18, 14)
+    [System.Windows.Controls.Grid]::SetRow($scroll, 1)
+
+    $bodyPanel = New-Object System.Windows.Controls.StackPanel
+
+    $lblChangelogTitle = New-Object System.Windows.Controls.TextBlock
+    $lblChangelogTitle.Text = "BẢNG NÂNG CẤP & ĐIỂM MỚI TRONG CÁC PHIÊN BẢN:"
+    $lblChangelogTitle.FontWeight = [System.Windows.FontWeights]::Bold
+    $lblChangelogTitle.FontSize = 13.5
+    $lblChangelogTitle.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0F172A")
+    $lblChangelogTitle.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $bodyPanel.Children.Add($lblChangelogTitle)
+
+    $txtChangelog = New-Object System.Windows.Controls.TextBox
+    $txtChangelog.Text = $ChangelogText
+    $txtChangelog.IsReadOnly = $true
+    $txtChangelog.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    $txtChangelog.Background = [System.Windows.Media.Brushes]::White
+    $txtChangelog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
+    $txtChangelog.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#CBD5E1")
+    $txtChangelog.BorderThickness = New-Object System.Windows.Thickness(1)
+    $txtChangelog.Padding = New-Object System.Windows.Thickness(12)
+    $txtChangelog.FontSize = 12.5
+    $txtChangelog.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI, Consolas, sans-serif")
+    $bodyPanel.Children.Add($txtChangelog)
+
+    $scroll.Content = $bodyPanel
+    $rootGrid.Children.Add($scroll)
+
+    # 3. Footer Bar
+    $footerBorder = New-Object System.Windows.Controls.Border
+    $footerBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F1F5F9")
+    $footerBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+    $footerBorder.BorderThickness = New-Object System.Windows.Thickness(0, 1, 0, 0)
+    $footerBorder.Padding = New-Object System.Windows.Thickness(18, 12, 18, 12)
+    [System.Windows.Controls.Grid]::SetRow($footerBorder, 2)
+
+    $footerPanel = New-Object System.Windows.Controls.DockPanel
+    $footerPanel.LastChildFill = $false
+
+    # Left note
+    $lblNote = New-Object System.Windows.Controls.TextBlock
+    $lblNote.Text = if ($HasUpdate) { "Nhấn nút bên phải để tải và áp dụng bản cập nhật ngay." } else { "Bạn có thể cưỡng chế tải lại bản mới nhất từ GitHub bất cứ khi nào." }
+    $lblNote.FontSize = 11.5
+    $lblNote.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+    $lblNote.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.DockPanel]::SetDock($lblNote, [System.Windows.Controls.Dock]::Left)
+    $footerPanel.Children.Add($lblNote)
+
+    # Right Action Buttons
+    $btnActionPanel = New-Object System.Windows.Controls.StackPanel
+    $btnActionPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    [System.Windows.Controls.DockPanel]::SetDock($btnActionPanel, [System.Windows.Controls.Dock]::Right)
+
+    $btnConfirm = New-Object System.Windows.Controls.Button
+    $btnConfirm.Content = if ($HasUpdate) { "🚀 Nâng Cấp Ngay (Update Now)" } else { "🔄 Tải Lại Bản Mới (Force Update)" }
+    $btnConfirm.Background = if ($HasUpdate) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#059669") } else { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2563EB") }
+    $btnConfirm.Foreground = [System.Windows.Media.Brushes]::White
+    $btnConfirm.FontWeight = [System.Windows.FontWeights]::Bold
+    $btnConfirm.FontSize = 12.5
+    $btnConfirm.Height = 36
+    $btnConfirm.Padding = New-Object System.Windows.Thickness(16, 0, 16, 0)
+    $btnConfirm.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+    $btnConfirm.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnConfirm.Add_Click({
+        $script:updateModalChoice = $true
+        $dialog.Close()
+    })
+    $btnActionPanel.Children.Add($btnConfirm)
+
+    $btnClose = New-Object System.Windows.Controls.Button
+    $btnClose.Content = "Đóng (ESC)"
+    $btnClose.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+    $btnClose.Foreground = [System.Windows.Media.Brushes]::White
+    $btnClose.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $btnClose.FontSize = 12.5
+    $btnClose.Height = 36
+    $btnClose.Padding = New-Object System.Windows.Thickness(16, 0, 16, 0)
+    $btnClose.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnClose.IsCancel = $true
+    $btnClose.Add_Click({
+        $script:updateModalChoice = $false
+        $dialog.Close()
+    })
+    $btnActionPanel.Children.Add($btnClose)
+
+    $footerPanel.Children.Add($btnActionPanel)
+    $footerBorder.Child = $footerPanel
+    $rootGrid.Children.Add($footerBorder)
+
+    # ESC key closes dialog
+    $dialog.Add_KeyDown({
+        param($s, $e)
+        if ($e.Key -eq [System.Windows.Input.Key]::Escape) {
+            $dialog.Close()
+        }
+    })
+
+    $dialog.Content = $rootGrid
+    $dialog.ShowDialog() | Out-Null
+    return $script:updateModalChoice
+}
+
 if ($btnCheckAppUpdate) {
     $btnCheckAppUpdate.Add_Click({
         # 1. Nếu bản cập nhật đã được tải ngầm sẵn sàng trong Temp -> Áp dụng tức thì trong 1 giây!
         if ($global:VUONGTT_UPDATE_READY -and $global:VUONGTT_UPDATE_READY.ExePath -and (Test-Path $global:VUONGTT_UPDATE_READY.ExePath)) {
             $stagedPath = $global:VUONGTT_UPDATE_READY.ExePath
             $stagedVer  = $global:VUONGTT_UPDATE_READY.Version
-            $askReady = [System.Windows.MessageBox]::Show(
-                "BẢN CẬP NHẬT ĐÃ ĐƯỢC TẢI SẴN TRÊN MÁY!`n=====================================================`n" +
-                "• Phiên bản mới: v$stagedVer`n" +
-                "• Gói cài đặt: Đã lưu sẵn trong bộ nhớ đệm an toàn 100%.`n" +
-                "• Tốc độ nâng cấp: ~1 giây (Áp dụng tức thì, không cần tải lại mạng).`n`n" +
-                "Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay bây giờ không?",
-                "Cập Nhật Sẵn Sàng - Nâng Cấp Tức Thì",
-                [System.Windows.MessageBoxButton]::YesNo,
-                [System.Windows.MessageBoxImage]::Information
-            )
-            if ($askReady -eq [System.Windows.MessageBoxResult]::Yes) {
+            $readyChangelog = "• BẢN CẬP NHẬT ĐÃ ĐƯỢC TẢI VỀ HOÀN TẤT TRÊN MÁY TÍNH!`r`n• Phiên bản mới: v$stagedVer`r`n• Tốc độ nâng cấp: Cực nhanh (~1 giây, không cần tải lại từ mạng).`r`n`r`nBạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay bây giờ không?"
+            $askReady = Show-VUONGTTUpdateChangelogWindow -CurrentVersion $currentVersion -LatestVersion $stagedVer -ReleaseDate (Get-Date -Format "dd/MM/yyyy") -ChangelogText $readyChangelog -HasUpdate:$true
+            if ($askReady) {
                 $txtFooterStatus.Text = "• [UPDATE] Đang áp dụng bản cập nhật v$stagedVer..."
                 Invoke-VUONGTTDoEvents
                 $res = Invoke-VUONGTTAppSelfUpdate -DownloadUrl "" -NewVersion $stagedVer -PreDownloadedExePath $stagedPath -OnProgress {
@@ -7108,25 +7298,12 @@ if ($btnCheckAppUpdate) {
             [System.Windows.MessageBox]::Show("KHÔNG THỂ KẾT NỐI MÁY CHỦ CẬP NHẬT!`n`n$($info.Message)", "Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
         } else {
             $txtFooterStatus.Text = "• [OK] Bạn đang dùng phiên bản mới nhất (v$($info.CurrentVersion))!"
-            $changeText = if ($info.Changelog) { ($info.Changelog -join "`n• ") } else { "Đã cập nhật toàn bộ tính năng và sửa lỗi mới nhất." }
-            $msg = @"
-BẠN ĐANG SỬ DỤNG PHIÊN BẢN MỚI NHẤT!
-=====================================================
-• Phiên bản trên máy hiện tại:  v$($info.CurrentVersion)
-• Phiên bản máy chủ GitHub:     v$($info.LatestVersion)
-• Ngày phát hành:               $($info.ReleaseDate)
-• Trạng thái kết nối:           Trực tuyến (GitHub Verified)
-
-BẢNG NÂNG CẤP & ĐIỂM MỚI TRONG BẢN NÀY:
-• $changeText
-
-=====================================================
-GỢI Ý TÙY CHỌN:
-Bạn có muốn TẢI LẠI VÀ CÀI ĐẶT ĐÈ BẢN MỚI NHẤT từ GitHub ngay bây giờ không?
-(Bấm 'Yes' để cưỡng chế tải đè file EXE mới nhất từ GitHub, hoặc 'No' để đóng).
-"@
-            $ask = [System.Windows.MessageBox]::Show($msg, "Bảng Nâng Cấp & Kiểm Tra Cập Nhật", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
-            if ($ask -eq [System.Windows.MessageBoxResult]::Yes) {
+            $changeText = if ($info.Changelog) { ($info.Changelog -join "`r`n`r`n• ") } else { "Đã cập nhật toàn bộ tính năng và sửa lỗi mới nhất." }
+            $fullChangelog = "• $changeText"
+            
+            # Cửa sổ nâng cấp & changelog chuẩn WPF có ScrollViewer và nút Đóng ✕ hoạt động 100%
+            $userWantsUpdate = Show-VUONGTTUpdateChangelogWindow -CurrentVersion $info.CurrentVersion -LatestVersion $info.LatestVersion -ReleaseDate $info.ReleaseDate -ChangelogText $fullChangelog -HasUpdate:$false
+            if ($userWantsUpdate) {
                 $txtFooterStatus.Text = "• [FORCE-UPDATE] Đang tải lại bản mới nhất từ GitHub..."
                 Invoke-VUONGTTDoEvents
                 $res = Invoke-VUONGTTAppSelfUpdate -DownloadUrl $info.DownloadUrl -NewVersion $info.LatestVersion -OnProgress {
@@ -8166,24 +8343,10 @@ $window.Add_ContentRendered({
             $isDevSourceRepo = (Test-Path (Join-Path $script:appRootDir "Publish-Update.ps1"))
             if (-not $isDevSourceRepo -and -not $script:hasTriggeredAutoUpdatePrompt) {
                 $script:hasTriggeredAutoUpdatePrompt = $true
-                $changeText = if ($uInfo.Changelog) { ($uInfo.Changelog -join "`n• ") } else { "Đã cập nhật toàn bộ tính năng và sửa lỗi mới nhất." }
-                $msg = @"
-ĐÃ TẢI XONG BẢN CẬP NHẬT MỚI: v$($uInfo.LatestVersion)!
-=====================================================
-• Gói cập nhật đã được tải về máy tính của bạn hoàn tất 100%.
-• Tốc độ nâng cấp: Cực nhanh (~1 giây, không cần chờ tải qua mạng).
-
-ĐIỂM MỚI TRONG BẢN V$($uInfo.LatestVersion):
-• $changeText
-
-=====================================================
-Bạn có muốn áp dụng và khởi động lại VUONGTT Tool Pro 2026 ngay bây giờ không?
-(Bấm 'Yes' để áp dụng ngay trong 1 giây, hoặc 'No' để tiếp tục dùng và nâng cấp sau).
-"@
-                try {
-                    $ask = [System.Windows.MessageBox]::Show($msg, "VUONGTT Tool Pro 2026 - Bản Cập Nhật Đã Sẵn Sàng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
-                } catch { $ask = [System.Windows.MessageBoxResult]::No }
-                if ($ask -eq [System.Windows.MessageBoxResult]::Yes) {
+                $changeText = if ($uInfo.Changelog) { ($uInfo.Changelog -join "`r`n`r`n• ") } else { "Đã cập nhật toàn bộ tính năng và sửa lỗi mới nhất." }
+                $fullChangelog = "• Gói cập nhật đã tải xong 100%. Tốc độ nâng cấp: ~1 giây.`r`n`r`nBẢNG NÂNG CẤP V$($uInfo.LatestVersion):`r`n• $changeText"
+                $ask = Show-VUONGTTUpdateChangelogWindow -CurrentVersion $script:APP_CURRENT_VERSION -LatestVersion $uInfo.LatestVersion -ReleaseDate (Get-Date -Format "dd/MM/yyyy") -ChangelogText $fullChangelog -HasUpdate:$true
+                if ($ask) {
                     $txtFooterStatus.Text = "• [AUTO-UPDATE] Đang áp dụng bản cập nhật v$($uInfo.LatestVersion)..."
                     Invoke-VUONGTTDoEvents
                     Invoke-VUONGTTAppSelfUpdate -DownloadUrl $uInfo.DownloadUrl -NewVersion $uInfo.LatestVersion -PreDownloadedExePath $stagedPath -OnProgress {
