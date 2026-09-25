@@ -172,27 +172,40 @@ function Invoke-VUONGTTProcessWithLiveLog {
 
         $proc = New-Object System.Diagnostics.Process
         $proc.StartInfo = $psi
+        $proc.EnableRaisingEvents = $true
+
+        # Hang doi dong bo an toan da luong tranh deadlock va nghe pipe
+        $logQueue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+
+        $outHandler = [System.Diagnostics.DataReceivedEventHandler]{
+            param($sender, $e)
+            if ($e -and $e.Data) { $logQueue.Enqueue($e.Data) }
+        }
+        $errHandler = [System.Diagnostics.DataReceivedEventHandler]{
+            param($sender, $e)
+            if ($e -and $e.Data) { $logQueue.Enqueue($e.Data) }
+        }
+
+        $proc.add_OutputDataReceived($outHandler)
+        $proc.add_ErrorDataReceived($errHandler)
+
         $started = $proc.Start()
         if (-not $started) {
             if ($OnOutputLine) { & $OnOutputLine "[LỖI] Không thể khởi chạy tiến trình: $FilePath" }
             return -1
         }
 
-        $stdout = $proc.StandardOutput
-        $stderr = $proc.StandardError
+        $proc.BeginOutputReadLine()
+        $proc.BeginErrorReadLine()
+
         $timeoutAt = (Get-Date).AddSeconds($TimeoutSeconds)
 
         while (-not $proc.HasExited) {
-            # Đọc non-blocking: Chỉ đọc khi có dữ liệu trong buffer, không bao giờ chặn UI thread gây đơ máy
-            while ($stdout.Peek() -ge 0) {
-                $line = $stdout.ReadLine()
+            $line = ""
+            while ($logQueue.TryDequeue([ref]$line)) {
                 if ($line -and $OnOutputLine) { & $OnOutputLine $line }
             }
-            while ($stderr.Peek() -ge 0) {
-                $errLine = $stderr.ReadLine()
-                if ($errLine -and $OnOutputLine) { & $OnOutputLine $errLine }
-            }
-            Start-Sleep -Milliseconds 40
+            Start-Sleep -Milliseconds 60
             Invoke-VUONGTTDoEvents
 
             if ((Get-Date) -gt $timeoutAt) {
@@ -202,14 +215,11 @@ function Invoke-VUONGTTProcessWithLiveLog {
             }
         }
 
-        # Đọc nốt các dòng cuối cùng còn lại sau khi tiến trình kết thúc
-        while ($stdout.Peek() -ge 0) {
-            $line = $stdout.ReadLine()
+        # Doc not cac dong log con sot lai sau khi tien trinh ket thuc
+        Start-Sleep -Milliseconds 120
+        $line = ""
+        while ($logQueue.TryDequeue([ref]$line)) {
             if ($line -and $OnOutputLine) { & $OnOutputLine $line }
-        }
-        while ($stderr.Peek() -ge 0) {
-            $errLine = $stderr.ReadLine()
-            if ($errLine -and $OnOutputLine) { & $OnOutputLine $errLine }
         }
         Invoke-VUONGTTDoEvents
 
@@ -853,6 +863,21 @@ namespace VUONGTT
             "SpotifyAB.SpotifyMusic"                = "Spotify"
             "5319275A.WhatsAppDesktop"              = "WhatsApp Desktop"
             "TelegramMessengerLLP.TelegramDesktop"  = "Telegram Desktop"
+            "AgileBits.1Password"                   = "1Password"
+            "Microsoft.BingNews"                    = "Bing News"
+            "Microsoft.BingWeather"                 = "Bing Weather"
+            "Microsoft.BingSearch"                  = "Bing Search"
+            "Clipchamp.Clipchamp"                   = "Clipchamp Video Editor"
+            "Microsoft.Clipchamp"                   = "Clipchamp Video Editor"
+            "Microsoft.ClientWebExperience"         = "Windows Widgets (Web Experience)"
+            "Microsoft.CrossDevice"                 = "Cross Device Experience Host"
+            "Microsoft.ActionsServer"               = "Actions Server"
+            "Microsoft.AV1VideoExtension"           = "AV1 Video Extension"
+            "Microsoft.AVCEncoderVideoExtension"    = "AVC Encoder Video Extension"
+            "Microsoft.VP9VideoExtensions"          = "VP9 Video Extensions"
+            "Microsoft.HEIFImageExtension"          = "HEIF Image Extension"
+            "Microsoft.RawImageExtension"           = "Raw Image Extension"
+            "Microsoft.WebpImageExtension"          = "WebP Image Extension"
         }
 
         foreach ($pkg in $appxList) {
@@ -873,8 +898,11 @@ namespace VUONGTT
             } elseif ($pName -match 'Teams') {
                 $displayName = "Microsoft Teams"
             } else {
+                # Loại bỏ prefix namespace của Package (Microsoft., AgileBits., v.v.)
                 $displayName = $pName -replace '^Microsoft\.', '' -replace '^[0-9A-Za-z]+\.', ''
-                $displayName = $displayName -replace '([a-z])([A-Z])', '$1 $2'
+                # TÁCH CAMELCASE BẮT BUỘC DÙNG -creplace (Case-Sensitive): Chữ thường đi liền chữ hoa (ví dụ: BingNews -> Bing News)
+                $displayName = $displayName -creplace '([a-z])([A-Z])', '$1 $2'
+                $displayName = $displayName.Trim()
             }
 
             if (-not $displayName) { $displayName = $pName }

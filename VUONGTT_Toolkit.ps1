@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.44
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.45
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,15 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
+$script:lastDoEventsTime = [DateTime]::MinValue
+$script:isDoEventsRunning = $false
+
 function global:Invoke-VUONGTTDoEvents {
+    if ($script:isDoEventsRunning) { return }
+    $now = [DateTime]::UtcNow
+    if (($now - $script:lastDoEventsTime).TotalMilliseconds -lt 20) { return }
+    $script:lastDoEventsTime = $now
+    $script:isDoEventsRunning = $true
     try {
         if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher) {
             $frame = New-Object System.Windows.Threading.DispatcherFrame
@@ -49,9 +57,9 @@ function global:Invoke-VUONGTTDoEvents {
             [System.Windows.Threading.Dispatcher]::PushFrame($frame)
         }
     } catch {}
-    try {
-        [System.Windows.Forms.Application]::DoEvents()
-    } catch {}
+    finally {
+        $script:isDoEventsRunning = $false
+    }
 }
 
 function global:Start-VUONGTTProcessResponsive {
@@ -2533,86 +2541,113 @@ if ($btnClearSoftwareLog) {
 }
 
 $btnInstallSelectedApps.Add_Click({
-    $selected = @()
-    foreach ($name in $appControls) {
-        $c = Get-Control $name
-        if ($c -and $c.IsChecked) {
-            $id = $name.Replace("app_", "")
-            $selected += $id
+    if (-not $btnInstallSelectedApps.IsEnabled) { return }
+    $btnInstallSelectedApps.IsEnabled = $false
+    try {
+        $selected = @()
+        foreach ($name in $appControls) {
+            $c = Get-Control $name
+            if ($c -and $c.IsChecked) {
+                $id = $name.Replace("app_", "")
+                $selected += $id
+            }
         }
-    }
 
-    if ($selected.Count -eq 0) {
-        if ($txtSoftwareLog) { $txtSoftwareLog.Text = "[CẢNH BÁO] Vui lòng tích chọn ít nhất 1 ứng dụng để cài đặt!" }
-        [System.Windows.MessageBox]::Show("Vui lòng tích chọn ít nhất 1 ứng dụng!", "Tải Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
-        return
-    }
+        if ($selected.Count -eq 0) {
+            if ($txtSoftwareLog) { $txtSoftwareLog.Text = "[CẢNH BÁO] Vui lòng tích chọn ít nhất 1 ứng dụng để cài đặt!" }
+            [System.Windows.MessageBox]::Show("Vui lòng tích chọn ít nhất 1 ứng dụng!", "Tải Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
 
-    $autoLaunch = if ($chkSoftwareAutoLaunch) { [bool]$chkSoftwareAutoLaunch.IsChecked } else { $true }
-    if ($prgSoftware) { $prgSoftware.Value = 0 }
-    if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "0%" }
-    if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Bắt đầu cài đặt $($selected.Count) ứng dụng..." }
+        $autoLaunch = if ($chkSoftwareAutoLaunch) { [bool]$chkSoftwareAutoLaunch.IsChecked } else { $true }
+        if ($prgSoftware) { $prgSoftware.Value = 0 }
+        if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "0%" }
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Bắt đầu cài đặt $($selected.Count) ứng dụng..." }
 
-    $logPrefix = "=== [KHỞI ĐỘNG TIẾN TRÌNH CÀI ĐẶT $($selected.Count) ỨNG DỤNG - $(Get-Date -Format 'HH:mm:ss')] ==="
-    if ($txtSoftwareLog) { 
-        $txtSoftwareLog.Text = "$logPrefix`r`n"
-        $txtSoftwareLog.ScrollToEnd()
-    }
-
-    $streamLog = {
-        param($msg)
-        if ($txtSoftwareLog) {
-            $txtSoftwareLog.AppendText("$msg`r`n")
+        $logPrefix = "=== [KHỞI ĐỘNG TIẾN TRÌNH CÀI ĐẶT $($selected.Count) ỨNG DỤNG - $(Get-Date -Format 'HH:mm:ss')] ==="
+        if ($txtSoftwareLog) { 
+            $txtSoftwareLog.Text = "$logPrefix`r`n"
             $txtSoftwareLog.ScrollToEnd()
         }
-        Invoke-VUONGTTDoEvents
+
+        $streamLog = {
+            param($msg)
+            try {
+                if ($txtSoftwareLog) {
+                    $txtSoftwareLog.AppendText("$msg`r`n")
+                    $txtSoftwareLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+            } catch {}
+        }
+
+        $i = 0
+        foreach ($appId in $selected) {
+            $i++
+            $pct = [int](($i / $selected.Count) * 100)
+            $appObj = $script:VUONGTT_APPS | Where-Object { $_.Id -eq $appId }
+            $appName = if ($appObj) { $appObj.Name } else { $appId }
+
+            if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "[$i/$($selected.Count)] Đang xử lý: $appName..." }
+            if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Đang cài đặt $appName ($i/$($selected.Count))..." }
+            & $streamLog "`r`n>>> BẮT ĐẦU CÀI ĐẶT [$i/$($selected.Count)]: $appName"
+
+            try {
+                $res = Install-VUONGTTApp -AppId $appId -OnProgress $streamLog -AutoLaunch:$autoLaunch
+                & $streamLog "-> Kết quả: $res"
+            } catch {
+                & $streamLog "-> [LỖI CÀI ĐẶT $appName]: $($_.Exception.Message)"
+            }
+
+            if ($prgSoftware) { $prgSoftware.Value = $pct }
+            if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "$pct%" }
+            Invoke-VUONGTTDoEvents
+        }
+
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng!" }
+        if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Quá trình cài đặt kết thúc thành công." }
+        if ($prgSoftware) { $prgSoftware.Value = 100 }
+        if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
+        & $streamLog "`r`n=== [HOÀN TẤT TOÀN BỘ CÀI ĐẶT] ==="
+
+        [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng đã chọn!`nCác ứng dụng đã được tự động mở sẵn sàng sử dụng.", "Tải Ứng Dụng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    } catch {
+        if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("`r`n[LỖI HỆ THỐNG]: $($_.Exception.Message)`r`n") }
+        [System.Windows.MessageBox]::Show("Đã xảy ra sự cố trong quá trình cài đặt: $($_.Exception.Message)", "Thông Báo Lỗi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+    } finally {
+        $btnInstallSelectedApps.IsEnabled = $true
     }
-
-    $i = 0
-    foreach ($appId in $selected) {
-        $i++
-        $pct = [int](($i / $selected.Count) * 100)
-        $appObj = $script:VUONGTT_APPS | Where-Object { $_.Id -eq $appId }
-        $appName = if ($appObj) { $appObj.Name } else { $appId }
-
-        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "[$i/$($selected.Count)] Đang xử lý: $appName..." }
-        if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Đang cài đặt $appName ($i/$($selected.Count))..." }
-        & $streamLog "`r`n>>> BẮT ĐẦU CÀI ĐẶT [$i/$($selected.Count)]: $appName"
-
-        $res = Install-VUONGTTApp -AppId $appId -OnProgress $streamLog -AutoLaunch:$autoLaunch
-        & $streamLog "-> Kết quả: $res"
-
-        if ($prgSoftware) { $prgSoftware.Value = $pct }
-        if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "$pct%" }
-        Invoke-VUONGTTDoEvents
-    }
-
-    if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng!" }
-    if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Quá trình cài đặt kết thúc thành công." }
-    if ($prgSoftware) { $prgSoftware.Value = 100 }
-    if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
-    & $streamLog "`r`n=== [HOÀN TẤT TOÀN BỘ CÀI ĐẶT] ==="
-
-    [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng đã chọn!`nCác ứng dụng đã được tự động mở sẵn sàng sử dụng.", "Tải Ứng Dụng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
 })
 
 $btnUpdateAllApps.Add_Click({
-    if ($txtSoftwareLog) { $txtSoftwareLog.Text = "Đang chạy Winget upgrade --all (Cập nhật toàn bộ phần mềm)...`r`n" }
-    if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đang cập nhật toàn bộ ứng dụng..." }
-    if ($prgSoftware) { $prgSoftware.Value = 30 }
+    if (-not $btnUpdateAllApps.IsEnabled) { return }
+    $btnUpdateAllApps.IsEnabled = $false
+    try {
+        if ($txtSoftwareLog) { $txtSoftwareLog.Text = "Đang chạy Winget upgrade --all (Cập nhật toàn bộ phần mềm)...`r`n" }
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đang cập nhật toàn bộ ứng dụng..." }
+        if ($prgSoftware) { $prgSoftware.Value = 30 }
 
-    $res = Invoke-VUONGTTProcessWithLiveLog -FilePath "powershell.exe" -ArgumentList "-NoProfile -Command winget upgrade --all --silent --accept-package-agreements --accept-source-agreements" -OnOutputLine {
-        param($m)
-        if ($txtSoftwareLog) { 
-            $txtSoftwareLog.AppendText("$m`r`n")
-            $txtSoftwareLog.ScrollToEnd()
+        $res = Invoke-VUONGTTProcessWithLiveLog -FilePath "powershell.exe" -ArgumentList "-NoProfile -Command winget upgrade --all --silent --accept-package-agreements --accept-source-agreements" -OnOutputLine {
+            param($m)
+            try {
+                if ($txtSoftwareLog) { 
+                    $txtSoftwareLog.AppendText("$m`r`n")
+                    $txtSoftwareLog.ScrollToEnd()
+                }
+                Invoke-VUONGTTDoEvents
+            } catch {}
         }
-    }
 
-    if ($prgSoftware) { $prgSoftware.Value = 100 }
-    if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
-    if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã cập nhật xong toàn bộ ứng dụng!" }
-    [System.Windows.MessageBox]::Show("Đã hoàn tất kiểm tra và nâng cấp toàn bộ ứng dụng qua Winget!", "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        if ($prgSoftware) { $prgSoftware.Value = 100 }
+        if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã cập nhật xong toàn bộ ứng dụng!" }
+        [System.Windows.MessageBox]::Show("Đã hoàn tất kiểm tra và nâng cấp toàn bộ ứng dụng qua Winget!", "Cập Nhật Ứng Dụng", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    } catch {
+        if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("`r`n[LỖI CẬP NHẬT]: $($_.Exception.Message)`r`n") }
+        [System.Windows.MessageBox]::Show("Lỗi trong quá trình cập nhật: $($_.Exception.Message)", "Thông Báo Lỗi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+    } finally {
+        $btnUpdateAllApps.IsEnabled = $true
+    }
 })
 
 if ($btnInstallAccountingOnly) {
