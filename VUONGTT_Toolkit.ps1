@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.46
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.47
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -575,13 +575,16 @@ foreach ($btnName in $menuButtons) {
     }
 }
 
-# Dedicated handler for btnMenuSoftware to guarantee 100% navigation
+# Explicit backup handler for btnMenuSoftware to guarantee 100% navigation
 $btnMenuSoftware = Get-Control "btnMenuSoftware"
 if ($btnMenuSoftware) {
     $btnMenuSoftware.Add_Click({
-        Switch-Tab -TargetTag "Software"
+        if ($script:currentTab -ne "Software") {
+            Switch-Tab -TargetTag "Software"
+        }
     })
 }
+
 
 # =========================================================================
 # THEMES & LANGUAGE MANAGEMENT
