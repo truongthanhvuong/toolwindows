@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.52
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.53
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -7853,7 +7853,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.52" }
+                if (-not $currentVer) { $currentVer = "20.5.909.53" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
@@ -7865,10 +7865,13 @@ if ($btnAdminPushGit) {
                     $newVer = "$currentVer.1"
                 }
 
+                $repoOwner = if ($global:GITHUB_REPO_OWNER) { $global:GITHUB_REPO_OWNER } elseif ($script:GITHUB_REPO_OWNER) { $script:GITHUB_REPO_OWNER } else { "truongthanhvuong" }
+                $repoName  = if ($global:GITHUB_REPO_NAME) { $global:GITHUB_REPO_NAME } elseif ($script:GITHUB_REPO_NAME) { $script:GITHUB_REPO_NAME } else { "toolwindows" }
+
                 $verObj = @{
                     version = $newVer
                     releaseDate = (Get-Date).ToString("dd/MM/yyyy")
-                    downloadUrl = "https://raw.githubusercontent.com/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME/main/VUONGTT_Toolkit.exe"
+                    downloadUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/main/VUONGTT_Toolkit.exe"
                     changelog = @(
                         "Cập nhật từ Admin Portal: Đồng bộ phân quyền tính năng & kho License Keys mới nhất",
                         "Tự động đồng bộ thời gian thực qua Cloud REST API"
@@ -7879,21 +7882,23 @@ if ($btnAdminPushGit) {
                 # 2. Đẩy version.json lên GitHub
                 $pushVerRes = Push-VUONGTTCloudFile -RelativePath "version.json" -FileContent $verJsonText -CommitMessage "release: v$newVer - auto-publish from Admin Portal"
 
-                # 3. Đẩy feature_policy.json nếu có
-                if (Test-Path $script:POLICY_FILE) {
-                    $pContent = [System.IO.File]::ReadAllText($script:POLICY_FILE)
+                # 3. Đẩy feature_policy.json nếu có (Dùng hàm truy xuất an toàn, chống lỗi null)
+                $policyPath = Get-VUONGTTPolicyFilePath
+                if ($policyPath -and (Test-Path -LiteralPath $policyPath -ErrorAction SilentlyContinue)) {
+                    $pContent = [System.IO.File]::ReadAllText($policyPath)
                     Push-VUONGTTCloudFile -RelativePath "src/Config/feature_policy.json" -FileContent $pContent -CommitMessage "sync(policy): update feature tiers from Admin Portal" | Out-Null
                 }
 
-                # 4. Đẩy licenses_vault.json nếu có
-                if (Test-Path $script:KEY_VAULT_FILE) {
-                    $kContent = [System.IO.File]::ReadAllText($script:KEY_VAULT_FILE)
+                # 4. Đẩy licenses_vault.json nếu có (Dùng hàm truy xuất an toàn, chống lỗi null)
+                $vaultPath = Get-VUONGTTVaultFilePath
+                if ($vaultPath -and (Test-Path -LiteralPath $vaultPath -ErrorAction SilentlyContinue)) {
+                    $kContent = [System.IO.File]::ReadAllText($vaultPath)
                     Push-VUONGTTCloudFile -RelativePath "src/Config/licenses_vault.json" -FileContent $kContent -CommitMessage "sync(vault): update licenses vault from Admin Portal" | Out-Null
                 }
 
                 # 5. Purge CDN toàn cầu
                 try {
-                    $purgeUrl = "https://purge.jsdelivr.net/gh/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME@main/version.json"
+                    $purgeUrl = "https://purge.jsdelivr.net/gh/$repoOwner/$repoName@main/version.json"
                     $wc = New-Object System.Net.WebClient
                     $wc.Headers.Add("User-Agent", "VUONGTT-CloudSync/2026")
                     $null = $wc.DownloadString($purgeUrl)

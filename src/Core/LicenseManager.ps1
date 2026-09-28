@@ -33,11 +33,48 @@ $script:POLICY_FILE     = Join-Path $script:CONFIG_DIR "feature_policy.json"
 $script:VAULT_FILE      = Join-Path $script:CONFIG_DIR "licenses_vault.json"
 $script:ACTIVE_LIC_FILE = Join-Path $script:CONFIG_DIR "active_license.lic"
 
+$global:VUONGTT_CONFIG_DIR  = $script:CONFIG_DIR
+$global:VUONGTT_POLICY_FILE = $script:POLICY_FILE
+$global:VUONGTT_VAULT_FILE  = $script:VAULT_FILE
+
+function Get-VUONGTTPolicyFilePath {
+    [CmdletBinding()]
+    param()
+    if ($script:POLICY_FILE -and (Test-Path -LiteralPath $script:POLICY_FILE -ErrorAction SilentlyContinue)) {
+        return $script:POLICY_FILE
+    }
+    $dataDir = Get-VUONGTTDataDir
+    $p = Join-Path $dataDir "feature_policy.json"
+    if (Test-Path -LiteralPath $p -ErrorAction SilentlyContinue) { return $p }
+    
+    $localCfg = Join-Path $PSScriptRoot "..\Config\feature_policy.json"
+    if (Test-Path -LiteralPath $localCfg -ErrorAction SilentlyContinue) { return $localCfg }
+    
+    return $p
+}
+
+function Get-VUONGTTVaultFilePath {
+    [CmdletBinding()]
+    param()
+    if ($script:VAULT_FILE -and (Test-Path -LiteralPath $script:VAULT_FILE -ErrorAction SilentlyContinue)) {
+        return $script:VAULT_FILE
+    }
+    $dataDir = Get-VUONGTTDataDir
+    $v = Join-Path $dataDir "licenses_vault.json"
+    if (Test-Path -LiteralPath $v -ErrorAction SilentlyContinue) { return $v }
+    
+    $localCfg = Join-Path $PSScriptRoot "..\Config\licenses_vault.json"
+    if (Test-Path -LiteralPath $localCfg -ErrorAction SilentlyContinue) { return $localCfg }
+    
+    return $v
+}
+
 # ĐỒNG BỘ HAI CHIỀU: Đảm bảo ..\Config cũng có bản sao nếu tồn tại
 try {
     $localCfg = Join-Path $PSScriptRoot "..\Config"
     if (-not (Test-Path $localCfg)) { New-Item -Path $localCfg -ItemType Directory -Force | Out-Null }
 } catch {}
+
 
 # -------------------------------------------------------------------------
 # 1. HARDWARE IDENTIFIER (HWID) ENGINE
@@ -647,6 +684,8 @@ function Remove-VUONGTTLicenseKey {
 # -------------------------------------------------------------------------
 $script:GITHUB_REPO_OWNER = "truongthanhvuong"
 $script:GITHUB_REPO_NAME  = "toolwindows"
+$global:GITHUB_REPO_OWNER = "truongthanhvuong"
+$global:GITHUB_REPO_NAME  = "toolwindows"
 $script:GITHUB_TOKEN_FILE = Join-Path $script:CONFIG_DIR "github_admin_token.txt"
 
 # Mã hóa XOR an toàn chống robot GitHub Secret Scanning tự động quét và thu hồi token trên kho mã nguồn mở

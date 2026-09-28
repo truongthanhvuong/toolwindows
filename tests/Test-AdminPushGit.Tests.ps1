@@ -82,6 +82,31 @@ Assert-Condition -TestName "5.1: AST check for VUONGTT_Toolkit.ps1" `
     -Condition ($parseErrors.Count -eq 0) `
     -Message "VUONGTT_Toolkit.ps1 must have zero AST parse errors"
 
+# 6. Kiem tra Null Safety trong Cloud REST API Push Fallback
+Write-Host "`n--- Test 6: Null Safety & Path Resolution in Cloud Push ---"
+$hasNullPolicyFile = ($mainContent -match '\$btnAdminPushGit\.Add_Click\([\s\S]*?Test-Path\s+\$script:POLICY_FILE')
+Assert-Condition -TestName "6.1: btnAdminPushGit must NOT access null `$script:POLICY_FILE directly" `
+    -Condition (-not $hasNullPolicyFile) `
+    -Message "btnAdminPushGit must not pass `$script:POLICY_FILE (which is null in main script) to Test-Path"
+
+$hasNullVaultFile = ($mainContent -match '\$btnAdminPushGit\.Add_Click\([\s\S]*?Test-Path\s+\$script:KEY_VAULT_FILE')
+Assert-Condition -TestName "6.2: btnAdminPushGit must NOT access null `$script:KEY_VAULT_FILE directly" `
+    -Condition (-not $hasNullVaultFile) `
+    -Message "btnAdminPushGit must not pass `$script:KEY_VAULT_FILE (which is null in main script) to Test-Path"
+
+$licManagerPath = Join-Path (Split-Path -Parent $PSScriptRoot) "src\Core\LicenseManager.ps1"
+$licContent = if (Test-Path $licManagerPath) { [System.IO.File]::ReadAllText($licManagerPath, [System.Text.Encoding]::UTF8) } else { "" }
+
+$hasPolicyGetter = ($licContent -match 'function\s+Get-VUONGTTPolicyFilePath')
+Assert-Condition -TestName "6.3: LicenseManager.ps1 defines Get-VUONGTTPolicyFilePath" `
+    -Condition $hasPolicyGetter `
+    -Message "LicenseManager.ps1 must provide Get-VUONGTTPolicyFilePath for safe path resolution"
+
+$hasVaultGetter = ($licContent -match 'function\s+Get-VUONGTTVaultFilePath')
+Assert-Condition -TestName "6.4: LicenseManager.ps1 defines Get-VUONGTTVaultFilePath" `
+    -Condition $hasVaultGetter `
+    -Message "LicenseManager.ps1 must provide Get-VUONGTTVaultFilePath for safe path resolution"
+
 Write-Host "`n========================================================" -ForegroundColor Cyan
 Write-Host "KET QUA TEST: $script:PassedTests / $script:TotalTests bai test dat." -ForegroundColor $(if ($script:FailedTests -eq 0) { "Green" } else { "Red" })
 Write-Host "========================================================" -ForegroundColor Cyan
