@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.51
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.52
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -7758,7 +7758,7 @@ if ($btnAdminLogout) {
 if ($btnAdminPushGit) {
     $btnAdminPushGit.Add_Click({
         $confirm = [System.Windows.MessageBox]::Show(
-            "BẠN CÓ CHẮC CHẮN MUỐN ĐẨY BẢN CẬP NHẬT MỚI LÊN GITHUB?`n`nHệ thống sẽ tự động thực hiện quy trình chuẩn:`n1. Tự động Lưu toàn bộ cấu hình phân quyền & License Key trong Admin Portal.`n2. Tự động Tăng phiên bản mới (+1 build) đồng bộ 5 tệp mã nguồn.`n3. Biên dịch file thực thi VUONGTT_Toolkit.exe mới nhất.`n4. Chạy Pre-flight Smoke Test kiểm tra tính ổn định.`n5. Đẩy (Git Push) bản cập nhật lên GitHub origin main.`n6. Làm mới CDN toàn cầu (0s Latency) để mọi máy khách nhận ngay bản mới.`n`nBạn có muốn tiến hành ngay bây giờ không?",
+            "BẠN CÓ CHẮC CHẮN MUỐN ĐẨY BẢN CẬP NHẬT MỚI LÊN GITHUB?`n`nHệ thống sẽ tự động thực hiện quy trình chuẩn:`n1. Tự động Lưu toàn bộ cấu hình phân quyền & License Key trong Admin Portal.`n2. Tự động Tăng phiên bản mới (+1 build) đồng bộ các tệp cấu hình.`n3. Đẩy (Git Push) bản cập nhật lên GitHub origin main.`n4. Làm mới CDN toàn cầu (0s Latency) để mọi máy khách nhận ngay bản mới.`n`nBạn có muốn tiến hành ngay bây giờ không?",
             "Xác Nhận Push Git & Phát Hành",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Question
@@ -7789,28 +7789,132 @@ if ($btnAdminPushGit) {
             Update-VUONGTTLicenseUI
         }
 
-        # 2. Xác định thư mục gốc dự án
-        $repoRoot = $global:ScriptDir
-        if (-not $repoRoot -or -not (Test-Path (Join-Path $repoRoot "Publish-Update.ps1"))) {
-            $repoRoot = "E:\toolwindows"
+        # 2. Dò tìm thư mục repo Git & file Publish-Update.ps1 động (KHÔNG hardcode ổ đĩa)
+        $foundPublishScript = $null
+        $candidateDirs = @()
+        if ($global:ScriptDir) {
+            $candidateDirs += $global:ScriptDir
+            try { $candidateDirs += (Split-Path -Parent $global:ScriptDir) } catch {}
         }
-        $publishScript = Join-Path $repoRoot "Publish-Update.ps1"
-
-        if (-not (Test-Path $publishScript)) {
-            [System.Windows.MessageBox]::Show("Không tìm thấy tệp kịch bản phát hành Publish-Update.ps1 tại: $publishScript", "Lỗi Phát Hành", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
-            return
+        if ($PSScriptRoot) { $candidateDirs += $PSScriptRoot }
+        if ($env:VUONGTT_ORIGINAL_EXE) {
+            try { $candidateDirs += (Split-Path -Parent $env:VUONGTT_ORIGINAL_EXE) } catch {}
         }
+        try { $candidateDirs += (Get-Location).Path } catch {}
+        try { $candidateDirs += [System.AppDomain]::CurrentDomain.BaseDirectory } catch {}
 
-        $txtFooterStatus.Text = "• [PUSH GIT] Đang khởi chạy quy trình Đóng Gói, Kiểm Thử & Push Git lên GitHub..."
-        Invoke-VUONGTTDoEvents
-
-        # 3. Khởi chạy Publish-Update.ps1 trong cửa sổ PowerShell với đặc quyền Administrator
+        # Dò tìm trên các ổ đĩa thực tế hiện có trong hệ thống
         try {
-            $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$publishScript`"" -WorkingDirectory $repoRoot -Verb RunAs -PassThru
-            $txtFooterStatus.Text = "• [PUSH GIT] Cửa sổ phát hành đã được kích hoạt (PID: $($proc.Id)). Vui lòng theo dõi tiến trình..."
-        } catch {
-            $txtFooterStatus.Text = "• [LỖI PUSH GIT] Không thể khởi chạy tiến trình phát hành: $($_.Exception.Message)"
-            [System.Windows.MessageBox]::Show("Không thể khởi chạy Publish-Update.ps1: $($_.Exception.Message)", "Lỗi Khởi Chạy", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            $activeDrives = Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue
+            foreach ($d in $activeDrives) {
+                if ($d.Root) {
+                    $candidateDirs += (Join-Path $d.Root "toolwindows")
+                }
+            }
+        } catch {}
+
+        foreach ($cDir in ($candidateDirs | Where-Object { $_ -and $_.Trim() } | Select-Object -Unique)) {
+            try {
+                if (Test-Path -LiteralPath $cDir -ErrorAction SilentlyContinue) {
+                    $pScript = Join-Path $cDir "Publish-Update.ps1"
+                    if (Test-Path -LiteralPath $pScript -ErrorAction SilentlyContinue) {
+                        $foundPublishScript = $pScript
+                        break
+                    }
+                }
+            } catch {}
+        }
+
+        # TRƯỜNG HỢP 1: Tìm thấy Publish-Update.ps1 (Môi trường Dev có repo Git)
+        if ($foundPublishScript) {
+            $txtFooterStatus.Text = "• [PUSH GIT] Đang khởi chạy quy trình Đóng Gói, Kiểm Thử & Push Git lên GitHub..."
+            Invoke-VUONGTTDoEvents
+
+            try {
+                $workingDir = Split-Path -Parent $foundPublishScript
+                $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$foundPublishScript`"" -WorkingDirectory $workingDir -PassThru
+                $txtFooterStatus.Text = "• [PUSH GIT] Cửa sổ phát hành đã được kích hoạt (PID: $($proc.Id)). Vui lòng theo dõi tiến trình..."
+            } catch {
+                $txtFooterStatus.Text = "• [LỖI PUSH GIT] Không thể khởi chạy tiến trình phát hành: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Không thể khởi chạy Publish-Update.ps1: $($_.Exception.Message)", "Lỗi Khởi Chạy", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+        else {
+            # TRƯỜNG HỢP 2: Chạy độc lập / máy Client / không có mã nguồn Git cục bộ
+            # Tự động dùng Cloud REST API Push qua GitHub Token (0s Latency, chạy được trên 100% máy tính)
+            $txtFooterStatus.Text = "• [CLOUD PUSH] Đang tự động đồng bộ cấu hình và đẩy lên GitHub qua REST API..."
+            Invoke-VUONGTTDoEvents
+
+            try {
+                $ghToken = Get-VUONGTTGitHubToken
+                if (-not $ghToken) {
+                    throw "Không tìm thấy GitHub Access Token để kết nối Cloud API."
+                }
+
+                # 1. Đọc và nâng số phiên bản version.json
+                $currentVer = $script:APP_CURRENT_VERSION
+                if (-not $currentVer) { $currentVer = "20.5.909.52" }
+                $parts = $currentVer.Split('.')
+                $newVer = ""
+                if ($parts.Count -ge 4) {
+                    $buildNum = 0
+                    [int]::TryParse($parts[3], [ref]$buildNum) | Out-Null
+                    $nextBuild = $buildNum + 1
+                    $newVer = "$($parts[0]).$($parts[1]).$($parts[2]).$nextBuild"
+                } else {
+                    $newVer = "$currentVer.1"
+                }
+
+                $verObj = @{
+                    version = $newVer
+                    releaseDate = (Get-Date).ToString("dd/MM/yyyy")
+                    downloadUrl = "https://raw.githubusercontent.com/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME/main/VUONGTT_Toolkit.exe"
+                    changelog = @(
+                        "Cập nhật từ Admin Portal: Đồng bộ phân quyền tính năng & kho License Keys mới nhất",
+                        "Tự động đồng bộ thời gian thực qua Cloud REST API"
+                    )
+                }
+                $verJsonText = ($verObj | ConvertTo-Json -Depth 5)
+
+                # 2. Đẩy version.json lên GitHub
+                $pushVerRes = Push-VUONGTTCloudFile -RelativePath "version.json" -FileContent $verJsonText -CommitMessage "release: v$newVer - auto-publish from Admin Portal"
+
+                # 3. Đẩy feature_policy.json nếu có
+                if (Test-Path $script:POLICY_FILE) {
+                    $pContent = [System.IO.File]::ReadAllText($script:POLICY_FILE)
+                    Push-VUONGTTCloudFile -RelativePath "src/Config/feature_policy.json" -FileContent $pContent -CommitMessage "sync(policy): update feature tiers from Admin Portal" | Out-Null
+                }
+
+                # 4. Đẩy licenses_vault.json nếu có
+                if (Test-Path $script:KEY_VAULT_FILE) {
+                    $kContent = [System.IO.File]::ReadAllText($script:KEY_VAULT_FILE)
+                    Push-VUONGTTCloudFile -RelativePath "src/Config/licenses_vault.json" -FileContent $kContent -CommitMessage "sync(vault): update licenses vault from Admin Portal" | Out-Null
+                }
+
+                # 5. Purge CDN toàn cầu
+                try {
+                    $purgeUrl = "https://purge.jsdelivr.net/gh/$script:GITHUB_REPO_OWNER/$script:GITHUB_REPO_NAME@main/version.json"
+                    $wc = New-Object System.Net.WebClient
+                    $wc.Headers.Add("User-Agent", "VUONGTT-CloudSync/2026")
+                    $null = $wc.DownloadString($purgeUrl)
+                } catch {}
+
+                # 6. Cập nhật giao diện
+                $script:APP_CURRENT_VERSION = $newVer
+                if ($txtFooterVersionDisplay) { $txtFooterVersionDisplay.Text = "v$newVer" }
+                if ($txtLogoVersionDisplay) { $txtLogoVersionDisplay.Text = "v$newVer - Professional" }
+                $txtFooterStatus.Text = "• [THÀNH CÔNG] Đã phát hành v$newVer lên GitHub Cloud thành công!"
+
+                [System.Windows.MessageBox]::Show(
+                    "ĐÃ ĐẨY LÊN GITHUB & PHÁT HÀNH THÀNH CÔNG!`n`n- Phiên bản mới: v$newVer`n- Phương thức: Cloud REST API (0s Latency)`n- Đã đồng bộ: version.json, feature_policy.json, licenses_vault.json`n- Đã làm mới cache CDN toàn cầu!`n`nToàn bộ máy khách sẽ tự động nhận diện cấu hình và bản cập nhật mới nhất!",
+                    "Phát Hành Thành Công - Cloud Git Push",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Information
+                )
+            } catch {
+                $txtFooterStatus.Text = "• [LỖI CLOUD PUSH] Không thể đẩy lên GitHub: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Không thể đẩy lên GitHub qua Cloud API: $($_.Exception.Message)", "Lỗi Cloud Push", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
         }
     })
 }

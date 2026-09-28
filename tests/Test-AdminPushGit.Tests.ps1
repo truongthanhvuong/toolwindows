@@ -58,19 +58,27 @@ Assert-Condition -TestName "2.2: btnAdminPushGit has Add_Click event handler reg
     -Condition $hasClickHandler `
     -Message "VUONGTT_Toolkit.ps1 must register an Add_Click handler for btnAdminPushGit"
 
-# 3. Kiem tra co che tu dong luu cau hinh truoc khi push
-Write-Host "`n--- Test 3: Auto-Save Admin Configurations Before Push ---"
-$hasAutoSave = ($mainContent -match '\$btnAdminPushGit\.Add_Click\([\s\S]*?(Save-VUONGTTFeaturePolicies|btnSavePolicies|feature_policy\.json|Publish-Update)')
-Assert-Condition -TestName "3.1: Click handler auto-saves policies and executes push" `
-    -Condition $hasAutoSave `
-    -Message "Click handler must ensure pending admin settings/policies are saved prior to Git push"
+# 3. Kiem tra chong loi hardcode o dia E: va co co che tim kiem dong
+Write-Host "`n--- Test 3: Dynamic Repo Discovery & No Hardcoded Drive Crash ---"
+# Check that the click handler does NOT unconditionally assign $repoRoot = "E:\toolwindows"
+$hasUnconditionalHardcodedE = ($mainContent -match '\$btnAdminPushGit\.Add_Click\([\s\S]*?\$repoRoot\s*=\s*"E:\\toolwindows"')
+Assert-Condition -TestName "3.1: btnAdminPushGit does NOT unconditionally fallback to hardcoded E:\toolwindows" `
+    -Condition (-not $hasUnconditionalHardcodedE) `
+    -Message "VUONGTT_Toolkit.ps1 must not unconditionally use 'E:\toolwindows' without verifying drive existence"
 
-# 4. Kiem tra cu phap AST cua cac file lien quan
-Write-Host "`n--- Test 4: PowerShell AST Syntax Integrity ---"
+# 4. Kiem tra co che Cloud REST API Fallback khi chay tren may khong co repo Git
+Write-Host "`n--- Test 4: Cloud REST API Fallback on Standalone / Remote Machines ---"
+$hasCloudFallback = ($mainContent -match '\$btnAdminPushGit\.Add_Click\([\s\S]*?(Push-VUONGTTCloudFile|purge\.jsdelivr\.net|api\.github\.com)')
+Assert-Condition -TestName "4.1: btnAdminPushGit supports Cloud REST API push when running standalone" `
+    -Condition $hasCloudFallback `
+    -Message "Click handler must support direct GitHub Cloud REST API push when local git repo is not present"
+
+# 5. Kiem tra cu phap AST cua cac file lien quan
+Write-Host "`n--- Test 5: PowerShell AST Syntax Integrity ---"
 $parseErrors = $null
 $tokens = $null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($mainPs1Path, [ref]$tokens, [ref]$parseErrors)
-Assert-Condition -TestName "4.1: AST check for VUONGTT_Toolkit.ps1" `
+Assert-Condition -TestName "5.1: AST check for VUONGTT_Toolkit.ps1" `
     -Condition ($parseErrors.Count -eq 0) `
     -Message "VUONGTT_Toolkit.ps1 must have zero AST parse errors"
 
