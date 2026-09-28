@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "Id":  "SysInfo",
         "Name":  "Xem Cấu Hình Máy Tính",
@@ -129,7 +129,7 @@
         "Id":  "Partition",
         "Name":  "Quản Lý Phân Vùng (Partition)",
         "Icon":  "💽",
-        "Tier":  "PRO",
+        "Tier":  "FREE",
         "Description":  "Sơ đồ đĩa live, TRIM SSD, chuyển MBR sang GPT không mất dữ liệu"
     }
 ]
