@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "Id":  "SysInfo",
         "Name":  "Xem Cấu Hình Máy Tính",
@@ -122,7 +122,7 @@
         "Id":  "AutoWin",
         "Name":  "Cài Win \u0026 Bypass TPM 2.0",
         "Icon":  "🚀",
-        "Tier":  "PRO",
+        "Tier":  "FREE",
         "Description":  "Cài đặt Windows tự động, vượt rào TPM 2.0 / SecureBoot / RAM"
     },
     {
