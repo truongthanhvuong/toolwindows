@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "Id":  "SysInfo",
         "Name":  "Xem Cấu Hình Máy Tính",
@@ -24,7 +24,7 @@
         "Id":  "Benchmark",
         "Name":  "Tốc Độ Ổ Đĩa (Benchmark)",
         "Icon":  "⚡",
-        "Tier":  "PRO",
+        "Tier":  "FREE",
         "Description":  "Đo tốc độ đọc/ghi tuần tự và ngẫu nhiên SSD/HDD chuyên sâu"
     },
     {
@@ -87,14 +87,14 @@
         "Id":  "Tweaks",
         "Name":  "Tinh Chỉnh Hệ Thống",
         "Icon":  "⚙️",
-        "Tier":  "PRO",
+        "Tier":  "FREE",
         "Description":  "Tối ưu hóa Windows sâu, tắt telemetry, tăng tốc đồ họa \u0026 game"
     },
     {
         "Id":  "PrinterLAN",
         "Name":  "Sửa Lỗi Máy In \u0026 Mạng LAN",
         "Icon":  "🖨️",
-        "Tier":  "PRO",
+        "Tier":  "FREE",
         "Description":  "Khắc phục lỗi chia sẻ máy in 0x0000011b, 0x00000709 và thông mạng LAN"
     },
     {
