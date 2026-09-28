@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.50
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.51
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -231,6 +231,7 @@ $btnHeaderAdmin             = Get-Control "btnHeaderAdmin"
 $btnMenuAdmin               = Get-Control "btnMenuAdmin"
 
 $pageAdminPortal            = Get-Control "pageAdminPortal"
+$btnAdminPushGit            = Get-Control "btnAdminPushGit"
 $btnAdminLogout             = Get-Control "btnAdminLogout"
 $btnSavePolicies            = Get-Control "btnSavePolicies"
 $btnResetPolicies           = Get-Control "btnResetPolicies"
@@ -7751,6 +7752,66 @@ if ($btnAdminLogout) {
         Switch-Tab -TargetTag "SysInfo"
         $txtFooterStatus.Text = "• [LOGOUT] Đã đăng xuất khỏi Trang Quản Trị Viên."
         [System.Windows.MessageBox]::Show("Bạn đã đăng xuất khỏi Admin Portal an toàn. Hệ thống đã trở về chế độ thông thường.", "Đăng Xuất Admin", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+}
+
+if ($btnAdminPushGit) {
+    $btnAdminPushGit.Add_Click({
+        $confirm = [System.Windows.MessageBox]::Show(
+            "BẠN CÓ CHẮC CHẮN MUỐN ĐẨY BẢN CẬP NHẬT MỚI LÊN GITHUB?`n`nHệ thống sẽ tự động thực hiện quy trình chuẩn:`n1. Tự động Lưu toàn bộ cấu hình phân quyền & License Key trong Admin Portal.`n2. Tự động Tăng phiên bản mới (+1 build) đồng bộ 5 tệp mã nguồn.`n3. Biên dịch file thực thi VUONGTT_Toolkit.exe mới nhất.`n4. Chạy Pre-flight Smoke Test kiểm tra tính ổn định.`n5. Đẩy (Git Push) bản cập nhật lên GitHub origin main.`n6. Làm mới CDN toàn cầu (0s Latency) để mọi máy khách nhận ngay bản mới.`n`nBạn có muốn tiến hành ngay bây giờ không?",
+            "Xác Nhận Push Git & Phát Hành",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Question
+        )
+        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) {
+            return
+        }
+
+        # 1. Tự động lưu cấu hình phân quyền từ UI combos nếu có thay đổi
+        if ($script:adminPolicyCombos -and $script:adminPolicyCombos.Count -gt 0) {
+            $policies = Get-VUONGTTFeaturePolicies
+            $adminCount = 0
+            foreach ($fid in $script:adminPolicyCombos.Keys) {
+                $cmb = $script:adminPolicyCombos[$fid]
+                if ($cmb) {
+                    $tier = switch ($cmb.SelectedIndex) {
+                        1 { "PRO" }
+                        2 { "ADMIN" }
+                        default { "FREE" }
+                    }
+                    if ($tier -eq "ADMIN") { $adminCount++ }
+                    foreach ($p in $policies) {
+                        if ($p.Id -eq $fid) { $p.Tier = $tier }
+                    }
+                }
+            }
+            Save-VUONGTTFeaturePolicies -Policies $policies | Out-Null
+            Update-VUONGTTLicenseUI
+        }
+
+        # 2. Xác định thư mục gốc dự án
+        $repoRoot = $global:ScriptDir
+        if (-not $repoRoot -or -not (Test-Path (Join-Path $repoRoot "Publish-Update.ps1"))) {
+            $repoRoot = "E:\toolwindows"
+        }
+        $publishScript = Join-Path $repoRoot "Publish-Update.ps1"
+
+        if (-not (Test-Path $publishScript)) {
+            [System.Windows.MessageBox]::Show("Không tìm thấy tệp kịch bản phát hành Publish-Update.ps1 tại: $publishScript", "Lỗi Phát Hành", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            return
+        }
+
+        $txtFooterStatus.Text = "• [PUSH GIT] Đang khởi chạy quy trình Đóng Gói, Kiểm Thử & Push Git lên GitHub..."
+        Invoke-VUONGTTDoEvents
+
+        # 3. Khởi chạy Publish-Update.ps1 trong cửa sổ PowerShell với đặc quyền Administrator
+        try {
+            $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$publishScript`"" -WorkingDirectory $repoRoot -Verb RunAs -PassThru
+            $txtFooterStatus.Text = "• [PUSH GIT] Cửa sổ phát hành đã được kích hoạt (PID: $($proc.Id)). Vui lòng theo dõi tiến trình..."
+        } catch {
+            $txtFooterStatus.Text = "• [LỖI PUSH GIT] Không thể khởi chạy tiến trình phát hành: $($_.Exception.Message)"
+            [System.Windows.MessageBox]::Show("Không thể khởi chạy Publish-Update.ps1: $($_.Exception.Message)", "Lỗi Khởi Chạy", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+        }
     })
 }
 

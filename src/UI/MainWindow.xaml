@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.50"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.51"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -331,7 +331,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.50 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.51 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -3544,15 +3544,27 @@
                                         </Border>
                                         <TextBlock Text="TRANG QUẢN TRỊ VIÊN HỆ THỐNG (ADMIN PORTAL)" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                                     </StackPanel>                                    <TextBlock Text="Quản lý phân quyền tính năng Free/PRO, tạo và quản lý License Key khóa theo phần cứng (HWID) máy tính" FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="42,2,0,0"/>
-                                </StackPanel>                                <Button x:Name="btnAdminLogout" Grid.Column="1" Content="🚪 Đăng Xuất Admin" Height="32" Background="#BE123C" Foreground="White" FontWeight="Bold" FontSize="12" Padding="12,0,12,0" Cursor="Hand" VerticalAlignment="Center">
-                                    <Button.Template>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Button.Template>
-                                </Button>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button x:Name="btnAdminPushGit" Content="🚀 Push Git &amp; Phát Hành" Height="32" Background="#15803D" Foreground="White" FontWeight="Bold" FontSize="12" Padding="14,0,14,0" Cursor="Hand" VerticalAlignment="Center" Margin="0,0,10,0" ToolTip="Tự động lưu tất cả cấu hình Admin, đóng gói bản cập nhật EXE mới nhất và đẩy (push) lên GitHub">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                    <Button x:Name="btnAdminLogout" Content="🚪 Đăng Xuất Admin" Height="32" Background="#BE123C" Foreground="White" FontWeight="Bold" FontSize="12" Padding="12,0,12,0" Cursor="Hand" VerticalAlignment="Center">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                         </Border>
 
@@ -3685,7 +3697,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.50" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.51" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>
