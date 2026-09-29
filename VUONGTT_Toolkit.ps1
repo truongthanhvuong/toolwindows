@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.59
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.60
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.59"
+$Script:AppVersion = "v20.5.909.60"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -349,6 +349,36 @@ $subTabTech_Backup              = Get-Control "subTabTech_Backup"
 $subTabTech_AutoWin             = Get-Control "subTabTech_AutoWin"
 $subTabTech_Users               = Get-Control "subTabTech_Users"
 
+# Sub-pages and Panels (5 Large Hubs)
+$pageSysInfo                    = Get-Control "pageSysInfo"
+$pageCustomize                  = Get-Control "pageCustomize"
+$pageCpuMain                    = Get-Control "pageCpuMain"
+
+$pageCleaner                    = Get-Control "pageCleaner"
+$pageConfig                     = Get-Control "pageConfig"
+
+$pageSoftware                   = Get-Control "pageSoftware"
+$pageCustomApp                  = Get-Control "pageCustomApp"
+$pageUninstaller                = Get-Control "pageUninstaller"
+$pageFonts                      = Get-Control "pageFonts"
+
+$pageBenchmark                  = Get-Control "pageBenchmark"
+$pagePartition                  = Get-Control "pagePartition"
+$pageLaptopCheck                = Get-Control "pageLaptopCheck"
+
+$pageActivation                 = Get-Control "pageActivation"
+$pageBitLocker                  = Get-Control "pageBitLocker"
+$pageBackupDriver               = Get-Control "pageBackupDriver"
+$pageAutoWin                    = Get-Control "pageAutoWin"
+$pageUsers                      = Get-Control "pageUsers"
+
+# Sidebar Quick Action Controls
+$btnQuickClean                  = Get-Control "btnQuickClean"
+$btnQuickActivation             = Get-Control "btnQuickActivation"
+$btnQuickFixPrinter             = Get-Control "btnQuickFixPrinter"
+$btnQuickScanIP                 = Get-Control "btnQuickScanIP"
+$btnQuickRestartExplorer        = Get-Control "btnQuickRestartExplorer"
+
 # 8 Apple Menu Cards + Admin Buttons
 $menuButtons = @(
     "btnMenuSysInfo", "btnMenuSystemFix", "btnMenuNetworkLAN", "btnMenuPrinterLAN",
@@ -566,7 +596,20 @@ function Switch-Tab {
         $txtPageIcon.Text  = $dict[$TargetTag].Icon
     }
 
-    # Switch sub-tab if specified by legacy routing or initial call
+    # Default Sub-tab Routing when clicking main Hub buttons
+    $defaultSubTabs = @{
+        "SysInfo"       = "SysInfo_View"
+        "SystemFix"     = "SysFix_Cleaner"
+        "SoftwareHub"   = "Soft_Store"
+        "HardwareDisk"  = "Hw_Disk"
+        "TechUtilities" = "Tech_Backup"
+    }
+
+    if (-not $subTabToSwitch -and $defaultSubTabs.ContainsKey($TargetTag)) {
+        $subTabToSwitch = $defaultSubTabs[$TargetTag]
+    }
+
+    # Switch sub-tab if specified by default, legacy routing or initial call
     if ($subTabToSwitch) {
         switch ($TargetTag) {
             "SysInfo"       { Switch-SysInfoSubTab $subTabToSwitch }
@@ -905,6 +948,44 @@ if ($subTabTech_BitLocker)   { $subTabTech_BitLocker.Add_Click({ Switch-TechUtil
 if ($subTabTech_Backup)     { $subTabTech_Backup.Add_Click({ Switch-TechUtilitiesSubTab "Tech_Backup" }) }
 if ($subTabTech_AutoWin)    { $subTabTech_AutoWin.Add_Click({ Switch-TechUtilitiesSubTab "Tech_AutoWin" }) }
 if ($subTabTech_Users)      { $subTabTech_Users.Add_Click({ Switch-TechUtilitiesSubTab "Tech_Users" }) }
+
+# Wire Sidebar Quick Action Buttons
+if ($btnQuickClean) {
+    $btnQuickClean.Add_Click({
+        Switch-Tab -TargetTag "SystemFix"
+        Switch-SystemFixSubTab "SysFix_Cleaner"
+    })
+}
+if ($btnQuickActivation) {
+    $btnQuickActivation.Add_Click({
+        Switch-Tab -TargetTag "TechUtilities"
+        Switch-TechUtilitiesSubTab "Tech_Activation"
+    })
+}
+if ($btnQuickFixPrinter) {
+    $btnQuickFixPrinter.Add_Click({
+        Switch-Tab -TargetTag "PrinterLAN"
+    })
+}
+if ($btnQuickScanIP) {
+    $btnQuickScanIP.Add_Click({
+        Switch-Tab -TargetTag "NetworkLAN"
+    })
+}
+if ($btnQuickRestartExplorer) {
+    $btnQuickRestartExplorer.Add_Click({
+        try {
+            Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 400
+            Start-Process "explorer.exe" -ErrorAction SilentlyContinue
+            if ($txtFooterStatus) {
+                $txtFooterStatus.Text = "â€¢ [OK] ÄÃ£ khá»Ÿi Ä‘á»™ng láº¡i Windows Explorer thÃ nh cÃ´ng!"
+            }
+        } catch {
+            Start-Process "explorer.exe" -ErrorAction SilentlyContinue
+        }
+    })
+}
 
 
 # =========================================================================
@@ -9205,7 +9286,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.59" }
+                if (-not $currentVer) { $currentVer = "20.5.909.60" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

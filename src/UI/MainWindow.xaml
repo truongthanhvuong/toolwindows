@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.59"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.60"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -346,6 +346,36 @@
             </Setter>
         </Style>
 
+        <!-- Apple Quick Action Button Style for Sidebar -->
+        <Style x:Key="QuickActionBtn" TargetType="Button">
+            <Setter Property="FontFamily" Value="-apple-system, 'SF Pro Display', 'SF Pro Text', 'Segoe UI Variable Display', 'Segoe UI Variable Text', 'Segoe UI', 'Helvetica Neue', Inter, sans-serif"/>
+            <Setter Property="Background" Value="{DynamicResource CardInnerBgBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="10,0,8,0"/>
+            <Setter Property="Margin" Value="4,2,4,2"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource MenuBtnHoverBg}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#0284C7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid x:Name="MainRootGrid">
@@ -382,7 +412,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.59 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.60 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -534,6 +564,60 @@
                                     <TextBlock Text="🛠️" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <TextBlock Text="Tiện Ích Kỹ Thuật" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- QUICK ACTIONS / CÁC CHỨC NĂNG HAY DÙNG NHẤT -->
+                        <Border Margin="6,12,6,8" Height="1" Background="{DynamicResource CardBorderBrush}"/>
+                        <TextBlock Text="⚡ THAO TÁC HAY DÙNG NHẤT" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="10,0,0,6"/>
+
+                        <!-- 1. Dọn Dẹp Nhanh -->
+                        <Button x:Name="btnQuickClean" Style="{StaticResource QuickActionBtn}" ToolTip="1-Click dọn dẹp file rác, cache và giải phóng dung lượng ổ C">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#FEF3C7" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="🧹" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Dọn Dẹp Nhanh" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 2. Kích Hoạt Bản Quyền -->
+                        <Button x:Name="btnQuickActivation" Style="{StaticResource QuickActionBtn}" ToolTip="Mở nhanh trình quản lý &amp; kích hoạt bản quyền số Windows / Office (MAS)">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#DCFCE7" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="🔑" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Kích Hoạt HWID" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 3. Sửa Lỗi Máy In LAN -->
+                        <Button x:Name="btnQuickFixPrinter" Style="{StaticResource QuickActionBtn}" ToolTip="Mở nhanh trung tâm sửa lỗi máy in &amp; chia sẻ qua mạng LAN">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#E0F2FE" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="🖨️" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Sửa Máy In LAN" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 4. Quét IP Mạng Nhanh -->
+                        <Button x:Name="btnQuickScanIP" Style="{StaticResource QuickActionBtn}" ToolTip="Mở công cụ quét mạng nội bộ IP Scanner tìm thiết bị trong mạng LAN">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#D1FAE5" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="🌐" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Quét Mạng IP LAN" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 5. Khởi Động Lại Explorer -->
+                        <Button x:Name="btnQuickRestartExplorer" Style="{StaticResource QuickActionBtn}" ToolTip="Khởi động lại tiến trình Windows Explorer (Taskbar &amp; Desktop)">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <Border Width="24" Height="24" CornerRadius="6" Background="#F1F5F9" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="🔄" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Restart Explorer" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -4462,7 +4546,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.59" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.60" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

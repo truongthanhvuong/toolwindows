@@ -82,6 +82,8 @@ if (-not $NoBump) {
     if (Test-Path $mainPs1) {
         $txt = [System.IO.File]::ReadAllText($mainPs1, [System.Text.Encoding]::UTF8)
         $txt = $txt -replace 'VER\s+\d+\.\d+\.\d+\.\d+', "VER $newVer"
+        $txt = $txt -replace '\$Script:AppVersion\s*=\s*"[^"]+"', "`$Script:AppVersion = `"v$newVer`""
+        $txt = $txt -replace '\$currentVer\s*=\s*"\d+\.\d+\.\d+\.\d+"', "`$currentVer = `"$newVer`""
         [System.IO.File]::WriteAllText($mainPs1, $txt, (New-Object System.Text.UTF8Encoding($true)))
     }
 }
