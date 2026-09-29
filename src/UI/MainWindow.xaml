@@ -1,4 +1,4 @@
-﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="VUONGTT Tool Pro 2026 - v20.5.909.58"
         Height="720" Width="1180"
@@ -1753,16 +1753,176 @@
                                 <TextBox x:Name="txtConfigLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" FontSize="12.5" Height="130" Text="Sẵn sàng thao tác các tính năng và công cụ sửa lỗi hệ thống Windows."/>
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
-                        <!-- Sub-tab 3: Cứu Hộ IT Helpdesk (Placeholder for Task 4 Troubleshoot Widget) -->
+                        <!-- Sub-tab 3: Cứu Hộ IT Helpdesk (Trung Tâm Cứu Hộ IT Helpdesk) -->
                         <ScrollViewer x:Name="pnlSubSysFix_Troubleshoot" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                             <StackPanel Margin="0,0,0,16">
-                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="24" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20">
-                                        <TextBlock Text="🩺" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                                        <TextBlock Text="Hệ Thống Cứu Hộ &amp; Chẩn Đoán Lỗi IT Helpdesk Windows" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                        <TextBlock Text="Cơ sở dữ liệu 200+ mã sự cố IT Helpdesk với công cụ chẩn đoán &amp; tự động sửa chữa." FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
-                                    </StackPanel>
+                                <!-- 1. Header Banner -->
+                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14,12" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="🩺" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="TRUNG TÂM CỨU HỘ &amp; CHẨN ĐOÁN LỖI IT HELPDESK WINDOWS" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                                <Border Background="#FEF3C7" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="CƠ SỞ DỮ LIỆU 200+ SỰ CỐ" FontSize="10.5" FontWeight="Bold" Foreground="#B45309"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="Tra cứu mã lỗi, phát hiện nguyên nhân gốc, tự động hóa sửa chữa 1-Click và phục hồi vận hành ổn định hệ thống." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="26,2,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,6">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="Engine:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text=" SẴN SÀNG" FontSize="11.5" FontWeight="Bold" Foreground="#047857" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
                                 </Border>
+
+                                <!-- 2. Main 2-Column Responsive Workspace -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.15*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="1.35*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- CỘT TRÁI: BỘ LỌC TÌM KIẾM & DANH SÁCH SỰ CỐ -->
+                                    <Border Grid.Column="0" Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
+                                                <TextBlock Text="📋 Danh Sách Sự Cố IT Helpdesk" FontWeight="Bold" FontSize="13.5" VerticalAlignment="Center"/>
+                                                <Border Background="{DynamicResource CardInnerBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                    <TextBlock Text="7 Nhóm Phân Loại" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- Tìm kiếm nhanh & Xóa -->
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="txtTroubleshootSearch" Grid.Column="0" Height="32" VerticalContentAlignment="Center" FontSize="12.5" Padding="8,4,8,4" ToolTip="Nhập mã sự cố (ví dụ PERF-011), mã lỗi (0x80070002) hoặc từ khóa tìm kiếm"/>
+                                                <Button x:Name="btnTroubleshootClearSearch" Grid.Column="1" Content="✕ Xóa" Background="#475569" Style="{StaticResource ActionBtn}" Height="32" Padding="10,0,10,0" Margin="6,0,0,0" FontSize="12" ToolTip="Xóa bộ lọc tìm kiếm"/>
+                                            </Grid>
+
+                                            <!-- ComboBox Lọc Theo Danh Mục -->
+                                            <ComboBox x:Name="cboTroubleshootCategoryFilter" Height="32" VerticalContentAlignment="Center" FontSize="12.5" SelectedIndex="0" Margin="0,0,0,8">
+                                                <ComboBoxItem Content="📂 Tất cả danh mục (Toàn bộ sự cố)" Tag=""/>
+                                                <ComboBoxItem Content="⚡ 01. Windows / Operating System" Tag="01. Windows / Operating System"/>
+                                                <ComboBoxItem Content="🌐 02. Network &amp; Remote Access" Tag="02. Network &amp; Remote Access"/>
+                                                <ComboBoxItem Content="🖨️ 03. Printer &amp; LAN Share" Tag="03. Printer &amp; LAN Share"/>
+                                                <ComboBoxItem Content="👤 04. Account &amp; Active Directory" Tag="04. Account &amp; Active Directory"/>
+                                                <ComboBoxItem Content="💼 05. Microsoft Office &amp; M365" Tag="05. Microsoft Office &amp; M365"/>
+                                                <ComboBoxItem Content="📦 06. Application &amp; Browser" Tag="06. Application &amp; Browser"/>
+                                                <ComboBoxItem Content="🖥️ 07. Hardware &amp; Peripherals" Tag="07. Hardware &amp; Peripherals"/>
+                                            </ComboBox>
+
+                                            <!-- Bảng Danh Sách Sự Cố -->
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Height="410" Margin="0,0,0,8">
+                                                <DataGrid x:Name="dgTroubleshootList" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" Background="Transparent" BorderThickness="0" RowHeight="28" FontSize="12" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Header="Mã" Binding="{Binding Id}" Width="80"/>
+                                                        <DataGridTextColumn Header="Tên Sự Cố" Binding="{Binding Title}" Width="1.8*"/>
+                                                        <DataGridTextColumn Header="Mã Lỗi" Binding="{Binding ErrorCode}" Width="1.1*"/>
+                                                        <DataGridTextColumn Header="Phân Loại" Binding="{Binding SubCategory}" Width="1.1*"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Border>
+
+                                            <!-- Gợi ý hỗ trợ -->
+                                            <TextBlock Text="💡 Chọn một sự cố trong danh sách để xem chi tiết chẩn đoán và hướng dẫn khắc phục." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- CỘT PHẢI: CHI TIẾT SỰ CỐ, TÁC VỤ 4 BƯỚC & TERMINAL CONSOLE -->
+                                    <Border Grid.Column="2" Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <!-- Tiêu Đề Thẻ Chi Tiết -->
+                                            <Grid Margin="0,0,0,8">
+                                                <TextBlock Text="🔍 Chi Tiết Sự Cố Đã Chọn" FontWeight="Bold" FontSize="13.5" VerticalAlignment="Center"/>
+                                                <Border Background="#FEF3C7" CornerRadius="4" Padding="6,2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                    <TextBlock x:Name="txtTroubleshootDetailCategory" Text="Chưa chọn sự cố" FontSize="11" FontWeight="SemiBold" Foreground="#B45309"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- Tiêu Đề Sự Cố Đang Chọn -->
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10,8" Margin="0,0,0,8">
+                                                <StackPanel>
+                                                    <TextBlock Text="Tên sự cố / Mã định danh:" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                                                    <TextBlock x:Name="txtTroubleshootDetailTitle" Text="Vui lòng chọn một sự cố từ danh sách bên trái để bắt đầu." FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Triệu Chứng & Nguyên Nhân Gốc -->
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="8"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <!-- Triệu chứng -->
+                                                <Border Grid.Column="0" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="8,6">
+                                                    <StackPanel>
+                                                        <TextBlock Text="⚠️ Triệu Chứng (Symptoms):" FontSize="11" FontWeight="Bold" Foreground="#D97706" Margin="0,0,0,4"/>
+                                                        <TextBox x:Name="txtTroubleshootDetailSymptoms" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" FontSize="11.5" Height="68" Text="Chưa có thông tin triệu chứng." Padding="0"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <!-- Nguyên nhân -->
+                                                <Border Grid.Column="2" Background="{DynamicResource CardInnerBgBrush}" CornerRadius="6" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="8,6">
+                                                    <StackPanel>
+                                                        <TextBlock Text="💡 Nguyên Nhân (Root Cause):" FontSize="11" FontWeight="Bold" Foreground="#2563EB" Margin="0,0,0,4"/>
+                                                        <TextBox x:Name="txtTroubleshootDetailCause" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" FontSize="11.5" Height="68" Text="Chưa có thông tin nguyên nhân gốc." Padding="0"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- Bộ 4 Nút Tác Vụ Chuẩn IT Helpdesk -->
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="8" Margin="0,0,0,8">
+                                                <StackPanel>
+                                                    <TextBlock Text="⚡ Quy Trình Khắc Phục Chuẩn IT Helpdesk (4 Bước):" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="2,0,0,6"/>
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="6"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="6"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="6"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Button x:Name="btnActionDiagnosis" Grid.Column="0" Content="🔍 1. Chẩn Đoán" Background="#2563EB" Style="{StaticResource ActionBtn}" Height="34" ToolTip="Quét kiểm tra và phát hiện nguyên nhân sự cố trên máy"/>
+                                                        <Button x:Name="btnActionAutoFix" Grid.Column="2" Content="⚡ 2. Tự Động Sửa" Background="#059669" Style="{StaticResource ActionBtn}" Height="34" ToolTip="Thực thi quy trình tự động sửa chữa theo chuẩn IT Helpdesk"/>
+                                                        <Button x:Name="btnActionVerify" Grid.Column="4" Content="✅ 3. Xác Minh" Background="#D97706" Style="{StaticResource ActionBtn}" Height="34" ToolTip="Kiểm tra lại hệ thống để bảo đảm sự cố đã được giải quyết"/>
+                                                        <Button x:Name="btnActionEscalation" Grid.Column="6" Content="📖 4. Hướng Dẫn" Background="#475569" Style="{StaticResource ActionBtn}" Height="34" ToolTip="Xem quy trình leo thang kỹ thuật và các bước xử lý thủ công chuyên sâu"/>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Terminal Log Console -->
+                                            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="10">
+                                                <StackPanel>
+                                                    <Grid Margin="0,0,0,6">
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <TextBlock Text="💻 TERMINAL CONSOLE / NHẬT KÝ THỰC THI" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" FontFamily="Consolas, Cascadia Mono, 'Courier New', monospace"/>
+                                                            <Border Background="#1E293B" CornerRadius="3" Padding="4,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                                <TextBlock Text="LIVE LOG" FontSize="9" FontWeight="Bold" Foreground="#4ADE80" FontFamily="Consolas, Cascadia Mono, monospace"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <Button x:Name="btnClearTroubleshootLog" Content="🧹 Xóa Log" HorizontalAlignment="Right" Background="#334155" Foreground="#E2E8F0" Style="{StaticResource ActionBtn}" Height="24" Padding="8,0" FontSize="11" ToolTip="Dọn sạch màn hình console"/>
+                                                    </Grid>
+                                                    <TextBox x:Name="txtTroubleshootConsoleLog" Background="#090D16" Foreground="#4ADE80" BorderThickness="1" BorderBrush="#1E293B" FontFamily="Consolas, Cascadia Mono, 'Courier New', monospace" FontSize="11.5" Height="190" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" Padding="8" Text="[SYSTEM] Trung tâm Cứu hộ IT Helpdesk sẵn sàng. Chọn một sự cố và nhấn Chẩn Đoán hoặc Tự Động Sửa."/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>
