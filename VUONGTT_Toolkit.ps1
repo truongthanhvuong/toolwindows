@@ -147,6 +147,10 @@ if (Get-Command "Update-VUONGTTRuntimeBundledConfig" -ErrorAction SilentlyContin
 . (Join-Path $corePath "CrackScannerEngine.ps1")
 . (Join-Path $corePath "DnsChangerEngine.ps1")
 . (Join-Path $corePath "IsoRepositoryEngine.ps1")
+. (Join-Path $corePath "TroubleshootManager.ps1")
+try {
+    Initialize-VUONGTTTroubleshootEngine -CustomDbPath (Join-Path $corePath "TroubleshootDatabase.json") | Out-Null
+} catch {}
 
 # Load Main UI XAML
 $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
@@ -302,90 +306,158 @@ $btnThemeLight      = Get-Control "btnThemeLight"
 $btnLangVI          = Get-Control "btnLangVI"
 $btnLangEN          = Get-Control "btnLangEN"
 
-# Menu Buttons
+# Troubleshoot Widget Controls
+$txtTroubleshootSearch          = Get-Control "txtTroubleshootSearch"
+$btnTroubleshootClearSearch     = Get-Control "btnTroubleshootClearSearch"
+$cboTroubleshootCategoryFilter  = Get-Control "cboTroubleshootCategoryFilter"
+$dgTroubleshootList             = Get-Control "dgTroubleshootList"
+$txtTroubleshootDetailTitle     = Get-Control "txtTroubleshootDetailTitle"
+$txtTroubleshootDetailCategory  = Get-Control "txtTroubleshootDetailCategory"
+$txtTroubleshootDetailSymptoms  = Get-Control "txtTroubleshootDetailSymptoms"
+$txtTroubleshootDetailCause     = Get-Control "txtTroubleshootDetailCause"
+$btnActionDiagnosis             = Get-Control "btnActionDiagnosis"
+$btnActionAutoFix               = Get-Control "btnActionAutoFix"
+$btnActionVerify                = Get-Control "btnActionVerify"
+$btnActionEscalation            = Get-Control "btnActionEscalation"
+$txtTroubleshootConsoleLog      = Get-Control "txtTroubleshootConsoleLog"
+$btnClearTroubleshootLog        = Get-Control "btnClearTroubleshootLog"
+
+# SubTab Capsule Controls
+$subTabSysInfo_View             = Get-Control "subTabSysInfo_View"
+$subTabSysInfo_Customize        = Get-Control "subTabSysInfo_Customize"
+$subTabSysInfo_CpuMain          = Get-Control "subTabSysInfo_CpuMain"
+
+$subTabSysFix_Cleaner           = Get-Control "subTabSysFix_Cleaner"
+$subTabSysFix_Config            = Get-Control "subTabSysFix_Config"
+$subTabSysFix_Troubleshoot      = Get-Control "subTabSysFix_Troubleshoot"
+$pnlSubSysFix_Troubleshoot      = Get-Control "pnlSubSysFix_Troubleshoot"
+
+$subTabSoft_Store               = Get-Control "subTabSoft_Store"
+$subTabSoft_Custom              = Get-Control "subTabSoft_Custom"
+$subTabSoft_Uninstall           = Get-Control "subTabSoft_Uninstall"
+$subTabSoft_Fonts               = Get-Control "subTabSoft_Fonts"
+
+$subTabHw_Disk                  = Get-Control "subTabHw_Disk"
+$subTabHw_Partition             = Get-Control "subTabHw_Partition"
+$subTabHw_Laptop                = Get-Control "subTabHw_Laptop"
+
+$subTabTech_Activation          = Get-Control "subTabTech_Activation"
+$subTabTech_BitLocker           = Get-Control "subTabTech_BitLocker"
+$subTabTech_Backup              = Get-Control "subTabTech_Backup"
+$subTabTech_AutoWin             = Get-Control "subTabTech_AutoWin"
+$subTabTech_Users               = Get-Control "subTabTech_Users"
+
+# 8 Apple Menu Cards + Admin Buttons
 $menuButtons = @(
-    "btnMenuSysInfo", "btnMenuCustomize", "btnMenuUsers", "btnMenuBenchmark",
-    "btnMenuLaptopCheck", "btnMenuCpuMain",
-    "btnMenuOffice", "btnMenuSoftware", "btnMenuCustomApp", "btnMenuUninstaller", "btnMenuFonts",
-    "btnMenuCleaner", "btnMenuConfig", "btnMenuPrinterLAN", "btnMenuBackupDriver",
-    "btnMenuActivation", "btnMenuBitLocker", "btnMenuAutoWin", "btnMenuPartition",
-    "btnMenuIpScanner", "btnMenuAdmin"
+    "btnMenuSysInfo", "btnMenuSystemFix", "btnMenuNetworkLAN", "btnMenuPrinterLAN",
+    "btnMenuOffice", "btnMenuSoftware", "btnMenuHardwareDisk", "btnMenuTechUtilities",
+    "btnMenuAdmin"
 )
 
-# Pages Dictionary
+# Pages Dictionary (8 Hubs + AdminPortal)
+$containerSysInfo = Get-Control "containerSysInfo"
 $pages = @{
-    "SysInfo"      = Get-Control "pageSysInfo"
-    "Customize"    = Get-Control "pageCustomize"
-    "Users"        = Get-Control "pageUsers"
-    "Benchmark"    = Get-Control "pageBenchmark"
-    "LaptopCheck"  = Get-Control "pageLaptopCheck"
-    "CpuMain"      = Get-Control "pageCpuMain"
-    "Office"       = Get-Control "pageOffice"
-    "Software"     = Get-Control "pageSoftware"
-    "CustomApp"    = Get-Control "pageCustomApp"
-    "Uninstaller"  = Get-Control "pageUninstaller"
-    "Fonts"        = Get-Control "pageFonts"
-    "Cleaner"      = Get-Control "pageCleaner"
-    "Tweaks"       = Get-Control "pageCleaner"
-    "Config"       = Get-Control "pageConfig"
-    "PrinterLAN"   = Get-Control "pagePrinterLAN"
-    "BackupDriver" = Get-Control "pageBackupDriver"
-    "Activation"   = Get-Control "pageActivation"
-    "BitLocker"    = Get-Control "pageBitLocker"
-    "AutoWin"      = Get-Control "pageAutoWin"
-    "Partition"    = Get-Control "pagePartition"
-    "IpScanner"    = Get-Control "pageIpScanner"
-    "AdminPortal"  = Get-Control "pageAdminPortal"
+    "SysInfo"        = if ($containerSysInfo) { $containerSysInfo } else { Get-Control "pageSysInfo" }
+    "SystemFix"      = Get-Control "pageSystemFix"
+    "NetworkLAN"     = Get-Control "pageNetworkLAN"
+    "PrinterLAN"     = Get-Control "pagePrinterLAN"
+    "OfficeAIO"      = Get-Control "pageOfficeAIO"
+    "SoftwareHub"    = Get-Control "pageSoftwareHub"
+    "HardwareDisk"   = Get-Control "pageHardwareDisk"
+    "TechUtilities"  = Get-Control "pageTechUtilities"
+    "AdminPortal"    = Get-Control "pageAdminPortal"
+}
+
+# Legacy Routing Mapping for 100% Backward Compatibility
+$legacyRouting = @{
+    "Office"       = @{ Hub = "OfficeAIO"; SubTab = $null }
+    "Software"     = @{ Hub = "SoftwareHub"; SubTab = "Soft_Store" }
+    "CustomApp"    = @{ Hub = "SoftwareHub"; SubTab = "Soft_Custom" }
+    "Uninstaller"  = @{ Hub = "SoftwareHub"; SubTab = "Soft_Uninstall" }
+    "Fonts"        = @{ Hub = "SoftwareHub"; SubTab = "Soft_Fonts" }
+    "Cleaner"      = @{ Hub = "SystemFix"; SubTab = "SysFix_Cleaner" }
+    "Tweaks"       = @{ Hub = "SystemFix"; SubTab = "SysFix_Cleaner" }
+    "Config"       = @{ Hub = "SystemFix"; SubTab = "SysFix_Config" }
+    "Troubleshoot" = @{ Hub = "SystemFix"; SubTab = "SysFix_Troubleshoot" }
+    "Benchmark"    = @{ Hub = "HardwareDisk"; SubTab = "Hw_Disk" }
+    "Partition"    = @{ Hub = "HardwareDisk"; SubTab = "Hw_Partition" }
+    "LaptopCheck"  = @{ Hub = "HardwareDisk"; SubTab = "Hw_Laptop" }
+    "Activation"   = @{ Hub = "TechUtilities"; SubTab = "Tech_Activation" }
+    "BitLocker"    = @{ Hub = "TechUtilities"; SubTab = "Tech_BitLocker" }
+    "BackupDriver" = @{ Hub = "TechUtilities"; SubTab = "Tech_Backup" }
+    "AutoWin"      = @{ Hub = "TechUtilities"; SubTab = "Tech_AutoWin" }
+    "Users"        = @{ Hub = "TechUtilities"; SubTab = "Tech_Users" }
+    "Customize"    = @{ Hub = "SysInfo"; SubTab = "SysInfo_Customize" }
+    "CpuMain"      = @{ Hub = "SysInfo"; SubTab = "SysInfo_CpuMain" }
+    "IpScanner"    = @{ Hub = "NetworkLAN"; SubTab = $null }
 }
 
 $pageTitlesVI = @{
-    "SysInfo"      = @{ Title = "Xem Cấu Hình Máy Tính"; Icon = "💻" }
-    "Customize"    = @{ Title = "Tùy Chỉnh Thông Tin Máy"; Icon = "🖥️" }
-    "Users"        = @{ Title = "Quản Lý User & PC"; Icon = "👤" }
-    "Benchmark"    = @{ Title = "Tốc Độ Ổ Đĩa (Benchmark)"; Icon = "⚡" }
-    "LaptopCheck"  = @{ Title = "Kiểm Tra Laptop & Ngoại Vi"; Icon = "🔬" }
-    "CpuMain"      = @{ Title = "Tra Cứu CPU + Main"; Icon = "💡" }
-    "Office"       = @{ Title = "Cài Đặt Office (Tự Động)"; Icon = "📑" }
-    "Software"     = @{ Title = "Tải Ứng Dụng Thiết Yếu"; Icon = "📥" }
-    "CustomApp"    = @{ Title = "Cài App Tùy Chỉnh & Silent"; Icon = "📦" }
-    "Uninstaller"  = @{ Title = "Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)"; Icon = "🗑️" }
-    "Fonts"        = @{ Title = "Cài Font Tiếng Việt Đầy Đủ"; Icon = "🔤" }
-    "Cleaner"      = @{ Title = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"; Icon = "⚡" }
-    "Tweaks"       = @{ Title = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"; Icon = "⚡" }
-    "Config"       = @{ Title = "Cấu Hình Tính Năng & Sửa Lỗi Hệ Thống"; Icon = "🛠️" }
-    "PrinterLAN"   = @{ Title = "Sửa Lỗi Máy In (87 Chức Năng)"; Icon = "🖨️" }
-    "BackupDriver" = @{ Title = "Quản Lý, Kiểm Tra & Cập Nhật Driver"; Icon = "💾" }
-    "Activation"   = @{ Title = "Kích Hoạt (MAS HWID)"; Icon = "🔑" }
-    "BitLocker"    = @{ Title = "Quản Lý & Tắt BitLocker - EFS"; Icon = "🔒" }
-    "AutoWin"      = @{ Title = "Bộ Công Cụ Cài Win & Bypass"; Icon = "🚀" }
-    "Partition"    = @{ Title = "Quản Lý Phân Vùng Ổ Đĩa (Partition Pro)"; Icon = "💽" }
-    "IpScanner"    = @{ Title = "Advanced IP Scanner (Quét IP & Dò Thiết Bị LAN)"; Icon = "🌐" }
-    "AdminPortal"  = @{ Title = "Quản Trị Viên (Admin Portal)"; Icon = "👑" }
+    "SysInfo"        = @{ Title = "Xem Cấu Hình & Tùy Chỉnh Máy Tính"; Icon = "🖥️" }
+    "SystemFix"      = @{ Title = "Tối Ưu & Sửa Lỗi Toàn Diện Windows"; Icon = "⚡" }
+    "NetworkLAN"     = @{ Title = "Mạng & Advanced IP Scanner"; Icon = "🌐" }
+    "PrinterLAN"     = @{ Title = "Sửa Lỗi Máy In & Chia Sẻ LAN"; Icon = "🖨️" }
+    "OfficeAIO"      = @{ Title = "Cài Đặt Office & Microsoft 365 (Auto)"; Icon = "💼" }
+    "SoftwareHub"    = @{ Title = "Trung Tâm Quản Lý Phần Mềm (Software Hub)"; Icon = "📦" }
+    "HardwareDisk"   = @{ Title = "Chẩn Đoán Phần Cứng & Quản Lý Ổ Đĩa"; Icon = "💽" }
+    "TechUtilities"  = @{ Title = "Bộ Tiện Ích Kỹ Thuật Chuyên Sâu (Tech Utilities)"; Icon = "🛠️" }
+    "AdminPortal"    = @{ Title = "Quản Trị Viên (Admin Portal)"; Icon = "👑" }
+
+    # Legacy titles mapping for backward compatibility
+    "Customize"      = @{ Title = "Tùy Chỉnh Thông Tin Máy"; Icon = "🖥️" }
+    "Users"          = @{ Title = "Quản Lý User & PC"; Icon = "👤" }
+    "Benchmark"      = @{ Title = "Tốc Độ Ổ Đĩa (Benchmark)"; Icon = "⚡" }
+    "LaptopCheck"    = @{ Title = "Kiểm Tra Laptop & Ngoại Vi"; Icon = "🔬" }
+    "CpuMain"        = @{ Title = "Tra Cứu CPU + Main"; Icon = "💡" }
+    "Office"         = @{ Title = "Cài Đặt Office (Tự Động)"; Icon = "📑" }
+    "Software"       = @{ Title = "Tải Ứng Dụng Thiết Yếu"; Icon = "📥" }
+    "CustomApp"      = @{ Title = "Cài App Tùy Chỉnh & Silent"; Icon = "📦" }
+    "Uninstaller"    = @{ Title = "Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)"; Icon = "🗑️" }
+    "Fonts"          = @{ Title = "Cài Font Tiếng Việt Đầy Đủ"; Icon = "🔤" }
+    "Cleaner"        = @{ Title = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"; Icon = "⚡" }
+    "Tweaks"         = @{ Title = "Tối Ưu & Dọn Dẹp (Tweaks Pro)"; Icon = "⚡" }
+    "Config"         = @{ Title = "Cấu Hình Tính Năng & Sửa Lỗi Hệ Thống"; Icon = "🛠️" }
+    "Troubleshoot"   = @{ Title = "Trung Tâm Cứu Hộ IT Helpdesk Windows"; Icon = "🩺" }
+    "BackupDriver"   = @{ Title = "Quản Lý, Kiểm Tra & Cập Nhật Driver"; Icon = "💾" }
+    "Activation"     = @{ Title = "Kích Hoạt (MAS HWID)"; Icon = "🔑" }
+    "BitLocker"      = @{ Title = "Quản Lý & Tắt BitLocker - EFS"; Icon = "🔒" }
+    "AutoWin"        = @{ Title = "Bộ Công Cụ Cài Win & Bypass"; Icon = "🚀" }
+    "Partition"      = @{ Title = "Quản Lý Phân Vùng Ổ Đĩa (Partition Pro)"; Icon = "💽" }
+    "IpScanner"      = @{ Title = "Advanced IP Scanner (Quét IP & Dò Thiết Bị LAN)"; Icon = "🌐" }
 }
 
 $pageTitlesEN = @{
-    "SysInfo"      = @{ Title = "System Specifications"; Icon = "💻" }
-    "Customize"    = @{ Title = "Customize OEM Info"; Icon = "🖥️" }
-    "Users"        = @{ Title = "User & PC Accounts"; Icon = "👤" }
-    "Benchmark"    = @{ Title = "Disk Speed Benchmark"; Icon = "⚡" }
-    "LaptopCheck"  = @{ Title = "Laptop & Hardware Diagnostics"; Icon = "🔬" }
-    "CpuMain"      = @{ Title = "Lookup CPU & Mainboard"; Icon = "💡" }
-    "Office"       = @{ Title = "Install Office (Auto)"; Icon = "📑" }
-    "Software"     = @{ Title = "Essential Apps Download"; Icon = "📥" }
-    "CustomApp"    = @{ Title = "Custom Silent Install"; Icon = "📦" }
-    "Uninstaller"  = @{ Title = "Clean Uninstaller Pro"; Icon = "🗑️" }
-    "Fonts"        = @{ Title = "Install Vietnamese Fonts"; Icon = "🔤" }
-    "Cleaner"      = @{ Title = "System Cleaner & Tweaks Pro"; Icon = "⚡" }
-    "Tweaks"       = @{ Title = "System Cleaner & Tweaks Pro"; Icon = "⚡" }
-    "Config"       = @{ Title = "Windows Config & Fixes Manager"; Icon = "🛠️" }
-    "PrinterLAN"   = @{ Title = "Printer Repair (87 Tools)"; Icon = "🖨️" }
-    "BackupDriver" = @{ Title = "Manage, Check & Update Drivers"; Icon = "💾" }
-    "Activation"   = @{ Title = "Activate Windows & Office"; Icon = "🔑" }
-    "BitLocker"    = @{ Title = "Manage BitLocker - EFS"; Icon = "🔒" }
-    "AutoWin"      = @{ Title = "Auto Windows Deploy"; Icon = "🚀" }
-    "Partition"    = @{ Title = "Disk Partition Pro"; Icon = "💽" }
-    "IpScanner"    = @{ Title = "Advanced IP Scanner"; Icon = "🌐" }
-    "AdminPortal"  = @{ Title = "Administrator Portal"; Icon = "👑" }
+    "SysInfo"        = @{ Title = "System Specs & Hardware Information"; Icon = "🖥️" }
+    "SystemFix"      = @{ Title = "System Optimizer & Windows Repair"; Icon = "⚡" }
+    "NetworkLAN"     = @{ Title = "Network & Advanced IP Scanner"; Icon = "🌐" }
+    "PrinterLAN"     = @{ Title = "Printer Repair & Network Sharing"; Icon = "🖨️" }
+    "OfficeAIO"      = @{ Title = "Office & Microsoft 365 Installer (Auto)"; Icon = "💼" }
+    "SoftwareHub"    = @{ Title = "Software Management Hub"; Icon = "📦" }
+    "HardwareDisk"   = @{ Title = "Hardware Diagnostics & Disk Management"; Icon = "💽" }
+    "TechUtilities"  = @{ Title = "Advanced Technical Utilities"; Icon = "🛠️" }
+    "AdminPortal"    = @{ Title = "Administrator Portal"; Icon = "👑" }
+
+    # Legacy titles mapping for backward compatibility
+    "Customize"      = @{ Title = "Customize OEM Info"; Icon = "🖥️" }
+    "Users"          = @{ Title = "User & PC Accounts"; Icon = "👤" }
+    "Benchmark"      = @{ Title = "Disk Speed Benchmark"; Icon = "⚡" }
+    "LaptopCheck"    = @{ Title = "Laptop & Hardware Diagnostics"; Icon = "🔬" }
+    "CpuMain"        = @{ Title = "Lookup CPU & Mainboard"; Icon = "💡" }
+    "Office"         = @{ Title = "Install Office (Auto)"; Icon = "📑" }
+    "Software"       = @{ Title = "Essential Apps Download"; Icon = "📥" }
+    "CustomApp"      = @{ Title = "Custom Silent Install"; Icon = "📦" }
+    "Uninstaller"    = @{ Title = "Clean Uninstaller Pro"; Icon = "🗑️" }
+    "Fonts"          = @{ Title = "Install Vietnamese Fonts"; Icon = "🔤" }
+    "Cleaner"        = @{ Title = "System Cleaner & Tweaks Pro"; Icon = "⚡" }
+    "Tweaks"         = @{ Title = "System Cleaner & Tweaks Pro"; Icon = "⚡" }
+    "Config"         = @{ Title = "Windows Config & Fixes Manager"; Icon = "🛠️" }
+    "Troubleshoot"   = @{ Title = "IT Helpdesk Rescue Center"; Icon = "🩺" }
+    "BackupDriver"   = @{ Title = "Manage, Check & Update Drivers"; Icon = "💾" }
+    "Activation"     = @{ Title = "Activate Windows & Office"; Icon = "🔑" }
+    "BitLocker"      = @{ Title = "Manage BitLocker - EFS"; Icon = "🔒" }
+    "AutoWin"        = @{ Title = "Auto Windows Deploy"; Icon = "🚀" }
+    "Partition"      = @{ Title = "Disk Partition Pro"; Icon = "💽" }
+    "IpScanner"      = @{ Title = "Advanced IP Scanner"; Icon = "🌐" }
 }
 
 $pageTitles = $pageTitlesVI
@@ -399,6 +471,14 @@ $script:loadedTabs = @{}
 # Switch Tab Function
 function Switch-Tab {
     param([string]$TargetTag, [switch]$SkipRefresh = $false)
+
+    # Legacy Tag to Hub & SubTab resolution
+    $subTabToSwitch = $null
+    if ($legacyRouting.ContainsKey($TargetTag)) {
+        $route = $legacyRouting[$TargetTag]
+        $subTabToSwitch = $route.SubTab
+        $TargetTag = $route.Hub
+    }
 
     # -------------------------------------------------------------
     # GATEKEEPER 1: ADMIN PORTAL ACCESS
@@ -484,6 +564,17 @@ function Switch-Tab {
         $txtPageIcon.Text  = $dict[$TargetTag].Icon
     }
 
+    # Switch sub-tab if specified by legacy routing or initial call
+    if ($subTabToSwitch) {
+        switch ($TargetTag) {
+            "SysInfo"       { Switch-SysInfoSubTab $subTabToSwitch }
+            "SystemFix"     { Switch-SystemFixSubTab $subTabToSwitch }
+            "SoftwareHub"   { Switch-SoftwareHubSubTab $subTabToSwitch }
+            "HardwareDisk"  { Switch-HardwareDiskSubTab $subTabToSwitch }
+            "TechUtilities" { Switch-TechUtilitiesSubTab $subTabToSwitch }
+        }
+    }
+
     if ($SkipRefresh) { return }
 
     # CƠ CHẾ SESSION LAZY CACHE SIÊU TỐC (ZERO-LAG TAB SWITCHING):
@@ -511,86 +602,57 @@ function Switch-Tab {
                     }) | Out-Null
                 } catch {}
             }
-            "SysInfo"      { Refresh-SysInfoDisplay }
-            "Benchmark"    {
+            "SysInfo"      {
+                Refresh-SysInfoDisplay
+                Update-LiveGaugeValues
+            }
+            "SystemFix"    {
+                Refresh-PowerPlanBadge
+                Refresh-VUONGTTDnsChangerUI
+                $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống, cấu hình và cứu hộ IT Helpdesk."
+            }
+            "NetworkLAN"   {
+                $txtFooterStatus.Text = "• [OK] Advanced IP Scanner sẵn sàng dò quét mạng nội bộ LAN."
+            }
+            "PrinterLAN"   {
+                $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng."
+            }
+            "OfficeAIO"    {
+                Refresh-OfficeStatusBadge
+                $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt và cấu hình Microsoft Office."
+            }
+            "SoftwareHub"  {
+                $txtFooterStatus.Text = "• [OK] Kho phần mềm thiết yếu và quản lý ứng dụng sẵn sàng."
+            }
+            "HardwareDisk" {
                 Invoke-VUONGTTDoEvents
                 Refresh-VUONGTTDiskHealthUI
-                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & S.M.A.R.T diagnostic ready." } else { "• [OK] Sẵn sàng chẩn đoán sức khỏe ổ cứng S.M.A.R.T & đo hiệu năng." }
+                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & Hardware diagnostics ready." } else { "• [OK] Chẩn đoán phần cứng, S.M.A.R.T & quản lý phân vùng sẵn sàng." }
             }
-            "Customize"    { Refresh-CustomizeDisplay }
-            "Users"        { Refresh-UsersList }
-            "CpuMain"      { Search-CpuInfo }
-            "LaptopCheck"  { 
+            "TechUtilities" {
                 Invoke-VUONGTTDoEvents
-                Refresh-BatteryDisplay
-                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Laptop, hardware & peripheral test ready." } else { "• [OK] Bộ chẩn đoán Laptop, phần cứng & ngoại vi sẵn sàng." }
-            }
-            "Office"       { Refresh-OfficeStatusBadge }
-            "Software"     { $txtFooterStatus.Text = "• [OK] Kho 26 phần mềm thiết yếu sẵn sàng." }
-            "CustomApp"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt ứng dụng tùy chỉnh hoặc file cài đặt silent." }
-            "Uninstaller"  {
-                $txtFooterStatus.Text = "• [OK] Đang ở trang Quản Lý & Gỡ Bỏ Phần Mềm (Clean Uninstaller Pro)."
-                if (-not $script:allInstalledApps -or $script:allInstalledApps.Count -eq 0) {
-                    Refresh-InstalledAppsGrid
-                }
-            }
-            "Fonts"        { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt trọn bộ Font tiếng Việt VNI, TCVN3, Unicode." }
-            "Cleaner"      { 
-                $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
-                Refresh-PowerPlanBadge
-            }
-            "Tweaks"       { 
-                $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
-                Refresh-PowerPlanBadge
-            }
-            "Config"       { 
-                Refresh-VUONGTTDnsChangerUI
-                $txtFooterStatus.Text = "• [OK] Cấu hình tính năng hệ thống & Đổi DNS tối ưu mạng Pro sẵn sàng." 
-            }
-            "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
-            "BackupDriver" { 
-                Invoke-VUONGTTDoEvents
-                Refresh-DriverStatusBadge
-                $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." }
-            }
-            "Activation"   { 
                 Refresh-VUONGTTKeyViewerUI
-                $txtFooterStatus.Text = "• [OK] Sẵn sàng kích hoạt bản quyền số vĩnh viễn MAS HWID & tra cứu Product Key." 
-            }
-            "BitLocker"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng quản lý mã hóa BitLocker & trích xuất Recovery Key." }
-            "AutoWin"      { 
-                $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass, kho tải ISO gốc & đối soát SHA-256." 
-                Invoke-VUONGTTDoEvents
                 Refresh-VUONGTTIsoRepositoryUI
                 Refresh-PostWinDriverStatusBadge
                 Refresh-VUONGTTBackupTargetDrives
+                $txtFooterStatus.Text = "• [OK] Bộ tiện ích kỹ thuật chuyên sâu (Tech Utilities) sẵn sàng."
             }
-            "Partition"    { 
-                Invoke-VUONGTTDoEvents
-                Refresh-DiskPartitionDisplay
-                $txtFooterStatus.Text = "• [OK] Quản lý phân vùng đĩa & Storage Engine sẵn sàng."
-            }
-            "IpScanner"    { $txtFooterStatus.Text = "• [OK] Advanced IP Scanner sẵn sàng dò quét mạng nội bộ LAN." }
         }
     } else {
         # Đã nạp trong phiên: Phản hồi 0ms
         switch ($TargetTag) {
-            "Benchmark"    { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Disk Health & S.M.A.R.T diagnostic ready." } else { "• [OK] Sẵn sàng chẩn đoán sức khỏe ổ cứng S.M.A.R.T & đo hiệu năng." } }
-            "LaptopCheck"  { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Laptop, hardware & peripheral test ready." } else { "• [OK] Bộ chẩn đoán Laptop, phần cứng & ngoại vi sẵn sàng." } }
-            "BackupDriver" { $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." } }
-            "AutoWin"      { 
-                $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass và tải ISO cài Win." 
-                Refresh-PostWinDriverStatusBadge
-                Refresh-VUONGTTBackupTargetDrives
-            }
-            "Partition"    { $txtFooterStatus.Text = "• [OK] Quản lý phân vùng đĩa & Storage Engine sẵn sàng." }
-            "Office"       { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt và cấu hình Microsoft Office." }
-            "Users"        { $txtFooterStatus.Text = "• [OK] Danh sách tài khoản người dùng đã sẵn sàng." }
-            "Customize"    { $txtFooterStatus.Text = "• [OK] Thông tin tùy chỉnh OEM đã sẵn sàng." }
             "SysInfo"      {
                 $txtFooterStatus.Text = "• [OK] Xem cấu hình máy tính & thông số phần cứng thời gian thực."
                 Update-LiveGaugeValues
             }
+            "SystemFix"    { $txtFooterStatus.Text = "• [OK] Trung tâm tối ưu hóa, cấu hình & cứu hộ IT Helpdesk sẵn sàng." }
+            "NetworkLAN"   { $txtFooterStatus.Text = "• [OK] Advanced IP Scanner sẵn sàng dò quét mạng nội bộ LAN." }
+            "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
+            "OfficeAIO"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng cài đặt và cấu hình Microsoft Office." }
+            "SoftwareHub"  { $txtFooterStatus.Text = "• [OK] Kho phần mềm thiết yếu và quản lý ứng dụng sẵn sàng." }
+            "HardwareDisk" { $txtFooterStatus.Text = "• [OK] Chẩn đoán phần cứng, S.M.A.R.T & quản lý phân vùng sẵn sàng." }
+            "TechUtilities" { $txtFooterStatus.Text = "• [OK] Bộ tiện ích kỹ thuật chuyên sâu (Tech Utilities) sẵn sàng." }
+            "AdminPortal"  { $txtFooterStatus.Text = "• [OK] Trang Quản Trị Viên (Admin Portal) sẵn sàng." }
         }
     }
 }
@@ -610,11 +672,213 @@ foreach ($btnName in $menuButtons) {
 $btnMenuSoftware = Get-Control "btnMenuSoftware"
 if ($btnMenuSoftware) {
     $btnMenuSoftware.Add_Click({
-        if ($script:currentTab -ne "Software") {
-            Switch-Tab -TargetTag "Software"
+        if ($script:currentTab -ne "SoftwareHub") {
+            Switch-Tab -TargetTag "SoftwareHub"
         }
     })
 }
+
+# =========================================================================
+# CAPSULE SUB-TABS SWITCHING ENGINES (FOR 5 LARGE HUBS)
+# =========================================================================
+
+function Set-CapsuleSubTabStyle {
+    param(
+        [System.Windows.Controls.Button[]]$Tabs,
+        [System.Windows.Controls.Button]$ActiveTab
+    )
+    $bc = [System.Windows.Media.BrushConverter]::new()
+    $activeBg = $bc.ConvertFromString("#0284C7")
+    $transBg = [System.Windows.Media.Brushes]::Transparent
+    $whiteFg = [System.Windows.Media.Brushes]::White
+    
+    foreach ($t in $Tabs) {
+        if ($t) {
+            if ($t -eq $ActiveTab) {
+                $t.Background = $activeBg
+                $t.Foreground = $whiteFg
+            } else {
+                $t.Background = $transBg
+                try { $t.Foreground = $t.FindResource("TextPrimaryBrush") } catch { $t.Foreground = [System.Windows.Media.Brushes]::Black }
+            }
+        }
+    }
+}
+
+# --- 1. SysInfo Sub-tabs ---
+function Switch-SysInfoSubTab {
+    param([string]$targetTab)
+    $tabs = @($subTabSysInfo_View, $subTabSysInfo_Customize, $subTabSysInfo_CpuMain)
+    $panels = @($pageSysInfo, $pageCustomize, $pageCpuMain)
+    foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
+    
+    switch ($targetTab) {
+        "SysInfo_View" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_View
+            if ($pageSysInfo) { $pageSysInfo.Visibility = [System.Windows.Visibility]::Visible }
+            Update-LiveGaugeValues
+        }
+        "SysInfo_Customize" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_Customize
+            if ($pageCustomize) { $pageCustomize.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-CustomizeDisplay
+        }
+        "SysInfo_CpuMain" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_CpuMain
+            if ($pageCpuMain) { $pageCpuMain.Visibility = [System.Windows.Visibility]::Visible }
+            Search-CpuInfo
+        }
+    }
+}
+
+# --- 2. SystemFix Sub-tabs ---
+function Switch-SystemFixSubTab {
+    param([string]$targetTab)
+    $tabs = @($subTabSysFix_Cleaner, $subTabSysFix_Config, $subTabSysFix_Troubleshoot)
+    $panels = @($pageCleaner, $pageConfig, $pnlSubSysFix_Troubleshoot)
+    foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
+    
+    switch ($targetTab) {
+        "SysFix_Cleaner" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysFix_Cleaner
+            if ($pageCleaner) { $pageCleaner.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-PowerPlanBadge
+        }
+        "SysFix_Config" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysFix_Config
+            if ($pageConfig) { $pageConfig.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-VUONGTTDnsChangerUI
+        }
+        "SysFix_Troubleshoot" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysFix_Troubleshoot
+            if ($pnlSubSysFix_Troubleshoot) { $pnlSubSysFix_Troubleshoot.Visibility = [System.Windows.Visibility]::Visible }
+            if ($dgTroubleshootList -and (-not $dgTroubleshootList.ItemsSource -or $dgTroubleshootList.Items.Count -eq 0)) {
+                Refresh-TroubleshootList
+            }
+        }
+    }
+}
+
+# --- 3. SoftwareHub Sub-tabs ---
+function Switch-SoftwareHubSubTab {
+    param([string]$targetTab)
+    $tabs = @($subTabSoft_Store, $subTabSoft_Custom, $subTabSoft_Uninstall, $subTabSoft_Fonts)
+    $panels = @($pageSoftware, $pageCustomApp, $pageUninstaller, $pageFonts)
+    foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
+    
+    switch ($targetTab) {
+        "Soft_Store" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSoft_Store
+            if ($pageSoftware) { $pageSoftware.Visibility = [System.Windows.Visibility]::Visible }
+        }
+        "Soft_Custom" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSoft_Custom
+            if ($pageCustomApp) { $pageCustomApp.Visibility = [System.Windows.Visibility]::Visible }
+        }
+        "Soft_Uninstall" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSoft_Uninstall
+            if ($pageUninstaller) { $pageUninstaller.Visibility = [System.Windows.Visibility]::Visible }
+            if (-not $script:allInstalledApps -or $script:allInstalledApps.Count -eq 0) {
+                Refresh-InstalledAppsGrid
+            }
+        }
+        "Soft_Fonts" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSoft_Fonts
+            if ($pageFonts) { $pageFonts.Visibility = [System.Windows.Visibility]::Visible }
+        }
+    }
+}
+
+# --- 4. HardwareDisk Sub-tabs ---
+function Switch-HardwareDiskSubTab {
+    param([string]$targetTab)
+    $tabs = @($subTabHw_Disk, $subTabHw_Partition, $subTabHw_Laptop)
+    $panels = @($pageBenchmark, $pagePartition, $pageLaptopCheck)
+    foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
+    
+    switch ($targetTab) {
+        "Hw_Disk" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabHw_Disk
+            if ($pageBenchmark) { $pageBenchmark.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-VUONGTTDiskHealthUI
+        }
+        "Hw_Partition" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabHw_Partition
+            if ($pagePartition) { $pagePartition.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-DiskPartitionDisplay
+        }
+        "Hw_Laptop" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabHw_Laptop
+            if ($pageLaptopCheck) { $pageLaptopCheck.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-BatteryDisplay
+        }
+    }
+}
+
+# --- 5. TechUtilities Sub-tabs ---
+function Switch-TechUtilitiesSubTab {
+    param([string]$targetTab)
+    $tabs = @($subTabTech_Activation, $subTabTech_BitLocker, $subTabTech_Backup, $subTabTech_AutoWin, $subTabTech_Users)
+    $panels = @($pageActivation, $pageBitLocker, $pageBackupDriver, $pageAutoWin, $pageUsers)
+    foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
+    
+    switch ($targetTab) {
+        "Tech_Activation" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_Activation
+            if ($pageActivation) { $pageActivation.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-VUONGTTKeyViewerUI
+        }
+        "Tech_BitLocker" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_BitLocker
+            if ($pageBitLocker) { $pageBitLocker.Visibility = [System.Windows.Visibility]::Visible }
+        }
+        "Tech_Backup" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_Backup
+            if ($pageBackupDriver) { $pageBackupDriver.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-DriverStatusBadge
+        }
+        "Tech_AutoWin" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_AutoWin
+            if ($pageAutoWin) { $pageAutoWin.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-VUONGTTIsoRepositoryUI
+            Refresh-PostWinDriverStatusBadge
+            Refresh-VUONGTTBackupTargetDrives
+        }
+        "Tech_Users" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_Users
+            if ($pageUsers) { $pageUsers.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-UsersList
+        }
+    }
+}
+
+# Wire SysInfo Sub-tabs
+if ($subTabSysInfo_View)      { $subTabSysInfo_View.Add_Click({ Switch-SysInfoSubTab "SysInfo_View" }) }
+if ($subTabSysInfo_Customize) { $subTabSysInfo_Customize.Add_Click({ Switch-SysInfoSubTab "SysInfo_Customize" }) }
+if ($subTabSysInfo_CpuMain)   { $subTabSysInfo_CpuMain.Add_Click({ Switch-SysInfoSubTab "SysInfo_CpuMain" }) }
+
+# Wire SystemFix Sub-tabs
+if ($subTabSysFix_Cleaner)      { $subTabSysFix_Cleaner.Add_Click({ Switch-SystemFixSubTab "SysFix_Cleaner" }) }
+if ($subTabSysFix_Config)       { $subTabSysFix_Config.Add_Click({ Switch-SystemFixSubTab "SysFix_Config" }) }
+if ($subTabSysFix_Troubleshoot) { $subTabSysFix_Troubleshoot.Add_Click({ Switch-SystemFixSubTab "SysFix_Troubleshoot" }) }
+
+# Wire SoftwareHub Sub-tabs
+if ($subTabSoft_Store)     { $subTabSoft_Store.Add_Click({ Switch-SoftwareHubSubTab "Soft_Store" }) }
+if ($subTabSoft_Custom)    { $subTabSoft_Custom.Add_Click({ Switch-SoftwareHubSubTab "Soft_Custom" }) }
+if ($subTabSoft_Uninstall) { $subTabSoft_Uninstall.Add_Click({ Switch-SoftwareHubSubTab "Soft_Uninstall" }) }
+if ($subTabSoft_Fonts)     { $subTabSoft_Fonts.Add_Click({ Switch-SoftwareHubSubTab "Soft_Fonts" }) }
+
+# Wire HardwareDisk Sub-tabs
+if ($subTabHw_Disk)      { $subTabHw_Disk.Add_Click({ Switch-HardwareDiskSubTab "Hw_Disk" }) }
+if ($subTabHw_Partition) { $subTabHw_Partition.Add_Click({ Switch-HardwareDiskSubTab "Hw_Partition" }) }
+if ($subTabHw_Laptop)    { $subTabHw_Laptop.Add_Click({ Switch-HardwareDiskSubTab "Hw_Laptop" }) }
+
+# Wire TechUtilities Sub-tabs
+if ($subTabTech_Activation) { $subTabTech_Activation.Add_Click({ Switch-TechUtilitiesSubTab "Tech_Activation" }) }
+if ($subTabTech_BitLocker)   { $subTabTech_BitLocker.Add_Click({ Switch-TechUtilitiesSubTab "Tech_BitLocker" }) }
+if ($subTabTech_Backup)     { $subTabTech_Backup.Add_Click({ Switch-TechUtilitiesSubTab "Tech_Backup" }) }
+if ($subTabTech_AutoWin)    { $subTabTech_AutoWin.Add_Click({ Switch-TechUtilitiesSubTab "Tech_AutoWin" }) }
+if ($subTabTech_Users)      { $subTabTech_Users.Add_Click({ Switch-TechUtilitiesSubTab "Tech_Users" }) }
 
 
 # =========================================================================
@@ -6841,6 +7105,190 @@ foreach ($btnId in $panelMap.Keys) {
         }.GetNewClosure())
     }
 }
+# =========================================================================
+# MODULE TROUBLESHOOT: TRUNG TÂM CỨU HỘ & CHẨN ĐOÁN LỖI IT HELPDESK
+# =========================================================================
+
+function Refresh-TroubleshootList {
+    if (-not $dgTroubleshootList) { return }
+    try {
+        $selectedCat = ""
+        if ($cboTroubleshootCategoryFilter -and $cboTroubleshootCategoryFilter.SelectedItem) {
+            $item = $cboTroubleshootCategoryFilter.SelectedItem
+            if ($item -is [System.Windows.Controls.ComboBoxItem]) {
+                $selectedCat = [string]$item.Tag
+            } else {
+                $selectedCat = [string]$item
+            }
+        }
+        
+        $searchKeyword = ""
+        if ($txtTroubleshootSearch) {
+            $searchKeyword = $txtTroubleshootSearch.Text.Trim()
+        }
+
+        $list = @()
+        if (-not [string]::IsNullOrWhiteSpace($searchKeyword)) {
+            $results = Search-VUONGTTTroubleshootProblem -Query $searchKeyword
+            if (-not [string]::IsNullOrWhiteSpace($selectedCat)) {
+                $list = @($results | Where-Object { $_.Category -eq $selectedCat -or $_.Category -like "*$selectedCat*" })
+            } else {
+                $list = @($results)
+            }
+        } else {
+            $list = @(Get-VUONGTTTroubleshootProblems -Category $selectedCat)
+        }
+
+        $dgTroubleshootList.ItemsSource = $list
+
+        if ($list.Count -gt 0) {
+            $dgTroubleshootList.SelectedIndex = 0
+            Show-TroubleshootDetail
+        } else {
+            if ($txtTroubleshootDetailTitle)    { $txtTroubleshootDetailTitle.Text = "Không tìm thấy sự cố nào phù hợp." }
+            if ($txtTroubleshootDetailCategory) { $txtTroubleshootDetailCategory.Text = "0 kết quả" }
+            if ($txtTroubleshootDetailSymptoms) { $txtTroubleshootDetailSymptoms.Text = "" }
+            if ($txtTroubleshootDetailCause)    { $txtTroubleshootDetailCause.Text = "" }
+        }
+    } catch {
+        if ($txtTroubleshootConsoleLog) {
+            $txtTroubleshootConsoleLog.AppendText("`r`n[LỖI NẠP DANH SÁCH SỰ CỐ]: $_`r`n")
+        }
+    }
+}
+
+function Show-TroubleshootDetail {
+    if (-not $dgTroubleshootList) { return }
+    $item = $dgTroubleshootList.SelectedItem
+    if (-not $item) { return }
+
+    if ($txtTroubleshootDetailTitle) {
+        $txtTroubleshootDetailTitle.Text = "$($item.Id) - $($item.Title)"
+    }
+    if ($txtTroubleshootDetailCategory) {
+        $txtTroubleshootDetailCategory.Text = "$($item.Category) | $($item.SubCategory)"
+    }
+    if ($txtTroubleshootDetailSymptoms) {
+        $symptomsText = if ($item.Symptoms) { ($item.Symptoms -join "`r`n• ") } else { "Không có triệu chứng ghi nhận." }
+        $txtTroubleshootDetailSymptoms.Text = "• $symptomsText"
+    }
+    if ($txtTroubleshootDetailCause) {
+        $txtTroubleshootDetailCause.Text = if ($item.Cause) { $item.Cause } else { "Không có nguyên nhân kỹ thuật cụ thể." }
+    }
+}
+
+function Execute-TroubleshootAction {
+    param([string]$ActionType)
+    if (-not $dgTroubleshootList -or -not $dgTroubleshootList.SelectedItem) {
+        [System.Windows.MessageBox]::Show("Vui lòng chọn một sự cố trong danh sách trước khi thực hiện thao tác.", "Chưa chọn sự cố", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        return
+    }
+
+    $prob = $dgTroubleshootList.SelectedItem
+    $probId = $prob.Id
+    $probTitle = $prob.Title
+    $actionName = switch ($ActionType) {
+        "Diagnosis"  { "CHẨN ĐOÁN" }
+        "Fix"        { "TỰ ĐỘNG SỬA" }
+        "Verify"     { "XÁC MINH" }
+        "Escalation" { "HƯỚNG DẪN NÂNG CAO" }
+        default      { $ActionType }
+    }
+
+    $timeStr = (Get-Date).ToString("HH:mm:ss")
+    if ($txtTroubleshootConsoleLog) {
+        $txtTroubleshootConsoleLog.AppendText("`r`n================================================================================`r`n")
+        $txtTroubleshootConsoleLog.AppendText("[$timeStr] [$actionName] Bắt đầu thực thi cho [$probId]: $probTitle`r`n")
+        $txtTroubleshootConsoleLog.ScrollToEnd()
+    }
+    Invoke-VUONGTTDoEvents
+
+    try {
+        $res = Invoke-VUONGTTTroubleshootAction -ProblemId $probId -ActionType $ActionType
+        $finishTime = (Get-Date).ToString("HH:mm:ss")
+        $statusStr = if ($res.Success) { "THÀNH CÔNG" } else { "THẤT BẠI / CẢNH BÁO" }
+
+        if ($txtTroubleshootConsoleLog) {
+            $txtTroubleshootConsoleLog.AppendText("[$finishTime] [KẾT QUẢ: $statusStr] $($res.StatusText)`r`n")
+            if ($res.OutputDetails) {
+                $txtTroubleshootConsoleLog.AppendText("$($res.OutputDetails)`r`n")
+            }
+            if ($res.NeedsReboot) {
+                $txtTroubleshootConsoleLog.AppendText("⚠️ [CẢNH BÁO] Thao tác này yêu cầu KHỞI ĐỘNG LẠI MÁY để hoàn tất thay đổi!`r`n")
+            }
+            $txtTroubleshootConsoleLog.AppendText("================================================================================`r`n")
+            $txtTroubleshootConsoleLog.ScrollToEnd()
+        }
+
+        if ($txtFooterStatus) {
+            $txtFooterStatus.Text = "• [Troubleshoot $actionName] $probId - $($res.StatusText)"
+        }
+    } catch {
+        if ($txtTroubleshootConsoleLog) {
+            $txtTroubleshootConsoleLog.AppendText("[LỖI NGOẠI LỆ]: $_`r`n")
+            $txtTroubleshootConsoleLog.ScrollToEnd()
+        }
+    }
+}
+
+# Kết nối sự kiện Troubleshoot Widget
+if ($dgTroubleshootList) {
+    $dgTroubleshootList.Add_SelectionChanged({
+        Show-TroubleshootDetail
+    })
+}
+
+if ($cboTroubleshootCategoryFilter) {
+    $cboTroubleshootCategoryFilter.Add_SelectionChanged({
+        Refresh-TroubleshootList
+    })
+}
+
+if ($txtTroubleshootSearch) {
+    $txtTroubleshootSearch.Add_TextChanged({
+        Refresh-TroubleshootList
+    })
+}
+
+if ($btnTroubleshootClearSearch) {
+    $btnTroubleshootClearSearch.Add_Click({
+        if ($txtTroubleshootSearch) {
+            $txtTroubleshootSearch.Text = ""
+        }
+    })
+}
+
+if ($btnActionDiagnosis) {
+    $btnActionDiagnosis.Add_Click({
+        Execute-TroubleshootAction "Diagnosis"
+    })
+}
+
+if ($btnActionAutoFix) {
+    $btnActionAutoFix.Add_Click({
+        Execute-TroubleshootAction "Fix"
+    })
+}
+
+if ($btnActionVerify) {
+    $btnActionVerify.Add_Click({
+        Execute-TroubleshootAction "Verify"
+    })
+}
+
+if ($btnActionEscalation) {
+    $btnActionEscalation.Add_Click({
+        Execute-TroubleshootAction "Escalation"
+    })
+}
+
+if ($btnClearTroubleshootLog) {
+    $btnClearTroubleshootLog.Add_Click({
+        if ($txtTroubleshootConsoleLog) {
+            $txtTroubleshootConsoleLog.Text = "[$(Get-Date -Format 'HH:mm:ss')] [SYSTEM] Console log đã được dọn sạch."
+        }
+    })
+}
 
 # --- Module 15: Quản Lý Phân Vùng Ổ Đĩa (Partition Wizard Pro) ---
 $btnRefreshDisks       = Get-Control "btnRefreshDisks"
@@ -9341,6 +9789,12 @@ Update-VUONGTTLicenseUI
 
 # Khởi tạo giao diện trang đầu tiên ngay lập tức mà không chặn WMI
 Switch-Tab -TargetTag "SysInfo" -SkipRefresh
+Switch-SysInfoSubTab "SysInfo_View"
+Switch-SystemFixSubTab "SysFix_Cleaner"
+Switch-SoftwareHubSubTab "Soft_Store"
+Switch-HardwareDiskSubTab "Hw_Disk"
+Switch-TechUtilitiesSubTab "Tech_Activation"
+if (Get-Command Switch-PrinterLANSubTab -ErrorAction SilentlyContinue) { Switch-PrinterLANSubTab "fix" }
 $txtFooterStatus.Text = "• [OK] Đang khởi động hệ thống và nạp thông số phần cứng..."
 
 # Tải dữ liệu phần cứng ngầm sau khi cửa sổ đã hiện lên màn hình người dùng
