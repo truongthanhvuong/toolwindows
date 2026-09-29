@@ -1038,7 +1038,7 @@
                             </Grid>
                         </Border>
                     </StackPanel>                </ScrollViewer>
-                <ScrollViewer x:Name="pageCustomize" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageCustomize" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Banner Header (Match Screenshot 2) -->
                         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
@@ -1232,7 +1232,7 @@
                                 </Border>
                             </StackPanel>                        </Grid>
                     </StackPanel>                </ScrollViewer>
-                <ScrollViewer x:Name="pageCpuMain" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageCpuMain" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Header Banner (Match Screenshot 3) -->
                         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,12,14,12" Margin="0,0,0,14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
@@ -1586,7 +1586,7 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
-                <ScrollViewer x:Name="pageConfig" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageConfig" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel Margin="0,0,0,16">
                         <!-- Top Banner -->
                         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
@@ -2863,7 +2863,7 @@
                     </ScrollViewer>
                 </Grid>
             </Grid>
-                <ScrollViewer x:Name="pageCustomApp" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageCustomApp" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Custom App Card -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14">
@@ -2912,7 +2912,7 @@
                                 </Border>
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
-                <ScrollViewer x:Name="pageUninstaller" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageUninstaller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Header Card -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
@@ -3019,7 +3019,7 @@
                                 <TextBox x:Name="txtUninstallerLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="12.5" Height="110" Text="Chọn một phần mềm ở bảng trên rồi bấm 'Gỡ Sạch Triệt Để' hoặc 'Gỡ Cài Đặt Tiêu Chuẩn'."/>
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
-                <ScrollViewer x:Name="pageFonts" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageFonts" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
                             <StackPanel>
@@ -3295,7 +3295,7 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
-                <ScrollViewer x:Name="pagePartition" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pagePartition" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Header Banner -->
                         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
@@ -3421,7 +3421,7 @@
                                 <TextBox x:Name="txtPartitionLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="150" Text="Sẵn sàng thực thi các tác vụ phân vùng đĩa và kiểm tra ổ cứng."/>
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
-                <ScrollViewer x:Name="pageLaptopCheck" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageLaptopCheck" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Header Banner -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
@@ -3635,7 +3635,7 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
-                <ScrollViewer x:Name="pageBitLocker" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageBitLocker" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Header Banner -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
@@ -3661,7 +3661,7 @@
                                 <TextBox x:Name="txtBitLockerLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="200" Text="Sẵn sàng kiểm tra và quản lý mã hóa BitLocker..."/>
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
-                <ScrollViewer x:Name="pageBackupDriver" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageBackupDriver" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Banner Header -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
@@ -3756,7 +3756,7 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
-                <ScrollViewer x:Name="pageAutoWin" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageAutoWin" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Banner Header -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
@@ -4062,7 +4062,7 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
-                <ScrollViewer x:Name="pageUsers" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageUsers" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                             <Grid>
@@ -4133,7 +4133,7 @@
                 </Grid>
 
                 <!-- ================= QUẢN TRỊ VIÊN (ADMIN PORTAL) ================= -->
-                <ScrollViewer x:Name="pageAdminPortal" VerticalScrollBarVisibility="Collapsed" HorizontalScrollBarVisibility="Collapsed" Visibility="Collapsed">
+                <ScrollViewer x:Name="pageAdminPortal" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
                     <StackPanel>
                         <!-- Admin Banner Header -->
                         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,12,14,12" Margin="0,0,0,14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
