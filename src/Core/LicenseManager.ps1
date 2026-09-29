@@ -19,12 +19,42 @@ function Get-VUONGTTDataDir {
         foreach ($fn in @("licenses_vault.json", "active_license.lic", "admin_auth.json", "feature_policy.json")) {
             $src = Join-Path $localConfig $fn
             $dst = Join-Path $primary $fn
-            if ((Test-Path $src) -and -not (Test-Path $dst)) {
-                Copy-Item -Path $src -Destination $dst -Force -ErrorAction SilentlyContinue
+            if (Test-Path $src) {
+                if (-not (Test-Path $dst)) {
+                    Copy-Item -Path $src -Destination $dst -Force -ErrorAction SilentlyContinue
+                } elseif ($fn -eq "feature_policy.json") {
+                    # Tự động cập nhật feature_policy.json khi người dùng cập nhật phiên bản EXE mới đóng gói cấu hình mới
+                    try {
+                        $srcText = [System.IO.File]::ReadAllText($src, [System.Text.Encoding]::UTF8).Trim().TrimStart([char]0xFEFF)
+                        $dstText = [System.IO.File]::ReadAllText($dst, [System.Text.Encoding]::UTF8).Trim().TrimStart([char]0xFEFF)
+                        if ($srcText -and ($srcText -ne $dstText)) {
+                            Copy-Item -Path $src -Destination $dst -Force -ErrorAction SilentlyContinue
+                        }
+                    } catch {}
+                }
             }
         }
     }
     return $primary
+}
+
+function Update-VUONGTTRuntimeBundledConfig {
+    [CmdletBinding()]
+    param()
+    try {
+        $localConfig = Join-Path $PSScriptRoot "..\Config"
+        if (-not (Test-Path $localConfig)) { return }
+        $primary = Get-VUONGTTDataDir
+        $src = Join-Path $localConfig "feature_policy.json"
+        $dst = Join-Path $primary "feature_policy.json"
+        if ((Test-Path $src) -and (Test-Path $dst)) {
+            $sText = [System.IO.File]::ReadAllText($src, [System.Text.Encoding]::UTF8).Trim().TrimStart([char]0xFEFF)
+            $dText = [System.IO.File]::ReadAllText($dst, [System.Text.Encoding]::UTF8).Trim().TrimStart([char]0xFEFF)
+            if ($sText -and ($sText -ne $dText)) {
+                Copy-Item -Path $src -Destination $dst -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } catch {}
 }
 
 $script:CONFIG_DIR      = Get-VUONGTTDataDir
@@ -1077,28 +1107,10 @@ function Sync-VUONGTTCloudAdminData {
                     } catch {}
                 }
 
-                # Trọng số bảo vệ cấp bậc (TierRank / tierWeight): ADMIN (3) > PRO (2) > FREE (1)
-                # Ngăn chặn tuyệt đối việc Cloud cache cũ ghi đè hạ cấp (Downgrade) các quyền ADMIN mà người dùng vừa thiết lập
-                $tierWeight = @{ "ADMIN" = 3; "PRO" = 2; "FREE" = 1 }
-                $mergedPolicies = @()
-                $hasAdminPreservationConflict = $false
-
-                foreach ($cp in $cloudPolicies) {
-                    $lp = $localPolicies | Where-Object { $_.Id -eq $cp.Id }
-                    if ($lp) {
-                        $lpRank = if ($tierWeight.ContainsKey($lp.Tier)) { $tierWeight[$lp.Tier] } else { 1 }
-                        $cpRank = if ($tierWeight.ContainsKey($cp.Tier)) { $tierWeight[$cp.Tier] } else { 1 }
-
-                        # Nếu local đang là ADMIN mà Cloud trả về rank thấp hơn (PRO hoặc FREE do cache cũ)
-                        if ($lpRank -gt $cpRank) {
-                            $cp.Tier = $lp.Tier # Bảo lưu quyền ADMIN của Local (Admin Tier Preservation)
-                            $hasAdminPreservationConflict = $true
-                        }
-                    }
-                    $mergedPolicies += $cp
-                }
-
-                $newFormattedJson = $mergedPolicies | ConvertTo-Json -Depth 4
+                # Cơ chế chuẩn hóa phân quyền cấp bậc (TierRank / tierWeight / Admin Tier Preservation):
+                # Các bậc quyền ADMIN > PRO > FREE từ GitHub Cloud là NGUỒN SỰ THẬT TẬP TRUNG (Centralized Source of Truth).
+                # Khi Admin chuyển đổi cấp bậc (kể cả hạ cấp Downgrade từ PRO/ADMIN về FREE), toàn bộ 100% máy khách sẽ tự động nhận diện và cập nhật tức thì.
+                $newFormattedJson = $cloudPolicies | ConvertTo-Json -Depth 4
                 $currentLocalJson = ""
                 if (Test-Path $script:POLICY_FILE) {
                     $currentLocalJson = [System.IO.File]::ReadAllText($script:POLICY_FILE, [System.Text.Encoding]::UTF8).TrimStart([char]0xFEFF).Trim()
@@ -1109,11 +1121,6 @@ function Sync-VUONGTTCloudAdminData {
                     [System.IO.File]::WriteAllText($script:POLICY_FILE, $newFormattedJson, $utf8NoBom)
                     Sync-VUONGTTLocalGitFile -RelativePath "src/Config/feature_policy.json" -Content $newFormattedJson
                     $syncResult.PoliciesSynced = $true
-                }
-
-                # Nếu có xung đột do local là ADMIN mà cloud cũ -> Tự động đẩy bản ADMIN lên Cloud để đồng bộ dứt điểm
-                if ($hasAdminPreservationConflict -and $ghToken) {
-                    Push-VUONGTTCloudFile -RelativePath "src/Config/feature_policy.json" -FileContent $newFormattedJson -CommitMessage "sync(policy): auto-preserve admin tier conflict from Local" | Out-Null
                 }
             }
         }

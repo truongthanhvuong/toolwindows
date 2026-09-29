@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.55
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.56
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -136,6 +136,7 @@ $corePath = Join-Path $ScriptDir "src\Core"
 . (Join-Path $corePath "AccountingApps.ps1")
 . (Join-Path $corePath "AppUpdater.ps1")
 . (Join-Path $corePath "LicenseManager.ps1")
+if (Get-Command "Update-VUONGTTRuntimeBundledConfig" -ErrorAction SilentlyContinue) { Update-VUONGTTRuntimeBundledConfig }
 . (Join-Path $corePath "IpScanner.ps1")
 . (Join-Path $corePath "ConfigManager.ps1")
 . (Join-Path $corePath "DiskHealthManager.ps1")
@@ -7835,10 +7836,33 @@ if ($btnAdminPushGit) {
             } catch {}
         }
 
+        # Luôn đảm bảo đẩy trực tiếp feature_policy.json & licenses_vault.json lên GitHub Cloud REST API (0s Latency)
+        # Giúp toàn bộ máy khách đang mở tool nhận diện phân quyền mới tức thì trong vòng 1-2 giây
+        try {
+            $pPath = Get-VUONGTTPolicyFilePath
+            if ($pPath -and (Test-Path -LiteralPath $pPath -ErrorAction SilentlyContinue)) {
+                $pJson = [System.IO.File]::ReadAllText($pPath, [System.Text.Encoding]::UTF8)
+                Push-VUONGTTCloudFile -RelativePath "src/Config/feature_policy.json" -FileContent $pJson -CommitMessage "sync(policy): update feature tiers from Admin Portal" | Out-Null
+            }
+            $vPath = Get-VUONGTTVaultFilePath
+            if ($vPath -and (Test-Path -LiteralPath $vPath -ErrorAction SilentlyContinue)) {
+                $vJson = [System.IO.File]::ReadAllText($vPath, [System.Text.Encoding]::UTF8)
+                Push-VUONGTTCloudFile -RelativePath "src/Config/licenses_vault.json" -FileContent $vJson -CommitMessage "sync(vault): update licenses vault from Admin Portal" | Out-Null
+            }
+        } catch {}
+
         # TRƯỜNG HỢP 1: Tìm thấy Publish-Update.ps1 (Môi trường Dev có repo Git)
         if ($foundPublishScript) {
-            $txtFooterStatus.Text = "• [PUSH GIT] Đang khởi chạy quy trình Đóng Gói, Kiểm Thử & Push Git lên GitHub..."
+            $txtFooterStatus.Text = "• [PUSH GIT] Đang đồng bộ commit cục bộ và khởi chạy tiến trình phát hành..."
             Invoke-VUONGTTDoEvents
+
+            # Tự động đẩy trực tiếp các commit phân quyền chưa đẩy lên GitHub origin main
+            try {
+                $wDir = Split-Path -Parent $foundPublishScript
+                if (Test-Path (Join-Path $wDir ".git")) {
+                    git -C $wDir push origin main | Out-Null
+                }
+            } catch {}
 
             try {
                 $workingDir = Split-Path -Parent $foundPublishScript
@@ -7863,7 +7887,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.55" }
+                if (-not $currentVer) { $currentVer = "20.5.909.56" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

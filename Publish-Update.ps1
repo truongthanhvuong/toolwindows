@@ -225,11 +225,22 @@ if ($pushSuccess) {
     # 6. Purge cache CDN toan cau de tat ca may khach nhan dien tuc thi trong 1s
     try {
         Write-Host "`n>>> [5/5] Dang lam moi (Purge) cache CDN toan cau..." -ForegroundColor Yellow
-        $purgeUrl = "https://purge.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/version.json"
         $wc = New-Object System.Net.WebClient
         $wc.Headers.Add("User-Agent", "VUONGTT-Release-Publisher/2026")
-        $pRes = $wc.DownloadString($purgeUrl)
-        Write-Host " -> Da lam moi cache CDN toan cau thanh cong (0s Latency)!" -ForegroundColor Green
+        
+        # Purge version.json
+        $purgeUrl = "https://purge.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/version.json"
+        $null = $wc.DownloadString($purgeUrl)
+
+        # Purge feature_policy.json
+        $purgePolicyUrl = "https://purge.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/src/Config/feature_policy.json"
+        $null = $wc.DownloadString($purgePolicyUrl)
+
+        # Purge licenses_vault.json
+        $purgeVaultUrl = "https://purge.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/src/Config/licenses_vault.json"
+        $null = $wc.DownloadString($purgeVaultUrl)
+
+        Write-Host " -> Da lam moi cache CDN toan cau (version, policy, vault) thanh cong (0s Latency)!" -ForegroundColor Green
     } catch {
         Write-Host " [!] Bo qua lam moi CDN: $($_.Exception.Message)" -ForegroundColor Gray
     }
