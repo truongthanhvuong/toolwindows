@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.58
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.59
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -32,6 +32,8 @@ if (-not $isAdmin) {
 
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
+
+$Script:AppVersion = "v20.5.909.59"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -149,7 +151,7 @@ if (Get-Command "Update-VUONGTTRuntimeBundledConfig" -ErrorAction SilentlyContin
 . (Join-Path $corePath "IsoRepositoryEngine.ps1")
 . (Join-Path $corePath "TroubleshootManager.ps1")
 try {
-    Initialize-VUONGTTTroubleshootEngine -CustomDbPath (Join-Path $corePath "TroubleshootDatabase.json") | Out-Null
+    Initialize-VUONGTTTroubleshootEngine -CustomDbPath (Join-Path (Split-Path $corePath) "Data\TroubleshootDatabase.json") | Out-Null
 } catch {}
 
 # Load Main UI XAML
@@ -657,8 +659,9 @@ function Switch-Tab {
     }
 }
 
-# Wire Menu Clicks
+# Wire Menu Clicks (btnMenuSoftware handled explicitly below)
 foreach ($btnName in $menuButtons) {
+    if ($btnName -eq "btnMenuSoftware") { continue }
     $btn = Get-Control $btnName
     if ($btn) {
         $targetTag = [string]$btn.Tag
@@ -668,7 +671,7 @@ foreach ($btnName in $menuButtons) {
     }
 }
 
-# Explicit backup handler for btnMenuSoftware to guarantee 100% navigation
+# Dedicated handler for btnMenuSoftware to guarantee 100% navigation
 $btnMenuSoftware = Get-Control "btnMenuSoftware"
 if ($btnMenuSoftware) {
     $btnMenuSoftware.Add_Click({
@@ -817,7 +820,30 @@ function Switch-HardwareDiskSubTab {
 
 # --- 5. TechUtilities Sub-tabs ---
 function Switch-TechUtilitiesSubTab {
-    param([string]$targetTab)
+    param([string]$targetTab = "Tech_Backup")
+    if (-not $targetTab) { $targetTab = "Tech_Backup" }
+
+    if ($targetTab -eq "Tech_Activation") {
+        if (-not $global:isAdminAuthenticated) {
+            $policies = Get-VUONGTTFeaturePolicies
+            $policy = $policies | Where-Object { $_.Id -eq "Activation" }
+            if ($policy -and $policy.Tier -eq "ADMIN") {
+                Show-VUONGTTAdminLoginModal -TargetNextTab "Activation"
+                if ($lblAdminLoginNotice) {
+                    $lblAdminLoginNotice.Text = "Chức năng 'Kích Hoạt Bản Quyền Số' chỉ dành riêng cho Quản Trị Viên (Admin)! Vui lòng nhập mật khẩu Quản Trị Viên để tiếp tục."
+                }
+                return
+            }
+            elseif ($policy -and $policy.Tier -eq "PRO") {
+                $isPro = (Test-VUONGTTProLicense).IsPro
+                if (-not $isPro) {
+                    Show-VUONGTTLicenseActivationModal -PromptNotice "Chức năng 'Kích Hoạt Bản Quyền Số' thuộc phiên bản PRO! Vui lòng nhập License Key để kích hoạt." -TargetNextTab "Activation"
+                    return
+                }
+            }
+        }
+    }
+
     $tabs = @($subTabTech_Activation, $subTabTech_BitLocker, $subTabTech_Backup, $subTabTech_AutoWin, $subTabTech_Users)
     $panels = @($pageActivation, $pageBitLocker, $pageBackupDriver, $pageAutoWin, $pageUsers)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -9179,7 +9205,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.57" }
+                if (-not $currentVer) { $currentVer = "20.5.909.59" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
@@ -9793,7 +9819,7 @@ Switch-SysInfoSubTab "SysInfo_View"
 Switch-SystemFixSubTab "SysFix_Cleaner"
 Switch-SoftwareHubSubTab "Soft_Store"
 Switch-HardwareDiskSubTab "Hw_Disk"
-Switch-TechUtilitiesSubTab "Tech_Activation"
+Switch-TechUtilitiesSubTab "Tech_Backup"
 if (Get-Command Switch-PrinterLANSubTab -ErrorAction SilentlyContinue) { Switch-PrinterLANSubTab "fix" }
 $txtFooterStatus.Text = "• [OK] Đang khởi động hệ thống và nạp thông số phần cứng..."
 

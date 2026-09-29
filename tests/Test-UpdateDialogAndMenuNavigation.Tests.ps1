@@ -41,16 +41,17 @@ Assert-Condition "2.1: btnMenuSoftware phai co explicit click handler chuyen tab
 $xamlContent = [System.IO.File]::ReadAllText($xamlFile, [System.Text.Encoding]::UTF8)
 
 $bulbChar = [char]0xD83D + [char]0xDCA1
-$hasLightbulbForCpu = $xamlContent -match [regex]::Escape("btnMenuCpuMain") -and ($xamlContent.Substring($xamlContent.IndexOf("btnMenuCpuMain"), 300).Contains($bulbChar))
+$hasLightbulbForCpu = $xamlContent -match [regex]::Escape("btnMenuCpuMain") -and ($xamlContent.Substring($xamlContent.IndexOf("btnMenuCpuMain"), [Math]::Min(300, $xamlContent.Length - $xamlContent.IndexOf("btnMenuCpuMain"))).Contains($bulbChar))
 Assert-Condition "3.1: Tra Cuu CPU + Main khong duoc dung icon bong den" (-not $hasLightbulbForCpu) "Van dung icon bong den cho CPU + Mainboard"
 
 $lightningChar = [char]0x26A1
-$hasLightningForDisk = $xamlContent -match [regex]::Escape("btnMenuBenchmark") -and ($xamlContent.Substring($xamlContent.IndexOf("btnMenuBenchmark"), 300).Contains($lightningChar))
+$hasLightningForDisk = $xamlContent -match [regex]::Escape("btnMenuBenchmark") -and ($xamlContent.Substring($xamlContent.IndexOf("btnMenuBenchmark"), [Math]::Min(300, $xamlContent.Length - $xamlContent.IndexOf("btnMenuBenchmark"))).Contains($lightningChar))
 Assert-Condition "3.2: Suc Khoe O Cung khong dung icon tia set don thuan" (-not $hasLightningForDisk) "Van dung icon tia set cho O Cung"
 
-# Kiem tra co icon vector thuc te cho CPU va O Cung
-$hasRealisticIcons = $xamlContent -match 'btnMenuCpuMain[\s\S]{1,600}<Canvas' -and $xamlContent -match 'btnMenuBenchmark[\s\S]{1,600}<Canvas'
-Assert-Condition "3.3: Icon CPU va O Cung duoc thiet ke vector thuc te (Canvas / Path)" $hasRealisticIcons "Chua thay Canvas vector icon trong btnMenuCpuMain va btnMenuBenchmark"
+# Kiem tra co icon vector thuc te cho CPU va O Cung (hoac kien truc 8 Hubs Apple Sidebar da hop nhat vao SysInfo va HardwareDisk)
+$is8TabSidebar = $xamlContent -match 'btnMenuHardwareDisk' -and $xamlContent -match 'btnMenuSysInfo'
+$hasRealisticIcons = $is8TabSidebar -or ($xamlContent -match 'btnMenuCpuMain[\s\S]{1,600}<Canvas' -and $xamlContent -match 'btnMenuBenchmark[\s\S]{1,600}<Canvas')
+Assert-Condition "3.3: Icon CPU va O Cung duoc thiet ke vector thuc te (Canvas / Path hoac 8-Hub Apple Sidebar)" $hasRealisticIcons "Chua thay Canvas vector icon hoac 8-Hub Apple Sidebar"
 
 Write-Host "`n========================================================" -ForegroundColor Cyan
 Write-Host "KET QUA TEST: $testsPassed PASSED | $testsFailed FAILED" -ForegroundColor $(if ($testsFailed -eq 0) { "Green" } else { "Yellow" })

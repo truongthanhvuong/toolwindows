@@ -1,4 +1,4 @@
-# Test-Task5Integration.ps1
+﻿# Test-Task5Integration.ps1
 # Kiem tra cu phap va tich hop Task 5 cho VUONGTT_Toolkit.ps1
 
 $ErrorActionPreference = "Stop"

@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.58")]
-[assembly: AssemblyFileVersion("20.5.909.58")]
+[assembly: AssemblyVersion("20.5.909.59")]
+[assembly: AssemblyFileVersion("20.5.909.59")]
 
 namespace VUONGTT
 {
@@ -237,6 +237,13 @@ namespace VUONGTT
                         else if (name.Contains("DiskHealthManager.ps1")) relPath = Path.Combine("src", "Core", "DiskHealthManager.ps1");
                         else if (name.Contains("AutoWinDeployer.ps1")) relPath = Path.Combine("src", "Core", "AutoWinDeployer.ps1");
                         else if (name.Contains("SystemBackupManager.ps1")) relPath = Path.Combine("src", "Core", "SystemBackupManager.ps1");
+                        else if (name.Contains("KeyViewerEngine.ps1")) relPath = Path.Combine("src", "Core", "KeyViewerEngine.ps1");
+                        else if (name.Contains("SkuConverterEngine.ps1")) relPath = Path.Combine("src", "Core", "SkuConverterEngine.ps1");
+                        else if (name.Contains("CrackScannerEngine.ps1")) relPath = Path.Combine("src", "Core", "CrackScannerEngine.ps1");
+                        else if (name.Contains("DnsChangerEngine.ps1")) relPath = Path.Combine("src", "Core", "DnsChangerEngine.ps1");
+                        else if (name.Contains("IsoRepositoryEngine.ps1")) relPath = Path.Combine("src", "Core", "IsoRepositoryEngine.ps1");
+                        else if (name.Contains("TroubleshootManager.ps1")) relPath = Path.Combine("src", "Core", "TroubleshootManager.ps1");
+                        else if (name.Contains("TroubleshootDatabase.json")) relPath = Path.Combine("src", "Data", "TroubleshootDatabase.json");
                         else if (name.Contains("licenses_vault.json")) relPath = Path.Combine("src", "Config", "licenses_vault.json");
                         else if (name.Contains("feature_policy.json")) relPath = Path.Combine("src", "Config", "feature_policy.json");
                         else if (name.Contains("SoftwareDatabase.json")) relPath = Path.Combine("src", "Data", "SoftwareDatabase.json");

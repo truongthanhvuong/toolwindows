@@ -1,4 +1,4 @@
-# Test-MainWindowXaml.ps1
+﻿# Test-MainWindowXaml.ps1
 # Kiem tra tinh hop le va cu phap runtime cua MainWindow.xaml
 
 $ErrorActionPreference = "Stop"
