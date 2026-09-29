@@ -1,41 +1,43 @@
-# Bản Thiết Kế Kiến Trúc Hệ Thống Cứu Hộ & Chẩn Đoán Lỗi IT Helpdesk Windows
-## (Windows Troubleshooting & IT Helpdesk Engine Architecture)
+# Bản Thiết Kế Kiến Trúc Hệ Thống Cứu Hộ IT Helpdesk & Tinh Gọn Sidebar Tabs
+## (Windows Troubleshooting Engine & Streamlined 8-Tab Architecture)
 
 - **Ngày ban hành**: 29/09/2026
-- **Trạng thái**: Bản thảo thiết kế kiến trúc hoàn thiện (Architectural Design Spec)
+- **Trạng thái**: Bản thảo thiết kế kiến trúc hoàn thiện (Architectural Design Spec - Revision 2)
 - **Tác giả**: Antigravity & VUONGTT Software Team
 - **Hệ thống áp dụng**: `VUONGTT_Toolkit.exe` (WPF XAML + PowerShell Core Engine)
 - **Tài liệu tham chiếu**: `AGENTS.md` (Quy tắc nâng phiên bản cục bộ & phát hành)
+- **Hình ảnh tham chiếu**:
+  - `media_1790664582237.png` & `media_1790664588525.png`: Giao diện Sidebar hiện tại bị cuộn dài với 19 menu đơn lẻ.
 
 ---
 
 ## 1. Bối Cảnh & Mục Tiêu Nghiệp Vụ
 
-Trong môi trường quản trị kỹ thuật máy tính (IT Support / Helpdesk / Quản trị hệ thống doanh nghiệp), kỹ thuật viên thường xuyên phải đối mặt với hơn 200 loại sự cố khác nhau từ hệ điều hành, mạng, máy in, tài khoản domain, phần cứng cho đến các bộ phần mềm như Office 365, Teams, OneDrive.
+Trong phiên bản hiện tại (`v20.5.909.56`), thanh Sidebar bên trái của `VUONGTT_Toolkit` có tới **6 Group với 19 Menu Buttons đơn lẻ**, khiến thanh cuộn (ScrollBar) bị kéo dài, người dùng phải cuộn lên cuộn xuống liên tục để tìm kiếm công cụ cần dùng.
 
-Mục tiêu của dự án là:
-1. **Tinh gọn hóa nghiệp vụ**: Gom toàn bộ 43 nhóm lỗi ban đầu (~200+ mã sự cố từ `PERF-001` đến `SYS-010`) thành **7 Danh Mục Chuẩn IT Helpdesk** trực quan, khoa học.
-2. **Tích hợp phân tán tự nhiên**: Nhúng trực tiếp các công cụ chẩn đoán và khắc phục sự cố vào các trang tính năng hiện có trong `VUONGTT_Toolkit` (`pageConfig`, `pageCleaner`, `pagePrinterLAN`, `pageUsers`, `pageOffice`, `pageSoftware`, `pageLaptopCheck`, `pageIpScanner`), giúp người dùng thao tác đúng ngữ cảnh mà không làm rối mắt hay tách rời quy trình.
-3. **Kiến trúc Dữ liệu Động (Dynamic Knowledgebase & Remediation Engine)**:
-   - Lưu trữ toàn bộ tri thức kỹ thuật và kịch bản can thiệp trong `src/Data/TroubleshootDatabase.json`.
-   - Engine điều phối tập trung `src/Core/TroubleshootManager.ps1` phụ trách tìm kiếm nhanh, kiểm tra quyền hạn, tạo bản sao lưu an toàn (Registry/Restore Point), chạy script chẩn đoán, sửa lỗi tự động, kiểm tra lại (verify) và cung cấp tài liệu hướng dẫn leo thang (escalation guide).
-4. **Lộ trình chia giai đoạn (3-Phase Roadmap)** đảm bảo tính ổn định, dễ kiểm thử và an toàn tuyệt đối cho hệ thống máy trạm của khách hàng.
+Đồng thời, khi bổ sung kho tri thức và công cụ xử lý **hơn 200+ mã lỗi IT Helpdesk Windows** (từ `PERF-001` đến `SYS-010`), nếu tiếp tục thêm các nút đơn lẻ sẽ gây quá tải thị giác và khó bảo trì.
+
+### Mục tiêu thiết kế:
+1. **Tinh chỉnh lại toàn bộ Sidebar thành 8 Tab Chính Chuẩn Apple** (Apple Segmented Navigation): Gọn gàng, vừa vặn khung nhìn, loại bỏ hoàn toàn tình trạng cuộn trang dài ở sidebar. Mỗi tab chính sẽ quản lý các phân hệ con thông qua thanh **Sub-tabs (Capsule / Pill Bar)** hiện đại.
+2. **Gom toàn bộ 43 nhóm lỗi thành 7 Danh Mục Chuẩn IT Helpdesk**: Tích hợp các bộ công cụ chẩn đoán và khắc phục sự cố trực tiếp vào từng tab chức năng tương ứng.
+3. **Kiến Trúc Dữ Liệu Động (Dynamic Knowledgebase & Remediation Engine)**:
+   - Lưu trữ tri thức lỗi và kịch bản can thiệp trong `src/Data/TroubleshootDatabase.json`.
+   - Engine điều phối trung tâm `src/Core/TroubleshootManager.ps1` phụ trách tìm kiếm mã lỗi/từ khóa, kiểm tra quyền hạn, sao lưu an toàn, chạy script chẩn đoán, sửa lỗi tự động, kiểm tra lại (verify) và cung cấp tài liệu hướng dẫn leo thang (escalation guide).
 
 ---
 
-## 2. Phân Loại 7 Danh Mục Chuẩn IT Helpdesk & Bản Đồ Phân Bổ Trang
+## 2. Kiến Trúc Tinh Gọn: Tái Cấu Trúc 19 Tabs Thành 8 Tab Chính Chuẩn Apple
 
-Hệ thống gom 43 nhóm lỗi ban đầu thành 7 danh mục lớn, ánh xạ vào các trang làm việc tương ứng của `VUONGTT_Toolkit`:
-
-| STT | 7 Danh Mục Chuẩn IT Helpdesk | Mã Nhóm Lỗi Bao Gồm | Trang Tích Hợp Hiện Có Trong App | Mô Tả Trọng Tâm Nghiệp Vụ |
+| STT | 8 Tab Chính Trên Sidebar | Biểu Tượng & Mã Tag | Các Tab Cũ Được Tích Hợp (Sub-tabs bên trong) | Danh Mục IT Helpdesk Tương Ứng |
 |:---:|:---|:---|:---|:---|
-| **01** | **⚡ Hệ Thống & Hiệu Năng Windows** | `PERF`, `SYS`, `UPDATE`, `SVC`, `DISK`, `REC`, `SETTINGS`, `UI` | `pageCleaner` (Dọn dẹp/Tối ưu) & `pageConfig` (Cấu hình & Sửa lỗi) | Treo máy, lag, CPU/RAM/Disk 100%, quạt hú, lỗi Windows Update, dịch vụ bị dừng, hỏng file hệ thống SFC/DISM, ổ đĩa đầy, recovery loop. |
-| **02** | **🌐 Mạng & Kết Nối Từ Xa** | `NET`, `VPN`, `RDP`, `FW`, `TIME` | `pageIpScanner` & `pageConfig` | Mất Internet, Wi-Fi chập chờn, APIPA 169.254, lỗi DNS/DHCP, VPN disconnect, Remote Desktop (RDP) lỗi màn hình đen/CredSSP, lệch ngày giờ Kerberos. |
-| **03** | **🖨️ Máy In & Chia Sẻ Tệp LAN** | `PRINT`, `SMB`, `FILE`, `PERM` | `pagePrinterLAN` (Sửa Lỗi Máy In - Share LAN) | Kẹt hàng đợi in, Print Spooler stopped, lỗi in mạng LAN 0x0000011b/0x7c/0x709, không truy cập `\\server\share`, Access Denied, NTFS permission. |
-| **04** | **👤 Tài Khoản & Active Directory** | `LOGIN`, `PROFILE`, `AD`, `GPO`, `ACT`, `SEC`, `BIT`, `CERT` | `pageUsers`, `pageActivation`, `pageBitLocker` | Quên mật khẩu, Temporary profile, User profile service failed, không join Domain, GPO không apply, Windows chưa activate, BitLocker khóa, TPM lỗi. |
-| **05** | **💼 Microsoft Office & M365** | `OFFICE`, `MAIL`, `TEAMS`, `OD`, `SP` | `pageOffice` (Cài đặt & Sửa Office AIO) | Word/Excel/PowerPoint crash/Not Responding, Outlook kẹt Outbox/lỗi OST/PST/hỏi pass, Teams trắng màn hình/mất mic/cam, OneDrive/SharePoint sync conflict/đầy. |
-| **06** | **📦 Ứng Dụng & Trình Duyệt** | `APP`, `STORE`, `BROWSER` | `pageSoftware` (Tải ứng dụng) & `pageUninstaller` (Gỡ sạch) | Thiếu DLL (`VCRUNTIME140.dll`, `MSVCP140.dll`), lỗi .NET/Visual C++, app bị chặn bởi Defender/SmartScreen, Microsoft Store không tải, trình duyệt web lỗi SSL/DNS. |
-| **07** | **🖥️ Phần Cứng & Thiết Bị Ngoại Vi** | `HW`, `AUDIO`, `DISPLAY`, `USB`, `POWER`, `DRIVER` | `pageLaptopCheck`, `pageBenchmark`, `pageBackupDriver` | Mất âm thanh, mic rè, màn hình chớp nháy/sai scale/không nhận monitor 2, USB unknown device, chuột/phím liệt, laptop không sleep/không sạc, driver lỗi mã Code 10/28/43. |
+| **1** | **Thông Tin & Cấu Hình** | 🖥️ `SysInfo` | • Xem Cấu Hình Máy (`pageSysInfo`)<br>• Tùy chỉnh OEM (`pageCustomize`)<br>• Tra cứu CPU + Main (`pageCpuMain`) | Thông tin phần cứng, BIOS/UEFI, CPU, RAM |
+| **2** | **Tối Ưu & Sửa Lỗi Win** | ⚡ `SystemFix` | • Tối Ưu & Dọn Dẹp Tweaks (`pageCleaner`)<br>• Cấu Hình & Sửa Lỗi Win (`pageConfig`)<br>• Khắc Phục Treo Lag / Disk 100% | **01. Hệ Thống & Hiệu Năng Windows** (`PERF`, `SYS`, `UPDATE`, `SVC`, `DISK`, `REC`) |
+| **3** | **Mạng & IP Scanner** | 🌐 `NetworkLAN` | • Advanced IP Scanner (`pageIpScanner`)<br>• Chẩn đoán Internet, Wi-Fi, Ping, DNS<br>• Cấu hình VPN & Remote Desktop (RDP) | **02. Mạng & Kết Nối Từ Xa** (`NET`, `VPN`, `RDP`, `FW`, `TIME`) |
+| **4** | **Máy In & Chia Sẻ LAN** | 🖨️ `PrinterLAN` | • Sửa Lỗi Máy In 87 Chức Năng (`pagePrinterLAN`)<br>• Chia sẻ thư mục SMB, Credentials<br>• Sửa quyền truy cập Access Denied | **03. Máy In & Chia Sẻ Tệp LAN** (`PRINT`, `SMB`, `FILE`, `PERM`) |
+| **5** | **Office & Microsoft 365** | 💼 `OfficeAIO` | • Cài Đặt Office Tự Động (`pageOffice`)<br>• Sửa lỗi Word, Excel, PowerPoint<br>• Sửa Outlook, Teams, OneDrive & SharePoint | **05. Microsoft Office & M365** (`OFFICE`, `MAIL`, `TEAMS`, `OD`, `SP`) |
+| **6** | **Quản Lý Phần Mềm** | 📦 `SoftwareHub` | • Tải ứng dụng (`pageSoftware`)<br>• Cài app tùy chỉnh (`pageCustomApp`)<br>• Gỡ bỏ sạch (`pageUninstaller`)<br>• Cài font tiếng Việt (`pageFonts`) | **06. Ứng Dụng & Trình Duyệt** (`APP`, `STORE`, `BROWSER`, Missing DLL) |
+| **7** | **Ổ Cứng & Phần Cứng** | 💽 `HardwareDisk` | • Sức Khỏe & Tốc Độ Ổ Cứng (`pageBenchmark`)<br>• Quản Lý Phân Vùng (`pagePartition`)<br>• Kiểm Tra Laptop & Ngoại Vi (`pageLaptopCheck`) | **07. Phần Cứng & Thiết Bị Ngoại Vi** (`HW`, `AUDIO`, `DISPLAY`, `USB`, `POWER`, `DRIVER`) |
+| **8** | **Tiện Ích Kỹ Thuật** | 🛠️ `TechUtilities` | • Kích Hoạt MAS HWID (`pageActivation`)<br>• Tắt BitLocker - EFS (`pageBitLocker`)<br>• Sao Lưu Win & Driver (`pageBackupDriver`)<br>• Cài Win & Bypass (`pageAutoWin`)<br>• Quản Lý User & Admin Portal (`pageUsers`, `pageAdminPortal`) | **04. Tài Khoản & Active Directory** (`LOGIN`, `PROFILE`, `AD`, `GPO`, `ACT`, `SEC`, `BIT`, `CERT`) |
 
 ---
 
@@ -74,7 +76,7 @@ File JSON được thiết kế có cấu trúc phân cấp chặt chẽ:
     "Script": "Test-VUONGTTDiskUsageNormal"
   },
   "Escalation": [
-    "Bước 1: Chạy kiểm tra sức khỏe ổ cứng (CrystalDiskInfo / SMART) tại tab 'Sức Khỏe & Tốc Độ Ổ Cứng'.",
+    "Bước 1: Chạy kiểm tra sức khỏe ổ cứng (CrystalDiskInfo / SMART) tại tab 'Ổ Cứng & Phần Cứng'.",
     "Bước 2: Nếu ổ cứng có cảnh báo Caution hoặc nhiều Bad Sector, tiến hành sao lưu dữ liệu khẩn cấp và thay thế SSD mới."
   ]
 }
@@ -112,11 +114,20 @@ File `TroubleshootManager.ps1` chịu trách nhiệm toàn bộ logic xử lý d
 
 ---
 
-## 5. Kiến Trúc Giao Diện Người Dùng (UI Component Trong MainWindow.xaml)
+## 5. Kiến Trúc Giao Diện Người Dùng (UI Component & Sub-tabs Layout)
 
-Để tích hợp phân tán mượt mà vào từng trang mà không làm xáo trộn bố cục có sẵn, một **Widget Chuẩn Hóa IT Helpdesk** (`TroubleshootDrawer / TroubleshootCard`) được thiết kế theo phong cách Apple Modern UI.
+### 5.1. Cấu Trúc Sidebar Mới Trong `MainWindow.xaml`
+Thanh cuộn dọc bên trái được thay bằng một danh sách 8 nút Apple Card sang trọng, không còn các Header nhóm cồng kềnh, kèm theo icon trực quan và nhãn song ngữ:
+1. `btnMenuSysInfo` (Tag="SysInfo") - 🖥️ Thông Tin & Cấu Hình
+2. `btnMenuSystemFix` (Tag="SystemFix") - ⚡ Tối Ưu & Sửa Lỗi Win
+3. `btnMenuNetworkLAN` (Tag="NetworkLAN") - 🌐 Mạng & IP Scanner
+4. `btnMenuPrinterLAN` (Tag="PrinterLAN") - 🖨️ Máy In & Chia Sẻ LAN
+5. `btnMenuOffice` (Tag="OfficeAIO") - 💼 Office & Microsoft 365
+6. `btnMenuSoftware` (Tag="SoftwareHub") - 📦 Quản Lý Phần Mềm
+7. `btnMenuHardwareDisk` (Tag="HardwareDisk") - 💽 Ổ Cứng & Phần Cứng
+8. `btnMenuTechUtilities` (Tag="TechUtilities") - 🛠️ Tiện Ích Kỹ Thuật
 
-### 5.1. Bố Cục UI Widget Chuẩn
+### 5.2. Widget IT Helpdesk Chuẩn Hóa Nhúng Vào Các Trang
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 🛠️ TRUNG TÂM KHẮC PHỤC SỰ CỐ THEO CHUYÊN MỤC                          │
@@ -146,27 +157,25 @@ File `TroubleshootManager.ps1` chịu trách nhiệm toàn bộ logic xử lý d
 
 ## 6. Lộ Trình Triển Khai Chia 3 Giai Đoạn (Phased Roadmap)
 
-Do tổng số lượng hơn 200 mã sự cố rất lớn, dự án được triển khai thành 3 giai đoạn rõ ràng:
+### Giai Đoạn 1: Tinh Gọn Sidebar 8 Tabs + Nền Tảng Core Engine + Sự Cố Ưu Tiên Cao
+1. **Sidebar Restructuring**: Tinh gọn thanh Menu Sidebar thành 8 Tab chính chuẩn Apple. Tái cấu trúc chuyển trang trong `MainWindow.xaml` và `VUONGTT_Toolkit.ps1` bằng hệ thống Sub-tabs.
+2. **Dữ liệu**: Tạo file `src/Data/TroubleshootDatabase.json` định nghĩa 7 Danh Mục và nạp đầy đủ danh sách 200+ mã sự cố.
+3. **Engine**: Xây dựng `src/Core/TroubleshootManager.ps1` nạp dữ liệu, tìm kiếm, kiểm tra quyền, ghi log an toàn.
+4. **Kịch bản tự động hóa Đợt 1**: Hoàn thiện 100% logic tự động (Diagnosis, Fix, Verify) cho 3 cụm trọng tâm:
+   - Tab 2 (Tối Ưu & Sửa Lỗi Win): Danh mục 1 (⚡ Hệ Thống & Hiệu Năng Windows, Windows Update, Disk 100%).
+   - Tab 3 (Mạng & IP Scanner): Danh mục 2 (🌐 Mạng & Kết Nối Từ Xa).
+   - Tab 4 (Máy In & Chia Sẻ LAN): Danh mục 3 (🖨️ Máy In & Chia Sẻ Tệp LAN).
 
-### Giai Đoạn 1: Nền Tảng Cốt Lõi & Nhóm Sự Cố Ưu Tiên Cao (Core Engine & Top Priority Pages)
-1. **Dữ liệu**: Tạo file `src/Data/TroubleshootDatabase.json` định nghĩa cấu trúc đầy đủ của toàn bộ 7 Danh Mục và nạp toàn bộ danh sách 200+ mã sự cố (mã, tên, triệu chứng, nguyên nhân, hướng dẫn leo thang).
-2. **Engine**: Xây dựng `src/Core/TroubleshootManager.ps1` với đầy đủ các hàm nạp dữ liệu, tìm kiếm, kiểm tra quyền, ghi log an toàn.
-3. **Kịch bản tự động hóa Đợt 1**: Hoàn thiện 100% logic tự động (Diagnosis, Fix, Verify) cho 3 trang cốt lõi nhất:
-   - `pageCleaner` & `pageConfig`: Danh mục 1 (⚡ Hệ Thống & Hiệu Năng Windows, Windows Update).
-   - `pageIpScanner`: Danh mục 2 (🌐 Mạng & Kết Nối Từ Xa).
-   - `pagePrinterLAN`: Danh mục 3 (🖨️ Máy In & Chia Sẻ Tệp LAN).
-4. **Giao diện**: Nhúng Widget Troubleshoot vào `pageConfig`, `pageCleaner`, `pagePrinterLAN` và liên kết sự kiện trong `VUONGTT_Toolkit.ps1`.
-
-### Giai Đoạn 2: Bộ Ứng Dụng Văn Phòng & Phần Mềm (Office, M365 & Applications)
-1. Hoàn thiện kịch bản tự động hóa cho Danh mục 5 (💼 Microsoft Office & M365) trên `pageOffice`:
-   - Reset Profile Outlook, sửa lỗi kẹt Outbox, khôi phục index tìm kiếm mail, xóa cache Teams, giải phóng xung đột OneDrive sync.
-2. Hoàn thiện kịch bản tự động hóa cho Danh mục 6 (📦 Ứng Dụng & Trình Duyệt) trên `pageSoftware` và `pageUninstaller`:
+### Giai Đoạn 2: Bộ Ứng Dụng Văn Phòng & Quản Lý Phần Mềm
+1. Hoàn thiện kịch bản tự động hóa cho Danh mục 5 (💼 Microsoft Office & M365) trên Tab 5 (`OfficeAIO`):
+   - Reset Profile Outlook, sửa lỗi kẹt Outbox, khôi phục index tìm kiếm mail, xóa cache Teams, giải phóng xung đột OneDrive/SharePoint sync.
+2. Hoàn thiện kịch bản tự động hóa cho Danh mục 6 (📦 Ứng Dụng & Trình Duyệt) trên Tab 6 (`SoftwareHub`):
    - Tự động phát hiện và cài đặt trọn bộ Visual C++ Runtimes (2005-2022) và .NET Framework để sửa lỗi Missing DLL (`VCRUNTIME140.dll`, `MSVCP140.dll`), reset Microsoft Store cache (`wsreset.exe`).
 
-### Giai Đoạn 3: Tài Khoản, Domain, Bảo Mật & Phần Cứng (Account, AD, Security & Hardware)
-1. Hoàn thiện kịch bản tự động hóa cho Danh mục 4 (👤 Tài Khoản & Active Directory) trên `pageUsers` và `pageBitLocker`:
+### Giai Đoạn 3: Tài Khoản, Domain, Bảo Mật, Ổ Cứng & Phần Cứng
+1. Hoàn thiện kịch bản tự động hóa cho Danh mục 4 (👤 Tài Khoản & Active Directory) trên Tab 8 (`TechUtilities`):
    - Khắc phục lỗi Temporary Profile, reset secure channel domain, cập nhật GPO (`gpupdate /force`), quản lý trạng thái BitLocker.
-2. Hoàn thiện kịch bản tự động hóa cho Danh mục 7 (🖥️ Phần Cứng & Thiết Bị Ngoại Vi) trên `pageLaptopCheck` và `pageBackupDriver`:
+2. Hoàn thiện kịch bản tự động hóa cho Danh mục 7 (🖥️ Phần Cứng & Thiết Bị Ngoại Vi) trên Tab 7 (`HardwareDisk`):
    - Khởi động lại Windows Audio service, reset TCP/IP và Network driver, reset GPU driver (`Win + Ctrl + Shift + B`), kiểm tra pin và quản lý chế độ Sleep/Hibernate.
 
 ---
@@ -174,11 +183,11 @@ Do tổng số lượng hơn 200 mã sự cố rất lớn, dự án được tr
 ## 7. Quy Tắc Kiểm Thử & Quản Trị Phiên Bản (Tuân Thủ AGENTS.md)
 
 1. **Local Version Bump**:
-   - Khi hoàn thành từng giai đoạn hoặc sửa lỗi: Tăng 1 số Build Increment (ví dụ: `v20.5.909.56` -> `v20.5.909.57`).
+   - Khi hoàn thành từng giai đoạn hoặc sửa lỗi: Tự động tăng 1 số Build Increment (ví dụ: `v20.5.909.56` -> `v20.5.909.57`).
    - Cập nhật đồng bộ tại 5 vị trí: `version.json`, `MainWindow.xaml`, `src/Program.cs`, `AppUpdater.ps1`, `VUONGTT_Toolkit.ps1`.
    - Biên dịch ra file thực thi `E:\toolwindows\VUONGTT_Toolkit.exe` bằng `Build-Exe.ps1`.
 2. **Kiểm thử cục bộ**:
-   - Chạy thử trực tiếp `VUONGTT_Toolkit.exe` trên máy tính để kiểm tra Window Title, Logo Header, nạp danh sách sự cố, tìm kiếm mã lỗi và chạy thử nghiệm các hàm Fix.
+   - Chạy thử trực tiếp `VUONGTT_Toolkit.exe` trên máy tính để kiểm tra Window Title, Logo Header, Sidebar mới 8 tabs không bị cuộn, chuyển tab mượt mà, nạp danh sách sự cố và chạy thử nghiệm các hàm Fix.
 3. **Tuyệt đối không chạy `git push`**:
    - Chỉ tạo commit lưu trữ lịch sử tại git local.
    - Để người dùng tự quyết định thời điểm phát hành qua `Publish-Update.ps1`.
