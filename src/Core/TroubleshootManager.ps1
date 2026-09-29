@@ -408,9 +408,12 @@ function Invoke-VUONGTTRoutineNetworkStack {
             Start-Process "ipconfig.exe" -ArgumentList "/flushdns" -Wait -NoNewWindow -ErrorAction SilentlyContinue
             $logLines += "[OK] ipconfig /flushdns: Đã làm sạch DNS Resolver Cache."
 
+            Start-Process "ipconfig.exe" -ArgumentList "/renew" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+            $logLines += "[OK] ipconfig /renew: Đã xin cấp lại địa chỉ IP từ DHCP."
+
             return @{
                 Success       = $true
-                StatusText    = "Đã reset Winsock, TCP/IP stack và làm sạch DNS Cache."
+                StatusText    = "Đã reset Winsock, TCP/IP stack, làm sạch DNS Cache và cấp lại IP (renew)."
                 OutputDetails = ($logLines -join "`r`n")
                 NeedsReboot   = $true
             }
@@ -504,9 +507,18 @@ function Invoke-VUONGTTRoutineFilePermission {
         "Diagnosis" {
             $logLines += "Kiểm tra quyền truy cập đường dẫn: $targetPath"
             $canAccess = Test-Path $targetPath -ErrorAction SilentlyContinue
+            if (-not $canAccess) {
+                $logLines += "[LỖI] Đường dẫn '$targetPath' không tồn tại hoặc bị từ chối truy cập."
+                return @{
+                    Success       = $false
+                    StatusText    = "Đường dẫn '$targetPath' không tồn tại hoặc bị từ chối truy cập."
+                    OutputDetails = ($logLines -join "`r`n")
+                    NeedsReboot   = $false
+                }
+            }
             return @{
                 Success       = $true
-                StatusText    = "Đường dẫn $(if ($canAccess) { 'hợp lệ và có thể truy cập' } else { 'bị từ chối truy cập hoặc không tồn tại' })."
+                StatusText    = "Đường dẫn '$targetPath' hợp lệ và có thể truy cập."
                 OutputDetails = ($logLines -join "`r`n")
                 NeedsReboot   = $false
             }
@@ -514,15 +526,23 @@ function Invoke-VUONGTTRoutineFilePermission {
 
         "Fix" {
             $logLines += "=== KHÔI PHỤC QUYỀN SỞ HỮU & CẤP QUYỀN (TAKEOWN & ICACLS) ==="
-            if (Test-Path $targetPath) {
-                Start-Process "takeown.exe" -ArgumentList "/f `"$targetPath`" /r /d y" -Wait -NoNewWindow -ErrorAction SilentlyContinue
-                Start-Process "icacls.exe" -ArgumentList "`"$targetPath`" /grant administrators:F /t /c /q" -Wait -NoNewWindow -ErrorAction SilentlyContinue
-                $logLines += "[OK] Đã take ownership và cấp quyền Administrators:F trên $targetPath."
+            if (-not (Test-Path $targetPath)) {
+                $logLines += "[LỖI] Đường dẫn '$targetPath' không tồn tại trên hệ thống."
+                return @{
+                    Success       = $false
+                    StatusText    = "Không thể sửa quyền: Đường dẫn '$targetPath' không tồn tại."
+                    OutputDetails = ($logLines -join "`r`n")
+                    NeedsReboot   = $false
+                }
             }
+
+            Start-Process "takeown.exe" -ArgumentList "/f `"$targetPath`" /r /d y" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+            Start-Process "icacls.exe" -ArgumentList "`"$targetPath`" /grant administrators:F /t /c /q" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+            $logLines += "[OK] Đã take ownership và cấp quyền Administrators:F trên $targetPath."
 
             return @{
                 Success       = $true
-                StatusText    = "Đã khôi phục quyền sở hữu và cấp Full Control thành công."
+                StatusText    = "Đã khôi phục quyền sở hữu và cấp Full Control thành công cho '$targetPath'."
                 OutputDetails = ($logLines -join "`r`n")
                 NeedsReboot   = $false
             }
@@ -532,8 +552,8 @@ function Invoke-VUONGTTRoutineFilePermission {
             $accessOk = Test-Path $targetPath -ErrorAction SilentlyContinue
             return @{
                 Success       = $accessOk
-                StatusText    = if ($accessOk) { "Xác nhận truy cập bình thường." } else { "Vẫn chưa thể truy cập thư mục." }
-                OutputDetails = "Quyền truy cập đối với $($targetPath): $(if ($accessOk) { 'OK' } else { 'Denied' })"
+                StatusText    = if ($accessOk) { "Xác nhận truy cập bình thường: '$targetPath'." } else { "Đường dẫn '$targetPath' không tồn tại hoặc chưa thể truy cập." }
+                OutputDetails = "Quyền truy cập đối với $($targetPath): $(if ($accessOk) { 'OK' } else { 'Denied/Missing' })"
                 NeedsReboot   = $false
             }
         }
@@ -621,33 +641,33 @@ function Invoke-VUONGTTTroubleshootAction {
     }
 
     # 2. Định tuyến các kịch bản ưu tiên cao chuyên biệt
-    if ($ProblemId -eq "PERF-011" -or $ProblemId -eq "PERF-014" -or $prob.ErrorCode -eq "DISK_100_HIGH_IO") {
+    if ($ProblemId -in @("PERF-011", "PERF-014") -or $prob.ErrorCode -eq "DISK_100_HIGH_IO") {
         $res = Invoke-VUONGTTRoutineDisk100 -ActionType $ActionType -Problem $prob -Parameters $Parameters
         Write-VUONGTTTroubleshootLog "Hoàn tất RoutineDisk100 [$ActionType]: Success=$($res.Success)" "INFO"
         return $res
     }
 
-    if ($ProblemId -like "UPDATE-*" -or $prob.Category -like "*Windows Update*" -or $prob.ErrorCode -like "*0x8007*") {
+    if ($ProblemId -like "UPDATE-*" -or $prob.Category -like "*Windows Update*" -or $prob.SubCategory -like "*Windows Update*") {
         $res = Invoke-VUONGTTRoutineWindowsUpdate -ActionType $ActionType -Problem $prob -Parameters $Parameters
         Write-VUONGTTTroubleshootLog "Hoàn tất RoutineWindowsUpdate [$ActionType]: Success=$($res.Success)" "INFO"
         return $res
     }
 
-    if ($ProblemId -in @("NET-001", "NET-024", "NET-025") -or $prob.Category -like "*Network*" -or $prob.ErrorCode -like "*NET_*") {
-        $res = Invoke-VUONGTTRoutineNetworkStack -ActionType $ActionType -Problem $prob -Parameters $Parameters
-        Write-VUONGTTTroubleshootLog "Hoàn tất RoutineNetworkStack [$ActionType]: Success=$($res.Success)" "INFO"
+    if ($ProblemId -in @("PERM-001", "FILE-007") -or $prob.ErrorCode -like "*ACCESS_DENIED*" -or $prob.SubCategory -like "*Permission*") {
+        $res = Invoke-VUONGTTRoutineFilePermission -ActionType $ActionType -Problem $prob -Parameters $Parameters
+        Write-VUONGTTTroubleshootLog "Hoàn tất RoutineFilePermission [$ActionType]: Success=$($res.Success)" "INFO"
         return $res
     }
 
-    if ($ProblemId -like "PRINT-*" -or $prob.Category -like "*Printer*" -or $prob.ErrorCode -like "*PRINTER_*") {
+    if ($ProblemId -in @("PRINT-001", "PRINT-004", "PRINT-005") -or $prob.ErrorCode -like "*SPOOLER*" -or $prob.SubCategory -like "*Print Spooler*") {
         $res = Invoke-VUONGTTRoutinePrintSpooler -ActionType $ActionType -Problem $prob -Parameters $Parameters
         Write-VUONGTTTroubleshootLog "Hoàn tất RoutinePrintSpooler [$ActionType]: Success=$($res.Success)" "INFO"
         return $res
     }
 
-    if ($ProblemId -in @("PERM-001", "FILE-007") -or $prob.ErrorCode -like "*ACCESS_DENIED*") {
-        $res = Invoke-VUONGTTRoutineFilePermission -ActionType $ActionType -Problem $prob -Parameters $Parameters
-        Write-VUONGTTTroubleshootLog "Hoàn tất RoutineFilePermission [$ActionType]: Success=$($res.Success)" "INFO"
+    if ($ProblemId -in @("NET-001", "NET-024", "NET-025") -or $prob.ErrorCode -in @("NET_TCP_IP_CORRUPTED", "NET_WINSOCK_CATALOG_CORRUPT") -or $prob.SubCategory -like "*TCP/IP, Winsock*") {
+        $res = Invoke-VUONGTTRoutineNetworkStack -ActionType $ActionType -Problem $prob -Parameters $Parameters
+        Write-VUONGTTTroubleshootLog "Hoàn tất RoutineNetworkStack [$ActionType]: Success=$($res.Success)" "INFO"
         return $res
     }
 

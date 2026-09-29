@@ -84,5 +84,43 @@ if (-not $printDiag -or -not $printDiag.ContainsKey("Success")) {
     exit 1
 }
 
+# 10. Kiem tra dinh tuyen chinh xac cho PERM-001 (Khong bi hijack boi Print Spooler)
+$permDiag = Invoke-VUONGTTTroubleshootAction -ProblemId "PERM-001" -ActionType "Diagnosis"
+if (-not $permDiag -or -not $permDiag.Success) {
+    Write-Error "Chan doan PERM-001 that bai!"
+    exit 1
+}
+if ($permDiag.OutputDetails -like "*Spooler*" -or $permDiag.StatusText -like "*Spooler*") {
+    Write-Error "Loi nghiem trong: PERM-001 bi dinh tuyen nham sang Print Spooler routine!"
+    exit 1
+}
+if ($permDiag.OutputDetails -notlike "*truy c*p*") {
+    Write-Error "PERM-001 khong goi dung RoutineFilePermission!"
+    exit 1
+}
+
+# 11. Kiem tra RoutineFilePermission bao loi khi thu muc khong ton tai
+$invalidPath = "C:\NonExistent_VUONGTT_Folder_XYZ_12345"
+$permFixFail = Invoke-VUONGTTTroubleshootAction -ProblemId "PERM-001" -ActionType "Fix" -Parameters @{ Path = $invalidPath }
+if ($permFixFail.Success -ne $false) {
+    Write-Error "RoutineFilePermission phai tra ve Success = `$false khi path khong ton tai!"
+    exit 1
+}
+if ($permFixFail.StatusText -notlike "*$invalidPath*" -or $permFixFail.StatusText -notlike "*kh*ng t*n t*i*") {
+    Write-Error "RoutineFilePermission khong bao loi ro rang khi path khong ton tai!"
+    exit 1
+}
+
+# 12. Kiem tra NetworkStack Fix chua ipconfig /renew
+$netFix = Invoke-VUONGTTTroubleshootAction -ProblemId "NET-001" -ActionType "Fix"
+if (-not $netFix -or -not $netFix.Success) {
+    Write-Error "Thuc thi Fix NET-001 that bai!"
+    exit 1
+}
+if ($netFix.OutputDetails -notlike "*ipconfig /renew*") {
+    Write-Error "NetworkStack Fix chua chua lenh ipconfig /renew!"
+    exit 1
+}
+
 Write-Host "[PASS] TroubleshootManager.ps1 hoat dong chinh xac va day du nghiep vu!"
 exit 0
