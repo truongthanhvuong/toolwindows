@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "Id":  "SysInfo",
         "Name":  "Xem Cấu Hình Máy Tính",
@@ -115,7 +115,7 @@
         "Id":  "BitLocker",
         "Name":  "Tắt BitLocker \u0026 EFS",
         "Icon":  "🔒",
-        "Tier":  "PRO",
+        "Tier":  "FREE",
         "Description":  "Mở khóa và giải mã phân vùng ổ đĩa an toàn"
     },
     {
