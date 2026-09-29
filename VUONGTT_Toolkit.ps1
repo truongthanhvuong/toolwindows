@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.56
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.57
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -2007,218 +2007,625 @@ $btnOfficeViewLog.Add_Click({
 # =========================================================================
 $txtPrinterSearch        = Get-Control "txtPrinterSearch"
 $btnPasteError           = Get-Control "btnPasteError"
-$btnAutoFixMatched       = Get-Control "btnAutoFixMatched"
-$btnAutoFixAllPrinters   = Get-Control "btnAutoFixAllPrinters"
-$txtPrinterMatchHint     = Get-Control "txtPrinterMatchHint"
-$panelPrinterButtons     = Get-Control "panelPrinterButtons"
-$txtPrinterLog           = Get-Control "txtPrinterLog"
-$btnClearPrinterLog      = Get-Control "btnClearPrinterLog"
+# =========================================================================
+# MODULE 5: FIX MÁY IN - SHARE LAN TOÀN DIỆN (4 SUB-TABS & MODAL 0x7C)
+# =========================================================================
+$txtPrinterLog                 = Get-Control "txtPrinterLog"
+$btnClearPrinterLog            = Get-Control "btnClearPrinterLog"
 
-$btnFixRpc6ba            = Get-Control "btnFixRpc6ba"
-$btnFix11b               = Get-Control "btnFix11b"
-$btnFix709               = Get-Control "btnFix709"
-$btnFix7c                = Get-Control "btnFix7c"
-$btnFix02                = Get-Control "btnFix02"
-$btnFix40                = Get-Control "btnFix40"
-$btnFix3e8               = Get-Control "btnFix3e8"
-$btnFixBcb               = Get-Control "btnFixBcb"
-$btnRestartSpooler       = Get-Control "btnRestartSpooler"
-$btnClearPrintQueue      = Get-Control "btnClearPrintQueue"
-$btnFixSnmpOffline       = Get-Control "btnFixSnmpOffline"
-$btnFixLanShare          = Get-Control "btnFixLanShare"
-$btnBackupPrinterDriver  = Get-Control "btnBackupPrinterDriver"
-$btnOpenDevMgmt2         = Get-Control "btnOpenDevMgmt2"
-$btnOpenPrintMgmt2       = Get-Control "btnOpenPrintMgmt2"
+# Sub-tab Navigation Buttons & Panels
+$tabPrinterLAN_Fix             = Get-Control "tabPrinterLAN_Fix"
+$tabPrinterLAN_Credentials     = Get-Control "tabPrinterLAN_Credentials"
+$tabPrinterLAN_ShareUser       = Get-Control "tabPrinterLAN_ShareUser"
+$tabPrinterLAN_ShareData       = Get-Control "tabPrinterLAN_ShareData"
 
-$printerActionsMap = @(
-    @{ Ctl=$btnFixRpc6ba;           Action="0x6ba";           DefaultColor="#475569"; Keywords=@("0x0000006ba", "6ba", "rpc", "unavailable", "rpc server") },
-    @{ Ctl=$btnFix11b;              Action="0x11b";           DefaultColor="#0284C7"; Keywords=@("0x0000011b", "11b", "rpcauthn", "chia se", "lan") },
-    @{ Ctl=$btnFix709;              Action="0x709";           DefaultColor="#059669"; Keywords=@("0x00000709", "709", "point", "default printer") },
-    @{ Ctl=$btnFix7c;               Action="0x7c";            DefaultColor="#B45309"; Keywords=@("0x0000007c", "7c", "policy", "buffer") },
-    @{ Ctl=$btnFix02;               Action="0x02";            DefaultColor="#475569"; Keywords=@("0x00000002", "file not found", "driver", "02") },
-    @{ Ctl=$btnFix40;               Action="0x40";            DefaultColor="#475569"; Keywords=@("0x00000040", "40", "network name", "smb") },
-    @{ Ctl=$btnFix3e8;              Action="0x3e8";           DefaultColor="#475569"; Keywords=@("0x000003e8", "3e8", "port", "cong in") },
-    @{ Ctl=$btnFixBcb;              Action="0xbcb";           DefaultColor="#475569"; Keywords=@("0x00000bcb", "bcb", "policy") },
-    @{ Ctl=$btnRestartSpooler;      Action="restart_spooler"; DefaultColor="#059669"; Keywords=@("spooler", "khoi dong lai", "restart") },
-    @{ Ctl=$btnClearPrintQueue;     Action="clear_queue";     DefaultColor="#D97706"; Keywords=@("ket lenh", "queue", "xoa lenh", "clear") },
-    @{ Ctl=$btnFixSnmpOffline;      Action="snmp_offline";    DefaultColor="#7C3AED"; Keywords=@("offline", "snmp", "ngoai tuyen") },
-    @{ Ctl=$btnFixLanShare;         Action="lan_share";       DefaultColor="#0284C7"; Keywords=@("chia se", "share", "lan", "smb", "guest") },
-    @{ Ctl=$btnBackupPrinterDriver; Action="backup_driver";   DefaultColor="#475569"; Keywords=@("backup", "sao luu", "driver") },
-    @{ Ctl=$btnOpenDevMgmt2;        Action="open_devmgmt";    DefaultColor="#475569"; Keywords=@("device", "thiet bi", "manager") },
-    @{ Ctl=$btnOpenPrintMgmt2;      Action="open_printmgmt";  DefaultColor="#475569"; Keywords=@("print management", "quan ly in") }
-)
+$pnlSubPrinterLAN_Fix          = Get-Control "pnlSubPrinterLAN_Fix"
+$pnlSubPrinterLAN_Credentials  = Get-Control "pnlSubPrinterLAN_Credentials"
+$pnlSubPrinterLAN_ShareUser    = Get-Control "pnlSubPrinterLAN_ShareUser"
+$pnlSubPrinterLAN_ShareData    = Get-Control "pnlSubPrinterLAN_ShareData"
 
-# Active Button Highlight Function (Chỉ hiệu ứng ô được chọn, các ô khác làm mờ trung tính)
-function Set-ActivePrinterButton {
-    param($activeCtl)
+# Sub-tab 1: Controls
+$dgPrinterList                 = Get-Control "dgPrinterList"
+$btnPrinterRefreshList         = Get-Control "btnPrinterRefreshList"
+$btnPrinterTestPrint           = Get-Control "btnPrinterTestPrint"
+$btnPrinterSetDefault          = Get-Control "btnPrinterSetDefault"
+$btnPrinterAddLocalPort        = Get-Control "btnPrinterAddLocalPort"
+$btnPrinterShareLan            = Get-Control "btnPrinterShareLan"
+$btnPrinterRemoveSelected      = Get-Control "btnPrinterRemoveSelected"
+
+$chkErr0x7c                    = Get-Control "chkErr0x7c"
+$chkErr0xbc4                   = Get-Control "chkErr0xbc4"
+$chkErr0x4005                  = Get-Control "chkErr0x4005"
+$chkErr0x11b                   = Get-Control "chkErr0x11b"
+$chkErr0xbcb                   = Get-Control "chkErr0xbcb"
+$chkErr0x6d9                   = Get-Control "chkErr0x6d9"
+$chkErr0x709                   = Get-Control "chkErr0x709"
+$chkErr0x012                   = Get-Control "chkErr0x012"
+$chkErrPolicyInEffect          = Get-Control "chkErrPolicyInEffect"
+$btnFixSelectedErrors          = Get-Control "btnFixSelectedErrors"
+
+$btnFixSpoolerServices         = Get-Control "btnFixSpoolerServices"
+$btnInstallPrintToPdf          = Get-Control "btnInstallPrintToPdf"
+$btnFixCommError2900           = Get-Control "btnFixCommError2900"
+$btnFixDefault709              = Get-Control "btnFixDefault709"
+$btnBackupRestorePrinterDriver = Get-Control "btnBackupRestorePrinterDriver"
+$btnOneClickFixAllLAN          = Get-Control "btnOneClickFixAllLAN"
+$btnDownloadSpoolerFix         = Get-Control "btnDownloadSpoolerFix"
+$btnResetCanonColor            = Get-Control "btnResetCanonColor"
+$btnFixCannotInstallDriver     = Get-Control "btnFixCannotInstallDriver"
+
+# Modal 0x0000007c
+$modal0x7c                     = Get-Control "modal0x7c"
+$btnCloseModal0x7c             = Get-Control "btnCloseModal0x7c"
+$btnDismissModal0x7c           = Get-Control "btnDismissModal0x7c"
+$btnExecuteFix0x7c             = Get-Control "btnExecuteFix0x7c"
+$rbWin10_2004_Plus             = Get-Control "rbWin10_2004_Plus"
+$rbWin10_1909                  = Get-Control "rbWin10_1909"
+$rbWin10_1809                  = Get-Control "rbWin10_1809"
+$txtModal0x7cStatus            = Get-Control "txtModal0x7cStatus"
+
+# Sub-tab 2: Controls
+$txtCredTarget                 = Get-Control "txtCredTarget"
+$txtCredUser                   = Get-Control "txtCredUser"
+$txtCredPass                   = Get-Control "txtCredPass"
+$btnSaveCredential             = Get-Control "btnSaveCredential"
+$btnRefreshCredentials         = Get-Control "btnRefreshCredentials"
+$dgCredentialsList             = Get-Control "dgCredentialsList"
+$btnDeleteCredential           = Get-Control "btnDeleteCredential"
+$btnTestTargetConnection       = Get-Control "btnTestTargetConnection"
+$btnOpenCredMgr                = Get-Control "btnOpenCredMgr"
+
+# Sub-tab 3: Controls
+$txtShareUser_Name             = Get-Control "txtShareUser_Name"
+$txtShareUser_FullName         = Get-Control "txtShareUser_FullName"
+$txtShareUser_Pass             = Get-Control "txtShareUser_Pass"
+$txtShareUser_ConfirmPass      = Get-Control "txtShareUser_ConfirmPass"
+$chkShareUser_NeverExpires     = Get-Control "chkShareUser_NeverExpires"
+$btnCreateShareUser            = Get-Control "btnCreateShareUser"
+$btnRefreshUsersList           = Get-Control "btnRefreshUsersList"
+$dgUsersList                   = Get-Control "dgUsersList"
+$btnToggleUserActive           = Get-Control "btnToggleUserActive"
+$btnChangeUserPasswordQuick    = Get-Control "btnChangeUserPasswordQuick"
+$btnSetUserNeverExpires        = Get-Control "btnSetUserNeverExpires"
+$btnToggleUserAdminRole        = Get-Control "btnToggleUserAdminRole"
+$btnOpenLusrmgr                = Get-Control "btnOpenLusrmgr"
+$btnDeleteSelectedUser         = Get-Control "btnDeleteSelectedUser"
+
+# Sub-tab 4: Controls
+$btnFixNetworkDiscovery        = Get-Control "btnFixNetworkDiscovery"
+$btnFixGuestInsecure           = Get-Control "btnFixGuestInsecure"
+$btnFixPrivateNetwork          = Get-Control "btnFixPrivateNetwork"
+$btnFixEnableSmb               = Get-Control "btnFixEnableSmb"
+$btnFixFlushNetUse             = Get-Control "btnFixFlushNetUse"
+$btnOpenAdvancedSharingSettings= Get-Control "btnOpenAdvancedSharingSettings"
+
+# Legacy Controls Fallback
+$txtPrinterSearch              = Get-Control "txtPrinterSearch"
+$btnPasteError                 = Get-Control "btnPasteError"
+$btnAutoFixMatched             = Get-Control "btnAutoFixMatched"
+$btnAutoFixAllPrinters         = Get-Control "btnAutoFixAllPrinters"
+$txtPrinterMatchHint           = Get-Control "txtPrinterMatchHint"
+$panelPrinterButtons           = Get-Control "panelPrinterButtons"
+
+# Helper: Append to Printer Log
+function Add-PrinterLogMessage {
+    param([string]$Message)
+    if ($txtPrinterLog) {
+        $txtPrinterLog.Text = "$Message`n`n$($txtPrinterLog.Text)"
+    }
+}
+
+# --- SUB-TAB SWITCHING LOGIC ---
+function Switch-PrinterLANSubTab {
+    param([string]$targetTab)
     $bc = [System.Windows.Media.BrushConverter]::new()
-    foreach ($item in $printerActionsMap) {
-        if (-not $item.Ctl) { continue }
-        if ($item.Ctl -eq $activeCtl) {
-            # Selected button: Highlight Red (#DC2626) with full opacity and amber highlight border
-            $item.Ctl.Background = $bc.ConvertFromString("#DC2626")
-            $item.Ctl.Foreground = [System.Windows.Media.Brushes]::White
-            $item.Ctl.Opacity = 1.0
-            $item.Ctl.BorderBrush = $bc.ConvertFromString("#F59E0B")
-            $item.Ctl.BorderThickness = [System.Windows.Thickness]::new(2.5)
-        } else {
-            # Unselected buttons: Muted dark slate (#334155), no active border, lowered opacity
-            $item.Ctl.Background = $bc.ConvertFromString("#334155")
-            $item.Ctl.Foreground = [System.Windows.Media.Brushes]::White
-            $item.Ctl.Opacity = 0.55
-            $item.Ctl.BorderBrush = $bc.ConvertFromString("#475569")
-            $item.Ctl.BorderThickness = [System.Windows.Thickness]::new(1)
+    $activeBg = $bc.ConvertFromString("#0284C7")
+    $transBg = [System.Windows.Media.Brushes]::Transparent
+    $whiteFg = [System.Windows.Media.Brushes]::White
+
+    $tabs = @($tabPrinterLAN_Fix, $tabPrinterLAN_Credentials, $tabPrinterLAN_ShareUser, $tabPrinterLAN_ShareData)
+    $panels = @($pnlSubPrinterLAN_Fix, $pnlSubPrinterLAN_Credentials, $pnlSubPrinterLAN_ShareUser, $pnlSubPrinterLAN_ShareData)
+
+    foreach ($t in $tabs) {
+        if ($t) {
+            $t.Background = $transBg
+            try { $t.Foreground = $t.FindResource("TextPrimaryBrush") } catch {}
+        }
+    }
+    foreach ($p in $panels) {
+        if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed }
+    }
+
+    switch ($targetTab) {
+        "fix" {
+            if ($tabPrinterLAN_Fix) { $tabPrinterLAN_Fix.Background = $activeBg; $tabPrinterLAN_Fix.Foreground = $whiteFg }
+            if ($pnlSubPrinterLAN_Fix) { $pnlSubPrinterLAN_Fix.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-PrinterDataGrid
+        }
+        "credentials" {
+            if ($tabPrinterLAN_Credentials) { $tabPrinterLAN_Credentials.Background = $activeBg; $tabPrinterLAN_Credentials.Foreground = $whiteFg }
+            if ($pnlSubPrinterLAN_Credentials) { $pnlSubPrinterLAN_Credentials.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-CredentialsDataGrid
+        }
+        "shareuser" {
+            if ($tabPrinterLAN_ShareUser) { $tabPrinterLAN_ShareUser.Background = $activeBg; $tabPrinterLAN_ShareUser.Foreground = $whiteFg }
+            if ($pnlSubPrinterLAN_ShareUser) { $pnlSubPrinterLAN_ShareUser.Visibility = [System.Windows.Visibility]::Visible }
+            Refresh-UsersDataGrid
+        }
+        "sharedata" {
+            if ($tabPrinterLAN_ShareData) { $tabPrinterLAN_ShareData.Background = $activeBg; $tabPrinterLAN_ShareData.Foreground = $whiteFg }
+            if ($pnlSubPrinterLAN_ShareData) { $pnlSubPrinterLAN_ShareData.Visibility = [System.Windows.Visibility]::Visible }
         }
     }
 }
 
-# Connect clicks - Use sender.Tag to avoid PowerShell loop closure leak
-foreach ($item in $printerActionsMap) {
-    if ($item.Ctl) {
-        $item.Ctl.Tag = $item.Action
-        $item.Ctl.Add_Click({
-            param($sender, $e)
-            $actId = $sender.Tag
-            if ([string]::IsNullOrEmpty($actId)) { return }
-            # Visual feedback: Highlight clicked button immediately
-            Set-ActivePrinterButton -activeCtl $sender
-            $txtFooterStatus.Text = "• [Đang xử lý] Tự động sửa lỗi máy in: $actId (Auto Yes)..."
-            $log = Invoke-PrinterFixAction -ActionId $actId
-            $txtPrinterLog.Text = "$log`n`n$($txtPrinterLog.Text)"
-            $txtFooterStatus.Text = "• [OK] Đã hoàn tất sửa lỗi máy in: $actId"
-        })
-    }
+if ($tabPrinterLAN_Fix)         { $tabPrinterLAN_Fix.Add_Click({ Switch-PrinterLANSubTab "fix" }) }
+if ($tabPrinterLAN_Credentials) { $tabPrinterLAN_Credentials.Add_Click({ Switch-PrinterLANSubTab "credentials" }) }
+if ($tabPrinterLAN_ShareUser)   { $tabPrinterLAN_ShareUser.Add_Click({ Switch-PrinterLANSubTab "shareuser" }) }
+if ($tabPrinterLAN_ShareData)   { $tabPrinterLAN_ShareData.Add_Click({ Switch-PrinterLANSubTab "sharedata" }) }
+
+# --- SUB-TAB 1: REFRESH & PRINTER ACTIONS ---
+function Refresh-PrinterDataGrid {
+    if (-not $dgPrinterList) { return }
+    try {
+        $list = Get-VUONGTTPrinterList
+        $dgPrinterList.ItemsSource = $list
+    } catch {}
 }
 
-# 1-Click Master Auto Fix: Fix all common printer & LAN issues automatically
-if ($btnAutoFixAllPrinters) {
-    $btnAutoFixAllPrinters.Add_Click({
-        $txtFooterStatus.Text = "• [Đang xử lý] Đang tự động sửa toàn diện lỗi Máy In & Mạng LAN (Auto Yes)..."
-        $log = Invoke-PrinterFixAction -ActionId "fix_all"
-        $txtPrinterLog.Text = "$log`n`n$($txtPrinterLog.Text)"
-        $txtFooterStatus.Text = "• [OK] Đã hoàn tất 1-Click tự động sửa toàn bộ lỗi máy in & LAN!"
+if ($btnPrinterRefreshList) {
+    $btnPrinterRefreshList.Add_Click({
+        Refresh-PrinterDataGrid
+        Add-PrinterLogMessage "• [Quét Máy In] Đã làm mới danh sách máy in trên hệ thống."
     })
 }
 
-# Dynamic Filter Function for Printer Errors
-function Filter-PrinterButtons {
-    $q = $txtPrinterSearch.Text.Trim().ToLower()
-    $matchCount = 0
-    $bc = [System.Windows.Media.BrushConverter]::new()
-
-    foreach ($item in $printerActionsMap) {
-        if (-not $item.Ctl) { continue }
-        if ([string]::IsNullOrEmpty($q)) {
-            $item.Ctl.Opacity = 1.0
-            $item.Ctl.IsEnabled = $true
-            $defCol = if ($item.DefaultColor) { $item.DefaultColor } else { "#475569" }
-            $item.Ctl.Background = $bc.ConvertFromString($defCol)
-            $item.Ctl.Foreground = [System.Windows.Media.Brushes]::White
-            $matchCount++
-        } else {
-            $isMatch = $false
-            foreach ($kw in $item.Keywords) {
-                if ($kw.ToLower() -like "*$q*" -or $q -like "*$kw*") {
-                    $isMatch = $true
-                    break
-                }
-            }
-            if ($item.Ctl.Content.ToString().ToLower() -like "*$q*") {
-                $isMatch = $true
-            }
-
-            if ($isMatch) {
-                $item.Ctl.Opacity = 1.0
-                $item.Ctl.Background = $bc.ConvertFromString("#DC2626")
-                $item.Ctl.Foreground = [System.Windows.Media.Brushes]::White
-                $matchCount++
-            } else {
-                $item.Ctl.Opacity = 0.35
-                $item.Ctl.Background = $bc.ConvertFromString("#475569")
-                $item.Ctl.Foreground = [System.Windows.Media.Brushes]::White
-            }
-        }
+function Get-SelectedPrinterName {
+    if ($dgPrinterList -and $dgPrinterList.SelectedItem) {
+        return $dgPrinterList.SelectedItem.Name
     }
-    if ([string]::IsNullOrEmpty($q)) {
-        $txtPrinterMatchHint.Text = "Sẵn sàng: Bấm trực tiếp vào mã lỗi bên dưới để tự động sửa ngay lập tức (Auto Yes không cần hỏi)."
-    } else {
-        $txtPrinterMatchHint.Text = "Tìm thấy $matchCount nút khớp với '$q' — bấm nút hoặc bấm '⚡ Tự Động Fix Lỗi Khớp' để sửa ngay."
-    }
+    return ""
 }
 
-$txtPrinterSearch.Add_TextChanged({ Filter-PrinterButtons })
-$txtPrinterSearch.Add_KeyDown({
-    if ($_.Key -eq [System.Windows.Input.Key]::Enter) {
-        if ($btnAutoFixMatched) {
-            $btnAutoFixMatched.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
-            $_.Handled = $true
+if ($btnPrinterTestPrint) {
+    $btnPrinterTestPrint.Add_Click({
+        $prn = Get-SelectedPrinterName
+        if (-not $prn) {
+            Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn một máy in trong bảng trước khi bấm In Trang Test."
+            return
         }
-    }
-})
+        $log = Invoke-VUONGTTPrinterAction -Action "test_print" -PrinterName $prn
+        Add-PrinterLogMessage $log
+    })
+}
 
-# Auto Fix Matched Error Button
-if ($btnAutoFixMatched) {
-    $btnAutoFixMatched.Add_Click({
-        $q = $txtPrinterSearch.Text.Trim()
-        $matchedActions = @()
-        foreach ($item in $printerActionsMap) {
-            if (-not $item.Ctl) { continue }
-            if ($item.Ctl.Opacity -eq 1.0 -and $item.Action -notlike "open_*") {
-                $matchedActions += $item
-            }
+if ($btnPrinterSetDefault) {
+    $btnPrinterSetDefault.Add_Click({
+        $prn = Get-SelectedPrinterName
+        if (-not $prn) {
+            Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn một máy in trong bảng để đặt làm mặc định."
+            return
         }
+        $log = Invoke-VUONGTTPrinterAction -Action "set_default" -PrinterName $prn
+        Add-PrinterLogMessage $log
+        Refresh-PrinterDataGrid
+    })
+}
 
-        if ($matchedActions.Count -eq 0) {
-            foreach ($item in $printerActionsMap) {
-                if ($item.Action -notlike "open_*") {
-                    foreach ($kw in $item.Keywords) {
-                        if ($kw.ToLower() -like "*$($q.ToLower())*" -or $q.ToLower() -like "*$($kw.ToLower())*") {
-                            $matchedActions += $item
-                            break
-                        }
-                    }
-                }
-            }
+if ($btnPrinterAddLocalPort) {
+    $btnPrinterAddLocalPort.Add_Click({
+        $log = Invoke-VUONGTTPrinterAction -Action "add_local_port"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnPrinterShareLan) {
+    $btnPrinterShareLan.Add_Click({
+        $prn = Get-SelectedPrinterName
+        if (-not $prn) {
+            Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn máy in để chia sẻ qua mạng LAN."
+            return
         }
+        $log = Invoke-VUONGTTPrinterAction -Action "share_printer" -PrinterName $prn
+        Add-PrinterLogMessage $log
+        Refresh-PrinterDataGrid
+    })
+}
 
-        if ($matchedActions.Count -eq 0) {
-            $txtPrinterLog.Text = "[CHÚ Ý] Không tìm thấy mã lỗi khớp riêng lẻ cho '$q'. Đang tự động chạy bộ sửa lỗi toàn diện...`n`n$($txtPrinterLog.Text)"
-            $log = Invoke-PrinterFixAction -ActionId "fix_all"
-            $txtPrinterLog.Text = "$log`n`n$($txtPrinterLog.Text)"
-            $txtFooterStatus.Text = "• [OK] Đã hoàn tất sửa lỗi toàn diện!"
+if ($btnPrinterRemoveSelected) {
+    $btnPrinterRemoveSelected.Add_Click({
+        $prn = Get-SelectedPrinterName
+        if (-not $prn) {
+            Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn máy in để gỡ bỏ."
+            return
+        }
+        $log = Invoke-VUONGTTPrinterAction -Action "remove_printer" -PrinterName $prn
+        Add-PrinterLogMessage $log
+        Refresh-PrinterDataGrid
+    })
+}
+
+# --- SUB-TAB 1: BATCH ERROR FIXING ---
+if ($btnFixSelectedErrors) {
+    $btnFixSelectedErrors.Add_Click({
+        $codes = @()
+        if ($chkErr0x7c -and $chkErr0x7c.IsChecked) { $codes += "0x7c" }
+        if ($chkErr0xbc4 -and $chkErr0xbc4.IsChecked) { $codes += "0xbc4" }
+        if ($chkErr0x4005 -and $chkErr0x4005.IsChecked) { $codes += "0x4005" }
+        if ($chkErr0x11b -and $chkErr0x11b.IsChecked) { $codes += "0x11b" }
+        if ($chkErr0xbcb -and $chkErr0xbcb.IsChecked) { $codes += "0xbcb" }
+        if ($chkErr0x6d9 -and $chkErr0x6d9.IsChecked) { $codes += "0x6d9" }
+        if ($chkErr0x709 -and $chkErr0x709.IsChecked) { $codes += "0x709" }
+        if ($chkErr0x012 -and $chkErr0x012.IsChecked) { $codes += "0x012" }
+        if ($chkErrPolicyInEffect -and $chkErrPolicyInEffect.IsChecked) { $codes += "policy" }
+
+        if ($codes.Count -eq 0) {
+            Add-PrinterLogMessage "[CHÚ Ý] Hãy tích chọn ít nhất một mã lỗi ở bảng trên trước khi bấm sửa."
             return
         }
 
-        $allLogs = @()
-        $timestamp = (Get-Date).ToString("HH:mm:ss")
-        $allLogs += "[$timestamp] [BẮT ĐẦU TỰ ĐỘNG FIX $($matchedActions.Count) LỖI MÁY IN KHỚP (AUTO YES)]"
-        foreach ($m in $matchedActions) {
-            $txtFooterStatus.Text = "• [Đang xử lý] Đang tự động sửa: $($m.Action)..."
-            $res = Invoke-PrinterFixAction -ActionId $m.Action
-            $allLogs += $res
+        # Nếu có chọn 0x7c thì mở Modal chuyên dụng để xử lý triệt để
+        if ($codes -contains "0x7c") {
+            Open-Modal0x7c
         }
-        $allLogs += "[$timestamp] [HOÀN TẤT] Đã tự động sửa xong toàn bộ các lỗi phù hợp!"
-        $txtPrinterLog.Text = ($allLogs -join "`n`n") + "`n`n" + $txtPrinterLog.Text
-        $txtFooterStatus.Text = "• [OK] Đã tự động hoàn tất sửa các lỗi máy in được chọn!"
+
+        $log = Invoke-VUONGTTBatchErrorFix -ErrorCodes $codes
+        Add-PrinterLogMessage $log
     })
 }
 
-$btnPasteError.Add_Click({
-    try {
-        $clip = [System.Windows.Clipboard]::GetText()
-        if ($clip) {
-            $txtPrinterSearch.Text = $clip.Trim()
-            Filter-PrinterButtons
+# --- SUB-TAB 1: UTILITIES GRID ---
+if ($btnFixSpoolerServices) {
+    $btnFixSpoolerServices.Add_Click({
+        $log = Invoke-PrinterFixAction -ActionId "restart_spooler"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnInstallPrintToPdf) {
+    $btnInstallPrintToPdf.Add_Click({
+        $ts = (Get-Date).ToString("HH:mm:ss")
+        Add-PrinterLogMessage "[$ts] Đang bật tính năng Microsoft Print to PDF qua DISM..."
+        dism /Online /Enable-Feature /FeatureName:"Printing-PrintToPDFServices-Features" /NoRestart 2>&1 | Out-Null
+        Add-PrinterLogMessage "[$ts] [OK] Đã kích hoạt Microsoft Print to PDF thành công!"
+        Refresh-PrinterDataGrid
+    })
+}
+
+if ($btnFixCommError2900) {
+    $btnFixCommError2900.Add_Click({
+        $ts = (Get-Date).ToString("HH:mm:ss")
+        Add-PrinterLogMessage "[$ts] Đang sửa lỗi Communication Error Canon 2900 - 3000..."
+        Stop-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+        # Dọn USB Print spooling registry
+        $regUsb = "HKLM:\SYSTEM\CurrentControlSet\Control\Print\Printers"
+        if (Test-Path $regUsb) {
+            Get-ChildItem -Path $regUsb -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -like "*2900*" -or $_.PSChildName -like "*3000*" } | ForEach-Object {
+                Set-ItemProperty -Path $_.PSPath -Name "Attributes" -Value 0 -ErrorAction SilentlyContinue
+            }
         }
+        Start-Service -Name "Spooler" -ErrorAction SilentlyContinue
+        Add-PrinterLogMessage "[$ts] [OK] Đã cấu hình và reset cổng kết nối máy in Canon 2900 / 3000."
+    })
+}
+
+if ($btnFixDefault709) {
+    $btnFixDefault709.Add_Click({
+        $log = Invoke-PrinterFixAction -ActionId "0x709"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnBackupRestorePrinterDriver) {
+    $btnBackupRestorePrinterDriver.Add_Click({
+        $log = Invoke-PrinterFixAction -ActionId "backup_driver"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnOneClickFixAllLAN) {
+    $btnOneClickFixAllLAN.Add_Click({
+        $log = Invoke-PrinterFixAction -ActionId "fix_all"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnDownloadSpoolerFix) {
+    $btnDownloadSpoolerFix.Add_Click({
+        Start-Process "https://github.com/truongthanhvuong"
+        Add-PrinterLogMessage "• [OK] Đã mở liên kết tải gói Spooler Fix tương ứng hệ điều hành."
+    })
+}
+
+if ($btnResetCanonColor) {
+    $btnResetCanonColor.Add_Click({
+        $ts = (Get-Date).ToString("HH:mm:ss")
+        Add-PrinterLogMessage "[$ts] Đang dọn dẹp bộ nhớ đệm máy in Canon Màu..."
+        Stop-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+        $canonPath = "$env:WINDIR\System32\spool\drivers\x64\3"
+        if (Test-Path $canonPath) {
+            Get-ChildItem -Path "$canonPath\CNP*" -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+        }
+        Start-Service -Name "Spooler" -ErrorAction SilentlyContinue
+        Add-PrinterLogMessage "[$ts] [OK] Đã làm sạch cache Canon Màu và khởi động lại Spooler."
+    })
+}
+
+if ($btnFixCannotInstallDriver) {
+    $btnFixCannotInstallDriver.Add_Click({
+        $ts = (Get-Date).ToString("HH:mm:ss")
+        $pnp = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint"
+        if (-not (Test-Path $pnp)) { New-Item -Path $pnp -Force -ErrorAction SilentlyContinue | Out-Null }
+        Set-ItemProperty -Path $pnp -Name "RestrictDriverInstallationToAdministrators" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $pnp -Name "UpdatePromptSettings" -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+        Restart-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+        Add-PrinterLogMessage "[$ts] [OK] Đã mở khóa chính sách cài Driver cho máy trạm (RestrictDriverInstallationToAdministrators = 0)."
+    })
+}
+
+# --- MODAL 0x0000007c LOGIC ---
+function Open-Modal0x7c {
+    if (-not $modal0x7c) { return }
+    $build = [System.Environment]::OSVersion.Version.Build
+    if ($build -ge 19041) {
+        if ($rbWin10_2004_Plus) { $rbWin10_2004_Plus.IsChecked = $true }
+    } elseif ($build -eq 18363) {
+        if ($rbWin10_1909) { $rbWin10_1909.IsChecked = $true }
+    } else {
+        if ($rbWin10_1809) { $rbWin10_1809.IsChecked = $true }
+    }
+    if ($txtModal0x7cStatus) { $txtModal0x7cStatus.Text = "Hệ thống: Build $build. Sẵn sàng thực thi..." }
+    $modal0x7c.Visibility = [System.Windows.Visibility]::Visible
+}
+
+if ($btnCloseModal0x7c)   { $btnCloseModal0x7c.Add_Click({ $modal0x7c.Visibility = [System.Windows.Visibility]::Collapsed }) }
+if ($btnDismissModal0x7c) { $btnDismissModal0x7c.Add_Click({ $modal0x7c.Visibility = [System.Windows.Visibility]::Collapsed }) }
+
+if ($btnExecuteFix0x7c) {
+    $btnExecuteFix0x7c.Add_Click({
+        $ver = if ($rbWin10_1909 -and $rbWin10_1909.IsChecked) { "win10_1909" } elseif ($rbWin10_1809 -and $rbWin10_1809.IsChecked) { "win10_1809" } else { "win10_plus" }
+        if ($txtModal0x7cStatus) { $txtModal0x7cStatus.Text = "Đang áp dụng thay thế win32spl.dll và nạp Registry..." }
+        $log = Invoke-VUONGTTFix0x7c -TargetWinVersion $ver
+        Add-PrinterLogMessage $log
+        if ($txtModal0x7cStatus) { $txtModal0x7cStatus.Text = "[OK] Đã hoàn tất sửa lỗi 0x0000007c!" }
+    })
+}
+
+# --- SUB-TAB 2: CREDENTIALS MANAGEMENT ---
+function Refresh-CredentialsDataGrid {
+    if (-not $dgCredentialsList) { return }
+    try {
+        $creds = Get-VUONGTTCredentials
+        $dgCredentialsList.ItemsSource = $creds
     } catch {}
-})
+}
 
-$btnClearPrinterLog.Add_Click({
-    $txtPrinterLog.Text = "* Đã xóa nhật ký xử lý."
-})
+if ($btnRefreshCredentials) {
+    $btnRefreshCredentials.Add_Click({
+        Refresh-CredentialsDataGrid
+        Add-PrinterLogMessage "• [Credentials] Đã làm mới danh sách Windows Credentials."
+    })
+}
 
-# Initial filter
-Filter-PrinterButtons
+if ($btnSaveCredential) {
+    $btnSaveCredential.Add_Click({
+        $target = if ($txtCredTarget) { $txtCredTarget.Text.Trim() } else { "" }
+        $user   = if ($txtCredUser) { $txtCredUser.Text.Trim() } else { "" }
+        $pass   = if ($txtCredPass) { $txtCredPass.Password } else { "" }
+
+        if (-not $target -or -not $user) {
+            Add-PrinterLogMessage "[CHÚ Ý] Vui lòng nhập Target (IP/Máy chủ) và Username trước khi lưu."
+            return
+        }
+
+        $log = Add-VUONGTTCredential -Target $target -Username $user -Password $pass
+        Add-PrinterLogMessage $log
+        Refresh-CredentialsDataGrid
+        if ($txtCredTarget) { $txtCredTarget.Text = "" }
+        if ($txtCredUser)   { $txtCredUser.Text = "" }
+        if ($txtCredPass)   { $txtCredPass.Password = "" }
+    })
+}
+
+if ($btnDeleteCredential) {
+    $btnDeleteCredential.Add_Click({
+        if ($dgCredentialsList -and $dgCredentialsList.SelectedItem) {
+            $t = $dgCredentialsList.SelectedItem.Target
+            $log = Remove-VUONGTTCredential -Target $t
+            Add-PrinterLogMessage $log
+            Refresh-CredentialsDataGrid
+        } else {
+            Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn một Credential trong bảng để xóa."
+        }
+    })
+}
+
+if ($btnTestTargetConnection) {
+    $btnTestTargetConnection.Add_Click({
+        if ($dgCredentialsList -and $dgCredentialsList.SelectedItem) {
+            $t = $dgCredentialsList.SelectedItem.Target
+            $ts = (Get-Date).ToString("HH:mm:ss")
+            Add-PrinterLogMessage "[$ts] Đang kiểm tra kết nối SMB Port 445 tới: $t ..."
+            $test = Test-NetConnection -ComputerName $t -Port 445 -WarningAction SilentlyContinue
+            if ($test -and $test.TcpTestSucceeded) {
+                Add-PrinterLogMessage "[$ts] [OK] Kết nối SMB Port 445 tới '$t' THÀNH CÔNG! Máy trạm sẵn sàng in và share file."
+            } else {
+                Add-PrinterLogMessage "[$ts] [CẢNH BÁO] Không thể kết nối Port 445 tới '$t'. Hãy kiểm tra mạng hoặc tường lửa máy chủ."
+            }
+        } else {
+            Add-PrinterLogMessage "[CHÚ Ý] Hãy chọn một dòng trong danh sách Credentials để kiểm tra kết nối."
+        }
+    })
+}
+
+if ($btnOpenCredMgr) {
+    $btnOpenCredMgr.Add_Click({
+        Start-Process "control.exe" -ArgumentList "keymgr.dll"
+        Add-PrinterLogMessage "• [OK] Đã mở Credential Manager của Windows."
+    })
+}
+
+# --- SUB-TAB 3: USER MANAGEMENT & SHARE SETUP ---
+function Refresh-UsersDataGrid {
+    if (-not $dgUsersList) { return }
+    try {
+        $users = Get-VUONGTTLocalUsers
+        $dgUsersList.ItemsSource = $users
+    } catch {}
+}
+
+if ($btnRefreshUsersList) {
+    $btnRefreshUsersList.Add_Click({
+        Refresh-UsersDataGrid
+        Add-PrinterLogMessage "• [Users] Đã làm mới danh sách tài khoản Windows."
+    })
+}
+
+if ($btnCreateShareUser) {
+    $btnCreateShareUser.Add_Click({
+        $u = if ($txtShareUser_Name) { $txtShareUser_Name.Text.Trim() } else { "" }
+        $f = if ($txtShareUser_FullName) { $txtShareUser_FullName.Text.Trim() } else { "" }
+        $p1 = if ($txtShareUser_Pass) { $txtShareUser_Pass.Password } else { "" }
+        $p2 = if ($txtShareUser_ConfirmPass) { $txtShareUser_ConfirmPass.Password } else { "" }
+        $neverExp = if ($chkShareUser_NeverExpires) { [bool]$chkShareUser_NeverExpires.IsChecked } else { $true }
+
+        if (-not $u) {
+            Add-PrinterLogMessage "[CHÚ Ý] Tên tài khoản không được để trống."
+            return
+        }
+        if ($p1 -ne $p2) {
+            Add-PrinterLogMessage "[CHÚ Ý] Mật khẩu và Xác nhận mật khẩu không trùng khớp!"
+            return
+        }
+
+        $log = New-VUONGTTShareUser -Username $u -FullName $f -Password $p1 -PasswordNeverExpires $neverExp
+        Add-PrinterLogMessage $log
+        Refresh-UsersDataGrid
+        if ($txtShareUser_Name) { $txtShareUser_Name.Text = "" }
+        if ($txtShareUser_FullName) { $txtShareUser_FullName.Text = "" }
+        if ($txtShareUser_Pass) { $txtShareUser_Pass.Password = "" }
+        if ($txtShareUser_ConfirmPass) { $txtShareUser_ConfirmPass.Password = "" }
+    })
+}
+
+function Get-SelectedUserItem {
+    if ($dgUsersList -and $dgUsersList.SelectedItem) {
+        return $dgUsersList.SelectedItem
+    }
+    return $null
+}
+
+if ($btnToggleUserActive) {
+    $btnToggleUserActive.Add_Click({
+        $sel = Get-SelectedUserItem
+        if (-not $sel) { Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn một tài khoản trong bảng."; return }
+        $log = Set-VUONGTTUserProperty -Username $sel.Name -Property "toggle_active"
+        Add-PrinterLogMessage $log
+        Refresh-UsersDataGrid
+    })
+}
+
+if ($btnChangeUserPasswordQuick) {
+    $btnChangeUserPasswordQuick.Add_Click({
+        $sel = Get-SelectedUserItem
+        if (-not $sel) { Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn một tài khoản trong bảng."; return }
+        # Đổi mật khẩu mặc định nhanh thành 123456 hoặc prompt
+        $log = Set-VUONGTTUserProperty -Username $sel.Name -Property "change_password" -Value "123456"
+        Add-PrinterLogMessage "$log (Mật khẩu mới: 123456)"
+        Refresh-UsersDataGrid
+    })
+}
+
+if ($btnSetUserNeverExpires) {
+    $btnSetUserNeverExpires.Add_Click({
+        $sel = Get-SelectedUserItem
+        if (-not $sel) { Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn một tài khoản trong bảng."; return }
+        $log = Set-VUONGTTUserProperty -Username $sel.Name -Property "never_expires"
+        Add-PrinterLogMessage $log
+        Refresh-UsersDataGrid
+    })
+}
+
+if ($btnToggleUserAdminRole) {
+    $btnToggleUserAdminRole.Add_Click({
+        $sel = Get-SelectedUserItem
+        if (-not $sel) { Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn một tài khoản trong bảng."; return }
+        $log = Set-VUONGTTUserProperty -Username $sel.Name -Property "toggle_admin"
+        Add-PrinterLogMessage $log
+        Refresh-UsersDataGrid
+    })
+}
+
+if ($btnOpenLusrmgr) {
+    $btnOpenLusrmgr.Add_Click({
+        Start-Process "lusrmgr.msc"
+        Add-PrinterLogMessage "• [OK] Đã mở Local Users and Groups (lusrmgr.msc)."
+    })
+}
+
+if ($btnDeleteSelectedUser) {
+    $btnDeleteSelectedUser.Add_Click({
+        $sel = Get-SelectedUserItem
+        if (-not $sel) { Add-PrinterLogMessage "[CHÚ Ý] Vui lòng chọn một tài khoản trong bảng."; return }
+        $log = Remove-VUONGTTUser -Username $sel.Name
+        Add-PrinterLogMessage $log
+        Refresh-UsersDataGrid
+    })
+}
+
+# --- SUB-TAB 4: DATA SHARE FIXES ---
+if ($btnFixNetworkDiscovery) {
+    $btnFixNetworkDiscovery.Add_Click({
+        $log = Invoke-VUONGTTDataShareFix -Action "network_discovery"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnFixGuestInsecure) {
+    $btnFixGuestInsecure.Add_Click({
+        $log = Invoke-VUONGTTDataShareFix -Action "guest_insecure"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnFixPrivateNetwork) {
+    $btnFixPrivateNetwork.Add_Click({
+        $log = Invoke-VUONGTTDataShareFix -Action "private_network"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnFixEnableSmb) {
+    $btnFixEnableSmb.Add_Click({
+        $log = Invoke-VUONGTTDataShareFix -Action "enable_smb"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnFixFlushNetUse) {
+    $btnFixFlushNetUse.Add_Click({
+        $log = Invoke-VUONGTTDataShareFix -Action "flush_net_use"
+        Add-PrinterLogMessage $log
+    })
+}
+
+if ($btnOpenAdvancedSharingSettings) {
+    $btnOpenAdvancedSharingSettings.Add_Click({
+        $log = Invoke-VUONGTTDataShareFix -Action "open_advanced_sharing"
+        Add-PrinterLogMessage $log
+    })
+}
+
+# Log Clear Button
+if ($btnClearPrinterLog) {
+    $btnClearPrinterLog.Add_Click({
+        $txtPrinterLog.Text = "* Đã xóa nhật ký xử lý."
+    })
+}
+
+# Khởi tạo mặc định: Nạp danh sách máy in cho Sub-tab 1
+Refresh-PrinterDataGrid
+
 
 # =========================================================================
 # MODULE 6: QUẢN LÝ USER & PC
@@ -7887,7 +8294,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.56" }
+                if (-not $currentVer) { $currentVer = "20.5.909.57" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

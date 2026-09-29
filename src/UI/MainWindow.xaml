@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.56"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.57"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -354,7 +354,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.56 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.57 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -1631,77 +1631,445 @@
                             </StackPanel>                        </Border>
                     </StackPanel>                </ScrollViewer>
 
-                <!-- ================= PAGE 5: SỬA LỖI MÁY IN (87 CHỨC NĂNG) ================= -->
-                <ScrollViewer x:Name="pagePrinterLAN" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
-                    <StackPanel>
-                        <!-- Header Banner (Match Screenshot 5) -->
-                        <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Text="Sửa Lỗi Máy In" FontSize="22" FontWeight="ExtraBold"/>
-                                <TextBlock Text="Bộ công cụ khắc phục lỗi máy in LAN &amp; USB" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
-                            </StackPanel>                        </Border>
-
-                        <!-- Search Bar with "Dán lỗi" button and "Tự Động Sửa Lỗi Này" -->
-                        <Border Style="{StaticResource CardBorder}" Padding="10" Margin="0,0,0,10">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="txtPrinterSearch" Height="32" Padding="8,4,8,4" FontSize="13.5" Text="rpc server is unavailable"/>
-                                <Button x:Name="btnPasteError" Grid.Column="1" Content="📋 Dán Lỗi" Background="#475569" Style="{StaticResource ActionBtn}" Width="95" Margin="8,0,0,0"/>
-                                <Button x:Name="btnAutoFixMatched" Grid.Column="2" Content="⚡ Tự Động Fix Lỗi Khớp (Auto Yes)" Background="#BE123C" Foreground="White" FontWeight="Bold" Style="{StaticResource ActionBtn}" Padding="14,0,14,0" Height="32" Margin="8,0,0,0"/>
-                            </Grid>
-                        </Border>
-
-                        <!-- Master 1-Click Auto Fix Banner -->
-                        <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="12,10,12,10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                            <Grid>
-                                <StackPanel VerticalAlignment="Center" Margin="0,0,320,0">
-                                    <TextBlock Text="⚡ Sửa Lỗi Tự Động 1-Click (Auto Yes - Chạy Tự Động Không Cần Hỏi):" FontWeight="Bold" FontSize="13.5"/>
-                                    <TextBlock Text="Tự động sửa lỗi RPC 0x6ba, 0x11b, 0x709, tường lửa chia sẻ LAN, xóa kẹt lệnh in và khởi động lại Spooler" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"/>
-                                </StackPanel>                                <Button x:Name="btnAutoFixAllPrinters" HorizontalAlignment="Right" VerticalAlignment="Center" Content="⚡ 1-Click Sửa Toàn Bộ Lỗi Máy In &amp; LAN (Auto Yes)" Background="#047857" Foreground="White" FontWeight="Bold" Style="{StaticResource ActionBtn}" Padding="16,0,16,0" Height="36"/>
-                            </Grid>
-                        </Border>
-
-                        <!-- Filter Status Message -->
-                        <TextBlock x:Name="txtPrinterMatchHint" Text="Hiện 1 nút khớp — bấm nút để sửa ngay lập tức." FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="2,0,0,8"/>
-
-                        <!-- Group Section (Match Screenshot 5) -->
-                        <TextBlock Text="🖨️ Cả hai máy — 16 nút — Spooler / SMB / mã lỗi chạy server lẫn client" FontWeight="Bold" FontSize="14" Margin="2,4,0,8"/>
-
-                        <!-- Error Action Buttons Panel -->
-                        <WrapPanel x:Name="panelPrinterButtons" Margin="0,0,0,14">
-                            <!-- Error action buttons -->
-                            <Button x:Name="btnFixRpc6ba" Content="0x0000006ba RPC" Background="#475569" Foreground="White" FontWeight="Bold" Style="{StaticResource ActionBtn}" MinWidth="160" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFix11b" Content="0x0000011b (RpcAuthn)" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="185" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFix709" Content="0x00000709 (Point&amp;Print)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="195" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFix7c" Content="0x0000007c (Policy)" Background="#B45309" Style="{StaticResource ActionBtn}" MinWidth="165" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFix02" Content="0x00000002 Driver" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="155" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFix40" Content="0x00000040 SMB" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="155" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFix3e8" Content="0x000003e8 Port" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="150" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFixBcb" Content="0x00000bcb Policy" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="155" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnRestartSpooler" Content="🔄 Khởi Động Lại Spooler" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="195" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnClearPrintQueue" Content="🧹 Xóa Kẹt Lệnh In" Background="#D97706" Style="{StaticResource ActionBtn}" MinWidth="160" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFixSnmpOffline" Content="⚡ Fix Máy In Báo Offline" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="195" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnFixLanShare" Content="🌐 Bật Chia Sẻ Mạng LAN" Background="#334155" Style="{StaticResource ActionBtn}" MinWidth="195" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnBackupPrinterDriver" Content="📦 Sao Lưu Driver In" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="170" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnOpenDevMgmt2" Content="🛠️ Mở Device Manager" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="180" Height="38" Padding="14,0,14,0"/>
-                            <Button x:Name="btnOpenPrintMgmt2" Content="🖨️ Mở Print Management" Background="#475569" Style="{StaticResource ActionBtn}" MinWidth="195" Height="38" Padding="14,0,14,0"/>
-                        </WrapPanel>
-
-                        <!-- Log Section (Match Screenshot 5) -->
-                        <Border Style="{StaticResource CardBorder}" Padding="12">
-                            <StackPanel>
-                                <Grid Margin="0,0,0,8">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="📄 Nhật ký xử lý" FontWeight="Bold" FontSize="14"/>
-                                    </StackPanel>                                    <Button x:Name="btnClearPrinterLog" Content="Xóa log" Background="#475569" Style="{StaticResource ActionBtn}" Height="28" Width="80" HorizontalAlignment="Right"/>
+                <!-- ================= PAGE 5: SỬA LỖI MÁY IN (4 SUB-TABS & MODAL 0x7C) ================= -->
+                <Grid x:Name="pagePrinterLAN" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="0,0,0,16">
+                            <!-- Apple Segmented Sub-tab Capsule Bar -->
+                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="10" Padding="4" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button x:Name="tabPrinterLAN_Fix" Grid.Column="0" Content="🖨️ Fix Máy In Mạng LAN" Style="{StaticResource ActionBtn}" Background="#0284C7" Foreground="White" Height="36" Margin="2" FontWeight="SemiBold"/>
+                                    <Button x:Name="tabPrinterLAN_Credentials" Grid.Column="1" Content="🔐 Add Windows Credentials" Style="{StaticResource ActionBtn}" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" Height="36" Margin="2" FontWeight="SemiBold"/>
+                                    <Button x:Name="tabPrinterLAN_ShareUser" Grid.Column="2" Content="👤 Tạo User Chia Sẻ Máy In - LAN" Style="{StaticResource ActionBtn}" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" Height="36" Margin="2" FontWeight="SemiBold"/>
+                                    <Button x:Name="tabPrinterLAN_ShareData" Grid.Column="3" Content="📁 Fix Chia Sẻ Dữ Liệu" Style="{StaticResource ActionBtn}" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" Height="36" Margin="2" FontWeight="SemiBold"/>
                                 </Grid>
-                                <TextBox x:Name="txtPrinterLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="160" Text="* Chọn một chức năng bên trên để bắt đầu."/>
-                            </StackPanel>                        </Border>
-                    </StackPanel>                </ScrollViewer>
+                            </Border>
+
+                            <!-- ================= SUB-TAB 1: FIX MÁY IN MẠNG LAN ================= -->
+                            <StackPanel x:Name="pnlSubPrinterLAN_Fix" Visibility="Visible">
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.15*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="1.35*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- CỘT TRÁI: DANH SÁCH MÁY IN & CỔNG ĐANG CHẠY -->
+                                    <Border Grid.Column="0" Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
+                                                <TextBlock Text="📋 Danh Sách Máy In &amp; Cổng Đang Chạy (Port)" FontWeight="Bold" FontSize="13.5" VerticalAlignment="Center"/>
+                                                <Button x:Name="btnPrinterRefreshList" Content="🔄 Quét Lại Máy In" HorizontalAlignment="Right" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="28" Padding="10,0,10,0" FontSize="11.5"/>
+                                            </Grid>
+
+                                            <!-- DataGrid Máy In -->
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Height="220" Margin="0,0,0,10">
+                                                <DataGrid x:Name="dgPrinterList" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" Background="Transparent" BorderThickness="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Header="Tên Máy In" Binding="{Binding DisplayName}" Width="1.8*"/>
+                                                        <DataGridTextColumn Header="Cổng (Port)" Binding="{Binding PortName}" Width="1.2*"/>
+                                                        <DataGridTextColumn Header="Trạng Thái" Binding="{Binding Status}" Width="1.1*"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Border>
+
+                                            <!-- Các nút tác vụ máy in bên dưới bảng -->
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnPrinterTestPrint" Grid.Column="0" Content="🖨️ In Trang Test" Background="#475569" Style="{StaticResource ActionBtn}" Height="34"/>
+                                                <Button x:Name="btnPrinterSetDefault" Grid.Column="2" Content="⭐ Set Mặc Định" Background="#D97706" Style="{StaticResource ActionBtn}" Height="34"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnPrinterAddLocalPort" Grid.Column="0" Content="➕ Add Local Port" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="34"/>
+                                                <Button x:Name="btnPrinterShareLan" Grid.Column="2" Content="🔗 Share Máy In LAN" Background="#059669" Style="{StaticResource ActionBtn}" Height="34"/>
+                                            </Grid>
+
+                                            <Button x:Name="btnPrinterRemoveSelected" Content="🗑️ Xóa Sạch Máy In (Chọn máy in trong bảng)" Background="#BE123C" Style="{StaticResource ActionBtn}" Height="34"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- CỘT PHẢI: KHẮC PHỤC MÃ LỖI & TIỆN ÍCH SỬA MÁY IN LAN -->
+                                    <Border Grid.Column="2" Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="🛠️ Khắc Phục Mã Lỗi &amp; Tiện Ích Sửa Máy In LAN" FontWeight="Bold" FontSize="13.5" Margin="0,0,0,10"/>
+
+                                            <!-- Khối 3 Cột Checkbox Mã Lỗi -->
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="10" Margin="0,0,0,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="1"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="1"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Nhóm 1: Máy Trạm -->
+                                                    <StackPanel Grid.Column="0" Margin="4,0,8,0">
+                                                        <TextBlock Text="💻 Máy Trạm" FontWeight="Bold" FontSize="12.5" Foreground="#0284C7" Margin="0,0,0,8"/>
+                                                        <CheckBox x:Name="chkErr0x7c" Content="0x0000007c" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                        <CheckBox x:Name="chkErr0xbc4" Content="0x00000bc4" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                        <CheckBox x:Name="chkErr0x4005" Content="0x00004005" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                    </StackPanel>
+
+                                                    <Border Grid.Column="1" Background="{DynamicResource CardBorderBrush}"/>
+
+                                                    <!-- Nhóm 2: Máy Chủ -->
+                                                    <StackPanel Grid.Column="2" Margin="8,0,8,0">
+                                                        <TextBlock Text="🖥️ Máy Chủ" FontWeight="Bold" FontSize="12.5" Foreground="#D97706" Margin="0,0,0,8"/>
+                                                        <CheckBox x:Name="chkErr0x11b" Content="0x0000011b" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                        <CheckBox x:Name="chkErr0xbcb" Content="0x00000bcb" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                        <CheckBox x:Name="chkErr0x6d9" Content="0x000006d9" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                    </StackPanel>
+
+                                                    <Border Grid.Column="3" Background="{DynamicResource CardBorderBrush}"/>
+
+                                                    <!-- Nhóm 3: Cả 2 Máy -->
+                                                    <StackPanel Grid.Column="4" Margin="8,0,4,0">
+                                                        <TextBlock Text="🔁 Cả 2 Máy" FontWeight="Bold" FontSize="12.5" Foreground="#7C3AED" Margin="0,0,0,8"/>
+                                                        <CheckBox x:Name="chkErr0x709" Content="0x00000709" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                        <CheckBox x:Name="chkErr0x012" Content="0x00000012" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                        <CheckBox x:Name="chkErrPolicyInEffect" Content="Policy In Effect" Margin="0,3,0,3" FontWeight="SemiBold"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Nút sửa các mã lỗi đã chọn -->
+                                            <Button x:Name="btnFixSelectedErrors" Content="🔧 Sửa Các Mã Lỗi Đã Chọn (Tích ở trên)" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="36" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                                            <!-- Hộp cảnh báo 1909 -->
+                                            <Border Background="#FEF3C7" CornerRadius="6" Padding="8" Margin="0,0,0,8" BorderBrush="#F59E0B" BorderThickness="1">
+                                                <TextBlock Text="⚠️ Lưu ý quan trọng: Kiểm tra kỹ Version Win trước khi chạy. Nếu 1909 trở xuống thì đừng chạy One Click và Fix Services Print Spooler (chạy sẽ lỗi Print Spooler). Nếu 1909 trở lên thì bạn chạy bình thường." TextWrapping="Wrap" FontSize="11" Foreground="#92400E"/>
+                                            </Border>
+
+                                            <!-- Lưới Tiện Ích Máy In LAN -->
+                                            <Grid Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <Button x:Name="btnFixSpoolerServices" Grid.Row="0" Grid.Column="0" Content="⚡ Fix Spooler Services" Background="#059669" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnInstallPrintToPdf" Grid.Row="0" Grid.Column="2" Content="📄 Cài Print to PDF" Background="#475569" Style="{StaticResource ActionBtn}" Height="32"/>
+
+                                                <Button x:Name="btnFixCommError2900" Grid.Row="1" Grid.Column="0" Content="⚠️ Fix Comm Error 2900 - 3000" Background="#D97706" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnFixDefault709" Grid.Row="1" Grid.Column="2" Content="⭐ Sửa Lỗi Set Mặc Định 0x709" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="32"/>
+
+                                                <Button x:Name="btnBackupRestorePrinterDriver" Grid.Row="2" Grid.Column="0" Content="💾 Backup / Restore Driver" Background="#475569" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnOneClickFixAllLAN" Grid.Row="2" Grid.Column="2" Content="🔥 One Click Fix Tất Cả Lỗi LAN" Background="#DC2626" Style="{StaticResource ActionBtn}" Height="32" FontWeight="Bold"/>
+
+                                                <Button x:Name="btnDownloadSpoolerFix" Grid.Row="3" Grid.Column="0" Content="🌐 Download Spooler Fix Theo Win" Background="#475569" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnResetCanonColor" Grid.Row="3" Grid.Column="2" Content="🖨️ Reset Canon Màu" Background="#DC2626" Style="{StaticResource ActionBtn}" Height="32"/>
+
+                                                <Button x:Name="btnFixCannotInstallDriver" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Content="🛠️ Fix không cài được driver" Background="#475569" Style="{StaticResource ActionBtn}" Height="32" Margin="0,3,0,0"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- ================= SUB-TAB 2: ADD WINDOWS CREDENTIALS ================= -->
+                            <StackPanel x:Name="pnlSubPrinterLAN_Credentials" Visibility="Collapsed">
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="1.4*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Form Thêm Credentials -->
+                                    <Border Grid.Column="0" Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="🔐 Thêm Windows Credentials Mạng LAN" FontWeight="Bold" FontSize="13.5" Margin="0,0,0,10"/>
+
+                                            <TextBlock Text="Địa chỉ IP hoặc Tên Máy Chủ (Target IP / Hostname):" FontSize="12" Margin="0,4,0,2"/>
+                                            <TextBox x:Name="txtCredTarget" Height="30" Padding="6,4,6,4" Margin="0,0,0,8" ToolTip="Nhập địa chỉ IP hoặc tên máy chủ (VD: 192.168.1.100 hoặc MAY-CHU)"/>
+
+                                            <TextBlock Text="Tên tài khoản (Username):" FontSize="12" Margin="0,4,0,2"/>
+                                            <TextBox x:Name="txtCredUser" Height="30" Padding="6,4,6,4" Margin="0,0,0,8" ToolTip="Tên tài khoản (VD: shareuser hoặc Administrator)"/>
+
+                                            <TextBlock Text="Mật khẩu (Password):" FontSize="12" Margin="0,4,0,2"/>
+                                            <PasswordBox x:Name="txtCredPass" Height="30" Padding="6,4,6,4" Margin="0,0,0,14"/>
+
+                                            <Button x:Name="btnSaveCredential" Content="➕ Lưu Windows Credentials Ngay" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="36" FontWeight="Bold"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Danh Sách Credentials Đang Lưu -->
+                                    <Border Grid.Column="2" Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
+                                                <TextBlock Text="📑 Danh Sách Windows Credentials Hiện Có" FontWeight="Bold" FontSize="13.5" VerticalAlignment="Center"/>
+                                                <Button x:Name="btnRefreshCredentials" Content="🔄 Quét Lại" HorizontalAlignment="Right" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="28" Padding="10,0,10,0" FontSize="11.5"/>
+                                            </Grid>
+
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Height="200" Margin="0,0,0,10">
+                                                <DataGrid x:Name="dgCredentialsList" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" Background="Transparent" BorderThickness="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Header="Mục Tiêu (Target)" Binding="{Binding Target}" Width="1.5*"/>
+                                                        <DataGridTextColumn Header="Loại (Type)" Binding="{Binding Type}" Width="1*"/>
+                                                        <DataGridTextColumn Header="Tài Khoản (User)" Binding="{Binding User}" Width="1.2*"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Border>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnDeleteCredential" Grid.Column="0" Content="🗑️ Xóa Đang Chọn" Background="#BE123C" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnTestTargetConnection" Grid.Column="2" Content="🧪 Test SMB 445" Background="#059669" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnOpenCredMgr" Grid.Column="4" Content="⚙️ Mở Credential Mgr" Background="#475569" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- ================= SUB-TAB 3: TẠO USER CHIA SẺ MÁY IN - LAN ================= -->
+                            <StackPanel x:Name="pnlSubPrinterLAN_ShareUser" Visibility="Collapsed">
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="1.4*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Khối Trái: Tạo Tài Khoản Share User -->
+                                    <Border Grid.Column="0" Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="👤 Tạo Tài Khoản Windows Chia Sẻ Mạng LAN / Máy In (Share User)" FontWeight="Bold" FontSize="13.5" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                                            <TextBlock Text="Tên tài khoản (Username):" FontSize="12" Margin="0,4,0,2"/>
+                                            <TextBox x:Name="txtShareUser_Name" Height="30" Padding="6,4,6,4" Margin="0,0,0,8" ToolTip="VD: shareuser, mayin..."/>
+
+                                            <TextBlock Text="Tên đầy đủ / Ghi chú:" FontSize="12" Margin="0,4,0,2"/>
+                                            <TextBox x:Name="txtShareUser_FullName" Height="30" Padding="6,4,6,4" Margin="0,0,0,8" ToolTip="Tùy chọn: User Chia Sẻ LAN..."/>
+
+                                            <TextBlock Text="Mật khẩu (Password):" FontSize="12" Margin="0,4,0,2"/>
+                                            <PasswordBox x:Name="txtShareUser_Pass" Height="30" Padding="6,4,6,4" Margin="0,0,0,8"/>
+
+                                            <TextBlock Text="Xác nhận mật khẩu:" FontSize="12" Margin="0,4,0,2"/>
+                                            <PasswordBox x:Name="txtShareUser_ConfirmPass" Height="30" Padding="6,4,6,4" Margin="0,0,0,8"/>
+
+                                            <CheckBox x:Name="chkShareUser_NeverExpires" Content="♾️ Mật khẩu không bao giờ hết hạn (Password Never Expires)" IsChecked="True" FontSize="12" Margin="0,4,0,14"/>
+
+                                            <Button x:Name="btnCreateShareUser" Content="➕ Tạo Tài Khoản Mới Ngay" Background="#059669" Style="{StaticResource ActionBtn}" Height="36" FontWeight="Bold"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Khối Phải: Danh Sách User Windows Hiện Có -->
+                                    <Border Grid.Column="2" Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
+                                                <TextBlock Text="📑 Danh Sách Tài Khoản Windows Hiện Có" FontWeight="Bold" FontSize="13.5" VerticalAlignment="Center"/>
+                                                <Button x:Name="btnRefreshUsersList" Content="🔄 Quét Lại" HorizontalAlignment="Right" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="28" Padding="10,0,10,0" FontSize="11.5"/>
+                                            </Grid>
+
+                                            <!-- DataGrid User -->
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Height="200" Margin="0,0,0,10">
+                                                <DataGrid x:Name="dgUsersList" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" Background="Transparent" BorderThickness="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Header="Tài Khoản" Binding="{Binding Name}" Width="1.2*"/>
+                                                        <DataGridTextColumn Header="Nhóm" Binding="{Binding Group}" Width="0.8*"/>
+                                                        <DataGridTextColumn Header="Trạng Thái" Binding="{Binding Status}" Width="1*"/>
+                                                        <DataGridTextColumn Header="Hạn Mật Khẩu" Binding="{Binding PasswordExpires}" Width="1.3*"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </Border>
+
+                                            <!-- Action Buttons for Users -->
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnToggleUserActive" Grid.Column="0" Content="🔒 Khóa / Mở Khóa User" Background="#D97706" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnChangeUserPasswordQuick" Grid.Column="2" Content="🔑 Đổi Mật Khẩu Nhanh" Background="#7C3AED" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnSetUserNeverExpires" Grid.Column="0" Content="♾️ Đặt MK Không Hết Hạn" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnToggleUserAdminRole" Grid.Column="2" Content="👤 Gán / Gỡ Quyền Admin" Background="#059669" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            </Grid>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="btnOpenLusrmgr" Grid.Column="0" Content="⚙️ Mở lusrmgr.msc" Background="#475569" Style="{StaticResource ActionBtn}" Height="32"/>
+                                                <Button x:Name="btnDeleteSelectedUser" Grid.Column="2" Content="🗑️ Xóa User Đang Chọn" Background="#BE123C" Style="{StaticResource ActionBtn}" Height="32"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Khối Dưới: Hướng Dẫn Chi Tiết Cho Người Mới -->
+                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="📖 Hướng Dẫn Chi Tiết: Tạo User Chia Sẻ Máy In - Mạng LAN (Dành Cho Người Mới)" FontWeight="Bold" FontSize="13.5" Margin="0,0,0,6"/>
+                                        <TextBlock Text="🎯 Tại Sao Cần Tạo User Share &amp; Để Fix Lỗi Gì:" FontWeight="SemiBold" FontSize="12.5" Foreground="#0284C7" Margin="0,2,0,2"/>
+                                        <TextBlock Text="• Khi chia sẻ máy in hoặc folder qua mạng LAN, Windows 10/11 yêu cầu máy trạm phải xác thực tài khoản hợp lệ. Việc tạo một User Share riêng biệt (VD: shareuser / Mật khẩu: 123456) giúp các máy khác kết nối máy in và dữ liệu mượt mà, không bị lỗi chặn quyền truy cập (Access Denied / Logon Failure) và không cần chia sẻ mật khẩu tài khoản chính." TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6"/>
+
+                                        <TextBlock Text="🖥️ Máy Nào Cần Tạo &amp; 💻 Máy Nào Cần Sử Dụng:" FontWeight="SemiBold" FontSize="12.5" Foreground="#059669" Margin="0,2,0,2"/>
+                                        <TextBlock Text="• Tạo trên MÁY CHỦ (Máy cắm máy in / Máy chứa dữ liệu): Sử dụng form bên trên để tạo tài khoản User Share." FontSize="12" Margin="0,0,0,2"/>
+                                        <TextBlock Text="• Dùng trên MÁY TRẠM (Máy cần in / Máy cần lấy file): Khi máy trạm kết nối tới máy chủ (qua tab Add Windows Credentials hoặc mở \\IP-MAY-CHU), hãy nhập đúng User name và Password vừa tạo để lưu lại vĩnh viễn." TextWrapping="Wrap" FontSize="12" Margin="0,0,0,4"/>
+                                        <TextBlock Text="• 💡 Mẹo nhỏ: Nên giữ tùy chọn Mật khẩu không bao giờ hết hạn để việc in ấn trong mạng nội bộ luôn thông suốt lâu dài." FontSize="12" Foreground="#D97706" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- ================= SUB-TAB 4: FIX CHIA SẺ DỮ LIỆU ================= -->
+                            <StackPanel x:Name="pnlSubPrinterLAN_ShareData" Visibility="Collapsed">
+                                <Border Background="{DynamicResource CardBgBrush}" CornerRadius="12" Padding="14" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="📁 Tiện Ích Sửa Lỗi Chia Sẻ File, Folder &amp; Mạng Nội Bộ (LAN)" FontWeight="Bold" FontSize="13.5" Margin="0,0,0,10"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <Button x:Name="btnFixNetworkDiscovery" Grid.Row="0" Grid.Column="0" Content="🌐 Bật Network Discovery &amp; File Sharing" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="38" Margin="0,3,0,3"/>
+                                            <Button x:Name="btnFixGuestInsecure" Grid.Row="0" Grid.Column="2" Content="🔒 Bật Cho Phép Guest Insecure (LanmanWorkstation)" Background="#059669" Style="{StaticResource ActionBtn}" Height="38" Margin="0,3,0,3"/>
+
+                                            <Button x:Name="btnFixPrivateNetwork" Grid.Row="1" Grid.Column="0" Content="📶 Đặt Cấu Hình Mạng Thành Private Network" Background="#475569" Style="{StaticResource ActionBtn}" Height="38" Margin="0,3,0,3"/>
+                                            <Button x:Name="btnFixEnableSmb" Grid.Row="1" Grid.Column="2" Content="⚡ Kích Hoạt SMBv1 &amp; SMBv2" Background="#475569" Style="{StaticResource ActionBtn}" Height="38" Margin="0,3,0,3"/>
+
+                                            <Button x:Name="btnFixFlushNetUse" Grid.Row="2" Grid.Column="0" Content="🧹 Xóa Bộ Nhớ Đệm Kết Nối Mạng (Net Use Flush)" Background="#D97706" Style="{StaticResource ActionBtn}" Height="38" Margin="0,3,0,3"/>
+                                            <Button x:Name="btnOpenAdvancedSharingSettings" Grid.Row="2" Grid.Column="2" Content="⚙️ Mở Thiết Lập Chia Sẻ Nâng Cao (Advanced Sharing)" Background="#7C3AED" Style="{StaticResource ActionBtn}" Height="38" Margin="0,3,0,3"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Legacy controls preserved for compatibility & hidden search bar -->
+                            <StackPanel Visibility="Collapsed">
+                                <TextBox x:Name="txtPrinterSearch" Text=""/>
+                                <Button x:Name="btnPasteError" Content=""/>
+                                <Button x:Name="btnAutoFixMatched" Content=""/>
+                                <Button x:Name="btnAutoFixAllPrinters" Content=""/>
+                                <TextBlock x:Name="txtPrinterMatchHint" Text=""/>
+                                <WrapPanel x:Name="panelPrinterButtons">
+                                    <Button x:Name="btnFixRpc6ba" Content=""/>
+                                    <Button x:Name="btnFix11b" Content=""/>
+                                    <Button x:Name="btnFix709" Content=""/>
+                                    <Button x:Name="btnFix7c" Content=""/>
+                                    <Button x:Name="btnFix02" Content=""/>
+                                    <Button x:Name="btnFix40" Content=""/>
+                                    <Button x:Name="btnFix3e8" Content=""/>
+                                    <Button x:Name="btnFixBcb" Content=""/>
+                                    <Button x:Name="btnRestartSpooler" Content=""/>
+                                    <Button x:Name="btnClearPrintQueue" Content=""/>
+                                    <Button x:Name="btnFixSnmpOffline" Content=""/>
+                                    <Button x:Name="btnFixLanShare" Content=""/>
+                                    <Button x:Name="btnBackupPrinterDriver" Content=""/>
+                                    <Button x:Name="btnOpenDevMgmt2" Content=""/>
+                                    <Button x:Name="btnOpenPrintMgmt2" Content=""/>
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <!-- Log Section -->
+                            <Border Style="{StaticResource CardBorder}" Padding="12" Margin="0,4,0,0">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,8">
+                                        <TextBlock Text="📄 Nhật ký xử lý máy in &amp; mạng LAN" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                        <Button x:Name="btnClearPrinterLog" Content="Xóa log" Background="#475569" Style="{StaticResource ActionBtn}" Height="28" Width="80" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <TextBox x:Name="txtPrinterLog" Background="{DynamicResource CardInnerBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" TextWrapping="Wrap" IsReadOnly="True" FontSize="13" Height="140" Text="* Sẵn sàng kiểm tra và xử lý lỗi máy in &amp; chia sẻ mạng LAN."/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- ================= MODAL OVERLAY: TIẾN TRÌNH KHẮC PHỤC LỖI 0x0000007c ================= -->
+                    <Grid x:Name="modal0x7c" Visibility="Collapsed" Background="#99000000">
+                        <Border Width="520" VerticalAlignment="Center" HorizontalAlignment="Center" Background="{DynamicResource CardBgBrush}" CornerRadius="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="20">
+                            <StackPanel>
+                                <!-- Modal Header -->
+                                <Grid Margin="0,0,0,16">
+                                    <TextBlock Text="🖨️ TIẾN TRÌNH KHẮC PHỤC LỖI 0x0000007c" FontWeight="Bold" FontSize="13.5" VerticalAlignment="Center"/>
+                                    <Button x:Name="btnCloseModal0x7c" Content="✕" Width="28" Height="28" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="14" FontWeight="Bold" BorderThickness="0" Cursor="Hand" HorizontalAlignment="Right"/>
+                                </Grid>
+
+                                <!-- Badge & Title -->
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="46" Height="46" Background="#1D4ED8" CornerRadius="8" Margin="0,0,14,0">
+                                        <TextBlock Text="7C" Foreground="White" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="SỬA LỖI MÁY IN: 0x0000007c (MÁY TRẠM)" FontWeight="Bold" FontSize="14" Foreground="#1D4ED8"/>
+                                        <TextBlock Text="Tự động thay thế tệp win32spl.dll chuẩn và nạp cấu hình Registry RpcAuthnLevelPrivacyEnabled" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Radio Options Box -->
+                                <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="12" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <RadioButton x:Name="rbWin10_2004_Plus" Content="Windows 10 (2004, 20H2, 21H1, 21H2, 22H2) &amp; Windows 11" IsChecked="True" FontWeight="SemiBold" Margin="0,4,0,8"/>
+                                        <RadioButton x:Name="rbWin10_1909" Content="Windows 10 (Version 1909)" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                        <RadioButton x:Name="rbWin10_1809" Content="Windows 10 (Version 1809) &amp; Windows Server 2019" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Action Button -->
+                                <Button x:Name="btnExecuteFix0x7c" Content="⚡ 1-Click Fix Lỗi 0x0000007c (Thay Thế win32spl.dll)" Background="#1D4ED8" Style="{StaticResource ActionBtn}" Height="38" FontWeight="Bold" Margin="0,0,0,16"/>
+
+                                <!-- Modal Footer -->
+                                <Grid>
+                                    <TextBlock x:Name="txtModal0x7cStatus" Text="Sẵn sàng thực thi..." VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <Button x:Name="btnDismissModal0x7c" Content="Đóng" Width="80" Height="30" Background="#475569" Style="{StaticResource ActionBtn}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
 
                 <!-- ================= PAGE 6: QUẢN LÝ USER & PC ================= -->
                 <ScrollViewer x:Name="pageUsers" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
@@ -3765,7 +4133,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.56" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.57" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

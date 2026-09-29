@@ -334,3 +334,447 @@ function Invoke-PrinterFixAction {
 
     return ($log -join "`n")
 }
+
+# =========================================================================
+# BỘ CÔNG CỤ FIX MÁY IN - SHARE LAN TOÀN DIỆN (4 SUB-TABS & MODAL 0x7c)
+# =========================================================================
+
+function Get-VUONGTTPrinterList {
+    $list = @()
+    try {
+        $printers = Get-CimInstance -ClassName Win32_Printer -ErrorAction SilentlyContinue
+        if (-not $printers) {
+            $printers = Get-WmiObject -Class Win32_Printer -ErrorAction SilentlyContinue
+        }
+        foreach ($p in $printers) {
+            $isDef = [bool]$p.Default
+            $statusText = if ($p.PrinterStatus -eq 3) { "Sẵn sàng (Ready)" } elseif ($p.WorkOffline) { "Offline" } else { "Sẵn sàng (Ready)" }
+            $port = if ($p.PortName) { $p.PortName } else { "Unknown" }
+            $list += [PSCustomObject]@{
+                IsDefault   = $isDef
+                Name        = $p.Name
+                DisplayName = if ($isDef) { "⭐ $($p.Name)" } else { $p.Name }
+                PortName    = $port
+                Status      = $statusText
+                IsShared    = [bool]$p.Shared
+                ShareName   = if ($p.ShareName) { $p.ShareName } else { "" }
+            }
+        }
+    } catch {}
+    return $list
+}
+
+function Invoke-VUONGTTPrinterAction {
+    param(
+        [Parameter(Mandatory=$true)][string]$Action,
+        [string]$PrinterName = "",
+        [hashtable]$Params = @{}
+    )
+    $log = @()
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    try {
+        switch ($Action) {
+            "test_print" {
+                if ([string]::IsNullOrWhiteSpace($PrinterName)) { throw "Chưa chọn máy in để in thử nghiệm." }
+                rundll32.exe printui.dll,PrintUIEntry /k /n "$PrinterName"
+                $log += "[$ts] [OK] Đã gửi lệnh in trang thử nghiệm Windows Test Page tới '$PrinterName'."
+            }
+            "set_default" {
+                if ([string]::IsNullOrWhiteSpace($PrinterName)) { throw "Chưa chọn máy in để đặt mặc định." }
+                $wscript = New-Object -ComObject WScript.Network
+                $wscript.SetDefaultPrinter($PrinterName)
+                $log += "[$ts] [OK] Đã đặt máy in '$PrinterName' làm mặc định hệ thống thành công."
+            }
+            "share_printer" {
+                if ([string]::IsNullOrWhiteSpace($PrinterName)) { throw "Chưa chọn máy in để chia sẻ." }
+                Set-Printer -Name $PrinterName -Shared $true -ErrorAction SilentlyContinue
+                $log += "[$ts] [OK] Đã kích hoạt chia sẻ máy in '$PrinterName' qua mạng LAN."
+            }
+            "remove_printer" {
+                if ([string]::IsNullOrWhiteSpace($PrinterName)) { throw "Chưa chọn máy in để xóa." }
+                Remove-Printer -Name $PrinterName -ErrorAction SilentlyContinue
+                $log += "[$ts] [OK] Đã gỡ bỏ máy in '$PrinterName' khỏi hệ thống."
+            }
+            "add_local_port" {
+                rundll32.exe printui.dll,PrintUIEntry /il
+                $log += "[$ts] [OK] Đã mở trình hướng dẫn thêm máy in & cấu hình Port."
+            }
+            default {
+                $log += "[$ts] [LƯU Ý] Không hỗ trợ tác vụ máy in: $Action"
+            }
+        }
+    } catch {
+        $log += "[$ts] [LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTBatchErrorFix {
+    param([string[]]$ErrorCodes)
+    $results = @()
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    $results += "[$ts] === BẮT ĐẦU SỬA CÁC MÃ LỖI ĐÃ CHỌN ==="
+
+    foreach ($code in $ErrorCodes) {
+        $c = $code.ToLower().Trim()
+        switch ($c) {
+            "0x7c" {
+                $results += Invoke-PrinterFixAction -ActionId "0x7c"
+            }
+            "0xbc4" {
+                try {
+                    $pnp = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint"
+                    if (-not (Test-Path $pnp)) { New-Item -Path $pnp -Force -ErrorAction SilentlyContinue | Out-Null }
+                    Set-ItemProperty -Path $pnp -Name "RpcOverNamedPipes" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $pnp -Name "RpcProtocols" -Value 0x7 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Restart-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+                    $results += "[$ts] [0x00000bc4] [OK] Đã cấu hình RPC Over Named Pipes và giao thức in ấn."
+                } catch { $results += "[$ts] [0x00000bc4] [LỖI] $($_.Exception.Message)" }
+            }
+            "0x4005" {
+                try {
+                    $regRpc = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print\Providers\Client Side Rendering Print Provider"
+                    if (-not (Test-Path $regRpc)) { New-Item -Path $regRpc -Force -ErrorAction SilentlyContinue | Out-Null }
+                    Set-ItemProperty -Path $regRpc -Name "RemovePrintersAtLogoff" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Restart-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+                    $results += "[$ts] [0x00004005] [OK] Đã thiết lập CSR Client Side Provider và cấp lại quyền Spooler."
+                } catch { $results += "[$ts] [0x00004005] [LỖI] $($_.Exception.Message)" }
+            }
+            "0x11b" {
+                $results += Invoke-PrinterFixAction -ActionId "0x11b"
+            }
+            "0xbcb" {
+                $results += Invoke-PrinterFixAction -ActionId "0xbcb"
+            }
+            "0x6d9" {
+                try {
+                    Set-Service -Name "MpsSvc" -StartupType Automatic -ErrorAction SilentlyContinue
+                    Start-Service -Name "MpsSvc" -ErrorAction SilentlyContinue
+                    netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=Yes 2>&1 | Out-Null
+                    Restart-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+                    $results += "[$ts] [0x000006d9] [OK] Đã bật dịch vụ tường lửa Windows Defender Firewall & kích hoạt chia sẻ máy in."
+                } catch { $results += "[$ts] [0x000006d9] [LỖI] $($_.Exception.Message)" }
+            }
+            "0x709" {
+                $results += Invoke-PrinterFixAction -ActionId "0x709"
+            }
+            "0x012" {
+                try {
+                    $lanman = "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
+                    if (-not (Test-Path $lanman)) { New-Item -Path $lanman -Force -ErrorAction SilentlyContinue | Out-Null }
+                    Set-ItemProperty -Path $lanman -Name "IRPStackSize" -Value 32 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $lanman -Name "SizReqBuf" -Value 17424 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Restart-Service -Name "LanmanServer" -Force -ErrorAction SilentlyContinue
+                    $results += "[$ts] [0x00000012] [OK] Đã tối ưu hóa bộ nhớ mạng IRPStackSize / SizReqBuf chống tràn kết nối."
+                } catch { $results += "[$ts] [0x00000012] [LỖI] $($_.Exception.Message)" }
+            }
+            "policy" {
+                try {
+                    $pnp = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint"
+                    if (-not (Test-Path $pnp)) { New-Item -Path $pnp -Force -ErrorAction SilentlyContinue | Out-Null }
+                    Set-ItemProperty -Path $pnp -Name "Restricted" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $pnp -Name "RestrictDriverInstallationToAdministrators" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $pnp -Name "PackagePointAndPrintServerList" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Restart-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+                    $results += "[$ts] [Policy In Effect] [OK] Đã dỡ bỏ hạn chế Group Policy Point and Print."
+                } catch { $results += "[$ts] [Policy In Effect] [LỖI] $($_.Exception.Message)" }
+            }
+        }
+    }
+    $results += "[$ts] === HOÀN TẤT XỬ LÝ CÁC MÃ LỖI ==="
+    return ($results -join "`n")
+}
+
+function Invoke-VUONGTTFix0x7c {
+    param([string]$TargetWinVersion = "win10_plus")
+    $log = @()
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    $log += "[$ts] [0x0000007c] Bắt đầu khắc phục lỗi 0x0000007c (Phiên bản mục tiêu: $TargetWinVersion)"
+    try {
+        # 1. Dừng Print Spooler
+        Stop-Service -Name "Spooler" -Force -ErrorAction SilentlyContinue
+        
+        # 2. Cấu hình Registry RpcAuthnLevelPrivacyEnabled
+        $regPath = "HKLM:\System\CurrentControlSet\Control\Print"
+        if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force -ErrorAction SilentlyContinue | Out-Null }
+        Set-ItemProperty -Path $regPath -Name "RpcAuthnLevelPrivacyEnabled" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        
+        $pnpPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint"
+        if (-not (Test-Path $pnpPath)) { New-Item -Path $pnpPath -Force -ErrorAction SilentlyContinue | Out-Null }
+        Set-ItemProperty -Path $pnpPath -Name "PackagePointAndPrintServerList" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $pnpPath -Name "RestrictDriverInstallationToAdministrators" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+
+        # 3. Quản lý quyền file win32spl.dll
+        $dllPath = "$env:WINDIR\System32\win32spl.dll"
+        if (Test-Path $dllPath) {
+            $bakPath = "$env:WINDIR\System32\win32spl.dll.bak"
+            if (-not (Test-Path $bakPath)) {
+                Copy-Item -Path $dllPath -Destination $bakPath -Force -ErrorAction SilentlyContinue
+            }
+            takeown.exe /f "$dllPath" /a 2>&1 | Out-Null
+            icacls.exe "$dllPath" /grant "Administrators:F" 2>&1 | Out-Null
+        }
+
+        # 4. Khởi động lại Print Spooler
+        Set-Service -Name "Spooler" -StartupType Automatic -ErrorAction SilentlyContinue
+        Start-Service -Name "Spooler" -ErrorAction SilentlyContinue
+
+        $log += "[$ts] [OK] Đã thiết lập RpcAuthnLevelPrivacyEnabled = 0 và PackagePointAndPrintServerList = 0."
+        $log += "[$ts] [OK] Đã kiểm tra tệp win32spl.dll và nạp lại Print Spooler."
+        $log += "[$ts] [OK] Lỗi 0x0000007c trên máy trạm đã được khắc phục thành công!"
+    } catch {
+        $log += "[$ts] [LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
+
+function Get-VUONGTTLocalUsers {
+    $list = @()
+    try {
+        $users = Get-CimInstance -ClassName Win32_UserAccount -Filter "LocalAccount = True" -ErrorAction SilentlyContinue
+        if (-not $users) {
+            $users = Get-WmiObject -Class Win32_UserAccount -Filter "LocalAccount = True" -ErrorAction SilentlyContinue
+        }
+
+        # Lấy danh sách thành viên Administrators
+        $adminMembers = @()
+        try {
+            $group = [ADSI]"WinNT://$env:COMPUTERNAME/Administrators,group"
+            $members = @($group.psbase.Invoke("Members"))
+            foreach ($m in $members) {
+                $mName = $m.GetType().InvokeMember("Name", 'GetProperty', $null, $m, $null)
+                if ($mName) { $adminMembers += $mName }
+            }
+        } catch {}
+
+        foreach ($u in $users) {
+            $isAdmin = $adminMembers -contains $u.Name
+            $status = if ($u.Disabled) { "Đã khóa" } else { "Hoạt động" }
+            $pwdExpires = if ($u.PasswordExpires) { "Có thời hạn" } else { "Không bao giờ hết hạn" }
+            $groupName = if ($isAdmin) { "Admin" } elseif ($u.Name -eq "Guest") { "Guests" } else { "Users" }
+
+            $list += [PSCustomObject]@{
+                Name            = $u.Name
+                FullName        = if ($u.FullName) { $u.FullName } else { $u.Name }
+                Group           = $groupName
+                Status          = $status
+                IsDisabled      = [bool]$u.Disabled
+                PasswordExpires = $pwdExpires
+                IsAdmin         = $isAdmin
+            }
+        }
+    } catch {}
+    return $list
+}
+
+function New-VUONGTTShareUser {
+    param(
+        [Parameter(Mandatory=$true)][string]$Username,
+        [string]$FullName = "",
+        [string]$Password = "",
+        [bool]$PasswordNeverExpires = $true
+    )
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    try {
+        if ([string]::IsNullOrWhiteSpace($Username)) { throw "Tên tài khoản không được để trống." }
+        
+        # Tạo bằng net user
+        $p = if ([string]::IsNullOrEmpty($Password)) { "" } else { $Password }
+        $cmd = "net user `"$Username`" `"$p`" /add /comment:`"User Chia Se May In LAN`""
+        if ($FullName) { $cmd += " /fullname:`"$FullName`"" }
+        Invoke-Expression $cmd 2>&1 | Out-Null
+
+        if ($PasswordNeverExpires) {
+            try {
+                $user = [ADSI]"WinNT://$env:COMPUTERNAME/$Username,user"
+                $user.UserFlags.Value = $user.UserFlags.Value -bor 0x10000 # ADS_UF_DONT_EXPIRE_PASSWORD
+                $user.SetInfo()
+            } catch {
+                wmic useraccount where name="$Username" set passwordexpires=false 2>&1 | Out-Null
+            }
+        }
+
+        return "[$ts] [OK] Đã tạo thành công tài khoản chia sẻ mạng: '$Username'."
+    } catch {
+        return "[$ts] [LỖI] Không thể tạo tài khoản: $($_.Exception.Message)"
+    }
+}
+
+function Set-VUONGTTUserProperty {
+    param(
+        [Parameter(Mandatory=$true)][string]$Username,
+        [Parameter(Mandatory=$true)][string]$Property,
+        $Value = $null
+    )
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    try {
+        switch ($Property) {
+            "toggle_active" {
+                # Kiểm tra trạng thái hiện tại
+                $u = Get-CimInstance -ClassName Win32_UserAccount -Filter "Name='$Username' AND LocalAccount=True" -ErrorAction SilentlyContinue
+                $newActive = if ($u -and $u.Disabled) { "yes" } else { "no" }
+                net user "$Username" /active:$newActive 2>&1 | Out-Null
+                $stateText = if ($newActive -eq "yes") { "Mở khóa (Active)" } else { "Khóa (Disabled)" }
+                return "[$ts] [OK] Đã chuyển tài khoản '$Username' sang trạng thái: $stateText."
+            }
+            "change_password" {
+                if ([string]::IsNullOrEmpty($Value)) { throw "Mật khẩu mới không được để trống." }
+                net user "$Username" "$Value" 2>&1 | Out-Null
+                return "[$ts] [OK] Đã cập nhật mật khẩu mới cho tài khoản '$Username'."
+            }
+            "never_expires" {
+                try {
+                    $user = [ADSI]"WinNT://$env:COMPUTERNAME/$Username,user"
+                    $user.UserFlags.Value = $user.UserFlags.Value -bor 0x10000
+                    $user.SetInfo()
+                } catch {
+                    wmic useraccount where name="$Username" set passwordexpires=false 2>&1 | Out-Null
+                }
+                return "[$ts] [OK] Đã đặt thuộc tính Mật khẩu không bao giờ hết hạn cho '$Username'."
+            }
+            "toggle_admin" {
+                $group = [ADSI]"WinNT://$env:COMPUTERNAME/Administrators,group"
+                $isAdmin = $false
+                $members = @($group.psbase.Invoke("Members"))
+                foreach ($m in $members) {
+                    $mName = $m.GetType().InvokeMember("Name", 'GetProperty', $null, $m, $null)
+                    if ($mName -eq $Username) { $isAdmin = $true; break }
+                }
+                if ($isAdmin) {
+                    net localgroup Administrators "$Username" /delete 2>&1 | Out-Null
+                    return "[$ts] [OK] Đã gỡ tài khoản '$Username' khỏi nhóm Administrators."
+                } else {
+                    net localgroup Administrators "$Username" /add 2>&1 | Out-Null
+                    return "[$ts] [OK] Đã gán quyền Administrators cho tài khoản '$Username'."
+                }
+            }
+            default {
+                return "[$ts] [LƯU Ý] Thuộc tính không xác định: $Property"
+            }
+        }
+    } catch {
+        return "[$ts] [LỖI] $($_.Exception.Message)"
+    }
+}
+
+function Remove-VUONGTTUser {
+    param([Parameter(Mandatory=$true)][string]$Username)
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    try {
+        if ($Username.ToLower() -in @("administrator", "admin", "guest", "$env:USERNAME".ToLower())) {
+            throw "Không thể xóa tài khoản hệ thống hoặc tài khoản đang đăng nhập."
+        }
+        net user "$Username" /delete 2>&1 | Out-Null
+        return "[$ts] [OK] Đã xóa vĩnh viễn tài khoản '$Username'."
+    } catch {
+        return "[$ts] [LỖI] $($_.Exception.Message)"
+    }
+}
+
+function Get-VUONGTTCredentials {
+    $creds = @()
+    try {
+        $output = cmdkey.exe /list
+        $currentTarget = ""
+        $currentType = ""
+        $currentUser = ""
+        foreach ($line in ($output -split "`r?`n")) {
+            $t = $line.Trim()
+            if ($t -match "^Target:\s*(.*)$") {
+                if ($currentTarget) {
+                    $creds += [PSCustomObject]@{ Target=$currentTarget; Type=$currentType; User=$currentUser }
+                }
+                $currentTarget = $Matches[1].Trim()
+                $currentType = "Domain/Local"
+                $currentUser = ""
+            } elseif ($t -match "^Type:\s*(.*)$") {
+                $currentType = $Matches[1].Trim()
+            } elseif ($t -match "^User:\s*(.*)$") {
+                $currentUser = $Matches[1].Trim()
+            }
+        }
+        if ($currentTarget) {
+            $creds += [PSCustomObject]@{ Target=$currentTarget; Type=$currentType; User=$currentUser }
+        }
+    } catch {}
+    return $creds
+}
+
+function Add-VUONGTTCredential {
+    param(
+        [Parameter(Mandatory=$true)][string]$Target,
+        [Parameter(Mandatory=$true)][string]$Username,
+        [string]$Password = ""
+    )
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    try {
+        if ([string]::IsNullOrWhiteSpace($Target) -or [string]::IsNullOrWhiteSpace($Username)) {
+            throw "Target (IP/Máy chủ) và Username không được để trống."
+        }
+        cmdkey.exe /add:"$Target" /user:"$Username" /pass:"$Password" 2>&1 | Out-Null
+        return "[$ts] [OK] Đã lưu thành công Windows Credential cho mục tiêu '$Target' với User '$Username'."
+    } catch {
+        return "[$ts] [LỖI] $($_.Exception.Message)"
+    }
+}
+
+function Remove-VUONGTTCredential {
+    param([Parameter(Mandatory=$true)][string]$Target)
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    try {
+        cmdkey.exe /delete:"$Target" 2>&1 | Out-Null
+        return "[$ts] [OK] Đã xóa Windows Credential của mục tiêu '$Target'."
+    } catch {
+        return "[$ts] [LỖI] $($_.Exception.Message)"
+    }
+}
+
+function Invoke-VUONGTTDataShareFix {
+    param([Parameter(Mandatory=$true)][string]$Action)
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    $log = @()
+    try {
+        switch ($Action) {
+            "network_discovery" {
+                netsh advfirewall firewall set rule group="Network Discovery" new enable=Yes 2>&1 | Out-Null
+                netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=Yes 2>&1 | Out-Null
+                @("fdPHost", "FDResPub", "SSDPSRV", "upnphost") | ForEach-Object {
+                    Set-Service -Name $_ -StartupType Automatic -ErrorAction SilentlyContinue
+                    Start-Service -Name $_ -ErrorAction SilentlyContinue
+                }
+                $log += "[$ts] [OK] Đã bật Network Discovery, File & Printer Sharing và dịch vụ FDResPub."
+            }
+            "guest_insecure" {
+                $p = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\LanmanWorkstation"
+                if (-not (Test-Path $p)) { New-Item -Path $p -Force -ErrorAction SilentlyContinue | Out-Null }
+                Set-ItemProperty -Path $p -Name "AllowInsecureGuestAuth" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                $log += "[$ts] [OK] Đã kích hoạt AllowInsecureGuestAuth = 1 (Cho phép kết nối máy in/NAS chia sẻ không mật khẩu)."
+            }
+            "private_network" {
+                Get-NetConnectionProfile -ErrorAction SilentlyContinue | ForEach-Object {
+                    Set-NetConnectionProfile -InterfaceIndex $_.InterfaceIndex -NetworkCategory Private -ErrorAction SilentlyContinue
+                }
+                $log += "[$ts] [OK] Đã chuyển toàn bộ kết nối mạng sang chế độ Private Network (Mạng riêng tư)."
+            }
+            "enable_smb" {
+                Set-SmbServerConfiguration -EnableSMB1Protocol $true -EnableSMB2Protocol $true -Confirm:$false -Force -ErrorAction SilentlyContinue
+                $log += "[$ts] [OK] Đã kích hoạt hỗ trợ giao thức SMBv1 và SMBv2."
+            }
+            "flush_net_use" {
+                net use * /delete /y 2>&1 | Out-Null
+                Restart-Service -Name "LanmanWorkstation" -Force -ErrorAction SilentlyContinue
+                $log += "[$ts] [OK] Đã xóa toàn bộ bộ nhớ đệm kết nối mạng LAN (Net Use Flush) và làm mới LanmanWorkstation."
+            }
+            "open_advanced_sharing" {
+                Start-Process "control.exe" -ArgumentList "/name Microsoft.NetworkAndSharingCenter /page AdvancedShared"
+                $log += "[$ts] [OK] Đã mở cài đặt chia sẻ mạng nâng cao (Advanced Sharing Settings)."
+            }
+            default {
+                $log += "[$ts] [LƯU Ý] Không hỗ trợ hành động: $Action"
+            }
+        }
+    } catch {
+        $log += "[$ts] [LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`n")
+}
