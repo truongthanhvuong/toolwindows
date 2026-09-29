@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.57
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.58
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -142,6 +142,11 @@ if (Get-Command "Update-VUONGTTRuntimeBundledConfig" -ErrorAction SilentlyContin
 . (Join-Path $corePath "DiskHealthManager.ps1")
 . (Join-Path $corePath "AutoWinDeployer.ps1")
 . (Join-Path $corePath "SystemBackupManager.ps1")
+. (Join-Path $corePath "KeyViewerEngine.ps1")
+. (Join-Path $corePath "SkuConverterEngine.ps1")
+. (Join-Path $corePath "CrackScannerEngine.ps1")
+. (Join-Path $corePath "DnsChangerEngine.ps1")
+. (Join-Path $corePath "IsoRepositoryEngine.ps1")
 
 # Load Main UI XAML
 $xamlFile = Join-Path $ScriptDir "src\UI\MainWindow.xaml"
@@ -538,17 +543,25 @@ function Switch-Tab {
                 $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống và tinh chỉnh Windows Tweaks Pro."
                 Refresh-PowerPlanBadge
             }
+            "Config"       { 
+                Refresh-VUONGTTDnsChangerUI
+                $txtFooterStatus.Text = "• [OK] Cấu hình tính năng hệ thống & Đổi DNS tối ưu mạng Pro sẵn sàng." 
+            }
             "PrinterLAN"   { $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng." }
             "BackupDriver" { 
                 Invoke-VUONGTTDoEvents
                 Refresh-DriverStatusBadge
                 $txtFooterStatus.Text = if ($script:CurrentLanguage -eq "EN") { "• [OK] Comprehensive Driver Diagnostics & Auto-Update Ready." } else { "• [OK] Quản lý, kiểm tra chẩn đoán & cập nhật Driver toàn diện." }
             }
-            "Activation"   { $txtFooterStatus.Text = "• [OK] Sẵn sàng kích hoạt bản quyền số vĩnh viễn MAS HWID." }
+            "Activation"   { 
+                Refresh-VUONGTTKeyViewerUI
+                $txtFooterStatus.Text = "• [OK] Sẵn sàng kích hoạt bản quyền số vĩnh viễn MAS HWID & tra cứu Product Key." 
+            }
             "BitLocker"    { $txtFooterStatus.Text = "• [OK] Sẵn sàng quản lý mã hóa BitLocker & trích xuất Recovery Key." }
             "AutoWin"      { 
-                $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass và tải ISO cài Win." 
+                $txtFooterStatus.Text = "• [OK] Sẵn sàng công cụ 1-Click Bypass, kho tải ISO gốc & đối soát SHA-256." 
                 Invoke-VUONGTTDoEvents
+                Refresh-VUONGTTIsoRepositoryUI
                 Refresh-PostWinDriverStatusBadge
                 Refresh-VUONGTTBackupTargetDrives
             }
@@ -5223,6 +5236,100 @@ if ($btnOpenOfficialDownloadPage) {
     })
 }
 
+$cmbIsoCatalog        = Get-Control "cmbIsoCatalog"
+$btnOpenIsoDownload   = Get-Control "btnOpenIsoDownload"
+$txtOfficialIsoSha256 = Get-Control "txtOfficialIsoSha256"
+$txtLocalIsoPath      = Get-Control "txtLocalIsoPath"
+$btnBrowseIsoFile     = Get-Control "btnBrowseIsoFile"
+$btnVerifyIsoSha256   = Get-Control "btnVerifyIsoSha256"
+$txtIsoVerifyResult   = Get-Control "txtIsoVerifyResult"
+
+function Refresh-VUONGTTIsoRepositoryUI {
+    try {
+        if (-not $cmbIsoCatalog) { return }
+        if ($cmbIsoCatalog.Items.Count -eq 0) {
+            $catalog = Get-VUONGTTIsoCatalog
+            foreach ($item in $catalog) {
+                $cbi = New-Object System.Windows.Controls.ComboBoxItem
+                $cbi.Content = "$($item.Name) [$($item.SizeFormatted)]"
+                $cbi.Tag = $item
+                $cmbIsoCatalog.Items.Add($cbi) | Out-Null
+            }
+            if ($cmbIsoCatalog.Items.Count -gt 0) {
+                $cmbIsoCatalog.SelectedIndex = 0
+            }
+        }
+        if ($cmbIsoCatalog.SelectedItem -and $cmbIsoCatalog.SelectedItem.Tag) {
+            $sel = $cmbIsoCatalog.SelectedItem.Tag
+            if ($txtOfficialIsoSha256) {
+                $txtOfficialIsoSha256.Text = $sel.OfficialSha256
+            }
+        }
+    } catch {}
+}
+
+if ($cmbIsoCatalog) {
+    $cmbIsoCatalog.Add_SelectionChanged({
+        if ($cmbIsoCatalog.SelectedItem -and $cmbIsoCatalog.SelectedItem.Tag) {
+            $sel = $cmbIsoCatalog.SelectedItem.Tag
+            if ($txtOfficialIsoSha256) {
+                $txtOfficialIsoSha256.Text = $sel.OfficialSha256
+            }
+        }
+    })
+}
+
+if ($btnOpenIsoDownload) {
+    $btnOpenIsoDownload.Add_Click({
+        if ($cmbIsoCatalog.SelectedItem -and $cmbIsoCatalog.SelectedItem.Tag) {
+            $sel = $cmbIsoCatalog.SelectedItem.Tag
+            $url = if ($sel.DownloadUrl) { $sel.DownloadUrl } else { "https://www.microsoft.com/software-download/windows11" }
+            Start-Process $url
+            if ($txtFooterStatus) {
+                $txtFooterStatus.Text = "• [OK] Đang mở liên kết tải ISO chính chủ: $($sel.Name)"
+            }
+        }
+    })
+}
+
+if ($btnBrowseIsoFile) {
+    $btnBrowseIsoFile.Add_Click({
+        $dlg = New-Object Microsoft.Win32.OpenFileDialog
+        $dlg.Title = "Chọn tệp Windows ISO để đối soát SHA-256"
+        $dlg.Filter = "Tệp Windows ISO (*.iso)|*.iso|Tất cả tệp (*.*)|*.*"
+        if ($dlg.ShowDialog()) {
+            if ($txtLocalIsoPath) {
+                $txtLocalIsoPath.Text = $dlg.FileName
+            }
+        }
+    })
+}
+
+if ($btnVerifyIsoSha256) {
+    $btnVerifyIsoSha256.Add_Click({
+        $filePath = if ($txtLocalIsoPath) { $txtLocalIsoPath.Text.Trim() } else { "" }
+        if (-not $filePath -or -not (Test-Path $filePath)) {
+            [System.Windows.MessageBox]::Show("Vui lòng chọn hoặc nhập đường dẫn tệp ISO hợp lệ tồn tại trên máy tính.", "Chưa Chọn Tệp ISO", "OK", "Warning")
+            return
+        }
+
+        $expectedHash = if ($txtOfficialIsoSha256) { $txtOfficialIsoSha256.Text.Trim() } else { "" }
+        if ($txtIsoVerifyResult) {
+            $txtIsoVerifyResult.Text = "Đang đọc luồng dữ liệu tệp ISO và tính toán mã băm SHA-256 (có thể mất vài giây tùy tốc độ ổ đĩa)..."
+        }
+        Invoke-VUONGTTDoEvents
+
+        $chk = Get-VUONGTTFileHashCheck -FilePath $filePath -ExpectedSha256 $expectedHash
+        $report = "Tệp: $($chk.FileName) ($($chk.FileSizeMB) MB)`r`nSHA-256 Tính Được: $($chk.CalculatedSha256)`r`nSHA-256 Chuẩn Gốc : $($chk.ExpectedSha256)`r`nTrạng Thái: $($chk.StatusText)"
+        if ($txtIsoVerifyResult) {
+            $txtIsoVerifyResult.Text = $report
+        }
+        if ($txtFooterStatus) {
+            $txtFooterStatus.Text = if ($chk.IsMatch) { "• [CHÍNH CHỦ 100%] Tệp ISO hoàn toàn trùng khớp với bản gốc của Microsoft!" } else { "• [CẢNH BÁO] Checksum SHA-256 không trùng khớp!" }
+        }
+    })
+}
+
 if ($btnStartOnlineWindowsInstall) {
     $btnStartOnlineWindowsInstall.Add_Click({
         $isoPath = if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text.Trim() } else { "" }
@@ -6543,6 +6650,163 @@ if ($btnEnableOpenSSH) {
     })
 }
 
+$cmbDnsAdapters    = Get-Control "cmbDnsAdapters"
+$cmbDnsPresets     = Get-Control "cmbDnsPresets"
+$btnApplyDns       = Get-Control "btnApplyDns"
+$btnResetDnsDhcp   = Get-Control "btnResetDnsDhcp"
+$btnBenchmarkDns   = Get-Control "btnBenchmarkDns"
+$txtCurrentDnsInfo = Get-Control "txtCurrentDnsInfo"
+
+function Refresh-VUONGTTDnsChangerUI {
+    try {
+        if (-not $cmbDnsAdapters -or -not $cmbDnsPresets) { return }
+        
+        # Nạp danh sách DNS Presets nếu chưa có
+        if ($cmbDnsPresets.Items.Count -eq 0) {
+            $presets = Get-VUONGTTDnsPresets
+            foreach ($p in $presets) {
+                $cbi = New-Object System.Windows.Controls.ComboBoxItem
+                $cbi.Content = "$($p.Name)"
+                $cbi.Tag = $p
+                $cmbDnsPresets.Items.Add($cbi) | Out-Null
+            }
+            if ($cmbDnsPresets.Items.Count -gt 0) {
+                $cmbDnsPresets.SelectedIndex = 0
+            }
+        }
+
+        # Nạp danh sách card mạng đang hoạt động
+        $curSelected = if ($cmbDnsAdapters.SelectedItem) { $cmbDnsAdapters.SelectedItem.Tag } else { $null }
+        $cmbDnsAdapters.Items.Clear()
+        $adapters = Get-VUONGTTNetworkAdapters
+        $foundIdx = 0
+        $idx = 0
+        foreach ($ad in $adapters) {
+            $cbi = New-Object System.Windows.Controls.ComboBoxItem
+            $cbi.Content = "$($ad.InterfaceAlias) ($($ad.IPv4Address)) - $($ad.Description)"
+            $cbi.Tag = $ad
+            $cmbDnsAdapters.Items.Add($cbi) | Out-Null
+            if ($curSelected -and $curSelected.InterfaceAlias -eq $ad.InterfaceAlias) {
+                $foundIdx = $idx
+            }
+            $idx++
+        }
+
+        if ($cmbDnsAdapters.Items.Count -gt 0) {
+            $cmbDnsAdapters.SelectedIndex = $foundIdx
+            $selAd = $cmbDnsAdapters.SelectedItem.Tag
+            if ($txtCurrentDnsInfo -and $selAd) {
+                $txtCurrentDnsInfo.Text = "[$($selAd.InterfaceAlias)] IP: $($selAd.IPv4Address) | DNS: $($selAd.CurrentDns)"
+            }
+        } else {
+            if ($txtCurrentDnsInfo) {
+                $txtCurrentDnsInfo.Text = "Không tìm thấy card mạng kết nối Internet."
+            }
+        }
+    } catch {}
+}
+
+if ($cmbDnsAdapters) {
+    $cmbDnsAdapters.Add_SelectionChanged({
+        if ($cmbDnsAdapters.SelectedItem -and $cmbDnsAdapters.SelectedItem.Tag) {
+            $ad = $cmbDnsAdapters.SelectedItem.Tag
+            if ($txtCurrentDnsInfo) {
+                $txtCurrentDnsInfo.Text = "[$($ad.InterfaceAlias)] IP: $($ad.IPv4Address) | DNS: $($ad.CurrentDns)"
+            }
+        }
+    })
+}
+
+if ($btnApplyDns) {
+    $btnApplyDns.Add_Click({
+        if (-not $cmbDnsAdapters.SelectedItem) {
+            [System.Windows.MessageBox]::Show("Vui lòng chọn card mạng cần đổi DNS.", "Thông Báo", "OK", "Warning")
+            return
+        }
+        $selAd = $cmbDnsAdapters.SelectedItem.Tag
+        $selPreset = if ($cmbDnsPresets.SelectedItem) { $cmbDnsPresets.SelectedItem.Tag } else { $null }
+        if (-not $selPreset) {
+            [System.Windows.MessageBox]::Show("Vui lòng chọn máy chủ DNS.", "Thông Báo", "OK", "Warning")
+            return
+        }
+
+        if ($txtConfigLog) {
+            $txtConfigLog.Text = "Đang áp dụng DNS [$($selPreset.Name)] cho card mạng [$($selAd.InterfaceAlias)]...`r`n"
+            $txtConfigLog.ScrollToEnd()
+        }
+        Invoke-VUONGTTDoEvents
+        $res = Set-VUONGTTDns -InterfaceAlias $selAd.InterfaceAlias -PrimaryDns $selPreset.Primary -SecondaryDns $selPreset.Secondary
+        if ($txtConfigLog) {
+            $txtConfigLog.AppendText("$($res.Message)`r`nĐã xóa bộ nhớ đệm DNS Cache (ipconfig /flushdns).`r`n")
+            $txtConfigLog.ScrollToEnd()
+        }
+        if ($txtFooterStatus) {
+            $txtFooterStatus.Text = if ($res.Success) { "• [OK] Đã đổi DNS [$($selPreset.Name)] thành công!" } else { "• [LỖI] $($res.Message)" }
+        }
+        Refresh-VUONGTTDnsChangerUI
+    })
+}
+
+if ($btnResetDnsDhcp) {
+    $btnResetDnsDhcp.Add_Click({
+        if (-not $cmbDnsAdapters.SelectedItem) { return }
+        $selAd = $cmbDnsAdapters.SelectedItem.Tag
+        if ($txtConfigLog) {
+            $txtConfigLog.Text = "Đang khôi phục DNS về mặc định (DHCP) cho [$($selAd.InterfaceAlias)]...`r`n"
+            $txtConfigLog.ScrollToEnd()
+        }
+        Invoke-VUONGTTDoEvents
+        $res = Set-VUONGTTDns -InterfaceAlias $selAd.InterfaceAlias -ResetDhcp
+        if ($txtConfigLog) {
+            $txtConfigLog.AppendText("$($res.Message)`r`nĐã xóa bộ nhớ đệm DNS Cache.`r`n")
+            $txtConfigLog.ScrollToEnd()
+        }
+        if ($txtFooterStatus) {
+            $txtFooterStatus.Text = "• [OK] Đã khôi phục DNS tự động (DHCP) thành công!"
+        }
+        Refresh-VUONGTTDnsChangerUI
+    })
+}
+
+if ($btnBenchmarkDns) {
+    $btnBenchmarkDns.Add_Click({
+        $btnBenchmarkDns.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "==================================================`r`n BẮT ĐẦU ĐO TỐC ĐỘ PING ĐỘ TRỄ CÁC MÁY CHỦ DNS`r`n==================================================`r`n"
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            $benchResults = Test-VUONGTTDnsBenchmark
+            $fastest = $null
+            foreach ($b in $benchResults) {
+                if (-not $fastest -and $b.LatencyMs -lt 9000) { $fastest = $b }
+                if ($txtConfigLog) {
+                    $txtConfigLog.AppendText("• $($b.Name.PadRight(34)) : $($b.StatusText)`r`n")
+                }
+            }
+            if ($fastest) {
+                if ($txtConfigLog) {
+                    $txtConfigLog.AppendText("`r`n👉 KHUYÊN DÙNG NHẤT: [$($fastest.Name)] - Độ trễ cực thấp: $($fastest.StatusText)`r`n")
+                    $txtConfigLog.ScrollToEnd()
+                }
+                if ($txtFooterStatus) {
+                    $txtFooterStatus.Text = "• [PING TỐT NHẤT] $($fastest.Name) ($($fastest.StatusText))"
+                }
+                for ($i = 0; $i -lt $cmbDnsPresets.Items.Count; $i++) {
+                    $it = $cmbDnsPresets.Items[$i]
+                    if ($it.Tag -and $it.Tag.Primary -eq $fastest.Primary) {
+                        $cmbDnsPresets.SelectedIndex = $i
+                        break
+                    }
+                }
+            }
+        } finally {
+            $btnBenchmarkDns.IsEnabled = $true
+        }
+    })
+}
+
 # 14 Legacy Panels với Scoping An Toàn (.GetNewClosure) và Ghi Log Trực Tiếp
 $panelMap = @{
     "btnPanelCompMgmt"      = "compmgmt"
@@ -7414,6 +7678,146 @@ $btnCleanCrack        = Get-Control "btnCleanCrack"
 $btnCopyActivationKey = Get-Control "btnCopyActivationKey"
 $txtActivationLog     = Get-Control "txtActivationLog"
 
+$btnRefreshProductKeys   = Get-Control "btnRefreshProductKeys"
+$txtBiosOemKey           = Get-Control "txtBiosOemKey"
+$txtWindowsInstalledKey  = Get-Control "txtWindowsInstalledKey"
+$txtOfficeKeyStatus      = Get-Control "txtOfficeKeyStatus"
+$btnCopyBiosKey          = Get-Control "btnCopyBiosKey"
+$btnCopyInstalledKey     = Get-Control "btnCopyInstalledKey"
+$btnActivateWithOemKey   = Get-Control "btnActivateWithOemKey"
+
+function Refresh-VUONGTTKeyViewerUI {
+    try {
+        if (-not $txtBiosOemKey -or -not $txtWindowsInstalledKey) { return }
+        $oem = Get-VUONGTTOemBiosKey
+        if ($oem.Found) {
+            $txtBiosOemKey.Text = $oem.Key
+        } else {
+            $txtBiosOemKey.Text = "Không tìm thấy OEM Key nhúng trong BIOS/UEFI (Máy lắp ráp hoặc không kèm Win OEM)"
+        }
+        
+        $win = Get-VUONGTTInstalledWindowsKey
+        if ($win -and $win.Key) {
+            $txtWindowsInstalledKey.Text = "$($win.Key) ($($win.ProductName))"
+        } else {
+            $txtWindowsInstalledKey.Text = "Không đọc được Key Windows từ Registry (Key số số hóa / MAS HWID)"
+        }
+
+        $off = Get-VUONGTTOfficeLicenseStatus
+        if ($off -and $off.Found) {
+            $txtOfficeKeyStatus.Text = "$($off.ProductName) | Trạng thái: $($off.Status) | 5 ký tự cuối: $($off.PartialProductKey)"
+        } else {
+            $txtOfficeKeyStatus.Text = "Chưa phát hiện bản Office hoặc không tìm thấy thông tin ospp.vbs"
+        }
+    } catch {
+        if ($txtActivationLog) {
+            $txtActivationLog.Text += "`r`n[LỖI ĐỌC KEY] $($_.Exception.Message)"
+        }
+    }
+}
+
+if ($btnRefreshProductKeys) {
+    $btnRefreshProductKeys.Add_Click({
+        $txtBiosOemKey.Text = "Đang quét bảng ACPI MSDM & Registry..."
+        $txtWindowsInstalledKey.Text = "Đang giải mã DigitalProductId..."
+        $txtOfficeKeyStatus.Text = "Đang kiểm tra ospp.vbs..."
+        Invoke-VUONGTTDoEvents
+        Refresh-VUONGTTKeyViewerUI
+        if ($txtFooterStatus) {
+            $txtFooterStatus.Text = "• [OK] Đã cập nhật thông tin Product Key & OEM BIOS Key!"
+        }
+    })
+}
+
+if ($btnCopyBiosKey) {
+    $btnCopyBiosKey.Add_Click({
+        $k = $txtBiosOemKey.Text
+        if ($k -and $k -notlike "*Không tìm thấy*" -and $k -notlike "*Chưa nạp*" -and $k -notlike "*Đang quét*") {
+            [System.Windows.Clipboard]::SetText($k)
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã sao chép OEM BIOS Key vào Clipboard: $k" }
+        } else {
+            [System.Windows.MessageBox]::Show("Không có OEM Key hợp lệ để sao chép.", "Thông Báo", "OK", "Information")
+        }
+    })
+}
+
+if ($btnCopyInstalledKey) {
+    $btnCopyInstalledKey.Add_Click({
+        $k = $txtWindowsInstalledKey.Text
+        if ($k) {
+            if ($k -match '([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})') {
+                [System.Windows.Clipboard]::SetText($Matches[1])
+                if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã sao chép Windows Product Key vào Clipboard: $($Matches[1])" }
+            } else {
+                [System.Windows.Clipboard]::SetText($k)
+                if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã sao chép thông tin Windows Key vào Clipboard!" }
+            }
+        }
+    })
+}
+
+if ($btnActivateWithOemKey) {
+    $btnActivateWithOemKey.Add_Click({
+        $k = $txtBiosOemKey.Text
+        if (-not $k -or $k -like "*Không tìm thấy*" -or $k -like "*Chưa nạp*" -or $k -like "*Đang quét*") {
+            [System.Windows.MessageBox]::Show("Máy tính này không có OEM Key nhúng trong BIOS để kích hoạt.", "Không Tìm Thấy OEM Key", "OK", "Warning")
+            return
+        }
+        $confirm = [System.Windows.MessageBox]::Show("Bạn có chắc chắn muốn nạp OEM Key [$k] và kích hoạt bản quyền Windows trực tuyến?", "Xác Nhận Kích Hoạt OEM", "YesNo", "Question")
+        if ($confirm -eq "Yes") {
+            $txtActivationLog.Text = "Đang tiến hành nạp OEM Key vào Windows bằng slmgr.vbs /ipk $k ..."
+            Invoke-VUONGTTDoEvents
+            $resIpk = cscript.exe //nologo $env:SystemRoot\System32\slmgr.vbs /ipk $k 2>&1 | Out-String
+            $txtActivationLog.Text += "`r`n$resIpk`r`nĐang gửi yêu cầu kích hoạt trực tuyến slmgr.vbs /ato ..."
+            Invoke-VUONGTTDoEvents
+            $resAto = cscript.exe //nologo $env:SystemRoot\System32\slmgr.vbs /ato 2>&1 | Out-String
+            $txtActivationLog.Text += "`r`n$resAto"
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã hoàn tất kích hoạt bằng OEM Key!" }
+            Refresh-VUONGTTKeyViewerUI
+        }
+    })
+}
+
+$cmbWindowsTargetSku = Get-Control "cmbWindowsTargetSku"
+$btnConvertWindowsSku = Get-Control "btnConvertWindowsSku"
+$btnConvertOfficeR2V = Get-Control "btnConvertOfficeR2V"
+
+if ($btnConvertWindowsSku) {
+    $btnConvertWindowsSku.Add_Click({
+        $selItem = $cmbWindowsTargetSku.SelectedItem
+        $targetEdition = if ($selItem -and $selItem.Tag) { $selItem.Tag } else { "Professional" }
+        $targetName = if ($selItem -and $selItem.Content) { $selItem.Content } else { $targetEdition }
+
+        $confirm = [System.Windows.MessageBox]::Show("Bạn có chắc chắn muốn nâng cấp phiên bản Windows hiện tại lên [$targetName]?`n`nQuá trình sẽ nạp Generic Upgrade Key và chuyển đổi edition bằng DISM/changepk.", "Xác Nhận Nâng Cấp Windows SKU", "YesNo", "Question")
+        if ($confirm -eq "Yes") {
+            $txtActivationLog.Text = "Đang tiến hành chuyển đổi phiên bản Windows sang $targetName..."
+            Invoke-VUONGTTDoEvents
+            $res = Invoke-VUONGTTWindowsSkuConvert -TargetEditionId $targetEdition
+            $txtActivationLog.Text = $res.Logs
+            if ($txtFooterStatus) {
+                $txtFooterStatus.Text = if ($res.Success) { "• [OK] Đã hoàn tất nâng cấp phiên bản Windows lên $targetName!" } else { "• [THÔNG BÁO] Đã thực hiện lệnh chuyển đổi SKU. Kiểm tra nhật ký để biết chi tiết." }
+            }
+            Refresh-VUONGTTKeyViewerUI
+        }
+    })
+}
+
+if ($btnConvertOfficeR2V) {
+    $btnConvertOfficeR2V.Add_Click({
+        $confirm = [System.Windows.MessageBox]::Show("Bạn có muốn chuyển đổi giấy phép Microsoft Office Click-to-Run (Retail) sang Volume License (C2R-R2V)?`n`nTính năng này sẽ nạp chứng chỉ Volume License để hỗ trợ kích hoạt vĩnh viễn qua MAS / KMS.", "Xác Nhận Chuyển Đổi Office R2V", "YesNo", "Question")
+        if ($confirm -eq "Yes") {
+            $txtActivationLog.Text = "Đang quét các chứng chỉ Volume trong Licenses16 và nạp vào OSPP..."
+            Invoke-VUONGTTDoEvents
+            $res = Invoke-VUONGTTOfficeR2VConvert
+            $txtActivationLog.Text = $res.Logs
+            if ($txtFooterStatus) {
+                $txtFooterStatus.Text = if ($res.Success) { "• [OK] Chuyển đổi Office sang Volume hoàn tất!" } else { "• [CẢNH BÁO] Không thể hoàn tất chuyển đổi Office R2V." }
+            }
+            Refresh-VUONGTTKeyViewerUI
+        }
+    })
+}
+
 $btnLaunchMAS.Add_Click({
     $txtActivationLog.Text = "Đang khởi chạy Massgrave MAS bản quyền số chính thức..."
     Invoke-VUONGTTMAS
@@ -7427,9 +7831,42 @@ $btnCheckStatus.Add_Click({
         $txtFooterStatus.Text = "• [OK] Đã hoàn tất kiểm tra sâu bản quyền hệ thống & Product Key!"
     }
 })
+$btnScanCrackThreats = Get-Control "btnScanCrackThreats"
+if ($btnScanCrackThreats) {
+    $btnScanCrackThreats.Add_Click({
+        $txtActivationLog.Text = "Đang quét sâu toàn bộ hệ thống tìm crack lậu (Services, Scheduled Tasks, IFEO Registry, Files, Hosts)..."
+        Invoke-VUONGTTDoEvents
+        $scan = Get-VUONGTTCrackThreats
+        if ($scan.IsClean) {
+            $txtActivationLog.Text = "✅ HỆ THỐNG AN TOÀN & SẠCH HOÀN TOÀN!`r`nKhông phát hiện bất kỳ dấu vết crack lậu (KMSpico, AutoKMS, IFEO Hook hay Hosts redirect) nào trên máy tính."
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [AN TOÀN] Không tìm thấy mã độc hoặc crack lậu trên máy tính!" }
+        } else {
+            $report = [System.Collections.Generic.List[string]]::new()
+            $report.Add("⚠️ PHÁT HIỆN $($scan.ThreatCount) MỐI NGUY HẠI CRACK LẬU TRÊN MÁY TÍNH:")
+            $report.Add("==================================================")
+            foreach ($t in $scan.Threats) {
+                $report.Add("• [$($t.Severity)] $($t.Category): $($t.Name)")
+                $report.Add("  - Đường dẫn/Mục tiêu: $($t.Target)")
+                $report.Add("  - Chi tiết: $($t.Description)")
+            }
+            $report.Add("==================================================")
+            $report.Add("👉 Hãy bấm nút '🛡️ Dọn Sạch Crack Rác' để xóa sạch các mối nguy hại này ngay lập tức.")
+            $txtActivationLog.Text = ($report -join "`r`n")
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [CẢNH BÁO] Phát hiện $($scan.ThreatCount) dấu vết crack lậu trên máy!" }
+        }
+    })
+}
+
 $btnCleanCrack.Add_Click({
-    $log = Invoke-VUONGTTCleanCrack
-    $txtActivationLog.Text = $log
+    $confirm = [System.Windows.MessageBox]::Show("Bạn có chắc chắn muốn tiến hành tiệt trừ toàn bộ các mối nguy crack lậu (AutoKMS, KMSpico, Registry Hooks và làm sạch hosts/KMS server)?", "Xác Nhận Tiệt Trừ Crack", "YesNo", "Warning")
+    if ($confirm -eq "Yes") {
+        $txtActivationLog.Text = "Đang tiến hành dọn sạch crack và khôi phục cài đặt gốc..."
+        Invoke-VUONGTTDoEvents
+        $cleanRes = Remove-VUONGTTCrackThreats
+        $txtActivationLog.Text = $cleanRes.Logs
+        if ($txtFooterStatus) { $txtFooterStatus.Text = "• [OK] Đã hoàn tất dọn sạch crack lậu hệ thống!" }
+        Refresh-VUONGTTKeyViewerUI
+    }
 })
 if ($btnCopyActivationKey) {
     $btnCopyActivationKey.Add_Click({
