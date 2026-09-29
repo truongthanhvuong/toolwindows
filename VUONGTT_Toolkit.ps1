@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.53
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.54
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -437,9 +437,25 @@ function Switch-Tab {
     # Hide all pages
     $pages.Values | Where-Object { $_ } | ForEach-Object { $_.Visibility = [System.Windows.Visibility]::Collapsed }
 
-    # Show target page
+    # Show target page with Apple Fluid Transition Animation (Fade-in & Micro-slide)
     if ($pages.ContainsKey($TargetTag) -and $pages[$TargetTag]) {
-        $pages[$TargetTag].Visibility = [System.Windows.Visibility]::Visible
+        $targetPage = $pages[$TargetTag]
+        $targetPage.Visibility = [System.Windows.Visibility]::Visible
+
+        try {
+            $trans = New-Object System.Windows.Media.TranslateTransform(0, 8)
+            $targetPage.RenderTransform = $trans
+
+            $animY = New-Object System.Windows.Media.Animation.DoubleAnimation(8, 0, [System.TimeSpan]::FromMilliseconds(220))
+            $easingY = New-Object System.Windows.Media.Animation.CubicEase
+            $easingY.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
+            $animY.EasingFunction = $easingY
+            $trans.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $animY)
+
+            $animOp = New-Object System.Windows.Media.Animation.DoubleAnimation(0.15, 1.0, [System.TimeSpan]::FromMilliseconds(220))
+            $animOp.EasingFunction = $easingY
+            $targetPage.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $animOp)
+        } catch {}
     }
 
     # Update menu button styling
@@ -596,10 +612,8 @@ function Set-ToolkitLanguage {
     $conv = [System.Windows.Media.BrushConverter]::new()
 
     if ($Lang -eq "VI") {
-        $btnLangVI.Background  = $conv.ConvertFromString("#FEE2E2")
-        $btnLangVI.BorderBrush = $conv.ConvertFromString("#BE123C")
-        $btnLangEN.Background  = $window.Resources["CardBgBrush"]
-        $btnLangEN.BorderBrush = $window.Resources["CardBorderBrush"]
+        $btnLangVI.Background = $conv.ConvertFromString("#FFFFFF")
+        $btnLangEN.Background = [System.Windows.Media.Brushes]::Transparent
 
         # Theme buttons
         $btnThemeDefault.Content = "Mặc Định"
@@ -651,10 +665,8 @@ function Set-ToolkitLanguage {
     }
     else {
         # EN
-        $btnLangEN.Background  = $conv.ConvertFromString("#DBEAFE")
-        $btnLangEN.BorderBrush = $conv.ConvertFromString("#2563EB")
-        $btnLangVI.Background  = $window.Resources["CardBgBrush"]
-        $btnLangVI.BorderBrush = $window.Resources["CardBorderBrush"]
+        $btnLangEN.Background = $conv.ConvertFromString("#FFFFFF")
+        $btnLangVI.Background = [System.Windows.Media.Brushes]::Transparent
 
         # Theme buttons
         $btnThemeDefault.Content = "Default"
@@ -741,18 +753,18 @@ function Set-ToolkitTheme {
             $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#78350F")
             $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#D6C7B2")
             
-            # Button States
-            $btnThemeDefault.Background  = $conv.ConvertFromString("#EADBCA")
+            $window.Resources["SegmentedBgBrush"]     = $conv.ConvertFromString("#E8DEC8")
+            $window.Resources["SegmentedActiveBrush"] = $conv.ConvertFromString("#FFFFFF")
+            
+            # Apple Segmented Button States
+            $btnThemeDefault.Background  = $conv.ConvertFromString("#FFFFFF")
             $btnThemeDefault.Foreground  = $conv.ConvertFromString("#78350F")
-            $btnThemeDefault.BorderBrush = $conv.ConvertFromString("#C4B5A0")
 
-            $btnThemeDark.Background     = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeDark.Foreground     = $conv.ConvertFromString("#292524")
-            $btnThemeDark.BorderBrush    = $conv.ConvertFromString("#D6C7B2")
+            $btnThemeDark.Background     = [System.Windows.Media.Brushes]::Transparent
+            $btnThemeDark.Foreground     = $conv.ConvertFromString("#78716C")
 
-            $btnThemeLight.Background    = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeLight.Foreground    = $conv.ConvertFromString("#292524")
-            $btnThemeLight.BorderBrush   = $conv.ConvertFromString("#D6C7B2")
+            $btnThemeLight.Background    = [System.Windows.Media.Brushes]::Transparent
+            $btnThemeLight.Foreground    = $conv.ConvertFromString("#78716C")
         }
         "Dark" {
             # Sleek Apple Dark (High Contrast, Crisp Clarity)
@@ -777,19 +789,18 @@ function Set-ToolkitTheme {
             $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#1E3A8A")
             $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#93C5FD")
             $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#334460")
+            $window.Resources["SegmentedBgBrush"]     = $conv.ConvertFromString("#1E293B")
+            $window.Resources["SegmentedActiveBrush"] = $conv.ConvertFromString("#334155")
 
-            # Button States
-            $btnThemeDark.Background     = $conv.ConvertFromString("#2563EB")
+            # Apple Segmented Button States
+            $btnThemeDark.Background     = $conv.ConvertFromString("#334155")
             $btnThemeDark.Foreground     = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeDark.BorderBrush    = $conv.ConvertFromString("#60A5FA")
 
-            $btnThemeDefault.Background  = $conv.ConvertFromString("#1A243B")
-            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#CBD5E1")
-            $btnThemeDefault.BorderBrush = $conv.ConvertFromString("#334460")
+            $btnThemeDefault.Background  = [System.Windows.Media.Brushes]::Transparent
+            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#94A3B8")
 
-            $btnThemeLight.Background    = $conv.ConvertFromString("#1A243B")
-            $btnThemeLight.Foreground    = $conv.ConvertFromString("#CBD5E1")
-            $btnThemeLight.BorderBrush   = $conv.ConvertFromString("#334460")
+            $btnThemeLight.Background    = [System.Windows.Media.Brushes]::Transparent
+            $btnThemeLight.Foreground    = $conv.ConvertFromString("#94A3B8")
         }
         "Light" {
             # Clean Light
@@ -814,19 +825,18 @@ function Set-ToolkitTheme {
             $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#EFF6FF")
             $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#2563EB")
             $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#E2E8F0")
+            $window.Resources["SegmentedBgBrush"]     = $conv.ConvertFromString("#E2E8F0")
+            $window.Resources["SegmentedActiveBrush"] = $conv.ConvertFromString("#FFFFFF")
 
-            # Button States
-            $btnThemeLight.Background    = $conv.ConvertFromString("#EFF6FF")
-            $btnThemeLight.Foreground    = $conv.ConvertFromString("#2563EB")
-            $btnThemeLight.BorderBrush   = $conv.ConvertFromString("#93C5FD")
+            # Apple Segmented Button States
+            $btnThemeLight.Background    = $conv.ConvertFromString("#FFFFFF")
+            $btnThemeLight.Foreground    = $conv.ConvertFromString("#0F172A")
 
-            $btnThemeDefault.Background  = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#0F172A")
-            $btnThemeDefault.BorderBrush = $conv.ConvertFromString("#CBD5E1")
+            $btnThemeDefault.Background  = [System.Windows.Media.Brushes]::Transparent
+            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#64748B")
 
-            $btnThemeDark.Background     = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeDark.Foreground     = $conv.ConvertFromString("#0F172A")
-            $btnThemeDark.BorderBrush    = $conv.ConvertFromString("#CBD5E1")
+            $btnThemeDark.Background     = [System.Windows.Media.Brushes]::Transparent
+            $btnThemeDark.Foreground     = $conv.ConvertFromString("#64748B")
         }
     }
 
@@ -7853,7 +7863,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.53" }
+                if (-not $currentVer) { $currentVer = "20.5.909.54" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
