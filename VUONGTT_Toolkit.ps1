@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.66
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.67
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.66"
+$Script:AppVersion = "v20.5.909.67"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -2485,6 +2485,20 @@ $btnFixEnableSmb               = Get-Control "btnFixEnableSmb"
 $btnFixFlushNetUse             = Get-Control "btnFixFlushNetUse"
 $btnOpenAdvancedSharingSettings= Get-Control "btnOpenAdvancedSharingSettings"
 
+# Scan to Folder Controls
+$txtScanFolderPath             = Get-Control "txtScanFolderPath"
+$txtScanShareName              = Get-Control "txtScanShareName"
+$btnBrowseScanFolder           = Get-Control "btnBrowseScanFolder"
+$chkEnableAllFileSharing       = Get-Control "chkEnableAllFileSharing"
+$chkGrantEveryoneNTFS          = Get-Control "chkGrantEveryoneNTFS"
+$btnCreateScanFolder           = Get-Control "btnCreateScanFolder"
+$btnEnableAllFileSharing       = Get-Control "btnEnableAllFileSharing"
+$btnOpenScanFolder             = Get-Control "btnOpenScanFolder"
+$txtScanUncIp                  = Get-Control "txtScanUncIp"
+$txtScanUncName                = Get-Control "txtScanUncName"
+$btnCopyScanUncIp              = Get-Control "btnCopyScanUncIp"
+$btnCopyScanUncName            = Get-Control "btnCopyScanUncName"
+
 # Legacy Controls Fallback
 $txtPrinterSearch              = Get-Control "txtPrinterSearch"
 $btnPasteError                 = Get-Control "btnPasteError"
@@ -2541,6 +2555,9 @@ function Switch-PrinterLANSubTab {
         "sharedata" {
             if ($tabPrinterLAN_ShareData) { $tabPrinterLAN_ShareData.Background = $activeBg; $tabPrinterLAN_ShareData.Foreground = $whiteFg }
             if ($pnlSubPrinterLAN_ShareData) { $pnlSubPrinterLAN_ShareData.Visibility = [System.Windows.Visibility]::Visible }
+            if (Get-Command "Update-VUONGTTScanFolderUncPreview" -ErrorAction SilentlyContinue) {
+                Update-VUONGTTScanFolderUncPreview
+            }
         }
     }
 }
@@ -2999,6 +3016,130 @@ if ($btnOpenAdvancedSharingSettings) {
     $btnOpenAdvancedSharingSettings.Add_Click({
         $log = Invoke-VUONGTTDataShareFix -Action "open_advanced_sharing"
         Add-PrinterLogMessage $log
+    })
+}
+
+# --- SCAN TO FOLDER ACTIONS ---
+function Update-VUONGTTScanFolderUncPreview {
+    try {
+        $ip = Get-VUONGTTLocalPrimaryIpAddress
+        $compName = $env:COMPUTERNAME
+        $sName = if ($txtScanShareName -and $txtScanShareName.Text) { $txtScanShareName.Text.Trim() } else { "Scan" }
+        if ($txtScanUncIp) { $txtScanUncIp.Text = "\\$ip\$sName" }
+        if ($txtScanUncName) { $txtScanUncName.Text = "\\$compName\$sName" }
+    } catch {}
+}
+
+Update-VUONGTTScanFolderUncPreview
+
+if ($txtScanShareName) {
+    $txtScanShareName.Add_TextChanged({
+        Update-VUONGTTScanFolderUncPreview
+    })
+}
+
+if ($btnBrowseScanFolder) {
+    $btnBrowseScanFolder.Add_Click({
+        try {
+            $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+            $fbd.Description = "Chọn thư mục dùng để lưu file Scan mạng LAN"
+            $fbd.ShowNewFolderButton = $true
+            if ($txtScanFolderPath -and (Test-Path $txtScanFolderPath.Text)) {
+                $fbd.SelectedPath = $txtScanFolderPath.Text
+            } else {
+                $fbd.SelectedPath = "C:\"
+            }
+            if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                if ($txtScanFolderPath) {
+                    $txtScanFolderPath.Text = $fbd.SelectedPath
+                }
+            }
+        } catch {
+            Add-PrinterLogMessage "[!] Lỗi khi chọn thư mục: $($_.Exception.Message)"
+        }
+    })
+}
+
+if ($btnCreateScanFolder) {
+    $btnCreateScanFolder.Add_Click({
+        $btnCreateScanFolder.IsEnabled = $false
+        try {
+            $folderPath = if ($txtScanFolderPath -and $txtScanFolderPath.Text) { $txtScanFolderPath.Text.Trim() } else { "C:\Scan" }
+            $shareName = if ($txtScanShareName -and $txtScanShareName.Text) { $txtScanShareName.Text.Trim() } else { "Scan" }
+            $enableAll = if ($chkEnableAllFileSharing) { [bool]$chkEnableAllFileSharing.IsChecked } else { $true }
+
+            Add-PrinterLogMessage "=== [BẮT ĐẦU TẠO THƯ MỤC SCAN & CHIA SẺ EVERYONE] ==="
+            Invoke-VUONGTTDoEvents
+
+            $res = New-VUONGTTScanFolderShare -FolderPath $folderPath -ShareName $shareName -EnableAllSharing $enableAll
+            if ($res) {
+                if ($txtScanUncIp) { $txtScanUncIp.Text = $res.UncIp }
+                if ($txtScanUncName) { $txtScanUncName.Text = $res.UncName }
+                Add-PrinterLogMessage $res.Log
+                if ($res.Success) {
+                    [System.Windows.MessageBox]::Show("Đã tạo và chia sẻ thư mục Scan thành công!`n`nĐường dẫn máy in: $($res.UncIp)`nĐường dẫn Hostname: $($res.UncName)", "Tạo Thư Mục Scan Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                }
+            }
+        } catch {
+            Add-PrinterLogMessage "[LỖI] Tạo thư mục Scan thất bại: $($_.Exception.Message)"
+        } finally {
+            $btnCreateScanFolder.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+
+if ($btnEnableAllFileSharing) {
+    $btnEnableAllFileSharing.Add_Click({
+        $btnEnableAllFileSharing.IsEnabled = $false
+        try {
+            Add-PrinterLogMessage "=== [ĐANG BẬT TOÀN DIỆN FILE SHARING & TẮT MẬT KHẨU MẠNG LAN] ==="
+            Invoke-VUONGTTDoEvents
+            $log = Enable-VUONGTTAllSharingNoPassword
+            Add-PrinterLogMessage $log
+            [System.Windows.MessageBox]::Show("Đã bật File Sharing & tắt Password Protected Sharing thành công!`nMọi thiết bị máy in/photo trên mạng LAN đã có thể truy cập scan không cần mật khẩu.", "Bật File Sharing Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } catch {
+            Add-PrinterLogMessage "[LỖI] Kích hoạt chia sẻ thất bại: $($_.Exception.Message)"
+        } finally {
+            $btnEnableAllFileSharing.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+
+if ($btnOpenScanFolder) {
+    $btnOpenScanFolder.Add_Click({
+        try {
+            $folderPath = if ($txtScanFolderPath -and $txtScanFolderPath.Text) { $txtScanFolderPath.Text.Trim() } else { "C:\Scan" }
+            if (-not (Test-Path $folderPath)) {
+                New-Item -Path $folderPath -ItemType Directory -Force | Out-Null
+            }
+            Start-Process "explorer.exe" -ArgumentList "`"$folderPath`""
+        } catch {
+            Add-PrinterLogMessage "[!] Không thể mở thư mục: $($_.Exception.Message)"
+        }
+    })
+}
+
+if ($btnCopyScanUncIp) {
+    $btnCopyScanUncIp.Add_Click({
+        try {
+            if ($txtScanUncIp -and $txtScanUncIp.Text) {
+                [System.Windows.Clipboard]::SetText($txtScanUncIp.Text)
+                Add-PrinterLogMessage "[OK] Đã sao chép đường dẫn IP vào Clipboard: $($txtScanUncIp.Text)"
+            }
+        } catch {}
+    })
+}
+
+if ($btnCopyScanUncName) {
+    $btnCopyScanUncName.Add_Click({
+        try {
+            if ($txtScanUncName -and $txtScanUncName.Text) {
+                [System.Windows.Clipboard]::SetText($txtScanUncName.Text)
+                Add-PrinterLogMessage "[OK] Đã sao chép đường dẫn Hostname vào Clipboard: $($txtScanUncName.Text)"
+            }
+        } catch {}
     })
 }
 
@@ -9364,7 +9505,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.66" }
+                if (-not $currentVer) { $currentVer = "20.5.909.67" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

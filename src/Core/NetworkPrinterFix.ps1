@@ -769,6 +769,10 @@ function Invoke-VUONGTTDataShareFix {
                 Start-Process "control.exe" -ArgumentList "/name Microsoft.NetworkAndSharingCenter /page AdvancedShared"
                 $log += "[$ts] [OK] Đã mở cài đặt chia sẻ mạng nâng cao (Advanced Sharing Settings)."
             }
+            "enable_all_sharing_nopass" {
+                $subLog = Enable-VUONGTTAllSharingNoPassword
+                $log += $subLog
+            }
             default {
                 $log += "[$ts] [LƯU Ý] Không hỗ trợ hành động: $Action"
             }
@@ -777,4 +781,197 @@ function Invoke-VUONGTTDataShareFix {
         $log += "[$ts] [LỖI] $($_.Exception.Message)"
     }
     return ($log -join "`n")
+}
+
+# =========================================================================
+#   SCAN TO FOLDER & PASSWORDLESS SHARING ENGINE
+# =========================================================================
+
+function Get-VUONGTTLocalPrimaryIpAddress {
+    <#
+    .SYNOPSIS
+        Lấy địa chỉ IPv4 nội bộ chính của máy tính đang kết nối mạng LAN.
+    #>
+    try {
+        $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object {
+            $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" -and $_.InterfaceAlias -notlike "*Loopback*" -and $_.InterfaceAlias -notlike "*vEthernet*"
+        } | Sort-Object -Property InterfaceMetric | Select-Object -ExpandProperty IPAddress -First 1)
+
+        if (-not $ip) {
+            $ip = ([System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) | Where-Object {
+                $_.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork -and $_.IPAddressToString -notlike "127.*"
+            } | Select-Object -ExpandProperty IPAddressToString -First 1)
+        }
+        if (-not $ip) { $ip = "127.0.0.1" }
+        return $ip
+    } catch {
+        return "127.0.0.1"
+    }
+}
+
+function Enable-VUONGTTAllSharingNoPassword {
+    <#
+    .SYNOPSIS
+        Bật toàn diện tính năng chia sẻ mạng LAN, kích hoạt Network Discovery, mở tường lửa,
+        và tắt yêu cầu mật khẩu chia sẻ (Password Protected Sharing) để máy in/photo scan mượt mà.
+    #>
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    $log = @()
+    $log += "[$ts] === [BẮT ĐẦU CẤU HÌNH FILE SHARING & TẮT MẬT KHẨU MẠNG LAN] ==="
+    try {
+        # 1. Bật Network Discovery và File & Printer Sharing qua Tường lửa
+        netsh advfirewall firewall set rule group="Network Discovery" new enable=Yes 2>&1 | Out-Null
+        netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=Yes 2>&1 | Out-Null
+        $log += "  -> [OK] Đã mở cổng Tường lửa cho Network Discovery & File/Printer Sharing (mọi Profiles)."
+
+        # 2. Đặt Network Category thành Private cho tất cả card mạng
+        Get-NetConnectionProfile -ErrorAction SilentlyContinue | ForEach-Object {
+            Set-NetConnectionProfile -InterfaceIndex $_.InterfaceIndex -NetworkCategory Private -ErrorAction SilentlyContinue
+        }
+        $log += "  -> [OK] Đã chuyển đổi các kết nối mạng sang chế độ Mạng Riêng Tư (Private Network)."
+
+        # 3. Kích hoạt và tự động chạy các dịch vụ hệ thống cốt lõi
+        $services = @("fdPHost", "FDResPub", "SSDPSRV", "upnphost", "LanmanServer", "LanmanWorkstation")
+        foreach ($s in $services) {
+            try {
+                Set-Service -Name $s -StartupType Automatic -ErrorAction SilentlyContinue
+                Start-Service -Name $s -ErrorAction SilentlyContinue
+            } catch {}
+        }
+        $log += "  -> [OK] Đã kích hoạt các dịch vụ chia sẻ mạng (LanmanServer, FDResPub, fdPHost, SSDPSRV)."
+
+        # 4. Cho phép Guest Insecure (LanmanWorkstation) cho kết nối không mật khẩu
+        $pWorkstation = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\LanmanWorkstation"
+        if (-not (Test-Path $pWorkstation)) { New-Item -Path $pWorkstation -Force -ErrorAction SilentlyContinue | Out-Null }
+        Set-ItemProperty -Path $pWorkstation -Name "AllowInsecureGuestAuth" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+
+        $pWorkstationSvc = "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters"
+        if (Test-Path $pWorkstationSvc) {
+            Set-ItemProperty -Path $pWorkstationSvc -Name "AllowInsecureGuestAuth" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        }
+        $log += "  -> [OK] Đã bật AllowInsecureGuestAuth = 1 (Cho phép máy in kết nối không mật khẩu)."
+
+        # 5. Kích hoạt tài khoản Guest cục bộ
+        cmd.exe /c "net user Guest /active:yes >nul 2>nul"
+        $log += "  -> [OK] Đã kích hoạt tài khoản Guest nội bộ."
+
+        # 6. Tắt Password Protected Sharing (Bỏ giới hạn tài khoản trống mật khẩu & LSA)
+        $pLsa = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
+        if (Test-Path $pLsa) {
+            Set-ItemProperty -Path $pLsa -Name "limitblankpassworduse" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $pLsa -Name "everyoneincludesanonymous" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        }
+        $log += "  -> [OK] Đã tắt Password Protected Sharing (limitblankpassworduse = 0, everyoneincludesanonymous = 1)."
+
+        # 7. Thêm share Scan vào NullSessionShares trên LanmanServer
+        $pServerParam = "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
+        if (Test-Path $pServerParam) {
+            $nullShares = (Get-ItemProperty -Path $pServerParam -Name "NullSessionShares" -ErrorAction SilentlyContinue).NullSessionShares
+            if ($null -eq $nullShares) { $nullShares = @() }
+            if ($nullShares -notcontains "Scan") {
+                $nullShares += "Scan"
+                Set-ItemProperty -Path $pServerParam -Name "NullSessionShares" -Value $nullShares -Type MultiString -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        # 8. Kích hoạt hỗ trợ SMBv1 và SMBv2/v3
+        Set-SmbServerConfiguration -EnableSMB1Protocol $true -EnableSMB2Protocol $true -Confirm:$false -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+        $log += "  -> [OK] Đã kích hoạt hỗ trợ đầy đủ giao thức SMBv1, SMBv2 và SMBv3."
+
+        $log += "[$ts] [THÀNH CÔNG] Đã cấu hình File Sharing toàn diện & Tắt mật khẩu mạng LAN sẵn sàng cho máy in!"
+    } catch {
+        $log += "[$ts] [LỖI] $($_.Exception.Message)"
+    }
+    return ($log -join "`r`n")
+}
+
+function New-VUONGTTScanFolderShare {
+    <#
+    .SYNOPSIS
+        Tự động tạo thư mục Scan trên ổ đĩa, phân quyền NTFS Full Control cho Everyone & Guest,
+        và chia sẻ thư mục qua giao thức SMB phục vụ chức năng Scan to Folder cho máy in/photo.
+    #>
+    param(
+        [string]$FolderPath = "C:\Scan",
+        [string]$ShareName = "Scan",
+        [bool]$EnableAllSharing = $true,
+        [bool]$SkipNetworkEnforce = $false
+    )
+    $ts = (Get-Date).ToString("HH:mm:ss")
+    $log = @()
+    $log += "[$ts] === [BẮT ĐẦU TẠO THƯ MỤC SCAN & CHIA SẺ EVERYONE] ==="
+
+    if ([string]::IsNullOrWhiteSpace($FolderPath)) { $FolderPath = "C:\Scan" }
+    if ([string]::IsNullOrWhiteSpace($ShareName)) { $ShareName = "Scan" }
+
+    $success = $false
+    try {
+        # 1. Tạo thư mục vật lý nếu chưa có
+        if (-not (Test-Path -LiteralPath $FolderPath)) {
+            New-Item -Path $FolderPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            $log += "  -> [OK] Đã tạo mới thư mục lưu file scan: $FolderPath"
+        } else {
+            $log += "  -> [OK] Thư mục đã tồn tại sẵn trên ổ đĩa: $FolderPath"
+        }
+
+        # 2. Phân quyền NTFS Full Control cho Everyone, Guest, ANONYMOUS LOGON và Users
+        try {
+            cmd.exe /c "icacls `"$FolderPath`" /grant Everyone:(OI)(CI)F /grant `"ANONYMOUS LOGON:(OI)(CI)F`" /grant Guest:(OI)(CI)F /grant Users:(OI)(CI)F /t /c /q >nul 2>nul"
+            $log += "  -> [OK] Đã cấp quyền NTFS Full Control (Đọc/Ghi/Sửa) cho Everyone, Guest & Anonymous."
+        } catch {
+            $log += "  [!] Phân quyền NTFS lưu ý: $($_.Exception.Message)"
+        }
+
+        # 3. Tạo SMB Share
+        try {
+            # Xóa share cũ nếu đã tồn tại cùng tên
+            cmd.exe /c "net share `"$ShareName`" /delete /y >nul 2>nul"
+            $shareOut = cmd.exe /c "net share `"$ShareName=$FolderPath`" /GRANT:Everyone,FULL /UNLIMITED 2>&1"
+            $log += "  -> [OK] Đã tạo SMB Share '$ShareName' trỏ tới '$FolderPath' (Quyền Share: Everyone Full)."
+        } catch {
+            $log += "  [!] Tạo share lưu ý: $($_.Exception.Message)"
+        }
+
+        # 4. Kích hoạt File Sharing toàn diện & Tắt password nếu được yêu cầu
+        if ($EnableAllSharing -and -not $SkipNetworkEnforce) {
+            $shareConfigLog = Enable-VUONGTTAllSharingNoPassword
+            $log += $shareConfigLog
+        }
+
+        # 5. Xác định địa chỉ IP LAN và Tên máy tính
+        $ip = Get-VUONGTTLocalPrimaryIpAddress
+        $compName = $env:COMPUTERNAME
+        $uncIp = "\\$ip\$ShareName"
+        $uncName = "\\$compName\$ShareName"
+
+        $log += "  -> Đường dẫn UNC qua IP (Khuyên dùng cho máy in): $uncIp"
+        $log += "  -> Đường dẫn UNC qua Tên Máy: $uncName"
+        $log += "[$ts] [THÀNH CÔNG] Thư mục Scan đã sẵn sàng! Bạn có thể nhập địa chỉ $uncIp vào máy in."
+        $success = $true
+
+        return [PSCustomObject]@{
+            Success      = $success
+            FolderPath   = $FolderPath
+            ShareName    = $ShareName
+            UncIp        = $uncIp
+            UncName      = $uncName
+            IpAddress    = $ip
+            ComputerName = $compName
+            Log          = ($log -join "`r`n")
+        }
+    } catch {
+        $log += "[$ts] [LỖI] $($_.Exception.Message)"
+        $ip = Get-VUONGTTLocalPrimaryIpAddress
+        $compName = $env:COMPUTERNAME
+        return [PSCustomObject]@{
+            Success      = $false
+            FolderPath   = $FolderPath
+            ShareName    = $ShareName
+            UncIp        = "\\$ip\$ShareName"
+            UncName      = "\\$compName\$ShareName"
+            IpAddress    = $ip
+            ComputerName = $compName
+            Log          = ($log -join "`r`n")
+        }
+    }
 }
