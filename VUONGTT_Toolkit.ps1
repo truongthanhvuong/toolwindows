@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.70
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.72
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.70"
+$Script:AppVersion = "v20.5.909.72"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -582,7 +582,7 @@ function Switch-Tab {
         if ($btn) {
             if ($btn.Tag -eq $TargetTag) {
                 $btn.Background = $window.Resources["MenuBtnActiveBg"]
-                $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#B45309")
+                $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#007AFF")
             } else {
                 $btn.Background = [System.Windows.Media.Brushes]::Transparent
                 $btn.Foreground = $window.Resources["MenuBtnText"]
@@ -736,7 +736,7 @@ function Set-CapsuleSubTabStyle {
         [System.Windows.Controls.Button]$ActiveTab
     )
     $bc = [System.Windows.Media.BrushConverter]::new()
-    $activeBg = $bc.ConvertFromString("#0284C7")
+    $activeBg = $bc.ConvertFromString("#007AFF")
     $transBg = [System.Windows.Media.Brushes]::Transparent
     $whiteFg = [System.Windows.Media.Brushes]::White
     
@@ -1117,41 +1117,41 @@ function Set-ToolkitTheme {
 
     switch ($Theme) {
         "Default" {
-            # Warm Amber / Cream (Screenshot Match)
-            $window.Resources["AppBgBrush"]          = $conv.ConvertFromString("#FAF7F2")
-            $window.Resources["SidebarBgBrush"]      = $conv.ConvertFromString("#F4ECE1")
-            $window.Resources["SidebarBorderBrush"]  = $conv.ConvertFromString("#E5D9C8")
-            $window.Resources["HeaderBgBrush"]       = $conv.ConvertFromString("#FAF7F2")
-            $window.Resources["HeaderBorderBrush"]   = $conv.ConvertFromString("#E5D9C8")
+            # Apple macOS Light Theme (Pure Apple HIG, Crisp Legibility)
+            $window.Resources["AppBgBrush"]          = $conv.ConvertFromString("#F5F5F7")
+            $window.Resources["SidebarBgBrush"]      = $conv.ConvertFromString("#EBECEF")
+            $window.Resources["SidebarBorderBrush"]  = $conv.ConvertFromString("#E2E8F0")
+            $window.Resources["HeaderBgBrush"]       = $conv.ConvertFromString("#F5F5F7")
+            $window.Resources["HeaderBorderBrush"]   = $conv.ConvertFromString("#E2E8F0")
             $window.Resources["CardBgBrush"]         = $conv.ConvertFromString("#FFFFFF")
-            $window.Resources["CardInnerBgBrush"]    = $conv.ConvertFromString("#FCFBF9")
-            $window.Resources["CardBorderBrush"]     = $conv.ConvertFromString("#E5D9C8")
-            $window.Resources["TextPrimaryBrush"]    = $conv.ConvertFromString("#292524")
-            $window.Resources["TextSecondaryBrush"]  = $conv.ConvertFromString("#78716C")
+            $window.Resources["CardInnerBgBrush"]    = $conv.ConvertFromString("#F8FAFC")
+            $window.Resources["CardBorderBrush"]     = $conv.ConvertFromString("#E2E8F0")
+            $window.Resources["TextPrimaryBrush"]    = $conv.ConvertFromString("#1D1D1F")
+            $window.Resources["TextSecondaryBrush"]  = $conv.ConvertFromString("#86868B")
             $window.Resources["InputBgBrush"]        = $conv.ConvertFromString("#FFFFFF")
-            $window.Resources["InputBorderBrush"]    = $conv.ConvertFromString("#D6C7B2")
-            $window.Resources["InputTextBrush"]      = $conv.ConvertFromString("#292524")
-            $window.Resources["MenuBtnHoverBg"]      = $conv.ConvertFromString("#EADBCA")
-            $window.Resources["MenuBtnActiveBg"]     = $conv.ConvertFromString("#EADBCA")
-            $window.Resources["MenuBtnText"]         = $conv.ConvertFromString("#292524")
+            $window.Resources["InputBorderBrush"]    = $conv.ConvertFromString("#CBD5E1")
+            $window.Resources["InputTextBrush"]      = $conv.ConvertFromString("#1D1D1F")
+            $window.Resources["MenuBtnHoverBg"]      = $conv.ConvertFromString("#E5E7EB")
+            $window.Resources["MenuBtnActiveBg"]     = $conv.ConvertFromString("#E0F2FE")
+            $window.Resources["MenuBtnText"]         = $conv.ConvertFromString("#1D1D1F")
             $window.Resources["LogBgBrush"]          = $conv.ConvertFromString("#FFFFFF")
-            $window.Resources["LogTextBrush"]        = $conv.ConvertFromString("#44403C")
-            $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#EADBCA")
-            $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#78350F")
-            $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#D6C7B2")
+            $window.Resources["LogTextBrush"]        = $conv.ConvertFromString("#1D1D1F")
+            $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#E0F2FE")
+            $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#007AFF")
+            $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#E2E8F0")
             
-            $window.Resources["SegmentedBgBrush"]     = $conv.ConvertFromString("#E8DEC8")
+            $window.Resources["SegmentedBgBrush"]     = $conv.ConvertFromString("#E5E7EB")
             $window.Resources["SegmentedActiveBrush"] = $conv.ConvertFromString("#FFFFFF")
             
             # Apple Segmented Button States
             $btnThemeDefault.Background  = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#78350F")
+            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#007AFF")
 
             $btnThemeDark.Background     = [System.Windows.Media.Brushes]::Transparent
-            $btnThemeDark.Foreground     = $conv.ConvertFromString("#78716C")
+            $btnThemeDark.Foreground     = $conv.ConvertFromString("#86868B")
 
             $btnThemeLight.Background    = [System.Windows.Media.Brushes]::Transparent
-            $btnThemeLight.Foreground    = $conv.ConvertFromString("#78716C")
+            $btnThemeLight.Foreground    = $conv.ConvertFromString("#86868B")
         }
         "Dark" {
             # Sleek Apple Dark (High Contrast, Crisp Clarity)
@@ -1190,40 +1190,40 @@ function Set-ToolkitTheme {
             $btnThemeLight.Foreground    = $conv.ConvertFromString("#94A3B8")
         }
         "Light" {
-            # Clean Light
-            $window.Resources["AppBgBrush"]          = $conv.ConvertFromString("#F8FAFC")
+            # Apple macOS Pure Light Theme
+            $window.Resources["AppBgBrush"]          = $conv.ConvertFromString("#F5F5F7")
             $window.Resources["SidebarBgBrush"]      = $conv.ConvertFromString("#FFFFFF")
             $window.Resources["SidebarBorderBrush"]  = $conv.ConvertFromString("#E2E8F0")
             $window.Resources["HeaderBgBrush"]       = $conv.ConvertFromString("#FFFFFF")
             $window.Resources["HeaderBorderBrush"]   = $conv.ConvertFromString("#E2E8F0")
             $window.Resources["CardBgBrush"]         = $conv.ConvertFromString("#FFFFFF")
-            $window.Resources["CardInnerBgBrush"]    = $conv.ConvertFromString("#F1F5F9")
+            $window.Resources["CardInnerBgBrush"]    = $conv.ConvertFromString("#F8FAFC")
             $window.Resources["CardBorderBrush"]     = $conv.ConvertFromString("#E2E8F0")
-            $window.Resources["TextPrimaryBrush"]    = $conv.ConvertFromString("#0F172A")
-            $window.Resources["TextSecondaryBrush"]  = $conv.ConvertFromString("#64748B")
+            $window.Resources["TextPrimaryBrush"]    = $conv.ConvertFromString("#1D1D1F")
+            $window.Resources["TextSecondaryBrush"]  = $conv.ConvertFromString("#86868B")
             $window.Resources["InputBgBrush"]        = $conv.ConvertFromString("#FFFFFF")
             $window.Resources["InputBorderBrush"]    = $conv.ConvertFromString("#CBD5E1")
-            $window.Resources["InputTextBrush"]      = $conv.ConvertFromString("#0F172A")
+            $window.Resources["InputTextBrush"]      = $conv.ConvertFromString("#1D1D1F")
             $window.Resources["MenuBtnHoverBg"]      = $conv.ConvertFromString("#EFF6FF")
-            $window.Resources["MenuBtnActiveBg"]     = $conv.ConvertFromString("#EFF6FF")
-            $window.Resources["MenuBtnText"]         = $conv.ConvertFromString("#0F172A")
+            $window.Resources["MenuBtnActiveBg"]     = $conv.ConvertFromString("#E0F2FE")
+            $window.Resources["MenuBtnText"]         = $conv.ConvertFromString("#1D1D1F")
             $window.Resources["LogBgBrush"]          = $conv.ConvertFromString("#FFFFFF")
-            $window.Resources["LogTextBrush"]        = $conv.ConvertFromString("#0F172A")
-            $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#EFF6FF")
-            $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#2563EB")
+            $window.Resources["LogTextBrush"]        = $conv.ConvertFromString("#1D1D1F")
+            $window.Resources["PillBgBrush"]         = $conv.ConvertFromString("#E0F2FE")
+            $window.Resources["PillTextBrush"]       = $conv.ConvertFromString("#007AFF")
             $window.Resources["GroupBoxBorderBrush"] = $conv.ConvertFromString("#E2E8F0")
             $window.Resources["SegmentedBgBrush"]     = $conv.ConvertFromString("#E2E8F0")
             $window.Resources["SegmentedActiveBrush"] = $conv.ConvertFromString("#FFFFFF")
 
             # Apple Segmented Button States
             $btnThemeLight.Background    = $conv.ConvertFromString("#FFFFFF")
-            $btnThemeLight.Foreground    = $conv.ConvertFromString("#0F172A")
+            $btnThemeLight.Foreground    = $conv.ConvertFromString("#007AFF")
 
             $btnThemeDefault.Background  = [System.Windows.Media.Brushes]::Transparent
-            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#64748B")
+            $btnThemeDefault.Foreground  = $conv.ConvertFromString("#86868B")
 
             $btnThemeDark.Background     = [System.Windows.Media.Brushes]::Transparent
-            $btnThemeDark.Foreground     = $conv.ConvertFromString("#64748B")
+            $btnThemeDark.Foreground     = $conv.ConvertFromString("#86868B")
         }
     }
 
@@ -9524,7 +9524,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.70" }
+                if (-not $currentVer) { $currentVer = "20.5.909.72" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
@@ -10131,6 +10131,9 @@ if ($lstIpDevices) {
 
 # Khởi tạo trạng thái bản quyền ban đầu
 Update-VUONGTTLicenseUI
+
+# Áp dụng giao diện Apple macOS Light mặc định ngay khi mở ứng dụng
+Set-ToolkitTheme -Theme "Default"
 
 # Khởi tạo giao diện trang đầu tiên ngay lập tức mà không chặn WMI
 Switch-Tab -TargetTag "SysInfo" -SkipRefresh

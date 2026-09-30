@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.70"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.72"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -34,36 +34,36 @@
         </Storyboard>
 
         <!-- ================= DYNAMIC THEMES ================= -->
-        <!-- Default Theme: Elegant Warm Amber / Cream (Exact match with Screenshots) -->
-        <SolidColorBrush x:Key="AppBgBrush" Color="#FAF7F2"/>
-        <SolidColorBrush x:Key="SidebarBgBrush" Color="#F4ECE1"/>
-        <SolidColorBrush x:Key="SidebarBorderBrush" Color="#E5D9C8"/>
-        <SolidColorBrush x:Key="HeaderBgBrush" Color="#FAF7F2"/>
-        <SolidColorBrush x:Key="HeaderBorderBrush" Color="#E5D9C8"/>
+        <!-- Default Theme: Apple macOS Light Theme (Pure Apple HIG, Crisp Legibility) -->
+        <SolidColorBrush x:Key="AppBgBrush" Color="#F5F5F7"/>
+        <SolidColorBrush x:Key="SidebarBgBrush" Color="#EBECEF"/>
+        <SolidColorBrush x:Key="SidebarBorderBrush" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="HeaderBgBrush" Color="#F5F5F7"/>
+        <SolidColorBrush x:Key="HeaderBorderBrush" Color="#E2E8F0"/>
         <SolidColorBrush x:Key="CardBgBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="CardInnerBgBrush" Color="#FCFBF9"/>
-        <SolidColorBrush x:Key="CardBorderBrush" Color="#E5D9C8"/>
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#292524"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#78716C"/>
-        <SolidColorBrush x:Key="GroupBoxBorderBrush" Color="#D6C7B2"/>
+        <SolidColorBrush x:Key="CardInnerBgBrush" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1D1D1F"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#86868B"/>
+        <SolidColorBrush x:Key="GroupBoxBorderBrush" Color="#E2E8F0"/>
         <SolidColorBrush x:Key="InputBgBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="InputBorderBrush" Color="#D6C7B2"/>
-        <SolidColorBrush x:Key="InputTextBrush" Color="#292524"/>
+        <SolidColorBrush x:Key="InputBorderBrush" Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="InputTextBrush" Color="#1D1D1F"/>
         <SolidColorBrush x:Key="LogBgBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="LogTextBrush" Color="#44403C"/>
-        <SolidColorBrush x:Key="MenuBtnHoverBg" Color="#EADBCA"/>
-        <SolidColorBrush x:Key="MenuBtnActiveBg" Color="#EADBCA"/>
-        <SolidColorBrush x:Key="MenuBtnText" Color="#292524"/>
-        <SolidColorBrush x:Key="PillBgBrush" Color="#EADBCA"/>
-        <SolidColorBrush x:Key="PillTextBrush" Color="#78350F"/>
-        <SolidColorBrush x:Key="SegmentedBgBrush" Color="#E8DEC8"/>
+        <SolidColorBrush x:Key="LogTextBrush" Color="#1D1D1F"/>
+        <SolidColorBrush x:Key="MenuBtnHoverBg" Color="#E5E7EB"/>
+        <SolidColorBrush x:Key="MenuBtnActiveBg" Color="#E0F2FE"/>
+        <SolidColorBrush x:Key="MenuBtnText" Color="#1D1D1F"/>
+        <SolidColorBrush x:Key="PillBgBrush" Color="#E0F2FE"/>
+        <SolidColorBrush x:Key="PillTextBrush" Color="#007AFF"/>
+        <SolidColorBrush x:Key="SegmentedBgBrush" Color="#E5E7EB"/>
         <SolidColorBrush x:Key="SegmentedActiveBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="SegmentedActiveText" Color="#78350F"/>
-        <SolidColorBrush x:Key="SegmentedInactiveText" Color="#57534E"/>
-        <SolidColorBrush x:Key="AccentGold" Color="#B45309"/>
-        <SolidColorBrush x:Key="PrimaryBlue" Color="#334155"/>
-        <SolidColorBrush x:Key="AccentGreen" Color="#047857"/>
-        <SolidColorBrush x:Key="AccentRed" Color="#BE123C"/>
+        <SolidColorBrush x:Key="SegmentedActiveText" Color="#007AFF"/>
+        <SolidColorBrush x:Key="SegmentedInactiveText" Color="#64748B"/>
+        <SolidColorBrush x:Key="AccentGold" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="PrimaryBlue" Color="#007AFF"/>
+        <SolidColorBrush x:Key="AccentGreen" Color="#10B981"/>
+        <SolidColorBrush x:Key="AccentRed" Color="#EF4444"/>
 
         <!-- Control Styles (Apple Typography Hierarchy) -->
         <Style TargetType="TextBlock">
@@ -412,7 +412,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.70 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.72 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -864,7 +864,7 @@
                             <!-- Left Column: CPU & GPU Specs -->
                             <StackPanel Grid.Column="0" Margin="0,0,6,0">
                                 <!-- CPU Details -->
-                                <Border Style="{StaticResource CardBorder}" Margin="0,0,0,10" BorderBrush="#E5D9C8">
+                                <Border Style="{StaticResource CardBorder}" Margin="0,0,0,10">
                                     <StackPanel>
                                         <TextBlock Text="⚡ THÔNG SỐ CPU CHI TIẾT" FontWeight="Bold" Foreground="#BE123C" FontSize="14" Margin="0,0,0,8"/>
                                         <Grid Margin="0,2,0,4">
@@ -898,7 +898,7 @@
                                     </StackPanel>                                </Border>
 
                                 <!-- GPU Details (Multi-GPU Support: GPU 0 + GPU 1) -->
-                                <Border Style="{StaticResource CardBorder}" BorderBrush="#E5D9C8">
+                                <Border Style="{StaticResource CardBorder}">
                                     <StackPanel>
                                         <TextBlock Text="🎮 CARD ĐỒ HỌA (GPU)" FontWeight="Bold" Foreground="#2563EB" FontSize="14" Margin="0,0,0,8"/>
                                         
@@ -973,7 +973,7 @@
                             <!-- Right Column: RAM & DIMM Slot Details -->
                             <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                 <!-- RAM General -->
-                                <Border Style="{StaticResource CardBorder}" Margin="0,0,0,10" BorderBrush="#E5D9C8">
+                                <Border Style="{StaticResource CardBorder}" Margin="0,0,0,10">
                                     <StackPanel>
                                         <TextBlock Text="💾 BỘ NHỚ (RAM)" FontWeight="Bold" Foreground="#059669" FontSize="14" Margin="0,0,0,8"/>
                                         <Grid Margin="0,2,0,3">
@@ -1003,7 +1003,7 @@
                                     </StackPanel>                                </Border>
 
                                 <!-- DIMM Slot 1/2 Info -->
-                                <Border Style="{StaticResource CardBorder}" BorderBrush="#E5D9C8">
+                                <Border Style="{StaticResource CardBorder}">
                                     <StackPanel>
                                         <TextBlock x:Name="lblDimmTitle" Text="◆ DIMM1 / DIMM2: Kingston / Samsung DRAM" FontWeight="Bold" Foreground="#2563EB" FontSize="14" Margin="0,0,0,8"/>
                                         <Grid Margin="0,2,0,3">
@@ -1045,7 +1045,7 @@
                                     </StackPanel>                                </Border>
 
                                 <!-- Bo Mạch & Số Serial Máy (Mainboard & System Serial) -->
-                                <Border Style="{StaticResource CardBorder}" Margin="0,10,0,0" BorderBrush="#E5D9C8">
+                                <Border Style="{StaticResource CardBorder}" Margin="0,10,0,0">
                                     <StackPanel>
                                         <Grid Margin="0,0,0,8">
                                             <TextBlock Text="🖥️ BO MẠCH &amp; SỐ SERIAL MÁY" FontWeight="Bold" Foreground="#0284C7" FontSize="14" VerticalAlignment="Center"/>
@@ -1679,8 +1679,8 @@
                                         <StackPanel>
                                             <DockPanel Margin="0,0,0,6">
                                                 <TextBlock Text="⚡ Gói Nguồn Điện (Performance Plans)" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                                <Border Background="#1E293B" CornerRadius="4" Padding="6,2,6,2" HorizontalAlignment="Right">
-                                                    <TextBlock x:Name="txtCurrentPowerPlan" Text="Đang đọc..." FontSize="11" FontWeight="SemiBold" Foreground="#38BDF8"/>
+                                                <Border Background="{DynamicResource PillBgBrush}" CornerRadius="4" Padding="6,2,6,2" HorizontalAlignment="Right">
+                                                    <TextBlock x:Name="txtCurrentPowerPlan" Text="Đang đọc..." FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource PillTextBrush}"/>
                                                 </Border>
                                             </DockPanel>
                                             <TextBlock Text="Chọn gói nguồn điện tối ưu xung nhịp CPU và điện năng theo nhu cầu:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
@@ -1859,8 +1859,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="Quản Trị Windows Update" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                            <Border Grid.Column="1" Background="#0F172A" CornerRadius="10" Padding="8,4" BorderBrush="#334155" BorderThickness="1">
-                                                <TextBlock x:Name="txtWindowsUpdateStatus" Text="Đang kiểm tra..." FontSize="11.5" FontWeight="SemiBold" Foreground="#38BDF8"/>
+                                            <Border Grid.Column="1" Background="{DynamicResource PillBgBrush}" CornerRadius="10" Padding="8,4" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                                <TextBlock x:Name="txtWindowsUpdateStatus" Text="Đang kiểm tra..." FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource PillTextBrush}"/>
                                             </Border>
                                         </Grid>
                                         <TextBlock Text="Bật hoặc tắt triệt để cập nhật tự động của hệ điều hành Windows (Dịch vụ &amp; Group Policy)." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10" TextWrapping="Wrap"/>
@@ -2085,18 +2085,18 @@
                                             </Border>
 
                                             <!-- Terminal Log Console -->
-                                            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="10">
+                                            <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="10">
                                                 <StackPanel>
                                                     <Grid Margin="0,0,0,6">
                                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                            <TextBlock Text="💻 TERMINAL CONSOLE / NHẬT KÝ THỰC THI" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" FontFamily="Consolas, Cascadia Mono, 'Courier New', monospace"/>
-                                                            <Border Background="#1E293B" CornerRadius="3" Padding="4,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                                                <TextBlock Text="LIVE LOG" FontSize="9" FontWeight="Bold" Foreground="#4ADE80" FontFamily="Consolas, Cascadia Mono, monospace"/>
+                                                            <TextBlock Text="💻 TERMINAL CONSOLE / NHẬT KÝ THỰC THI" FontSize="11" FontWeight="Bold" Foreground="#0284C7" FontFamily="Consolas, Cascadia Mono, 'Courier New', monospace"/>
+                                                            <Border Background="{DynamicResource PillBgBrush}" CornerRadius="3" Padding="4,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                                <TextBlock Text="LIVE LOG" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource PillTextBrush}" FontFamily="Consolas, Cascadia Mono, monospace"/>
                                                             </Border>
                                                         </StackPanel>
-                                                        <Button x:Name="btnClearTroubleshootLog" Content="🧹 Xóa Log" HorizontalAlignment="Right" Background="#334155" Foreground="#E2E8F0" Style="{StaticResource ActionBtn}" Height="24" Padding="8,0" FontSize="11" ToolTip="Dọn sạch màn hình console"/>
+                                                        <Button x:Name="btnClearTroubleshootLog" Content="🧹 Xóa Log" HorizontalAlignment="Right" Background="{DynamicResource CardBorderBrush}" Foreground="{DynamicResource TextPrimaryBrush}" Style="{StaticResource ActionBtn}" Height="24" Padding="8,0" FontSize="11" ToolTip="Dọn sạch màn hình console"/>
                                                     </Grid>
-                                                    <TextBox x:Name="txtTroubleshootConsoleLog" Background="#090D16" Foreground="#4ADE80" BorderThickness="1" BorderBrush="#1E293B" FontFamily="Consolas, Cascadia Mono, 'Courier New', monospace" FontSize="11.5" Height="240" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" Padding="10" Text="[SYSTEM] Trung tâm Cứu hộ IT Helpdesk sẵn sàng. Chọn một sự cố và nhấn Chẩn Đoán hoặc Tự Động Sửa."/>
+                                                    <TextBox x:Name="txtTroubleshootConsoleLog" Background="{DynamicResource LogBgBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" FontFamily="Consolas, Cascadia Mono, 'Courier New', monospace" FontSize="11.5" Height="240" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsReadOnly="True" Padding="10" Text="[SYSTEM] Trung tâm Cứu hộ IT Helpdesk sẵn sàng. Chọn một sự cố và nhấn Chẩn Đoán hoặc Tự Động Sửa."/>
                                                 </StackPanel>
                                             </Border>
                                         </StackPanel>
@@ -2599,17 +2599,17 @@
                                         </Grid>
 
                                         <!-- Network UNC paths display for printer setup -->
-                                        <Border Background="#0F172A" CornerRadius="8" Padding="12" BorderBrush="#334155" BorderThickness="1">
+                                        <Border Background="{DynamicResource CardInnerBgBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                             <StackPanel>
-                                                <TextBlock Text="📌 ĐƯỜNG DẪN MẠNG CẦN NHẬP VÀO MÁY PHOTO / MÁY IN (RICOH, TOSHIBA, CANON, XEROX...):" FontWeight="Bold" FontSize="11.5" Foreground="#38BDF8" Margin="0,0,0,6"/>
+                                                <TextBlock Text="📌 ĐƯỜNG DẪN MẠNG CẦN NHẬP VÀO MÁY PHOTO / MÁY IN (RICOH, TOSHIBA, CANON, XEROX...):" FontWeight="Bold" FontSize="11.5" Foreground="#0284C7" Margin="0,0,0,6"/>
                                                 <Grid Margin="0,0,0,6">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="200"/>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="90"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Grid.Column="0" Text="1. Theo IP (Khuyên Dùng):" FontWeight="SemiBold" FontSize="12" Foreground="#E2E8F0" VerticalAlignment="Center"/>
-                                                    <TextBox x:Name="txtScanUncIp" Grid.Column="1" Text="\\127.0.0.1\Scan" IsReadOnly="True" Background="#1E293B" Foreground="#38BDF8" FontWeight="Bold" FontSize="12.5" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" Padding="8,0" BorderBrush="#475569"/>
+                                                    <TextBlock Grid.Column="0" Text="1. Theo IP (Khuyên Dùng):" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                                    <TextBox x:Name="txtScanUncIp" Grid.Column="1" Text="\\127.0.0.1\Scan" IsReadOnly="True" Background="{DynamicResource CardBgBrush}" Foreground="#0284C7" FontWeight="Bold" FontSize="12.5" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" Padding="8,0" BorderBrush="{DynamicResource CardBorderBrush}"/>
                                                     <Button x:Name="btnCopyScanUncIp" Grid.Column="2" Content="📋 Copy" Background="#0284C7" Style="{StaticResource ActionBtn}" Height="30"/>
                                                 </Grid>
                                                 <Grid Margin="0,0,0,4">
@@ -2618,11 +2618,11 @@
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="90"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Grid.Column="0" Text="2. Theo Tên Máy (Hostname):" FontWeight="SemiBold" FontSize="12" Foreground="#E2E8F0" VerticalAlignment="Center"/>
-                                                    <TextBox x:Name="txtScanUncName" Grid.Column="1" Text="\\COMPUTER\Scan" IsReadOnly="True" Background="#1E293B" Foreground="#A78BFA" FontWeight="Bold" FontSize="12.5" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" Padding="8,0" BorderBrush="#475569"/>
+                                                    <TextBlock Grid.Column="0" Text="2. Theo Tên Máy (Hostname):" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                                    <TextBox x:Name="txtScanUncName" Grid.Column="1" Text="\\COMPUTER\Scan" IsReadOnly="True" Background="{DynamicResource CardBgBrush}" Foreground="#7C3AED" FontWeight="Bold" FontSize="12.5" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" Padding="8,0" BorderBrush="{DynamicResource CardBorderBrush}"/>
                                                     <Button x:Name="btnCopyScanUncName" Grid.Column="2" Content="📋 Copy" Background="#7C3AED" Style="{StaticResource ActionBtn}" Height="30"/>
                                                 </Grid>
-                                                <TextBlock Text="💡 Mẹo: Khi cấu hình trên Web máy in: Mục 'Server Path / Folder' nhập: Scan (hoặc \Scan). Mục User/Pass để trống nếu đã bật chế độ không mật khẩu." FontSize="11" Foreground="#94A3B8" Margin="0,4,0,0"/>
+                                                <TextBlock Text="💡 Mẹo: Khi cấu hình trên Web máy in: Mục 'Server Path / Folder' nhập: Scan (hoặc \Scan). Mục User/Pass để trống nếu đã bật chế độ không mật khẩu." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -4658,7 +4658,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.70" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.72" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>
