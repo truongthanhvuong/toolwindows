@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.64
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.66
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.64"
+$Script:AppVersion = "v20.5.909.66"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -803,6 +803,9 @@ function Switch-SystemFixSubTab {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysFix_Config
             if ($pageConfig) { $pageConfig.Visibility = [System.Windows.Visibility]::Visible }
             Refresh-VUONGTTDnsChangerUI
+            if (Get-Command "Update-VUONGTTWindowsUpdateBadge" -ErrorAction SilentlyContinue) {
+                Update-VUONGTTWindowsUpdateBadge
+            }
         }
         "SysFix_Troubleshoot" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysFix_Troubleshoot
@@ -6629,6 +6632,10 @@ $btnFixSystemCorruption  = Get-Control "btnFixSystemCorruption"
 $btnFixWindowsUpdate     = Get-Control "btnFixWindowsUpdate"
 $btnFixWinGet            = Get-Control "btnFixWinGet"
 $btnEnableOpenSSH        = Get-Control "btnEnableOpenSSH"
+$txtWindowsUpdateStatus  = Get-Control "txtWindowsUpdateStatus"
+$btnDisableWindowsUpdate = Get-Control "btnDisableWindowsUpdate"
+$btnEnableWindowsUpdate  = Get-Control "btnEnableWindowsUpdate"
+$btnOpenWindowsUpdateSettings = Get-Control "btnOpenWindowsUpdateSettings"
 $txtConfigLog            = Get-Control "txtConfigLog"
 
 # Install Features
@@ -7016,6 +7023,78 @@ if ($btnEnableOpenSSH) {
         } finally {
             $btnEnableOpenSSH.IsEnabled = $true
             Invoke-VUONGTTDoEvents
+        }
+    })
+}
+
+function Update-VUONGTTWindowsUpdateBadge {
+    try {
+        if ($txtWindowsUpdateStatus) {
+            $wuStatus = Get-VUONGTTWindowsUpdateStatus
+            $txtWindowsUpdateStatus.Text = $wuStatus.StatusText
+            if ($wuStatus.BadgeColor) {
+                $txtWindowsUpdateStatus.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($wuStatus.BadgeColor)
+            }
+        }
+    } catch {}
+}
+
+# Cập nhật Badge Windows Update khi khởi tạo
+Update-VUONGTTWindowsUpdateBadge
+
+if ($btnDisableWindowsUpdate) {
+    $btnDisableWindowsUpdate.Add_Click({
+        $btnDisableWindowsUpdate.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "=== [ĐANG VÔ HIỆU HÓA WINDOWS UPDATE] ===`r`n"
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            $res = Disable-VUONGTTWindowsUpdate
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("$res`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+            Update-VUONGTTWindowsUpdateBadge
+        } finally {
+            $btnDisableWindowsUpdate.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+
+if ($btnEnableWindowsUpdate) {
+    $btnEnableWindowsUpdate.Add_Click({
+        $btnEnableWindowsUpdate.IsEnabled = $false
+        try {
+            if ($txtConfigLog) {
+                $txtConfigLog.Text = "=== [ĐANG BẬT & KHÔI PHỤC WINDOWS UPDATE] ===`r`n"
+                $txtConfigLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+            $res = Enable-VUONGTTWindowsUpdate
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("$res`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
+            Update-VUONGTTWindowsUpdateBadge
+        } finally {
+            $btnEnableWindowsUpdate.IsEnabled = $true
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+
+if ($btnOpenWindowsUpdateSettings) {
+    $btnOpenWindowsUpdateSettings.Add_Click({
+        try {
+            Start-Process "ms-settings:windowsupdate" -ErrorAction SilentlyContinue
+        } catch {
+            if ($txtConfigLog) {
+                $txtConfigLog.AppendText("[!] Không thể mở Windows Update Settings: $($_.Exception.Message)`r`n")
+                $txtConfigLog.ScrollToEnd()
+            }
         }
     })
 }
@@ -9285,7 +9364,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.64" }
+                if (-not $currentVer) { $currentVer = "20.5.909.66" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

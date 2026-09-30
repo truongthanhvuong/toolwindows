@@ -682,4 +682,167 @@ function Invoke-VUONGTTFixHighPerfGpu {
     return ($log -join "`n")
 }
 
+# =========================================================================
+#   WINDOWS UPDATE MANAGEMENT (1-CLICK BẬT / TẮT)
+# =========================================================================
+
+function Get-VUONGTTWindowsUpdateStatus {
+    <#
+    .SYNOPSIS
+        Kiểm tra trạng thái hoạt động của Windows Update (Services wuauserv, UsoSvc và Registry Policy).
+    #>
+    try {
+        $svcWuauserv = Get-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+        $svcUso = Get-Service -Name "UsoSvc" -ErrorAction SilentlyContinue
+
+        $policyAU = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"
+        $noAutoUpdate = 0
+        if (Test-Path $policyAU) {
+            $val = (Get-ItemProperty -Path $policyAU -Name "NoAutoUpdate" -ErrorAction SilentlyContinue).NoAutoUpdate
+            if ($null -ne $val) { $noAutoUpdate = [int]$val }
+        }
+
+        # Trạng thái tắt nếu wuauserv bị Disabled hoặc NoAutoUpdate = 1
+        $isWuauservDisabled = ($null -ne $svcWuauserv -and $svcWuauserv.StartType -eq "Disabled")
+        $isUsoDisabled = ($null -ne $svcUso -and $svcUso.StartType -eq "Disabled")
+
+        $isDisabled = ($isWuauservDisabled -or $noAutoUpdate -eq 1)
+
+        if ($isDisabled) {
+            return @{
+                IsEnabled   = $false
+                StatusText  = "🔴 Đã Tắt (Vô hiệu hóa)"
+                BadgeColor  = "#EF4444"
+                Details     = "Dịch vụ wuauserv: $(if ($svcWuauserv) { $svcWuauserv.StartType } else { 'Không tìm thấy' }) | NoAutoUpdate: $noAutoUpdate"
+            }
+        } else {
+            $statusName = if ($svcWuauserv) { $svcWuauserv.StartType.ToString() } else { "Bình thường" }
+            return @{
+                IsEnabled   = $true
+                StatusText  = "🟢 Đang Bật ($statusName)"
+                BadgeColor  = "#10B981"
+                Details     = "Dịch vụ wuauserv: $statusName | UsoSvc: $(if ($svcUso) { $svcUso.StartType } else { 'N/A' })"
+            }
+        }
+    } catch {
+        return @{
+            IsEnabled   = $false
+            StatusText  = "⚠️ Không xác định"
+            BadgeColor  = "#F59E0B"
+            Details     = $_.Exception.Message
+        }
+    }
+}
+
+function Disable-VUONGTTWindowsUpdate {
+    <#
+    .SYNOPSIS
+        Tắt triệt để Windows Update: Dừng & Vô hiệu hóa service wuauserv, UsoSvc, WaaSMedicSvc và đặt Registry Policy.
+    #>
+    $log = @()
+    $log += "=== [BẮT ĐẦU VÔ HIỆU HÓA WINDOWS UPDATE] ==="
+    try {
+        # 1. Dừng và vô hiệu hóa các dịch vụ liên quan
+        $services = @("wuauserv", "UsoSvc", "WaaSMedicSvc")
+        foreach ($s in $services) {
+            try {
+                $svc = Get-Service -Name $s -ErrorAction SilentlyContinue
+                if ($svc) {
+                    if ($svc.Status -ne "Stopped") {
+                        Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
+                    }
+                    Set-Service -Name $s -StartupType Disabled -ErrorAction SilentlyContinue
+                    # Dự phòng ép registry Start=4 cho UsoSvc và WaaSMedicSvc nếu bị chặn
+                    $svcReg = "HKLM:\SYSTEM\CurrentControlSet\Services\$s"
+                    if (Test-Path $svcReg) {
+                        Set-ItemProperty -Path $svcReg -Name "Start" -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
+                    }
+                    $log += "  -> Đã dừng & vô hiệu hóa dịch vụ: $s"
+                }
+            } catch {
+                $log += "  [!] Không thể vô hiệu hóa dịch vụ ${s}: $($_.Exception.Message)"
+            }
+        }
+
+        # 2. Cấu hình Registry Group Policy chặn Windows Update
+        $policyAU = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"
+        if (!(Test-Path $policyAU)) {
+            New-Item -Path $policyAU -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+        Set-ItemProperty -Path $policyAU -Name "NoAutoUpdate" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $policyAU -Name "AUOptions" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+
+        $policyWU = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+        if (!(Test-Path $policyWU)) {
+            New-Item -Path $policyWU -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+        Set-ItemProperty -Path $policyWU -Name "DisableWindowsUpdateAccess" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+
+        $log += "  -> Đã thiết lập Group Policy: NoAutoUpdate = 1 (Tắt tải & cài đặt tự động)"
+        $log += "  -> Đã thiết lập Group Policy: DisableWindowsUpdateAccess = 1"
+        $log += "[THÀNH CÔNG] Đã vô hiệu hóa hoàn toàn Windows Update trên hệ thống!"
+    } catch {
+        $log += "[LỖI] Xảy ra ngoại lệ khi tắt Windows Update: $($_.Exception.Message)"
+    }
+    return ($log -join "`r`n")
+}
+
+function Enable-VUONGTTWindowsUpdate {
+    <#
+    .SYNOPSIS
+        Bật và khôi phục dịch vụ Windows Update về trạng thái chuẩn của hệ điều hành.
+    #>
+    $log = @()
+    $log += "=== [BẮT ĐẦU BẬT & KHÔI PHỤC WINDOWS UPDATE] ==="
+    try {
+        # 1. Xóa hoặc mở khóa Registry Group Policy
+        $policyAU = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"
+        if (Test-Path $policyAU) {
+            Set-ItemProperty -Path $policyAU -Name "NoAutoUpdate" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Remove-ItemProperty -Path $policyAU -Name "NoAutoUpdate" -Force -ErrorAction SilentlyContinue
+            Remove-ItemProperty -Path $policyAU -Name "AUOptions" -Force -ErrorAction SilentlyContinue
+        }
+
+        $policyWU = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+        if (Test-Path $policyWU) {
+            Remove-ItemProperty -Path $policyWU -Name "DisableWindowsUpdateAccess" -Force -ErrorAction SilentlyContinue
+        }
+        $log += "  -> Đã gỡ bỏ Group Policy chặn cập nhật (NoAutoUpdate, DisableWindowsUpdateAccess)"
+
+        # 2. Khôi phục dịch vụ
+        $svcConfigs = @(
+            @{ Name = "wuauserv"; Start = 3; StartupType = "Manual" },
+            @{ Name = "UsoSvc"; Start = 2; StartupType = "Automatic" },
+            @{ Name = "WaaSMedicSvc"; Start = 3; StartupType = "Manual" },
+            @{ Name = "bits"; Start = 3; StartupType = "Manual" }
+        )
+
+        foreach ($sc in $svcConfigs) {
+            $sName = $sc.Name
+            try {
+                $svcReg = "HKLM:\SYSTEM\CurrentControlSet\Services\$sName"
+                if (Test-Path $svcReg) {
+                    Set-ItemProperty -Path $svcReg -Name "Start" -Value $sc.Start -Type DWord -Force -ErrorAction SilentlyContinue
+                }
+                Set-Service -Name $sName -StartupType $sc.StartupType -ErrorAction SilentlyContinue
+                $log += "  -> Đã khôi phục dịch vụ $sName về: $($sc.StartupType)"
+            } catch {
+                $log += "  [!] Lưu ý về dịch vụ ${sName}: $($_.Exception.Message)"
+            }
+        }
+
+        # Khởi động lại wuauserv
+        try {
+            Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+            $log += "  -> Đã khởi động dịch vụ Windows Update (wuauserv)"
+        } catch {}
+
+        $log += "[THÀNH CÔNG] Đã bật và khôi phục hoạt động của Windows Update thành công!"
+    } catch {
+        $log += "[LỖI] Xảy ra ngoại lệ khi bật Windows Update: $($_.Exception.Message)"
+    }
+    return ($log -join "`r`n")
+}
+
+
 
