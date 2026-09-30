@@ -47,8 +47,8 @@ function Enable-VUONGTTRegistryBackupDaily {
     try {
         # Enable RegIdleBackup in Windows Task Scheduler
         $key = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager"
-        if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
-        Set-ItemProperty -Path $key -Name "EnablePeriodicBackup" -Value 1 -Type DWord -Force
+        if (-not (Test-Path $key)) { New-Item -Path $key -Force -ErrorAction SilentlyContinue | Out-Null }
+        Set-ItemProperty -Path $key -Name "EnablePeriodicBackup" -Value 1 -Type DWord -Force -ErrorAction Stop
 
         # Run or enable task
         $taskPath = "\Microsoft\Windows\Registry"
@@ -296,12 +296,13 @@ function Invoke-VUONGTTFixWindowsFirewall {
 }
 
 function Invoke-VUONGTTFixHostsFile {
+    param([string]$TargetPath = "$env:WINDIR\System32\drivers\etc\hosts")
     $log = @()
     try {
-        $hostsPath = "$env:WINDIR\System32\drivers\etc\hosts"
+        $hostsPath = $TargetPath
         $log += "[1/2] Sao lưu file hosts hiện tại..."
         if (Test-Path $hostsPath) {
-            Copy-Item -Path $hostsPath -Destination "$hostsPath.bak_$(Get-Date -Format 'yyyyMMddHHmm')" -Force -ErrorAction SilentlyContinue
+            Copy-Item -Path $hostsPath -Destination "$hostsPath.bak_$(Get-Date -Format 'yyyyMMddHHmm')" -Force -ErrorAction Stop
         }
 
         $defaultHosts = @"

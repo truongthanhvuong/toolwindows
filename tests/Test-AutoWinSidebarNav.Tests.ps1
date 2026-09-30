@@ -20,12 +20,12 @@ Write-Host "--- TDD Kiem thu dieu huong AutoWin ra Sidebar & Quick Actions ---" 
 
 $xamlContent = [System.IO.File]::ReadAllText($xamlPath)
 Assert-Condition "XAML chua btnMenuAutoWin voi Tag='AutoWin'" ($xamlContent -match 'x:Name="btnMenuAutoWin"[^>]*Tag="AutoWin"' -or $xamlContent -match 'Tag="AutoWin"[^>]*x:Name="btnMenuAutoWin"') "Thieu btnMenuAutoWin trong XAML"
-Assert-Condition "XAML chua btnQuickAutoWin trong Quick Actions" ($xamlContent -match 'x:Name="btnQuickAutoWin"') "Thieu btnQuickAutoWin trong XAML"
+Assert-Condition "XAML loai bo btnQuickAutoWin trong Quick Actions (tranh trung lap)" (-not ($xamlContent -match 'x:Name="btnQuickAutoWin"')) "btnQuickAutoWin van con trong XAML"
 
 $scriptContent = [System.IO.File]::ReadAllText($scriptPath)
 Assert-Condition "VUONGTT_Toolkit.ps1 khai bao btnMenuAutoWin trong `$menuButtons" ($scriptContent -match '\$menuButtons\s*=\s*@\([^)]*"btnMenuAutoWin"') "Thieu btnMenuAutoWin trong `$menuButtons"
-Assert-Condition "VUONGTT_Toolkit.ps1 gan Get-Control cho `$btnMenuAutoWin va `$btnQuickAutoWin" (($scriptContent -match '\$btnMenuAutoWin\s*=\s*Get-Control') -and ($scriptContent -match '\$btnQuickAutoWin\s*=\s*Get-Control')) "Thieu Get-Control"
-Assert-Condition "VUONGTT_Toolkit.ps1 gan Add_Click cho `$btnQuickAutoWin" ($scriptContent -match '\$btnQuickAutoWin\.Add_Click') "Thieu Add_Click"
+Assert-Condition "VUONGTT_Toolkit.ps1 gan Get-Control cho `$btnMenuAutoWin" ($scriptContent -match '\$btnMenuAutoWin\s*=\s*Get-Control') "Thieu Get-Control btnMenuAutoWin"
+Assert-Condition "VUONGTT_Toolkit.ps1 khong gan Add_Click cho `$btnQuickAutoWin da loai bo" (-not ($scriptContent -match '\$btnQuickAutoWin\.Add_Click')) "btnQuickAutoWin van con Add_Click"
 Assert-Condition "VUONGTT_Toolkit.ps1 ho tro dinh tuyen mo tab AutoWin" (($scriptContent -match 'TargetTag\s+-eq\s+"AutoWin"') -or ($scriptContent -match '"AutoWin"\s*=\s*Get-Control') -or ($scriptContent -match '"AutoWin"\s*\{')) "Thieu dinh tuyen AutoWin"
 
 $color = "Green"

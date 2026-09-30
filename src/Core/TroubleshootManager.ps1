@@ -148,13 +148,13 @@ function Get-VUONGTTTroubleshootProblems {
 
     $list = @($global:VUONGTT_TroubleshootDB.Problems)
 
-    if (-not [string]::IsNullOrWhiteSpace($Category)) {
+    if (-not [string]::IsNullOrWhiteSpace($Category) -and $Category -notmatch '(?i)^(all|tất cả)') {
         $list = @($list | Where-Object { 
             $_.Category -eq $Category -or $_.Category -like "*$Category*"
         })
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($SubCategory)) {
+    if (-not [string]::IsNullOrWhiteSpace($SubCategory) -and $SubCategory -notmatch '(?i)^(all|tất cả)') {
         $list = @($list | Where-Object { 
             $_.SubCategory -eq $SubCategory -or $_.SubCategory -like "*$SubCategory*"
         })
@@ -176,6 +176,7 @@ function Get-VUONGTTTroubleshootProblems {
 function Search-VUONGTTTroubleshootProblem {
     param(
         [Parameter(Mandatory=$true)]
+        [Alias("Keyword")]
         [string]$Query
     )
 

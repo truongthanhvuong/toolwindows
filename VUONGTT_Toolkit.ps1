@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.62
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.63
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.62"
+$Script:AppVersion = "v20.5.909.63"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -328,6 +328,7 @@ $btnClearTroubleshootLog        = Get-Control "btnClearTroubleshootLog"
 $subTabSysInfo_View             = Get-Control "subTabSysInfo_View"
 $subTabSysInfo_Customize        = Get-Control "subTabSysInfo_Customize"
 $subTabSysInfo_CpuMain          = Get-Control "subTabSysInfo_CpuMain"
+$subTabSysInfo_Users            = Get-Control "subTabSysInfo_Users"
 
 $subTabSysFix_Cleaner           = Get-Control "subTabSysFix_Cleaner"
 $subTabSysFix_Config            = Get-Control "subTabSysFix_Config"
@@ -347,7 +348,6 @@ $subTabTech_Activation          = Get-Control "subTabTech_Activation"
 $subTabTech_BitLocker           = Get-Control "subTabTech_BitLocker"
 $subTabTech_Backup              = Get-Control "subTabTech_Backup"
 $subTabTech_AutoWin             = Get-Control "subTabTech_AutoWin"
-$subTabTech_Users               = Get-Control "subTabTech_Users"
 
 # Sub-pages and Panels (5 Large Hubs)
 $pageSysInfo                    = Get-Control "pageSysInfo"
@@ -374,9 +374,8 @@ $pageUsers                      = Get-Control "pageUsers"
 
 # Sidebar Quick Action Controls
 $btnQuickClean                  = Get-Control "btnQuickClean"
-$btnQuickActivation             = Get-Control "btnQuickActivation"
+$btnQuickTroubleshoot           = Get-Control "btnQuickTroubleshoot"
 $btnQuickFixPrinter             = Get-Control "btnQuickFixPrinter"
-$btnQuickAutoWin                = Get-Control "btnQuickAutoWin"
 $btnQuickRestartExplorer        = Get-Control "btnQuickRestartExplorer"
 
 # 9 Apple Menu Cards + Admin Buttons
@@ -419,7 +418,7 @@ $legacyRouting = @{
     "Activation"   = @{ Hub = "TechUtilities"; SubTab = "Tech_Activation" }
     "BitLocker"    = @{ Hub = "TechUtilities"; SubTab = "Tech_BitLocker" }
     "BackupDriver" = @{ Hub = "TechUtilities"; SubTab = "Tech_Backup" }
-    "Users"        = @{ Hub = "TechUtilities"; SubTab = "Tech_Users" }
+    "Users"        = @{ Hub = "SysInfo"; SubTab = "SysInfo_Users" }
     "Customize"    = @{ Hub = "SysInfo"; SubTab = "SysInfo_Customize" }
     "CpuMain"      = @{ Hub = "SysInfo"; SubTab = "SysInfo_CpuMain" }
     "IpScanner"    = @{ Hub = "NetworkLAN"; SubTab = $null }
@@ -757,8 +756,8 @@ function Set-CapsuleSubTabStyle {
 # --- 1. SysInfo Sub-tabs ---
 function Switch-SysInfoSubTab {
     param([string]$targetTab)
-    $tabs = @($subTabSysInfo_View, $subTabSysInfo_Customize, $subTabSysInfo_CpuMain)
-    $panels = @($pageSysInfo, $pageCustomize, $pageCpuMain)
+    $tabs = @($subTabSysInfo_View, $subTabSysInfo_Customize, $subTabSysInfo_CpuMain, $subTabSysInfo_Users)
+    $panels = @($pageSysInfo, $pageCustomize, $pageCpuMain, $pageUsers)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
     
     switch ($targetTab) {
@@ -776,6 +775,13 @@ function Switch-SysInfoSubTab {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_CpuMain
             if ($pageCpuMain) { $pageCpuMain.Visibility = [System.Windows.Visibility]::Visible }
             Search-CpuInfo
+        }
+        "SysInfo_Users" {
+            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_Users
+            if ($pageUsers) { $pageUsers.Visibility = [System.Windows.Visibility]::Visible }
+            if (Get-Command Refresh-UsersList -ErrorAction SilentlyContinue) {
+                Refresh-UsersList
+            }
         }
     }
 }
@@ -890,8 +896,8 @@ function Switch-TechUtilitiesSubTab {
         }
     }
 
-    $tabs = @($subTabTech_Activation, $subTabTech_BitLocker, $subTabTech_Backup, $subTabTech_AutoWin, $subTabTech_Users)
-    $panels = @($pageActivation, $pageBitLocker, $pageBackupDriver, $pageAutoWin, $pageUsers)
+    $tabs = @($subTabTech_Activation, $subTabTech_BitLocker, $subTabTech_Backup, $subTabTech_AutoWin)
+    $panels = @($pageActivation, $pageBitLocker, $pageBackupDriver, $pageAutoWin)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
     
     switch ($targetTab) {
@@ -916,11 +922,6 @@ function Switch-TechUtilitiesSubTab {
             Refresh-PostWinDriverStatusBadge
             Refresh-VUONGTTBackupTargetDrives
         }
-        "Tech_Users" {
-            Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_Users
-            if ($pageUsers) { $pageUsers.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-UsersList
-        }
     }
 }
 
@@ -928,6 +929,7 @@ function Switch-TechUtilitiesSubTab {
 if ($subTabSysInfo_View)      { $subTabSysInfo_View.Add_Click({ Switch-SysInfoSubTab "SysInfo_View" }) }
 if ($subTabSysInfo_Customize) { $subTabSysInfo_Customize.Add_Click({ Switch-SysInfoSubTab "SysInfo_Customize" }) }
 if ($subTabSysInfo_CpuMain)   { $subTabSysInfo_CpuMain.Add_Click({ Switch-SysInfoSubTab "SysInfo_CpuMain" }) }
+if ($subTabSysInfo_Users)     { $subTabSysInfo_Users.Add_Click({ Switch-SysInfoSubTab "SysInfo_Users" }) }
 
 # Wire SystemFix Sub-tabs
 if ($subTabSysFix_Cleaner)      { $subTabSysFix_Cleaner.Add_Click({ Switch-SystemFixSubTab "SysFix_Cleaner" }) }
@@ -950,7 +952,6 @@ if ($subTabTech_Activation) { $subTabTech_Activation.Add_Click({ Switch-TechUtil
 if ($subTabTech_BitLocker)   { $subTabTech_BitLocker.Add_Click({ Switch-TechUtilitiesSubTab "Tech_BitLocker" }) }
 if ($subTabTech_Backup)     { $subTabTech_Backup.Add_Click({ Switch-TechUtilitiesSubTab "Tech_Backup" }) }
 if ($subTabTech_AutoWin)    { $subTabTech_AutoWin.Add_Click({ Switch-TechUtilitiesSubTab "Tech_AutoWin" }) }
-if ($subTabTech_Users)      { $subTabTech_Users.Add_Click({ Switch-TechUtilitiesSubTab "Tech_Users" }) }
 
 # Wire Sidebar Quick Action Buttons
 if ($btnQuickClean) {
@@ -959,20 +960,15 @@ if ($btnQuickClean) {
         Switch-SystemFixSubTab "SysFix_Cleaner"
     })
 }
-if ($btnQuickActivation) {
-    $btnQuickActivation.Add_Click({
-        Switch-Tab -TargetTag "TechUtilities"
-        Switch-TechUtilitiesSubTab "Tech_Activation"
+if ($btnQuickTroubleshoot) {
+    $btnQuickTroubleshoot.Add_Click({
+        Switch-Tab -TargetTag "SystemFix"
+        Switch-SystemFixSubTab "SysFix_Troubleshoot"
     })
 }
 if ($btnQuickFixPrinter) {
     $btnQuickFixPrinter.Add_Click({
         Switch-Tab -TargetTag "PrinterLAN"
-    })
-}
-if ($btnQuickAutoWin) {
-    $btnQuickAutoWin.Add_Click({
-        Switch-Tab -TargetTag "AutoWin"
     })
 }
 if ($btnQuickRestartExplorer) {
@@ -982,7 +978,7 @@ if ($btnQuickRestartExplorer) {
             Start-Sleep -Milliseconds 400
             Start-Process "explorer.exe" -ErrorAction SilentlyContinue
             if ($txtFooterStatus) {
-                $txtFooterStatus.Text = "â€¢ [OK] ÄÃ£ khá»Ÿi Ä‘á»™ng láº¡i Windows Explorer thÃ nh cÃ´ng!"
+                $txtFooterStatus.Text = "• [OK] Đã khởi động lại Windows Explorer thành công!"
             }
         } catch {
             Start-Process "explorer.exe" -ErrorAction SilentlyContinue
@@ -9289,7 +9285,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.62" }
+                if (-not $currentVer) { $currentVer = "20.5.909.63" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
