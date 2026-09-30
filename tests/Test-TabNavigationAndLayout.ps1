@@ -46,8 +46,8 @@ $requiredXamlControls = @(
     # TechUtilities
     "pageTechUtilities", "pageActivation", "pageBitLocker", "pageBackupDriver", "pageAutoWin", "pageUsers",
     "subTabTech_Activation", "subTabTech_BitLocker", "subTabTech_Backup", "subTabTech_AutoWin", "subTabTech_Users",
-    # Quick Actions on Sidebar (4 non-duplicate items; btnQuickScanIP removed due to duplicating NetworkLAN hub)
-    "btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickRestartExplorer"
+    # Quick Actions on Sidebar (5 items)
+    "btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickAutoWin", "btnQuickRestartExplorer"
 )
 
 $xamlText = [System.IO.File]::ReadAllText($xamlFile)
@@ -70,7 +70,7 @@ $requiredScriptVars = @(
     "pageBenchmark", "pagePartition", "pageLaptopCheck",
     "pageSoftware", "pageCustomApp", "pageUninstaller", "pageFonts",
     "pageSysInfo", "pageCustomize", "pageCpuMain",
-    "btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickRestartExplorer"
+    "btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickAutoWin", "btnQuickRestartExplorer"
 )
 
 foreach ($var in $requiredScriptVars) {
@@ -90,7 +90,7 @@ $hasDefaultSubTabHandling = $scriptText.Contains("Switch-SystemFixSubTab") -and
 Assert-Test "Switch-Tab handles default subtab routing automatically" $hasDefaultSubTabHandling "Switch-Tab must automatically select matching sub-tab when entering Hub"
 
 # 4. Test Quick Action Click Handlers
-$quickActionsHandlers = @("btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickRestartExplorer")
+$quickActionsHandlers = @("btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickAutoWin", "btnQuickRestartExplorer")
 foreach ($qa in $quickActionsHandlers) {
     $pattern = [regex]::Escape('$' + $qa) + '\.Add_Click'
     $hasHandler = [regex]::IsMatch($scriptText, $pattern)

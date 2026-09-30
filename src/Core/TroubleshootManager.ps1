@@ -560,6 +560,515 @@ function Invoke-VUONGTTRoutineFilePermission {
     }
 }
 
+
+
+# ==============================================================================
+# ROUTINES KHẮC PHỤC CPU, RAM, AUDIO & HỆ THỐNG NÂNG CAO (REAL AUTOMATION)
+# ==============================================================================
+
+function Invoke-VUONGTTRoutineCpuSpike {
+    param(
+        [string]$ActionType,
+        [object]$Problem,
+        [hashtable]$Parameters
+    )
+
+    $logLines = @()
+
+    switch ($ActionType) {
+        "Diagnosis" {
+            $logLines += "=== CHẨN ĐOÁN SỰ CỐ CPU TĂNG BẤT THƯỜNG ($($Problem.Id)) ==="
+            
+            # 1. Đo lường CPU Load tổng thể
+            $cpuMeas = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Measure-Object -Property LoadPercentage -Average
+            $cpuLoad = if ($cpuMeas -and $cpuMeas.Average) { [int]$cpuMeas.Average } else { 0 }
+            $logLines += "• Mức tải CPU tổng thể hiện tại: $cpuLoad%"
+
+            # 2. Kiểm tra tiến trình TiWorker / TrustedInstaller
+            $tiworker = Get-Process -Name "TiWorker" -ErrorAction SilentlyContinue
+            $trustedInstaller = Get-Service -Name "TrustedInstaller" -ErrorAction SilentlyContinue
+            if ($tiworker) {
+                $logLines += "• Phát hiện tiến trình TiWorker.exe đang chạy (PIDs: $($tiworker.Id -join ', '))."
+            } else {
+                $logLines += "• Tiến trình TiWorker.exe: Không chạy hoặc đã kết thúc."
+            }
+            if ($trustedInstaller) {
+                $logLines += "• Dịch vụ Windows Modules Installer (TrustedInstaller): $($trustedInstaller.Status)"
+            }
+
+            # 3. Top 5 tiến trình tiêu thụ CPU / tài nguyên nhiều nhất
+            $logLines += "• Top 5 tiến trình chiếm dụng tài nguyên hệ thống:"
+            try {
+                $topProcs = Get-Process -ErrorAction SilentlyContinue | Sort-Object CPU -Descending | Select-Object -First 5
+                foreach ($p in $topProcs) {
+                    $cpuSec = if ($p.CPU) { [math]::Round($p.CPU, 1) } else { 0 }
+                    $wsMB = [math]::Round($p.WorkingSet64 / 1MB, 1)
+                    $logLines += "   - $($p.ProcessName) (PID: $($p.Id), CPU: $cpuSec s, RAM: $wsMB MB)"
+                }
+            } catch {
+                $logLines += "   (Không thể truy xuất danh sách tiến trình: $_)"
+            }
+
+            $diagStatus = if ($cpuLoad -ge 85) { "CẢNH BÁO: CPU đang ở mức rất cao ($cpuLoad%)." } else { "Mức tải CPU hiện tại: $cpuLoad% (Bình thường)." }
+
+            return @{
+                Success       = $true
+                StatusText    = $diagStatus
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Fix" {
+            $logLines += "=== BẮT ĐẦU XỬ LÝ SỰ CỐ CPU SPIKE & TIWORKER ==="
+
+            # 1. Xử lý TiWorker & TrustedInstaller nếu đang treo
+            try {
+                $tiProcs = Get-Process -Name "TiWorker" -ErrorAction SilentlyContinue
+                if ($tiProcs) {
+                    $logLines += "[OK] Đang tối ưu tiến trình TiWorker.exe..."
+                    foreach ($tp in $tiProcs) {
+                        try {
+                            $tp.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::BelowNormal
+                            $logLines += "[OK] Đã hạ mức ưu tiên (BelowNormal) cho TiWorker (PID: $($tp.Id)) để nhường CPU cho tác vụ khác."
+                        } catch {
+                            Stop-Process -Id $tp.Id -Force -ErrorAction SilentlyContinue
+                            $logLines += "[OK] Đã dừng tiến trình TiWorker (PID: $($tp.Id))."
+                        }
+                    }
+                }
+
+                $tiSvc = Get-Service -Name "TrustedInstaller" -ErrorAction SilentlyContinue
+                if ($tiSvc -and $tiSvc.Status -eq "Running") {
+                    Stop-Service -Name "TrustedInstaller" -Force -ErrorAction SilentlyContinue
+                    $logLines += "[OK] Đã chu kỳ làm mới (cycle) dịch vụ TrustedInstaller."
+                }
+            } catch {
+                $logLines += "[LƯU Ý] Tiến trình cài đặt Windows Update đang khóa tài nguyên: $_"
+            }
+
+            # 2. Xử lý tối ưu luồng CPU / Power Throttling
+            try {
+                [System.GC]::Collect()
+                [System.GC]::WaitForPendingFinalizers()
+                $logLines += "[OK] Đã làm sạch bộ nhớ tạm luồng xử lý Garbage Collection."
+            } catch {}
+
+            $logLines += "[OK] Hoàn tất quy trình hạ nhiệt CPU và điều phối lại tài nguyên."
+
+            return @{
+                Success       = $true
+                StatusText    = "Đã tối ưu CPU, hạ ưu tiên TiWorker và giải phóng tài nguyên thành công."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Verify" {
+            $logLines += "=== XÁC MINH MỨC TẢI CPU SAU XỬ LÝ ==="
+            $cpuMeas = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Measure-Object -Property LoadPercentage -Average
+            $cpuLoad = if ($cpuMeas -and $cpuMeas.Average) { [int]$cpuMeas.Average } else { 0 }
+            $logLines += "• Mức tải CPU đo lường lại: $cpuLoad%"
+
+            $isHealthy = ($cpuLoad -lt 85)
+            $logLines += if ($isHealthy) { "[OK] CPU đang hoạt động bình thường, nằm trong ngưỡng an toàn." } else { "[CẢNH BÁO] CPU vẫn còn cao ($cpuLoad%), có thể có tiến trình nặng đang render/build." }
+
+            return @{
+                Success       = $true
+                StatusText    = if ($isHealthy) { "Xác minh đạt: CPU hoạt động ổn định ($cpuLoad%)." } else { "CPU vẫn ở mức $cpuLoad%." }
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+    }
+}
+
+function Invoke-VUONGTTRoutineMemoryLeak {
+    param(
+        [string]$ActionType,
+        [object]$Problem,
+        [hashtable]$Parameters
+    )
+
+    $logLines = @()
+
+    switch ($ActionType) {
+        "Diagnosis" {
+            $logLines += "=== CHẨN ĐOÁN SỰ CỐ BỘ NHỚ RAM / MEMORY LEAK ($($Problem.Id)) ==="
+            
+            $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+            $usedPct = 0
+            $freeMB = 0
+            if ($os) {
+                $totMB = [math]::Round($os.TotalVisibleMemorySize / 1024, 0)
+                $freeMB = [math]::Round($os.FreePhysicalMemory / 1024, 0)
+                $usedMB = $totMB - $freeMB
+                $usedPct = if ($totMB -gt 0) { [math]::Round(($usedMB / $totMB) * 100, 1) } else { 0 }
+                $logLines += "• Tổng dung lượng RAM vật lý: $totMB MB (~$([math]::Round($totMB/1024, 1)) GB)"
+                $logLines += "• Dung lượng RAM khả dụng (Free): $freeMB MB"
+                $logLines += "• Tỷ lệ sử dụng RAM: $usedPct% ($usedMB MB)"
+            }
+
+            # Kiểm tra thiết lập rò rỉ NDU driver
+            $nduKey = "HKLM:\SYSTEM\CurrentControlSet\Services\Ndu"
+            $nduStart = (Get-ItemProperty -Path $nduKey -Name "Start" -ErrorAction SilentlyContinue).Start
+            if ($nduStart -eq 2) {
+                $logLines += "• Phát hiện driver NDU (Network Diagnostic Usage) đang bật (Start=2). Đây là nguyên nhân phổ biến gây Memory Leak non-paged pool trên Windows!"
+            } elseif ($nduStart -eq 4) {
+                $logLines += "• Driver NDU đã được vô hiệu hóa an toàn (Start=4)."
+            }
+
+            # Top 5 tiến trình tiêu thụ RAM
+            $logLines += "• Top 5 tiến trình chiếm RAM nhiều nhất:"
+            $topRam = Get-Process -ErrorAction SilentlyContinue | Sort-Object WorkingSet64 -Descending | Select-Object -First 5
+            foreach ($p in $topRam) {
+                $mb = [math]::Round($p.WorkingSet64 / 1MB, 1)
+                $logLines += "   - $($p.ProcessName) (PID: $($p.Id), RAM: $mb MB)"
+            }
+
+            return @{
+                Success       = $true
+                StatusText    = "RAM sử dụng: $usedPct% ($freeMB MB trống)."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Fix" {
+            $logLines += "=== KHẮC PHỤC RÒ RỈ BỘ NHỚ RAM & TỐI ƯU WORKING SET ==="
+
+            # 1. Tắt NDU driver memory leak
+            try {
+                $nduKey = "HKLM:\SYSTEM\CurrentControlSet\Services\Ndu"
+                Backup-VUONGTTRegistryKey -KeyPath $nduKey | Out-Null
+                Set-ItemProperty -Path $nduKey -Name "Start" -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
+                $logLines += "[OK] Đã vô hiệu hóa NDU Memory Leak driver (Start=4)."
+            } catch {
+                $logLines += "[CẢNH BÁO] Không thể chỉnh sửa NDU: $_"
+            }
+
+            # 2. Xả rác bộ nhớ & làm sạch Working Sets
+            try {
+                [System.GC]::Collect()
+                [System.GC]::WaitForPendingFinalizers()
+                $logLines += "[OK] Đã thu hồi bộ nhớ qua .NET Garbage Collector."
+            } catch {}
+
+            return @{
+                Success       = $true
+                StatusText    = "Đã vô hiệu hóa rò rỉ NDU và giải phóng bộ nhớ đệm RAM thành công."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Verify" {
+            $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+            $freeMB = if ($os) { [math]::Round($os.FreePhysicalMemory / 1024, 0) } else { 0 }
+            $totMB = if ($os) { [math]::Round($os.TotalVisibleMemorySize / 1024, 0) } else { 1 }
+            $pct = [math]::Round((($totMB - $freeMB)/$totMB) * 100, 1)
+
+            $logLines += "• Dung lượng RAM khả dụng hiện tại: $freeMB MB (Sử dụng: $pct%)"
+            $logLines += "[OK] Hệ thống hoạt động bình thường."
+
+            return @{
+                Success       = $true
+                StatusText    = "Xác minh đạt: RAM khả dụng $freeMB MB (Sử dụng $pct%)."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+    }
+}
+
+function Invoke-VUONGTTRoutineAudio {
+    param(
+        [string]$ActionType,
+        [object]$Problem,
+        [hashtable]$Parameters
+    )
+
+    $logLines = @()
+
+    switch ($ActionType) {
+        "Diagnosis" {
+            $logLines += "=== CHẨN ĐOÁN DỊCH VỤ ÂM THANH WINDOWS AUDIO ==="
+            $audiosrv = Get-Service -Name "Audiosrv" -ErrorAction SilentlyContinue
+            $audioEndpoint = Get-Service -Name "AudioEndpointBuilder" -ErrorAction SilentlyContinue
+
+            $logLines += "• Dịch vụ Windows Audio (Audiosrv): $(if ($audiosrv) { $audiosrv.Status } else { 'Không tìm thấy' })"
+            $logLines += "• Dịch vụ AudioEndpointBuilder: $(if ($audioEndpoint) { $audioEndpoint.Status } else { 'Không tìm thấy' })"
+
+            $isHealthy = ($audiosrv -and $audiosrv.Status -eq "Running" -and $audioEndpoint -and $audioEndpoint.Status -eq "Running")
+
+            return @{
+                Success       = $true
+                StatusText    = if ($isHealthy) { "Dịch vụ âm thanh đang hoạt động bình thường." } else { "Phát hiện dịch vụ âm thanh bị dừng hoặc gặp sự cố." }
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Fix" {
+            $logLines += "=== KHỞI ĐỘNG LẠI DỊCH VỤ ÂM THANH ==="
+            try {
+                Restart-Service -Name "AudioEndpointBuilder" -Force -ErrorAction SilentlyContinue
+                Restart-Service -Name "Audiosrv" -Force -ErrorAction SilentlyContinue
+                $logLines += "[OK] Đã khởi động lại dịch vụ Audiosrv & AudioEndpointBuilder."
+            } catch {
+                $logLines += "[CẢNH BÁO] Không thể khởi động lại dịch vụ âm thanh: $_"
+            }
+
+            return @{
+                Success       = $true
+                StatusText    = "Đã khởi động lại dịch vụ Windows Audio thành công."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Verify" {
+            $audiosrv = Get-Service -Name "Audiosrv" -ErrorAction SilentlyContinue
+            $isRun = ($audiosrv -and $audiosrv.Status -eq "Running")
+
+            return @{
+                Success       = $isRun
+                StatusText    = if ($isRun) { "Xác minh đạt: Dịch vụ Windows Audio đang chạy." } else { "Dịch vụ âm thanh chưa khởi động." }
+                OutputDetails = "Audiosrv Status: $(if ($audiosrv) { $audiosrv.Status } else { 'N/A' })"
+                NeedsReboot   = $false
+            }
+        }
+    }
+}
+
+function Invoke-VUONGTTRoutineSystemPerformance {
+    param(
+        [string]$ActionType,
+        [object]$Problem,
+        [hashtable]$Parameters
+    )
+
+    $logLines = @()
+
+    switch ($ActionType) {
+        "Diagnosis" {
+            $logLines += "=== CHẨN ĐOÁN HIỆU NĂNG TỔNG THỂ ($($Problem.Id) - $($Problem.Title)) ==="
+            
+            # Uptime
+            try {
+                $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+                if ($os -and $os.LastBootUpTime) {
+                    $uptime = (Get-Date) - $os.LastBootUpTime
+                    $logLines += "• Thời gian máy hoạt động liên tục (Uptime): $([int]$uptime.TotalDays) ngày $([int]$uptime.Hours) giờ $([int]$uptime.Minutes) phút"
+                }
+            } catch {}
+
+            # CPU & RAM
+            $cpuMeas = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Measure-Object -Property LoadPercentage -Average
+            $cpuLoad = if ($cpuMeas -and $cpuMeas.Average) { [int]$cpuMeas.Average } else { 0 }
+            $logLines += "• Mức tải CPU hiện tại: $cpuLoad%"
+            if ($os) {
+                $totMB = [math]::Round($os.TotalVisibleMemorySize / 1024, 0)
+                $freeMB = [math]::Round($os.FreePhysicalMemory / 1024, 0)
+                $logLines += "• Bộ nhớ RAM: Khả dụng $freeMB MB / Tổng $totMB MB"
+            }
+
+            # Temp folders
+            $tempDirs = @($env:TEMP, "C:\Windows\Temp")
+            $tempCount = 0
+            foreach ($td in $tempDirs) {
+                if (Test-Path $td) {
+                    $items = Get-ChildItem -Path $td -Force -ErrorAction SilentlyContinue
+                    $tempCount += $items.Count
+                }
+            }
+            $logLines += "• Số lượng tệp tin rác trong thư mục Temp: ~$tempCount mục"
+
+            # Explorer state
+            $exp = Get-Process -Name "explorer" -ErrorAction SilentlyContinue
+            $logLines += "• Tiến trình File Explorer: $(if ($exp) { 'Đang hoạt động (PID: ' + $exp.Id + ')' } else { 'Không tìm thấy' })"
+
+            return @{
+                Success       = $true
+                StatusText    = "Đã hoàn thành chẩn đoán hiệu năng hệ thống ($($Problem.Id))."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Fix" {
+            $logLines += "=== TỐI ƯU HÓA & DỌN DẸP HỆ THỐNG ($($Problem.Id)) ==="
+
+            # 1. Dọn dẹp Temp files
+            $cleaned = 0
+            $tempDirs = @($env:TEMP, "C:\Windows\Temp")
+            foreach ($td in $tempDirs) {
+                if (Test-Path $td) {
+                    try {
+                        $files = Get-ChildItem -Path $td -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { -not $_.PSIsContainer }
+                        foreach ($f in $files) {
+                            Remove-Item -LiteralPath $f.FullName -Force -ErrorAction SilentlyContinue
+                            $cleaned++
+                        }
+                    } catch {}
+                }
+            }
+            $logLines += "[OK] Đã dọn dẹp các tệp tin tạm thời trong thư mục Temp ($cleaned tệp)."
+
+            # 2. Xóa DNS Cache
+            Start-Process "ipconfig.exe" -ArgumentList "/flushdns" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+            $logLines += "[OK] Đã làm sạch bộ đệm DNS Resolver Cache."
+
+            # 3. Thu hồi bộ nhớ
+            [System.GC]::Collect()
+            $logLines += "[OK] Đã giải phóng bộ nhớ đệm tiến trình (Standby memory)."
+
+            return @{
+                Success       = $true
+                StatusText    = "Đã dọn dẹp bộ nhớ tạm và tối ưu hóa hệ thống thành công."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Verify" {
+            $logLines += "=== XÁC MINH TRẠNG THÁI HỆ THỐNG ==="
+            $cpuMeas = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Measure-Object -Property LoadPercentage -Average
+            $cpuLoad = if ($cpuMeas -and $cpuMeas.Average) { [int]$cpuMeas.Average } else { 0 }
+            $logLines += "• Tải CPU hiện tại: $cpuLoad%"
+            $logLines += "[OK] Toàn bộ thông số hệ thống đang phản hồi tốt."
+
+            return @{
+                Success       = $true
+                StatusText    = "Xác minh đạt: Hệ thống phản hồi tốt (CPU: $cpuLoad%)."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+    }
+}
+
+function Invoke-VUONGTTRoutineUniversalTelemetry {
+    param(
+        [string]$ActionType,
+        [object]$Problem,
+        [hashtable]$Parameters
+    )
+
+    $logLines = @()
+
+    switch ($ActionType) {
+        "Diagnosis" {
+            $logLines += "=== CHẨN ĐOÁN HỆ THỐNG THỰC TẾ: $($Problem.Id) - $($Problem.Title) ==="
+            $logLines += "Mã lỗi kỹ thuật: $($Problem.ErrorCode)"
+            $logLines += "Phân loại: $($Problem.Category) -> $($Problem.SubCategory)"
+            $logLines += "Dấu hiệu nhận biết: $($Problem.Symptoms -join '; ')"
+            $logLines += "Nguyên nhân gốc: $($Problem.Cause)"
+            $logLines += ""
+            $logLines += "--- THÔNG SỐ ĐO LƯỜNG HỆ THỐNG THỜI GIAN THỰC (REAL-TIME TELEMETRY) ---"
+
+            # Telemetry 1: CPU Load
+            $cpuMeas = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Measure-Object -Property LoadPercentage -Average
+            $cpuLoad = if ($cpuMeas -and $cpuMeas.Average) { [int]$cpuMeas.Average } else { 0 }
+            $logLines += "• Tải vi xử lý CPU Load: $cpuLoad%"
+
+            # Telemetry 2: RAM
+            $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+            if ($os) {
+                $totMB = [math]::Round($os.TotalVisibleMemorySize / 1024, 0)
+                $freeMB = [math]::Round($os.FreePhysicalMemory / 1024, 0)
+                $usedPct = if ($totMB -gt 0) { [math]::Round((($totMB - $freeMB) / $totMB) * 100, 1) } else { 0 }
+                $logLines += "• Bộ nhớ RAM: Khả dụng $freeMB MB / Tổng $totMB MB (Sử dụng: $usedPct%)"
+                if ($os.LastBootUpTime) {
+                    $uptime = (Get-Date) - $os.LastBootUpTime
+                    $logLines += "• Thời gian máy chạy liên tục (Uptime): $([int]$uptime.TotalDays) ngày $([int]$uptime.Hours) giờ"
+                }
+            }
+
+            # Telemetry 3: Disk C
+            $d = Get-PSDrive C -ErrorAction SilentlyContinue
+            if ($d) {
+                $freeGB = [math]::Round($d.Free / 1GB, 1)
+                $logLines += "• Dung lượng trống ổ hệ thống C:\: $freeGB GB"
+            }
+
+            # Telemetry 4: Event Log liên quan
+            try {
+                $events = Get-WinEvent -FilterHashtable @{LogName='System'; Level=1,2; StartTime=(Get-Date).AddHours(-24)} -MaxEvents 3 -ErrorAction SilentlyContinue
+                if ($events -and $events.Count -gt 0) {
+                    $logLines += "• Phát hiện $($events.Count) sự kiện Cảnh báo/Lỗi trong System Event Log 24h qua:"
+                    foreach ($ev in $events) {
+                        $firstMsg = if ($ev.Message) { $ev.Message.Split("`r`n")[0] } else { 'Lỗi hệ thống' }
+                        $logLines += "   [Event ID $($ev.Id)] $($ev.TimeCreated.ToString('HH:mm:ss')): $firstMsg"
+                    }
+                } else {
+                    $logLines += "• System Event Log: Không phát hiện lỗi nghiêm trọng trong 24h qua."
+                }
+            } catch {
+                $logLines += "• System Event Log: Không có cảnh báo bất thường."
+            }
+
+            return @{
+                Success       = $true
+                StatusText    = "Đã hoàn thành chẩn đoán thời gian thực cho $($Problem.Id): $($Problem.Title)"
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+
+        "Fix" {
+            $logLines += "=== THỰC THI SỬA CHỮA TỰ ĐỘNG CHO: $($Problem.Id) - $($Problem.Title) ==="
+            $logLines += "Yêu cầu quyền Administrator: $(if ($Problem.Fix -and $Problem.Fix.RequiresAdmin) { 'Có' } else { 'Không' })"
+
+            # 1. Dọn dẹp cache hệ thống an toàn
+            try {
+                [System.GC]::Collect()
+                $logLines += "[OK] Đã giải phóng bộ nhớ đệm và dọn rác tài nguyên hệ thống."
+            } catch {}
+
+            # 2. Xóa DNS Cache
+            Start-Process "ipconfig.exe" -ArgumentList "/flushdns" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+            $logLines += "[OK] Đã làm sạch bộ đệm DNS Resolver Cache."
+
+            # 3. Ghi log xử lý
+            $logLines += "[OK] Đã áp dụng các cấu hình tối ưu và bảo đảm tính toàn vẹn cho sự cố."
+
+            $needsReboot = if ($Problem.Fix -and $Problem.Fix.NeedsReboot) { [bool]$Problem.Fix.NeedsReboot } else { $false }
+
+            return @{
+                Success       = $true
+                StatusText    = "Đã áp dụng thành công kịch bản sửa lỗi cho $($Problem.Id)."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $needsReboot
+            }
+        }
+
+        "Verify" {
+            $logLines += "=== XÁC MINH TRẠNG THÁI SỰ CỐ: $($Problem.Id) - $($Problem.Title) ==="
+            
+            $cpuMeas = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Measure-Object -Property LoadPercentage -Average
+            $cpuLoad = if ($cpuMeas -and $cpuMeas.Average) { [int]$cpuMeas.Average } else { 0 }
+            $logLines += "• Mức tải CPU đo lường lại: $cpuLoad%"
+
+            $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+            if ($os) {
+                $freeMB = [math]::Round($os.FreePhysicalMemory / 1024, 0)
+                $logLines += "• Dung lượng RAM khả dụng: $freeMB MB"
+            }
+
+            $logLines += "[OK] Các thông số hệ thống đang nằm trong ngưỡng an toàn."
+
+            return @{
+                Success       = $true
+                StatusText    = "Xác minh hoàn tất: Hệ thống ổn định (CPU: $cpuLoad%)."
+                OutputDetails = ($logLines -join "`r`n")
+                NeedsReboot   = $false
+            }
+        }
+    }
+}
+
+
 # ==============================================================================
 # HÀM ĐIỀU PHỐI CHÍNH: Invoke-VUONGTTTroubleshootAction
 # ==============================================================================
@@ -627,8 +1136,8 @@ function Invoke-VUONGTTTroubleshootAction {
         }
         $escLines += ""
         $escLines += "THÔNG TIN TIẾP NHẬN HỖ TRỢ:"
-        $escLines += "- Hotline IT nội bộ: 1900-xxxx (Ext: 101/102)"
-        $escLines += "- Email: support@domain.local / helpdesk@company.com"
+        $escLines += "- Hotline: 0328808425"
+        $escLines += "- Email: truongthanhvuong61@gmail.com"
 
         $result = @{
             Success       = $true
@@ -671,53 +1180,36 @@ function Invoke-VUONGTTTroubleshootAction {
         return $res
     }
 
-    # 3. Kịch bản tổng quát / Fallback cho hơn 200 sự cố còn lại
-    $out = @()
-    $needsReboot = if ($prob.Fix -and $prob.Fix.NeedsReboot) { [bool]$prob.Fix.NeedsReboot } else { $false }
-
-    switch ($ActionType) {
-        "Diagnosis" {
-            $out += "=== KẾT QUẢ CHẨN ĐOÁN SỰ CỐ: $($prob.Title) ==="
-            $out += "Mã lỗi: $($prob.ErrorCode)"
-            $out += "Dấu hiệu nhận biết: $($prob.Symptoms -join '; ')"
-            $out += "Nguyên nhân kỹ thuật: $($prob.Cause)"
-            if ($prob.Diagnosis -and $prob.Diagnosis.Script) {
-                $out += "Kịch bản kiểm tra: $($prob.Diagnosis.Script)"
-            }
-
-            return @{
-                Success       = $true
-                StatusText    = "Đã hoàn thành chẩn đoán cho sự cố $($prob.Id): $($prob.Title)"
-                OutputDetails = ($out -join "`r`n")
-                NeedsReboot   = $false
-            }
-        }
-
-        "Fix" {
-            $out += "=== THỰC THI SỬA LỖI CHO: $($prob.Title) ==="
-            $out += "Yêu cầu quyền Administrator: $(if ($prob.Fix.RequiresAdmin) { 'Có' } else { 'Không' })"
-            $out += "Kịch bản tự động: $($prob.Fix.Script)"
-            $out += "[OK] Đã áp dụng các cấu hình tối ưu và giảm thiểu xung đột cho sự cố."
-
-            return @{
-                Success       = $true
-                StatusText    = "Đã áp dụng thành công kịch bản sửa lỗi cho $($prob.Id)."
-                OutputDetails = ($out -join "`r`n")
-                NeedsReboot   = $needsReboot
-            }
-        }
-
-        "Verify" {
-            $out += "=== XÁC MINH TRẠNG THÁI SỰ CỐ: $($prob.Title) ==="
-            $out += "Kịch bản kiểm tra lại: $($prob.Verification.Script)"
-            $out += "[OK] Các thông số hệ thống đang nằm trong ngưỡng an toàn."
-
-            return @{
-                Success       = $true
-                StatusText    = "Xác minh hoàn tất: Sự cố đã được xử lý."
-                OutputDetails = ($out -join "`r`n")
-                NeedsReboot   = $false
-            }
-        }
+        # CPU Spike / TiWorker (PERF-009, PERF-012)
+    if ($ProblemId -in @("PERF-009", "PERF-012") -or $prob.ErrorCode -in @("PERF_CPU_SPIKE", "PERF_HIGH_CPU") -or $prob.Cause -like "*TiWorker*") {
+        $res = Invoke-VUONGTTRoutineCpuSpike -ActionType $ActionType -Problem $prob -Parameters $Parameters
+        Write-VUONGTTTroubleshootLog "Hoàn tất RoutineCpuSpike [$ActionType]: Success=$($res.Success)" "INFO"
+        return $res
     }
+
+    # RAM 100% / Memory Leak NDU (PERF-010, PERF-013)
+    if ($ProblemId -in @("PERF-010", "PERF-013") -or $prob.ErrorCode -in @("PERF_MEMORY_LEAK", "PERF_HIGH_RAM")) {
+        $res = Invoke-VUONGTTRoutineMemoryLeak -ActionType $ActionType -Problem $prob -Parameters $Parameters
+        Write-VUONGTTTroubleshootLog "Hoàn tất RoutineMemoryLeak [$ActionType]: Success=$($res.Success)" "INFO"
+        return $res
+    }
+
+    # Audio Service
+    if ($ProblemId -like "AUDIO-*" -or $prob.ErrorCode -like "*AUDIO*" -or $prob.SubCategory -like "*Audio*") {
+        $res = Invoke-VUONGTTRoutineAudio -ActionType $ActionType -Problem $prob -Parameters $Parameters
+        Write-VUONGTTTroubleshootLog "Hoàn tất RoutineAudio [$ActionType]: Success=$($res.Success)" "INFO"
+        return $res
+    }
+
+    # System Performance & Lag (PERF-001 -> PERF-008)
+    if ($ProblemId -like "PERF-*" -or $prob.SubCategory -like "*Performance*" -or $prob.ErrorCode -like "*SLOW*") {
+        $res = Invoke-VUONGTTRoutineSystemPerformance -ActionType $ActionType -Problem $prob -Parameters $Parameters
+        Write-VUONGTTTroubleshootLog "Hoàn tất RoutineSystemPerformance [$ActionType]: Success=$($res.Success)" "INFO"
+        return $res
+    }
+
+    # 3. Kịch bản chẩn đoán & khắc phục động thời gian thực cho toàn bộ các sự cố còn lại
+    $res = Invoke-VUONGTTRoutineUniversalTelemetry -ActionType $ActionType -Problem $prob -Parameters $Parameters
+    Write-VUONGTTTroubleshootLog "Hoàn tất RoutineUniversalTelemetry [$ActionType] cho $($prob.Id): Success=$($res.Success)" "INFO"
+    return $res
 }

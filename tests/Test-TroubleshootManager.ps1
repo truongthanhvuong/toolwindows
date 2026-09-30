@@ -70,6 +70,18 @@ if (-not $escRes -or -not $escRes.OutputDetails) {
     Write-Error "Lay Escalation guide that bai!"
     exit 1 
 }
+if ($escRes.OutputDetails -notlike "*0328808425*") {
+    Write-Error "Escalation guide chua chua so Hotline moi '0328808425'!"
+    exit 1
+}
+if ($escRes.OutputDetails -notlike "*truongthanhvuong61@gmail.com*") {
+    Write-Error "Escalation guide chua chua Email moi 'truongthanhvuong61@gmail.com'!"
+    exit 1
+}
+if ($escRes.OutputDetails -like "*1900-xxxx*" -or $escRes.OutputDetails -like "*support@domain.local*") {
+    Write-Error "Escalation guide van con chua thong tin lien he mau cu (1900-xxxx hoac support@domain.local)!"
+    exit 1
+}
 
 # 9. Kiem tra cac action tren nhom uu tien cao: Windows Update, Print Spooler, Network
 $netDiag = Invoke-VUONGTTTroubleshootAction -ProblemId "NET-001" -ActionType "Diagnosis"

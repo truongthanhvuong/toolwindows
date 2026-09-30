@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.61
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.62
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.61"
+$Script:AppVersion = "v20.5.909.62"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -376,16 +376,18 @@ $pageUsers                      = Get-Control "pageUsers"
 $btnQuickClean                  = Get-Control "btnQuickClean"
 $btnQuickActivation             = Get-Control "btnQuickActivation"
 $btnQuickFixPrinter             = Get-Control "btnQuickFixPrinter"
+$btnQuickAutoWin                = Get-Control "btnQuickAutoWin"
 $btnQuickRestartExplorer        = Get-Control "btnQuickRestartExplorer"
 
-# 8 Apple Menu Cards + Admin Buttons
+# 9 Apple Menu Cards + Admin Buttons
+$btnMenuAutoWin                 = Get-Control "btnMenuAutoWin"
 $menuButtons = @(
     "btnMenuSysInfo", "btnMenuSystemFix", "btnMenuNetworkLAN", "btnMenuPrinterLAN",
-    "btnMenuOffice", "btnMenuSoftware", "btnMenuHardwareDisk", "btnMenuTechUtilities",
+    "btnMenuOffice", "btnMenuSoftware", "btnMenuHardwareDisk", "btnMenuAutoWin", "btnMenuTechUtilities",
     "btnMenuAdmin"
 )
 
-# Pages Dictionary (8 Hubs + AdminPortal)
+# Pages Dictionary (9 Hubs + AdminPortal)
 $containerSysInfo = Get-Control "containerSysInfo"
 $pages = @{
     "SysInfo"        = if ($containerSysInfo) { $containerSysInfo } else { Get-Control "pageSysInfo" }
@@ -395,6 +397,7 @@ $pages = @{
     "OfficeAIO"      = Get-Control "pageOfficeAIO"
     "SoftwareHub"    = Get-Control "pageSoftwareHub"
     "HardwareDisk"   = Get-Control "pageHardwareDisk"
+    "AutoWin"        = Get-Control "pageTechUtilities"
     "TechUtilities"  = Get-Control "pageTechUtilities"
     "AdminPortal"    = Get-Control "pageAdminPortal"
 }
@@ -416,7 +419,6 @@ $legacyRouting = @{
     "Activation"   = @{ Hub = "TechUtilities"; SubTab = "Tech_Activation" }
     "BitLocker"    = @{ Hub = "TechUtilities"; SubTab = "Tech_BitLocker" }
     "BackupDriver" = @{ Hub = "TechUtilities"; SubTab = "Tech_Backup" }
-    "AutoWin"      = @{ Hub = "TechUtilities"; SubTab = "Tech_AutoWin" }
     "Users"        = @{ Hub = "TechUtilities"; SubTab = "Tech_Users" }
     "Customize"    = @{ Hub = "SysInfo"; SubTab = "SysInfo_Customize" }
     "CpuMain"      = @{ Hub = "SysInfo"; SubTab = "SysInfo_CpuMain" }
@@ -601,6 +603,7 @@ function Switch-Tab {
         "SystemFix"     = "SysFix_Cleaner"
         "SoftwareHub"   = "Soft_Store"
         "HardwareDisk"  = "Hw_Disk"
+        "AutoWin"       = "Tech_AutoWin"
         "TechUtilities" = "Tech_Backup"
     }
 
@@ -615,6 +618,7 @@ function Switch-Tab {
             "SystemFix"     { Switch-SystemFixSubTab $subTabToSwitch }
             "SoftwareHub"   { Switch-SoftwareHubSubTab $subTabToSwitch }
             "HardwareDisk"  { Switch-HardwareDiskSubTab $subTabToSwitch }
+            "AutoWin"       { Switch-TechUtilitiesSubTab $subTabToSwitch }
             "TechUtilities" { Switch-TechUtilitiesSubTab $subTabToSwitch }
         }
     }
@@ -964,6 +968,11 @@ if ($btnQuickActivation) {
 if ($btnQuickFixPrinter) {
     $btnQuickFixPrinter.Add_Click({
         Switch-Tab -TargetTag "PrinterLAN"
+    })
+}
+if ($btnQuickAutoWin) {
+    $btnQuickAutoWin.Add_Click({
+        Switch-Tab -TargetTag "AutoWin"
     })
 }
 if ($btnQuickRestartExplorer) {
@@ -9280,7 +9289,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.61" }
+                if (-not $currentVer) { $currentVer = "20.5.909.62" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
