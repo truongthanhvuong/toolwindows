@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.67"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.69"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -412,7 +412,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.67 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.69 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -2606,7 +2606,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="200"/>
                                                         <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="80"/>
+                                                        <ColumnDefinition Width="90"/>
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Grid.Column="0" Text="1. Theo IP (Khuyên Dùng):" FontWeight="SemiBold" FontSize="12" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                                     <TextBox x:Name="txtScanUncIp" Grid.Column="1" Text="\\127.0.0.1\Scan" IsReadOnly="True" Background="#1E293B" Foreground="#38BDF8" FontWeight="Bold" FontSize="12.5" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" Padding="8,0" BorderBrush="#475569"/>
@@ -2616,7 +2616,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="200"/>
                                                         <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="80"/>
+                                                        <ColumnDefinition Width="90"/>
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Grid.Column="0" Text="2. Theo Tên Máy (Hostname):" FontWeight="SemiBold" FontSize="12" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                                     <TextBox x:Name="txtScanUncName" Grid.Column="1" Text="\\COMPUTER\Scan" IsReadOnly="True" Background="#1E293B" Foreground="#A78BFA" FontWeight="Bold" FontSize="12.5" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" Padding="8,0" BorderBrush="#475569"/>
@@ -4658,7 +4658,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.67" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.69" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.67
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.69
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.67"
+$Script:AppVersion = "v20.5.909.69"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -3051,7 +3051,12 @@ if ($btnBrowseScanFolder) {
             }
             if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
                 if ($txtScanFolderPath) {
-                    $txtScanFolderPath.Text = $fbd.SelectedPath
+                    $selected = $fbd.SelectedPath
+                    $sName = if ($txtScanShareName -and $txtScanShareName.Text) { $txtScanShareName.Text.Trim() } else { "Scan" }
+                    if ($selected -match '^[a-zA-Z]:\\?$') {
+                        $selected = Join-Path $selected $sName
+                    }
+                    $txtScanFolderPath.Text = $selected
                 }
             }
         } catch {
@@ -3068,16 +3073,25 @@ if ($btnCreateScanFolder) {
             $shareName = if ($txtScanShareName -and $txtScanShareName.Text) { $txtScanShareName.Text.Trim() } else { "Scan" }
             $enableAll = if ($chkEnableAllFileSharing) { [bool]$chkEnableAllFileSharing.IsChecked } else { $true }
 
+            # Tự động chuẩn hóa ổ đĩa gốc thành Thư mục Scan trên ổ đó (vd: D:\ -> D:\Scan)
+            if ($folderPath -match '^[a-zA-Z]:\\?$') {
+                $folderPath = Join-Path $folderPath $shareName
+                if ($txtScanFolderPath) { $txtScanFolderPath.Text = $folderPath }
+            }
+
             Add-PrinterLogMessage "=== [BẮT ĐẦU TẠO THƯ MỤC SCAN & CHIA SẺ EVERYONE] ==="
             Invoke-VUONGTTDoEvents
 
             $res = New-VUONGTTScanFolderShare -FolderPath $folderPath -ShareName $shareName -EnableAllSharing $enableAll
             if ($res) {
+                if ($txtScanFolderPath) { $txtScanFolderPath.Text = $res.FolderPath }
                 if ($txtScanUncIp) { $txtScanUncIp.Text = $res.UncIp }
                 if ($txtScanUncName) { $txtScanUncName.Text = $res.UncName }
                 Add-PrinterLogMessage $res.Log
                 if ($res.Success) {
                     [System.Windows.MessageBox]::Show("Đã tạo và chia sẻ thư mục Scan thành công!`n`nĐường dẫn máy in: $($res.UncIp)`nĐường dẫn Hostname: $($res.UncName)", "Tạo Thư Mục Scan Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                } else {
+                    [System.Windows.MessageBox]::Show("Tạo thư mục hoặc chia sẻ gặp lỗi!`nChi tiết vui lòng xem trong khung nhật ký phía dưới.", "Thông Báo Lỗi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
                 }
             }
         } catch {
@@ -3111,6 +3125,11 @@ if ($btnOpenScanFolder) {
     $btnOpenScanFolder.Add_Click({
         try {
             $folderPath = if ($txtScanFolderPath -and $txtScanFolderPath.Text) { $txtScanFolderPath.Text.Trim() } else { "C:\Scan" }
+            $shareName = if ($txtScanShareName -and $txtScanShareName.Text) { $txtScanShareName.Text.Trim() } else { "Scan" }
+            if ($folderPath -match '^[a-zA-Z]:\\?$') {
+                $folderPath = Join-Path $folderPath $shareName
+                if ($txtScanFolderPath) { $txtScanFolderPath.Text = $folderPath }
+            }
             if (-not (Test-Path $folderPath)) {
                 New-Item -Path $folderPath -ItemType Directory -Force | Out-Null
             }
@@ -9505,7 +9524,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.67" }
+                if (-not $currentVer) { $currentVer = "20.5.909.69" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

@@ -904,32 +904,75 @@ function New-VUONGTTScanFolderShare {
     if ([string]::IsNullOrWhiteSpace($FolderPath)) { $FolderPath = "C:\Scan" }
     if ([string]::IsNullOrWhiteSpace($ShareName)) { $ShareName = "Scan" }
 
+    # Tự động mở rộng nếu người dùng chỉ truyền gốc ổ đĩa (vd: D: hoặc D:\) thành D:\<ShareName>
+    if ($FolderPath -match '^[a-zA-Z]:\\?$') {
+        $FolderPath = Join-Path $FolderPath $ShareName
+    }
+    # Loại bỏ dấu gạch chéo ngược cuối để tránh lỗi escape chuỗi Win32: \" trong lệnh net share
+    $cleanPath = $FolderPath.TrimEnd('\')
+
     $success = $false
     try {
         # 1. Tạo thư mục vật lý nếu chưa có
-        if (-not (Test-Path -LiteralPath $FolderPath)) {
-            New-Item -Path $FolderPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
-            $log += "  -> [OK] Đã tạo mới thư mục lưu file scan: $FolderPath"
+        if (-not (Test-Path -LiteralPath $cleanPath)) {
+            New-Item -Path $cleanPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            $log += "  -> [OK] Đã tạo mới thư mục lưu file scan: $cleanPath"
         } else {
-            $log += "  -> [OK] Thư mục đã tồn tại sẵn trên ổ đĩa: $FolderPath"
+            $log += "  -> [OK] Thư mục đã tồn tại sẵn trên ổ đĩa: $cleanPath"
         }
 
         # 2. Phân quyền NTFS Full Control cho Everyone, Guest, ANONYMOUS LOGON và Users
         try {
-            cmd.exe /c "icacls `"$FolderPath`" /grant Everyone:(OI)(CI)F /grant `"ANONYMOUS LOGON:(OI)(CI)F`" /grant Guest:(OI)(CI)F /grant Users:(OI)(CI)F /t /c /q >nul 2>nul"
+            cmd.exe /c "icacls `"$cleanPath`" /grant Everyone:(OI)(CI)F /grant `"ANONYMOUS LOGON:(OI)(CI)F`" /grant Guest:(OI)(CI)F /grant Users:(OI)(CI)F /t /c /q >nul 2>nul"
             $log += "  -> [OK] Đã cấp quyền NTFS Full Control (Đọc/Ghi/Sửa) cho Everyone, Guest & Anonymous."
         } catch {
             $log += "  [!] Phân quyền NTFS lưu ý: $($_.Exception.Message)"
         }
 
         # 3. Tạo SMB Share
-        try {
-            # Xóa share cũ nếu đã tồn tại cùng tên
+        $shareCreated = $false
+        $shareError = ""
+
+        # Thử sử dụng New-SmbShare trước (chuẩn PowerShell trên Win 8/10/11/Server)
+        if (Get-Command "New-SmbShare" -ErrorAction SilentlyContinue) {
+            try {
+                if (Get-SmbShare -Name $ShareName -ErrorAction SilentlyContinue) {
+                    Remove-SmbShare -Name $ShareName -Force -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
+                }
+                New-SmbShare -Name $ShareName -Path $cleanPath -FullAccess "Everyone" -ErrorAction Stop | Out-Null
+                $shareCreated = $true
+            } catch {
+                $shareError = $_.Exception.Message
+            }
+        }
+
+        # Nếu New-SmbShare chưa thành công hoặc không có module, dùng net share
+        if (-not $shareCreated) {
             cmd.exe /c "net share `"$ShareName`" /delete /y >nul 2>nul"
-            $shareOut = cmd.exe /c "net share `"$ShareName=$FolderPath`" /GRANT:Everyone,FULL /UNLIMITED 2>&1"
-            $log += "  -> [OK] Đã tạo SMB Share '$ShareName' trỏ tới '$FolderPath' (Quyền Share: Everyone Full)."
-        } catch {
-            $log += "  [!] Tạo share lưu ý: $($_.Exception.Message)"
+            $netShareCmd = "net share `"$ShareName=$cleanPath`" /GRANT:Everyone,FULL /UNLIMITED"
+            $shareOut = cmd.exe /c "$netShareCmd 2>&1"
+            if ($LASTEXITCODE -eq 0) {
+                $shareCreated = $true
+            } else {
+                $shareError = ($shareOut -join " ").Trim()
+            }
+        }
+
+        # Xác thực lại share thực sự tồn tại
+        $verified = $false
+        if (Get-Command "Get-SmbShare" -ErrorAction SilentlyContinue) {
+            $checkShare = Get-SmbShare -Name $ShareName -ErrorAction SilentlyContinue
+            if ($checkShare) { $verified = $true }
+        }
+        if (-not $verified) {
+            $checkNet = cmd.exe /c "net share `"$ShareName`" 2>&1"
+            if ($LASTEXITCODE -eq 0) { $verified = $true }
+        }
+
+        if ($verified) {
+            $log += "  -> [OK] Đã tạo SMB Share '$ShareName' trỏ tới '$cleanPath' (Quyền Share: Everyone Full)."
+        } else {
+            throw "Không thể tạo SMB Share '$ShareName' trỏ tới '$cleanPath'. Lỗi: $shareError"
         }
 
         # 4. Kích hoạt File Sharing toàn diện & Tắt password nếu được yêu cầu
@@ -951,7 +994,7 @@ function New-VUONGTTScanFolderShare {
 
         return [PSCustomObject]@{
             Success      = $success
-            FolderPath   = $FolderPath
+            FolderPath   = $cleanPath
             ShareName    = $ShareName
             UncIp        = $uncIp
             UncName      = $uncName
@@ -965,7 +1008,7 @@ function New-VUONGTTScanFolderShare {
         $compName = $env:COMPUTERNAME
         return [PSCustomObject]@{
             Success      = $false
-            FolderPath   = $FolderPath
+            FolderPath   = $cleanPath
             ShareName    = $ShareName
             UncIp        = "\\$ip\$ShareName"
             UncName      = "\\$compName\$ShareName"

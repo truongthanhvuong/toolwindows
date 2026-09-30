@@ -52,6 +52,21 @@ if (Test-Path $netPrinterFixPath) {
             }
             cmd.exe /c "net share VUONGTT_Test_Scan /delete /y >nul 2>nul"
         }
+
+        # Test TDD: Xu ly o dia goc (vd D:\ hoac D: phai tu dong chuyen thanh D:\<ShareName> chu khong duoc de nguyen D:\)
+        $testDriveRootInput = "D:\"
+        $expectedSubFolder = "D:\VUONGTT_TDD_Scan"
+        $driveTestRes = New-VUONGTTScanFolderShare -FolderPath $testDriveRootInput -ShareName "VUONGTT_TDD_Scan" -SkipNetworkEnforce $true
+        try {
+            Assert-Condition "FolderPath khong duoc giu nguyen la goc o dia D:\" ($driveTestRes.FolderPath -ne "D:\" -and $driveTestRes.FolderPath -ne "D:")
+            Assert-Condition "FolderPath duoc tu dong noi thanh D:\VUONGTT_TDD_Scan" ($driveTestRes.FolderPath -eq $expectedSubFolder)
+            Assert-Condition "FolderPath khong ket thuc bang dau gach cheo nguoc (tranh loi escape Win32)" (-not $driveTestRes.FolderPath.EndsWith("\"))
+        } finally {
+            cmd.exe /c "net share VUONGTT_TDD_Scan /delete /y >nul 2>nul"
+            if (Test-Path $expectedSubFolder) {
+                Remove-Item -Path $expectedSubFolder -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
     }
 } else {
     Assert-Condition "File NetworkPrinterFix.ps1 ton tai" $false "Khong tim thay $netPrinterFixPath"
@@ -86,6 +101,9 @@ if (Test-Path $xamlPath) {
     Assert-Condition "MainWindow.xaml co txtScanUncName" $hasTxtUncName
     Assert-Condition "MainWindow.xaml co btnCopyScanUncIp" $hasBtnCopyIp
     Assert-Condition "MainWindow.xaml co btnCopyScanUncName" $hasBtnCopyName
+
+    $uncCopyColNot80 = -not ($xamlContent -match '<ColumnDefinition Width="80"/>\s*</Grid.ColumnDefinitions>\s*<TextBlock Grid.Column="0" Text="1\. Theo IP')
+    Assert-Condition "Cot nut Copy Scan UNC khong bi hep (Width >= 90 de khong bi cat chu Copy thanh Cop)" $uncCopyColNot80
 
     try {
         $stringReader = New-Object System.IO.StringReader($xamlContent)
