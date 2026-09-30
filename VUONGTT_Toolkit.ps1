@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.60
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.61
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.60"
+$Script:AppVersion = "v20.5.909.61"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -376,7 +376,6 @@ $pageUsers                      = Get-Control "pageUsers"
 $btnQuickClean                  = Get-Control "btnQuickClean"
 $btnQuickActivation             = Get-Control "btnQuickActivation"
 $btnQuickFixPrinter             = Get-Control "btnQuickFixPrinter"
-$btnQuickScanIP                 = Get-Control "btnQuickScanIP"
 $btnQuickRestartExplorer        = Get-Control "btnQuickRestartExplorer"
 
 # 8 Apple Menu Cards + Admin Buttons
@@ -965,11 +964,6 @@ if ($btnQuickActivation) {
 if ($btnQuickFixPrinter) {
     $btnQuickFixPrinter.Add_Click({
         Switch-Tab -TargetTag "PrinterLAN"
-    })
-}
-if ($btnQuickScanIP) {
-    $btnQuickScanIP.Add_Click({
-        Switch-Tab -TargetTag "NetworkLAN"
     })
 }
 if ($btnQuickRestartExplorer) {
@@ -9286,7 +9280,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.60" }
+                if (-not $currentVer) { $currentVer = "20.5.909.61" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

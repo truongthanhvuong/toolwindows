@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.60"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.61"
         Height="720" Width="1180"
         MinHeight="520" MinWidth="880"
         WindowStartupLocation="CenterScreen"
@@ -412,7 +412,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.60 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.61 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -601,17 +601,7 @@
                             </StackPanel>
                         </Button>
 
-                        <!-- 4. Quét IP Mạng Nhanh -->
-                        <Button x:Name="btnQuickScanIP" Style="{StaticResource QuickActionBtn}" ToolTip="Mở công cụ quét mạng nội bộ IP Scanner tìm thiết bị trong mạng LAN">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="24" Height="24" CornerRadius="6" Background="#D1FAE5" Margin="0,0,8,0" VerticalAlignment="Center">
-                                    <TextBlock Text="🌐" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Quét Mạng IP LAN" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 5. Khởi Động Lại Explorer -->
+                        <!-- 4. Khởi Động Lại Explorer -->
                         <Button x:Name="btnQuickRestartExplorer" Style="{StaticResource QuickActionBtn}" ToolTip="Khởi động lại tiến trình Windows Explorer (Taskbar &amp; Desktop)">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="24" Height="24" CornerRadius="6" Background="#F1F5F9" Margin="0,0,8,0" VerticalAlignment="Center">
@@ -4546,7 +4536,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.60" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.61" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

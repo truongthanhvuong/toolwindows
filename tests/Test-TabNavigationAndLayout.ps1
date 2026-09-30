@@ -46,8 +46,8 @@ $requiredXamlControls = @(
     # TechUtilities
     "pageTechUtilities", "pageActivation", "pageBitLocker", "pageBackupDriver", "pageAutoWin", "pageUsers",
     "subTabTech_Activation", "subTabTech_BitLocker", "subTabTech_Backup", "subTabTech_AutoWin", "subTabTech_Users",
-    # Quick Actions on Sidebar
-    "btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickScanIP", "btnQuickRestartExplorer"
+    # Quick Actions on Sidebar (4 non-duplicate items; btnQuickScanIP removed due to duplicating NetworkLAN hub)
+    "btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickRestartExplorer"
 )
 
 $xamlText = [System.IO.File]::ReadAllText($xamlFile)
@@ -55,6 +55,10 @@ foreach ($ctrl in $requiredXamlControls) {
     $exists = $xamlText.Contains("x:Name=`"$ctrl`"")
     Assert-Test "XAML contains control x:Name='$ctrl'" $exists "Control $ctrl not found in MainWindow.xaml"
 }
+
+# 1.1 Verify duplicate Quick Action 'btnQuickScanIP' is removed from XAML
+$hasDuplicateQuickScan = $xamlText.Contains("x:Name=`"btnQuickScanIP`"")
+Assert-Test "XAML does not contain duplicate 'btnQuickScanIP'" (-not $hasDuplicateQuickScan) "Duplicate control btnQuickScanIP should be removed from MainWindow.xaml"
 
 # 2. Test VUONGTT_Toolkit.ps1 script content
 Assert-Test "VUONGTT_Toolkit.ps1 exists" (Test-Path $toolkitScript)
@@ -66,7 +70,7 @@ $requiredScriptVars = @(
     "pageBenchmark", "pagePartition", "pageLaptopCheck",
     "pageSoftware", "pageCustomApp", "pageUninstaller", "pageFonts",
     "pageSysInfo", "pageCustomize", "pageCpuMain",
-    "btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickScanIP", "btnQuickRestartExplorer"
+    "btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickRestartExplorer"
 )
 
 foreach ($var in $requiredScriptVars) {
@@ -75,6 +79,10 @@ foreach ($var in $requiredScriptVars) {
     Assert-Test "VUONGTT_Toolkit.ps1 defines `$$var via Get-Control" $hasVar "Variable `$$var assignment missing in script"
 }
 
+# 2.1 Verify duplicate $btnQuickScanIP is removed from VUONGTT_Toolkit.ps1
+$hasScriptDuplicateScan = [regex]::IsMatch($scriptText, '\$btnQuickScanIP\s*=\s*Get-Control')
+Assert-Test "VUONGTT_Toolkit.ps1 does not define `$btnQuickScanIP" (-not $hasScriptDuplicateScan) "`$btnQuickScanIP should be removed from VUONGTT_Toolkit.ps1"
+
 # 3. Test Default Subtab Handling in Switch-Tab
 $hasDefaultSubTabHandling = $scriptText.Contains("Switch-SystemFixSubTab") -and 
                             $scriptText.Contains("Switch-TechUtilitiesSubTab") -and
@@ -82,7 +90,7 @@ $hasDefaultSubTabHandling = $scriptText.Contains("Switch-SystemFixSubTab") -and
 Assert-Test "Switch-Tab handles default subtab routing automatically" $hasDefaultSubTabHandling "Switch-Tab must automatically select matching sub-tab when entering Hub"
 
 # 4. Test Quick Action Click Handlers
-$quickActionsHandlers = @("btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickScanIP", "btnQuickRestartExplorer")
+$quickActionsHandlers = @("btnQuickClean", "btnQuickActivation", "btnQuickFixPrinter", "btnQuickRestartExplorer")
 foreach ($qa in $quickActionsHandlers) {
     $pattern = [regex]::Escape('$' + $qa) + '\.Add_Click'
     $hasHandler = [regex]::IsMatch($scriptText, $pattern)
