@@ -67,6 +67,22 @@ if (Test-Path $netPrinterFixPath) {
                 Remove-Item -Path $expectedSubFolder -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
+        # Test TDD: Kiem tra co ham sua loi SeDenyNetworkLogonRight (Error 1385)
+        $hasFixLogonRights = Get-Command "Invoke-VUONGTTFixNetworkLogonRights" -ErrorAction SilentlyContinue
+        Assert-Condition "Ham Invoke-VUONGTTFixNetworkLogonRights duoc dinh nghia de sua loi 1385" ($null -ne $hasFixLogonRights)
+
+        $backendContent = [System.IO.File]::ReadAllText($netPrinterFixPath, [System.Text.Encoding]::UTF8)
+        $hasSeDenyFix = $backendContent -match 'SeDenyNetworkLogonRight'
+        $hasSeNetworkFix = $backendContent -match 'SeNetworkLogonRight'
+        $hasLoopbackFix = $backendContent -match 'DisableLoopbackCheck'
+        $hasStrictNameFix = $backendContent -match 'DisableStrictNameChecking'
+        $hasNullSessFix = $backendContent -match 'RestrictNullSessAccess'
+
+        Assert-Condition "Backend co logic xu ly loai bo Guest khoi SeDenyNetworkLogonRight" $hasSeDenyFix
+        Assert-Condition "Backend co logic cap quyen SeNetworkLogonRight cho Everyone va Guest" $hasSeNetworkFix
+        Assert-Condition "Backend co cau hinh DisableLoopbackCheck tren LanmanServer" $hasLoopbackFix
+        Assert-Condition "Backend co cau hinh DisableStrictNameChecking tren LanmanServer" $hasStrictNameFix
+        Assert-Condition "Backend co cau hinh RestrictNullSessAccess tren LanmanServer" $hasNullSessFix
     }
 } else {
     Assert-Condition "File NetworkPrinterFix.ps1 ton tai" $false "Khong tim thay $netPrinterFixPath"

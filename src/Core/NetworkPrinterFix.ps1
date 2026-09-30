@@ -809,6 +809,103 @@ function Get-VUONGTTLocalPrimaryIpAddress {
     }
 }
 
+function Invoke-VUONGTTFixNetworkLogonRights {
+    <#
+    .SYNOPSIS
+        Khắc phục triệt để mã lỗi Windows 1385 (0xC000006E):
+        "Logon failure: the user has not been granted the requested logon type at this computer."
+        Loại bỏ tài khoản Guest và nhóm Guests (*S-1-5-32-546) khỏi SeDenyNetworkLogonRight,
+        đồng thời cấp quyền SeNetworkLogonRight cho Everyone (*S-1-1-0), Users (*S-1-5-32-545), Guests (*S-1-5-32-546) và Guest.
+    #>
+    $log = @()
+    try {
+        $tempDir = [System.IO.Path]::GetTempPath()
+        $infExport = Join-Path $tempDir "vuongtt_secpol_export.inf"
+        $infImport = Join-Path $tempDir "vuongtt_secpol_import.inf"
+        $dbPath = Join-Path $tempDir "vuongtt_secpol.sdb"
+
+        # Đảm bảo dọn sạch file tạm trước khi chạy
+        Remove-Item $infExport, $infImport, $dbPath -Force -ErrorAction SilentlyContinue
+
+        # 1. Thử export policy hiện tại để giữ nguyên các quyền đặc thù khác
+        $exportSuccess = $false
+        try {
+            cmd.exe /c "secedit /export /cfg `"$infExport`" /areas USER_RIGHTS >nul 2>nul"
+            if (Test-Path -LiteralPath $infExport) {
+                $exportSuccess = $true
+            }
+        } catch {}
+
+        $newLines = @()
+        if ($exportSuccess) {
+            $content = Get-Content -LiteralPath $infExport -Encoding Unicode -ErrorAction SilentlyContinue
+            if (-not $content) { $content = Get-Content -LiteralPath $infExport -ErrorAction SilentlyContinue }
+
+            $hasDeny = $false
+            $hasAccess = $false
+
+            foreach ($line in $content) {
+                # Xóa Guest khỏi SeDenyNetworkLogonRight
+                if ($line -match '^\s*SeDenyNetworkLogonRight\s*=') {
+                    $hasDeny = $true
+                    $raw = ($line -replace '^\s*SeDenyNetworkLogonRight\s*=\s*', '').Trim()
+                    $items = $raw.Split(',') | ForEach-Object { $_.Trim() } | Where-Object {
+                        $_ -and $_ -ne "Guest" -and $_ -ne "*S-1-5-32-546" -and ($_ -notmatch '(?i)guest')
+                    }
+                    $newLines += "SeDenyNetworkLogonRight = " + ($items -join ",")
+                }
+                # Cấp quyền cho Guest & Everyone trong SeNetworkLogonRight
+                elseif ($line -match '^\s*SeNetworkLogonRight\s*=') {
+                    $hasAccess = $true
+                    $raw = ($line -replace '^\s*SeNetworkLogonRight\s*=\s*', '').Trim()
+                    $items = $raw.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+                    if ($items -notcontains "*S-1-1-0") { $items += "*S-1-1-0" }       # Everyone
+                    if ($items -notcontains "*S-1-5-32-544") { $items += "*S-1-5-32-544" } # Administrators
+                    if ($items -notcontains "*S-1-5-32-545") { $items += "*S-1-5-32-545" } # Users
+                    if ($items -notcontains "*S-1-5-32-546") { $items += "*S-1-5-32-546" } # Guests
+                    if ($items -notcontains "Guest") { $items += "Guest" }
+                    $newLines += "SeNetworkLogonRight = " + ($items -join ",")
+                }
+                else {
+                    $newLines += $line
+                }
+            }
+
+            if (-not $hasAccess) {
+                $newLines += "SeNetworkLogonRight = *S-1-1-0,*S-1-5-32-544,*S-1-5-32-545,*S-1-5-32-546,Guest"
+            }
+            if (-not $hasDeny) {
+                $newLines += "SeDenyNetworkLogonRight = "
+            }
+        } else {
+            # Fallback tạo trực tiếp template INF chuẩn
+            $newLines = @(
+                "[Unicode]",
+                "Unicode=yes",
+                "[Version]",
+                'signature="$CHICAGO$"',
+                "Revision=1",
+                "[Privilege Rights]",
+                "SeNetworkLogonRight = *S-1-1-0,*S-1-5-32-544,*S-1-5-32-545,*S-1-5-32-546,Guest",
+                "SeDenyNetworkLogonRight = "
+            )
+        }
+
+        # Lưu file INF mã hóa Unicode (yêu cầu bắt buộc của secedit)
+        [System.IO.File]::WriteAllLines($infImport, $newLines, [System.Text.Encoding]::Unicode)
+        
+        # Nạp cấu hình bảo mật vào hệ thống qua secedit
+        cmd.exe /c "secedit /configure /db `"$dbPath`" /cfg `"$infImport`" /areas USER_RIGHTS >nul 2>nul"
+
+        # Dọn dẹp file tạm
+        Remove-Item $infExport, $infImport, $dbPath -Force -ErrorAction SilentlyContinue
+        $log += "  -> [OK] Đã gỡ bỏ Guest khỏi SeDenyNetworkLogonRight & cấp quyền SeNetworkLogonRight (Khắc phục lỗi 1385)."
+    } catch {
+        $log += "  [!] Cấu hình User Rights lưu ý: $($_.Exception.Message)"
+    }
+    return ($log -join "`r`n")
+}
+
 function Enable-VUONGTTAllSharingNoPassword {
     <#
     .SYNOPSIS
@@ -851,30 +948,41 @@ function Enable-VUONGTTAllSharingNoPassword {
         }
         $log += "  -> [OK] Đã bật AllowInsecureGuestAuth = 1 (Cho phép máy in kết nối không mật khẩu)."
 
-        # 5. Kích hoạt tài khoản Guest cục bộ
+        # 5. Kích hoạt tài khoản Guest cục bộ và dọn sạch mật khẩu trống
         cmd.exe /c "net user Guest /active:yes >nul 2>nul"
-        $log += "  -> [OK] Đã kích hoạt tài khoản Guest nội bộ."
+        cmd.exe /c "net user Guest `"`" >nul 2>nul"
+        $log += "  -> [OK] Đã kích hoạt tài khoản Guest nội bộ và xóa trắng mật khẩu."
 
         # 6. Tắt Password Protected Sharing (Bỏ giới hạn tài khoản trống mật khẩu & LSA)
         $pLsa = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
-        if (Test-Path $pLsa) {
-            Set-ItemProperty -Path $pLsa -Name "limitblankpassworduse" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
-            Set-ItemProperty -Path $pLsa -Name "everyoneincludesanonymous" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
-        }
-        $log += "  -> [OK] Đã tắt Password Protected Sharing (limitblankpassworduse = 0, everyoneincludesanonymous = 1)."
+        if (-not (Test-Path $pLsa)) { New-Item -Path $pLsa -Force -ErrorAction SilentlyContinue | Out-Null }
+        Set-ItemProperty -Path $pLsa -Name "limitblankpassworduse" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $pLsa -Name "everyoneincludesanonymous" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $pLsa -Name "restrictanonymous" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $pLsa -Name "restrictanonymoussam" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        $log += "  -> [OK] Đã tắt Password Protected Sharing (limitblankpassworduse = 0, everyoneincludesanonymous = 1, restrictanonymous = 0)."
 
-        # 7. Thêm share Scan vào NullSessionShares trên LanmanServer
+        # 7. Cấu hình LanmanServer (NullSession, Loopback Check & Strict Name Checking)
         $pServerParam = "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
-        if (Test-Path $pServerParam) {
-            $nullShares = (Get-ItemProperty -Path $pServerParam -Name "NullSessionShares" -ErrorAction SilentlyContinue).NullSessionShares
-            if ($null -eq $nullShares) { $nullShares = @() }
-            if ($nullShares -notcontains "Scan") {
-                $nullShares += "Scan"
-                Set-ItemProperty -Path $pServerParam -Name "NullSessionShares" -Value $nullShares -Type MultiString -Force -ErrorAction SilentlyContinue
-            }
-        }
+        if (-not (Test-Path $pServerParam)) { New-Item -Path $pServerParam -Force -ErrorAction SilentlyContinue | Out-Null }
+        Set-ItemProperty -Path $pServerParam -Name "RestrictNullSessAccess" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $pServerParam -Name "DisableLoopbackCheck" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $pServerParam -Name "DisableStrictNameChecking" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $pServerParam -Name "AutoShareWks" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
 
-        # 8. Kích hoạt hỗ trợ SMBv1 và SMBv2/v3
+        $nullShares = (Get-ItemProperty -Path $pServerParam -Name "NullSessionShares" -ErrorAction SilentlyContinue).NullSessionShares
+        if ($null -eq $nullShares) { $nullShares = @() }
+        if ($nullShares -notcontains "Scan") {
+            $nullShares += "Scan"
+            Set-ItemProperty -Path $pServerParam -Name "NullSessionShares" -Value $nullShares -Type MultiString -Force -ErrorAction SilentlyContinue
+        }
+        $log += "  -> [OK] Đã cấu hình LanmanServer (RestrictNullSessAccess = 0, DisableLoopbackCheck = 1, NullSessionShares = 'Scan')."
+
+        # 8. Gỡ bỏ Guest khỏi SeDenyNetworkLogonRight & cấp quyền SeNetworkLogonRight (Khắc phục triệt để lỗi 1385)
+        $rightsLog = Invoke-VUONGTTFixNetworkLogonRights
+        if ($rightsLog) { $log += $rightsLog }
+
+        # 9. Kích hoạt hỗ trợ SMBv1 và SMBv2/v3
         Set-SmbServerConfiguration -EnableSMB1Protocol $true -EnableSMB2Protocol $true -Confirm:$false -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
         $log += "  -> [OK] Đã kích hoạt hỗ trợ đầy đủ giao thức SMBv1, SMBv2 và SMBv3."
 
@@ -939,22 +1047,33 @@ function New-VUONGTTScanFolderShare {
                 if (Get-SmbShare -Name $ShareName -ErrorAction SilentlyContinue) {
                     Remove-SmbShare -Name $ShareName -Force -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
                 }
-                New-SmbShare -Name $ShareName -Path $cleanPath -FullAccess "Everyone" -ErrorAction Stop | Out-Null
+                New-SmbShare -Name $ShareName -Path $cleanPath -FullAccess "Everyone","Guest","Users" -ErrorAction Stop | Out-Null
                 $shareCreated = $true
             } catch {
-                $shareError = $_.Exception.Message
+                try {
+                    New-SmbShare -Name $ShareName -Path $cleanPath -FullAccess "Everyone" -ErrorAction Stop | Out-Null
+                    $shareCreated = $true
+                } catch {
+                    $shareError = $_.Exception.Message
+                }
             }
         }
 
         # Nếu New-SmbShare chưa thành công hoặc không có module, dùng net share
         if (-not $shareCreated) {
             cmd.exe /c "net share `"$ShareName`" /delete /y >nul 2>nul"
-            $netShareCmd = "net share `"$ShareName=$cleanPath`" /GRANT:Everyone,FULL /UNLIMITED"
+            $netShareCmd = "net share `"$ShareName=$cleanPath`" /GRANT:Everyone,FULL /GRANT:Guest,FULL /UNLIMITED"
             $shareOut = cmd.exe /c "$netShareCmd 2>&1"
             if ($LASTEXITCODE -eq 0) {
                 $shareCreated = $true
             } else {
-                $shareError = ($shareOut -join " ").Trim()
+                $fallbackCmd = "net share `"$ShareName=$cleanPath`" /GRANT:Everyone,FULL /UNLIMITED"
+                $shareOut = cmd.exe /c "$fallbackCmd 2>&1"
+                if ($LASTEXITCODE -eq 0) {
+                    $shareCreated = $true
+                } else {
+                    $shareError = ($shareOut -join " ").Trim()
+                }
             }
         }
 
