@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.74")]
-[assembly: AssemblyFileVersion("20.5.909.74")]
+[assembly: AssemblyVersion("20.5.909.75")]
+[assembly: AssemblyFileVersion("20.5.909.75")]
 
 namespace VUONGTT
 {
@@ -348,8 +348,24 @@ namespace VUONGTT
                 DateTime startTime = DateTime.UtcNow;
                 Process proc = Process.Start(psi);
 
-                // Giữ Splash Screen trong khoảng 2.0 giây cho đến khi cửa sổ chính WPF sẵn sàng
-                Thread.Sleep(2000);
+                // Đóng Splash Screen ngay khi cửa sổ chính WPF sẵn sàng hiển thị (Dynamic Polling siêu tốc thay vì Sleep cứng 2s)
+                if (proc != null)
+                {
+                    DateTime waitLimit = DateTime.UtcNow.AddSeconds(4);
+                    while (DateTime.UtcNow < waitLimit && !proc.HasExited)
+                    {
+                        try
+                        {
+                            proc.Refresh();
+                            if (proc.MainWindowHandle != IntPtr.Zero)
+                            {
+                                break;
+                            }
+                        }
+                        catch { }
+                        Thread.Sleep(30);
+                    }
+                }
                 CloseSplash();
 
                 if (proc != null)

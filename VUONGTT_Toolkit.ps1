@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.74
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.75
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.74"
+$Script:AppVersion = "v20.5.909.75"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -614,12 +614,12 @@ function Switch-Tab {
     # Switch sub-tab if specified by default, legacy routing or initial call
     if ($subTabToSwitch) {
         switch ($TargetTag) {
-            "SysInfo"       { Switch-SysInfoSubTab $subTabToSwitch }
-            "SystemFix"     { Switch-SystemFixSubTab $subTabToSwitch }
-            "SoftwareHub"   { Switch-SoftwareHubSubTab $subTabToSwitch }
-            "HardwareDisk"  { Switch-HardwareDiskSubTab $subTabToSwitch }
-            "AutoWin"       { Switch-TechUtilitiesSubTab $subTabToSwitch }
-            "TechUtilities" { Switch-TechUtilitiesSubTab $subTabToSwitch }
+            "SysInfo"       { Switch-SysInfoSubTab $subTabToSwitch -SkipRefresh:$SkipRefresh }
+            "SystemFix"     { Switch-SystemFixSubTab $subTabToSwitch -SkipRefresh:$SkipRefresh }
+            "SoftwareHub"   { Switch-SoftwareHubSubTab $subTabToSwitch -SkipRefresh:$SkipRefresh }
+            "HardwareDisk"  { Switch-HardwareDiskSubTab $subTabToSwitch -SkipRefresh:$SkipRefresh }
+            "AutoWin"       { Switch-TechUtilitiesSubTab $subTabToSwitch -SkipRefresh:$SkipRefresh }
+            "TechUtilities" { Switch-TechUtilitiesSubTab $subTabToSwitch -SkipRefresh:$SkipRefresh }
         }
     }
 
@@ -660,9 +660,11 @@ function Switch-Tab {
                 $txtFooterStatus.Text = "• [OK] Sẵn sàng dọn dẹp rác hệ thống, cấu hình và cứu hộ IT Helpdesk."
             }
             "NetworkLAN"   {
+                if (Get-Command "Detect-LocalSubnet" -ErrorAction SilentlyContinue) { Detect-LocalSubnet }
                 $txtFooterStatus.Text = "• [OK] Advanced IP Scanner sẵn sàng dò quét mạng nội bộ LAN."
             }
             "PrinterLAN"   {
+                if (Get-Command "Refresh-PrinterDataGrid" -ErrorAction SilentlyContinue) { Refresh-PrinterDataGrid }
                 $txtFooterStatus.Text = "• [OK] 87 chức năng sửa lỗi máy in & tối ưu chia sẻ LAN sẵn sàng."
             }
             "OfficeAIO"    {
@@ -756,7 +758,7 @@ function Set-CapsuleSubTabStyle {
 
 # --- 1. SysInfo Sub-tabs ---
 function Switch-SysInfoSubTab {
-    param([string]$targetTab)
+    param([string]$targetTab, [switch]$SkipRefresh = $false)
     $tabs = @($subTabSysInfo_View, $subTabSysInfo_Customize, $subTabSysInfo_CpuMain, $subTabSysInfo_Users)
     $panels = @($pageSysInfo, $pageCustomize, $pageCpuMain, $pageUsers)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -765,23 +767,23 @@ function Switch-SysInfoSubTab {
         "SysInfo_View" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_View
             if ($pageSysInfo) { $pageSysInfo.Visibility = [System.Windows.Visibility]::Visible }
-            Update-LiveGaugeValues
+            if (-not $SkipRefresh) { Update-LiveGaugeValues }
         }
         "SysInfo_Customize" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_Customize
             if ($pageCustomize) { $pageCustomize.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-CustomizeDisplay
+            if (-not $SkipRefresh) { Refresh-CustomizeDisplay }
         }
         "SysInfo_CpuMain" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_CpuMain
             if ($pageCpuMain) { $pageCpuMain.Visibility = [System.Windows.Visibility]::Visible }
-            Search-CpuInfo
+            if (-not $SkipRefresh) { Search-CpuInfo }
         }
         "SysInfo_Users" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysInfo_Users
             if ($pageUsers) { $pageUsers.Visibility = [System.Windows.Visibility]::Visible }
             if (Get-Command Refresh-UsersList -ErrorAction SilentlyContinue) {
-                Refresh-UsersList
+                if (-not $SkipRefresh) { Refresh-UsersList }
             }
         }
     }
@@ -789,7 +791,7 @@ function Switch-SysInfoSubTab {
 
 # --- 2. SystemFix Sub-tabs ---
 function Switch-SystemFixSubTab {
-    param([string]$targetTab)
+    param([string]$targetTab, [switch]$SkipRefresh = $false)
     $tabs = @($subTabSysFix_Cleaner, $subTabSysFix_Config, $subTabSysFix_Troubleshoot)
     $panels = @($pageCleaner, $pageConfig, $pnlSubSysFix_Troubleshoot)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -798,7 +800,7 @@ function Switch-SystemFixSubTab {
         "SysFix_Cleaner" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysFix_Cleaner
             if ($pageCleaner) { $pageCleaner.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-PowerPlanBadge
+            if (-not $SkipRefresh) { Refresh-PowerPlanBadge }
         }
         "SysFix_Config" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabSysFix_Config
@@ -820,7 +822,7 @@ function Switch-SystemFixSubTab {
 
 # --- 3. SoftwareHub Sub-tabs ---
 function Switch-SoftwareHubSubTab {
-    param([string]$targetTab)
+    param([string]$targetTab, [switch]$SkipRefresh = $false)
     $tabs = @($subTabSoft_Store, $subTabSoft_Custom, $subTabSoft_Uninstall, $subTabSoft_Fonts)
     $panels = @($pageSoftware, $pageCustomApp, $pageUninstaller, $pageFonts)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -850,7 +852,7 @@ function Switch-SoftwareHubSubTab {
 
 # --- 4. HardwareDisk Sub-tabs ---
 function Switch-HardwareDiskSubTab {
-    param([string]$targetTab)
+    param([string]$targetTab, [switch]$SkipRefresh = $false)
     $tabs = @($subTabHw_Disk, $subTabHw_Partition, $subTabHw_Laptop)
     $panels = @($pageBenchmark, $pagePartition, $pageLaptopCheck)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -859,24 +861,24 @@ function Switch-HardwareDiskSubTab {
         "Hw_Disk" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabHw_Disk
             if ($pageBenchmark) { $pageBenchmark.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-VUONGTTDiskHealthUI
+            if (-not $SkipRefresh) { Refresh-VUONGTTDiskHealthUI }
         }
         "Hw_Partition" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabHw_Partition
             if ($pagePartition) { $pagePartition.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-DiskPartitionDisplay
+            if (-not $SkipRefresh) { Refresh-DiskPartitionDisplay }
         }
         "Hw_Laptop" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabHw_Laptop
             if ($pageLaptopCheck) { $pageLaptopCheck.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-BatteryDisplay
+            if (-not $SkipRefresh) { Refresh-BatteryDisplay }
         }
     }
 }
 
 # --- 5. TechUtilities Sub-tabs ---
 function Switch-TechUtilitiesSubTab {
-    param([string]$targetTab = "Tech_Backup")
+    param([string]$targetTab = "Tech_Backup", [switch]$SkipRefresh = $false)
     if (-not $targetTab) { $targetTab = "Tech_Backup" }
 
     if ($targetTab -eq "Tech_Activation") {
@@ -908,7 +910,7 @@ function Switch-TechUtilitiesSubTab {
         "Tech_Activation" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_Activation
             if ($pageActivation) { $pageActivation.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-VUONGTTKeyViewerUI
+            if (-not $SkipRefresh) { Refresh-VUONGTTKeyViewerUI }
         }
         "Tech_BitLocker" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_BitLocker
@@ -917,7 +919,7 @@ function Switch-TechUtilitiesSubTab {
         "Tech_Backup" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_Backup
             if ($pageBackupDriver) { $pageBackupDriver.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-DriverStatusBadge
+            if (-not $SkipRefresh) { Refresh-DriverStatusBadge }
         }
         "Tech_AutoWin" {
             Set-CapsuleSubTabStyle -Tabs $tabs -ActiveTab $subTabTech_AutoWin
@@ -2518,7 +2520,7 @@ function Add-PrinterLogMessage {
 
 # --- SUB-TAB SWITCHING LOGIC ---
 function Switch-PrinterLANSubTab {
-    param([string]$targetTab)
+    param([string]$targetTab, [switch]$SkipRefresh = $false)
     $bc = [System.Windows.Media.BrushConverter]::new()
     $activeBg = $bc.ConvertFromString("#0284C7")
     $transBg = [System.Windows.Media.Brushes]::Transparent
@@ -2541,17 +2543,17 @@ function Switch-PrinterLANSubTab {
         "fix" {
             if ($tabPrinterLAN_Fix) { $tabPrinterLAN_Fix.Background = $activeBg; $tabPrinterLAN_Fix.Foreground = $whiteFg }
             if ($pnlSubPrinterLAN_Fix) { $pnlSubPrinterLAN_Fix.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-PrinterDataGrid
+            if (-not $SkipRefresh) { Refresh-PrinterDataGrid }
         }
         "credentials" {
             if ($tabPrinterLAN_Credentials) { $tabPrinterLAN_Credentials.Background = $activeBg; $tabPrinterLAN_Credentials.Foreground = $whiteFg }
             if ($pnlSubPrinterLAN_Credentials) { $pnlSubPrinterLAN_Credentials.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-CredentialsDataGrid
+            if (-not $SkipRefresh) { Refresh-CredentialsDataGrid }
         }
         "shareuser" {
             if ($tabPrinterLAN_ShareUser) { $tabPrinterLAN_ShareUser.Background = $activeBg; $tabPrinterLAN_ShareUser.Foreground = $whiteFg }
             if ($pnlSubPrinterLAN_ShareUser) { $pnlSubPrinterLAN_ShareUser.Visibility = [System.Windows.Visibility]::Visible }
-            Refresh-UsersDataGrid
+            if (-not $SkipRefresh) { Refresh-UsersDataGrid }
         }
         "sharedata" {
             if ($tabPrinterLAN_ShareData) { $tabPrinterLAN_ShareData.Background = $activeBg; $tabPrinterLAN_ShareData.Foreground = $whiteFg }
@@ -3031,7 +3033,7 @@ function Update-VUONGTTScanFolderUncPreview {
     } catch {}
 }
 
-Update-VUONGTTScanFolderUncPreview
+# Deferred: Update-VUONGTTScanFolderUncPreview
 
 if ($txtScanShareName) {
     $txtScanShareName.Add_TextChanged({
@@ -3171,7 +3173,7 @@ if ($btnClearPrinterLog) {
 }
 
 # Khởi tạo mặc định: Nạp danh sách máy in cho Sub-tab 1
-Refresh-PrinterDataGrid
+# Deferred: Refresh-PrinterDataGrid
 
 
 # =========================================================================
@@ -7268,7 +7270,7 @@ function Update-VUONGTTWindowsUpdateBadge {
 }
 
 # Cập nhật Badge Windows Update khi khởi tạo
-Update-VUONGTTWindowsUpdateBadge
+# Deferred: Update-VUONGTTWindowsUpdateBadge
 
 if ($btnDisableWindowsUpdate) {
     $btnDisableWindowsUpdate.Add_Click({
@@ -9592,7 +9594,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.74" }
+                if (-not $currentVer) { $currentVer = "20.5.909.75" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
@@ -10014,7 +10016,7 @@ function Detect-LocalSubnet {
 }
 
 # Auto-detect subnet on startup
-Detect-LocalSubnet
+# Deferred: Detect-LocalSubnet
 
 if ($btnDetectSubnet) {
     $btnDetectSubnet.Add_Click({
@@ -10198,7 +10200,7 @@ if ($lstIpDevices) {
 }
 
 # Khởi tạo trạng thái bản quyền ban đầu
-Update-VUONGTTLicenseUI
+# Deferred: Update-VUONGTTLicenseUI to ContentRendered
 
 # =========================================================================
 # TỰ ĐỘNG CO GIÃN THÍCH ỨNG THEO ĐỘ PHÂN GIẢI MÀN HÌNH (RESPONSIVE SCALING)
@@ -10248,17 +10250,18 @@ if ($window) {
 }
 
 # Áp dụng giao diện Apple macOS Light mặc định ngay khi mở ứng dụng
-Set-ToolkitTheme -Theme "Default"
+$script:CurrentTheme = "Default"
+if ($btnThemeDefault) { $btnThemeDefault.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF"); $btnThemeDefault.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#007AFF") }
 Update-VUONGTTResponsiveScaling
 
 # Khởi tạo giao diện trang đầu tiên ngay lập tức mà không chặn WMI
 Switch-Tab -TargetTag "SysInfo" -SkipRefresh
-Switch-SysInfoSubTab "SysInfo_View"
-Switch-SystemFixSubTab "SysFix_Cleaner"
-Switch-SoftwareHubSubTab "Soft_Store"
-Switch-HardwareDiskSubTab "Hw_Disk"
-Switch-TechUtilitiesSubTab "Tech_Backup"
-if (Get-Command Switch-PrinterLANSubTab -ErrorAction SilentlyContinue) { Switch-PrinterLANSubTab "fix" }
+Switch-SysInfoSubTab "SysInfo_View" -SkipRefresh
+Switch-SystemFixSubTab "SysFix_Cleaner" -SkipRefresh
+Switch-SoftwareHubSubTab "Soft_Store" -SkipRefresh
+Switch-HardwareDiskSubTab "Hw_Disk" -SkipRefresh
+Switch-TechUtilitiesSubTab "Tech_Backup" -SkipRefresh
+if (Get-Command Switch-PrinterLANSubTab -ErrorAction SilentlyContinue) { Switch-PrinterLANSubTab "fix" -SkipRefresh }
 $txtFooterStatus.Text = "• [OK] Đang khởi động hệ thống và nạp thông số phần cứng..."
 
 # Tải dữ liệu phần cứng ngầm sau khi cửa sổ đã hiện lên màn hình người dùng
