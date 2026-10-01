@@ -377,6 +377,77 @@ function Register-VUONGTTAppSystemIntegration {
     return $true
 }
 
+function Test-VUONGTTZaloIntegrity {
+    [CmdletBinding()]
+    param(
+        [string]$ZaloRootPath = ""
+    )
+
+    $candidateDirs = @()
+    if (-not [string]::IsNullOrWhiteSpace($ZaloRootPath) -and (Test-Path $ZaloRootPath)) {
+        $candidateDirs += $ZaloRootPath
+    } else {
+        $candidateDirs += @(
+            "$env:LOCALAPPDATA\Programs\Zalo",
+            "C:\Program Files\Zalo",
+            "C:\Users\Administrator\AppData\Local\Programs\Zalo",
+            "C:\Users\*\AppData\Local\Programs\Zalo"
+        )
+    }
+
+    foreach ($pattern in $candidateDirs) {
+        $dirs = Resolve-Path $pattern -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path
+        if (-not $dirs) {
+            $dirs = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+        }
+        foreach ($d in $dirs) {
+            if (-not (Test-Path $d)) { continue }
+            $verDirs = Get-ChildItem -Path $d -Directory -Filter "Zalo-*" -ErrorAction SilentlyContinue
+            foreach ($vd in $verDirs) {
+                $asar = Join-Path $vd.FullName "resources\app.asar"
+                if (Test-Path $asar) {
+                    $item = Get-Item $asar -ErrorAction SilentlyContinue
+                    # app.asar cua Zalo dung chuan ~170MB, phai lon hon 50MB moi la hop le hoan chinh
+                    if ($item -and $item.Length -gt (50 * 1024 * 1024)) {
+                        return $true
+                    }
+                }
+            }
+        }
+    }
+
+    return $false
+}
+
+function Clear-VUONGTTCorruptedZaloInstall {
+    [CmdletBinding()]
+    param(
+        [scriptblock]$OnLog = $null
+    )
+
+    $targetDirs = @(
+        "$env:LOCALAPPDATA\Programs\Zalo",
+        "C:\Users\Administrator\AppData\Local\Programs\Zalo"
+    )
+
+    foreach ($td in $targetDirs) {
+        if (Test-Path $td) {
+            $isValid = Test-VUONGTTZaloIntegrity -ZaloRootPath $td
+            if (-not $isValid) {
+                if ($OnLog) { & $OnLog "  -> [DỌN DẸP] Phát hiện gói cài đặt Zalo bị hỏng hoặc thiếu app.asar tại: $td. Đang làm sạch để cài mới hoàn toàn..." }
+                try {
+                    Stop-Process -Name "Zalo", "sl", "old-uninstaller" -Force -ErrorAction SilentlyContinue
+                    Start-Sleep -Milliseconds 300
+                    Remove-Item -Path $td -Recurse -Force -ErrorAction SilentlyContinue
+                    if ($OnLog) { & $OnLog "  -> [DỌN DẸP] Đã xóa sạch thư mục Zalo lỗi dở dang." }
+                } catch {
+                    if ($OnLog) { & $OnLog "  -> [CẢNH BÁO] Không thể xóa thư mục Zalo: $($_.Exception.Message)" }
+                }
+            }
+        }
+    }
+}
+
 function Test-VUONGTTAppActuallyInstalled {
     [CmdletBinding()]
     param(
@@ -386,6 +457,11 @@ function Test-VUONGTTAppActuallyInstalled {
 
     $cleanId = $AppId.Trim().ToLower()
     $map = $script:APP_EXEC_MAP[$cleanId]
+
+    # Với Zalo, bắt buộc phải xác thực toàn vẹn app.asar để tránh lỗi JavaScript ENOENT package.json
+    if ($cleanId -eq "zalo") {
+        return (Test-VUONGTTZaloIntegrity)
+    }
 
     # 1. Kiem tra cac duong dan quen thuoc trong APP_EXEC_MAP
     if ($map -and $map.CommonPaths) {
@@ -1027,15 +1103,35 @@ function Install-VUONGTTApp {
             }
             return "Đã tải và giải nén thành công vào: $extractDir"
         } else {
-            # Đóng tiến trình cũ nếu đang chạy để tránh khóa file cài đặt
+            # Đóng tiến trình cũ và làm sạch dữ liệu hỏng nếu có
             if ($app.Id -eq "zalo") {
-                Stop-Process -Name "Zalo", "old-uninstaller" -Force -ErrorAction SilentlyContinue
+                Clear-VUONGTTCorruptedZaloInstall -OnLog $OnProgress
+                Stop-Process -Name "Zalo", "sl", "old-uninstaller" -Force -ErrorAction SilentlyContinue
                 Start-Sleep -Milliseconds 300
+                
+                # Zalo NSIS tự động kích hoạt Zalo.exe ngầm làm nghẽn pipe của ProcessLiveRunner (kẹt 10 phút).
+                # Vì vậy, Zalo bắt buộc phải chạy qua Start-Process trực tiếp để hoàn tất trong ~15 giây.
+                if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (thực thi an toàn độc lập)..." }
+                try {
+                    $p = Start-Process -FilePath $destFile -ArgumentList $app.Silent -Wait -PassThru -ErrorAction Stop
+                    $exitCode = $p.ExitCode
+                } catch {
+                    $exitCode = -999
+                }
+            } else {
+                if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
+                $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
+            }
+            
+            # Chờ thêm tối đa 15 giây cho Zalo giải nén hoàn tất tệp app.asar lớn (~170MB)
+            if ($app.Id -eq "zalo") {
+                $maxWait = 15
+                while (-not (Test-VUONGTTZaloIntegrity) -and $maxWait -gt 0) {
+                    Start-Sleep -Seconds 1
+                    $maxWait--
+                }
             }
 
-            if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
-            $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
-            
             # Kiểm tra xem ứng dụng đã thực sự có mặt trên máy chưa bằng hàm kiểm tra chuẩn
             $isAppActuallyInstalled = Test-VUONGTTAppActuallyInstalled -AppId $app.Id
 
@@ -1069,7 +1165,18 @@ function Install-VUONGTTApp {
                 }
 
                 if ($AutoLaunch) {
-                    [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+                    # Với Zalo: Nếu tiến trình Zalo đã được bộ cài đặt NSIS tự mở rồi thì không mở lặp lại
+                    $alreadyRunning = $false
+                    if ($app.Id -eq "zalo") {
+                        $runningZalo = Get-Process -Name "Zalo" -ErrorAction SilentlyContinue | Select-Object -First 1
+                        if ($runningZalo) {
+                            $alreadyRunning = $true
+                            if ($OnProgress) { & $OnProgress "  -> Ứng dụng Zalo đã được trình cài đặt khởi chạy sẵn sàng." }
+                        }
+                    }
+                    if (-not $alreadyRunning) {
+                        [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+                    }
                 }
                 return "Đã hoàn tất cài đặt $($app.Name)!"
             } else {
