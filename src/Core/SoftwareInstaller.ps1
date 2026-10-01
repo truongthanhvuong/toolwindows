@@ -231,6 +231,225 @@ function Test-VUONGTTWinget {
     }
 }
 
+function Register-VUONGTTAppSystemIntegration {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$AppId,
+        [Parameter(Mandatory = $true)]
+        [string]$AppName,
+        [Parameter(Mandatory = $true)]
+        [string]$ExePath,
+        [string]$InstallDir = "",
+        [string]$Version = "2026.1",
+        [string]$Publisher = "VUONGTT Software",
+        [scriptblock]$OnLog = $null
+    )
+
+    if (-not (Test-Path $ExePath)) { return $false }
+    if ([string]::IsNullOrWhiteSpace($InstallDir)) {
+        $InstallDir = Split-Path -Parent $ExePath
+    }
+
+    $cleanShortcutName = ($AppName -replace '[\\/:*?""<>|]', '')
+    if ([string]::IsNullOrWhiteSpace($cleanShortcutName)) { $cleanShortcutName = $AppId }
+
+    # Chuẩn hóa tên shortcut sang ASCII không dấu để đảm bảo tương thích 100% với WScript.Shell COM Save
+    try {
+        $normalized = $cleanShortcutName.Normalize([System.Text.NormalizationForm]::FormD)
+        $sb = New-Object System.Text.StringBuilder
+        foreach ($ch in $normalized.ToCharArray()) {
+            if ([System.Globalization.CharUnicodeInfo]::GetUnicodeCategory($ch) -ne [System.Globalization.UnicodeCategory]::NonSpacingMark) {
+                [void]$sb.Append($ch)
+            }
+        }
+        $asciiName = $sb.ToString().Normalize([System.Text.NormalizationForm]::FormC) -replace '[^a-zA-Z0-9_\-\.\(\)\s]', ''
+        if (-not [string]::IsNullOrWhiteSpace($asciiName)) {
+            $cleanShortcutName = $asciiName.Trim()
+        }
+    } catch {}
+
+    # 1. Tạo lối tắt trong Start Menu (cho Windows Search lập chỉ mục 100%)
+    try {
+        $startMenuAllUsers = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs"
+        if (Test-Path $startMenuAllUsers) {
+            $startMenuLnk = Join-Path $startMenuAllUsers "$cleanShortcutName.lnk"
+            $wsh = New-Object -ComObject WScript.Shell
+            $lnk = $wsh.CreateShortcut($startMenuLnk)
+            $lnk.TargetPath = $ExePath
+            $lnk.WorkingDirectory = $InstallDir
+            $lnk.Description = "$AppName - VUONGTT Toolkit 2026"
+            $lnk.IconLocation = "$ExePath,0"
+            $lnk.Save()
+            if ($OnLog) { & $OnLog "  -> [HỆ THỐNG] Đã đăng ký lối tắt Start Menu (All Users): $startMenuLnk" }
+        }
+    } catch {
+        if ($OnLog) { & $OnLog "  -> [CẢNH BÁO] Không thể tạo Start Menu All Users: $($_.Exception.Message)" }
+    }
+
+    try {
+        $userStartMenu = [System.IO.Path]::Combine($env:APPDATA, "Microsoft\Windows\Start Menu\Programs")
+        if (-not (Test-Path $userStartMenu)) { New-Item -ItemType Directory -Path $userStartMenu -Force -ErrorAction SilentlyContinue | Out-Null }
+        if (Test-Path $userStartMenu) {
+            $userLnk = Join-Path $userStartMenu "$cleanShortcutName.lnk"
+            $wsh = New-Object -ComObject WScript.Shell
+            $uLnk = $wsh.CreateShortcut($userLnk)
+            $uLnk.TargetPath = $ExePath
+            $uLnk.WorkingDirectory = $InstallDir
+            $uLnk.Description = "$AppName - VUONGTT Toolkit 2026"
+            $uLnk.IconLocation = "$ExePath,0"
+            $uLnk.Save()
+            if ($OnLog) { & $OnLog "  -> [HỆ THỐNG] Đã đăng ký lối tắt Start Menu (User): $userLnk" }
+        }
+    } catch {
+        if ($OnLog) { & $OnLog "  -> [CẢNH BÁO] Không thể tạo Start Menu User: $($_.Exception.Message)" }
+    }
+
+    # 2. Tạo lối tắt trên Public Desktop (cho mọi User trên máy tính) và Current User Desktop
+    try {
+        $publicDesktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
+        if (Test-Path $publicDesktop) {
+            $pubLnkPath = Join-Path $publicDesktop "$cleanShortcutName.lnk"
+            $wsh = New-Object -ComObject WScript.Shell
+            $pLnk = $wsh.CreateShortcut($pubLnkPath)
+            $pLnk.TargetPath = $ExePath
+            $pLnk.WorkingDirectory = $InstallDir
+            $pLnk.IconLocation = "$ExePath,0"
+            $pLnk.Save()
+            if ($OnLog) { & $OnLog "  -> [HỆ THỐNG] Đã tạo lối tắt Màn Hình Desktop (All Users): $pubLnkPath" }
+        }
+    } catch {
+        if ($OnLog) { & $OnLog "  -> [CẢNH BÁO] Không thể tạo Public Desktop: $($_.Exception.Message)" }
+    }
+
+    try {
+        $userDesktop = [Environment]::GetFolderPath("Desktop")
+        if (-not (Test-Path $userDesktop)) { New-Item -ItemType Directory -Path $userDesktop -Force -ErrorAction SilentlyContinue | Out-Null }
+        if (Test-Path $userDesktop) {
+            $uDeskLnk = Join-Path $userDesktop "$cleanShortcutName.lnk"
+            $wsh = New-Object -ComObject WScript.Shell
+            $uLnk = $wsh.CreateShortcut($uDeskLnk)
+            $uLnk.TargetPath = $ExePath
+            $uLnk.WorkingDirectory = $InstallDir
+            $uLnk.IconLocation = "$ExePath,0"
+            $uLnk.Save()
+            if ($OnLog) { & $OnLog "  -> [HỆ THỐNG] Đã tạo lối tắt Màn Hình Desktop (User): $uDeskLnk" }
+        }
+    } catch {
+        if ($OnLog) { & $OnLog "  -> [CẢNH BÁO] Không thể tạo User Desktop: $($_.Exception.Message)" }
+    }
+
+    # 3. Đăng ký thông tin vào Control Panel Programs and Features (HKLM hoặc HKCU Uninstall)
+    $uninstCmd = "cmd.exe /c rd /s /q `"$InstallDir`" & del /f /q `"$env:ProgramData\Microsoft\Windows\Start Menu\Programs\$cleanShortcutName.lnk`" & del /f /q `"$env:PUBLIC\Desktop\$cleanShortcutName.lnk`""
+    $regSucceeded = $false
+    try {
+        $hklmKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VUONGTT_$AppId"
+        if (-not (Test-Path $hklmKey)) {
+            New-Item -Path $hklmKey -Force -ErrorAction Stop | Out-Null
+        }
+        Set-ItemProperty -Path $hklmKey -Name "DisplayName" -Value $AppName -Force -ErrorAction Stop
+        Set-ItemProperty -Path $hklmKey -Name "DisplayVersion" -Value $Version -Force -ErrorAction Stop
+        Set-ItemProperty -Path $hklmKey -Name "Publisher" -Value $Publisher -Force -ErrorAction Stop
+        Set-ItemProperty -Path $hklmKey -Name "DisplayIcon" -Value "$ExePath,0" -Force -ErrorAction Stop
+        Set-ItemProperty -Path $hklmKey -Name "InstallLocation" -Value $InstallDir -Force -ErrorAction Stop
+        Set-ItemProperty -Path $hklmKey -Name "UninstallString" -Value $uninstCmd -Force -ErrorAction Stop
+        Set-ItemProperty -Path $hklmKey -Name "NoModify" -Value 1 -Type DWord -Force -ErrorAction Stop
+        Set-ItemProperty -Path $hklmKey -Name "NoRepair" -Value 1 -Type DWord -Force -ErrorAction Stop
+        Set-ItemProperty -Path $hklmKey -Name "EstimatedSize" -Value 20480 -Type DWord -Force -ErrorAction Stop
+        $regSucceeded = $true
+        if ($OnLog) { & $OnLog "  -> [HỆ THỐNG] Đã đăng ký Control Panel Programs & Features (HKLM): $AppName" }
+    } catch {}
+
+    if (-not $regSucceeded) {
+        try {
+            $hkcuKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\VUONGTT_$AppId"
+            if (-not (Test-Path $hkcuKey)) { New-Item -Path $hkcuKey -Force -ErrorAction Stop | Out-Null }
+            Set-ItemProperty -Path $hkcuKey -Name "DisplayName" -Value $AppName -Force -ErrorAction Stop
+            Set-ItemProperty -Path $hkcuKey -Name "DisplayVersion" -Value $Version -Force -ErrorAction Stop
+            Set-ItemProperty -Path $hkcuKey -Name "Publisher" -Value $Publisher -Force -ErrorAction Stop
+            Set-ItemProperty -Path $hkcuKey -Name "DisplayIcon" -Value "$ExePath,0" -Force -ErrorAction Stop
+            Set-ItemProperty -Path $hkcuKey -Name "InstallLocation" -Value $InstallDir -Force -ErrorAction Stop
+            Set-ItemProperty -Path $hkcuKey -Name "UninstallString" -Value $uninstCmd -Force -ErrorAction Stop
+            if ($OnLog) { & $OnLog "  -> [HỆ THỐNG] Đã đăng ký Control Panel Programs & Features (HKCU): $AppName" }
+        } catch {}
+    }
+
+    return $true
+}
+
+function Test-VUONGTTAppActuallyInstalled {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$AppId
+    )
+
+    $cleanId = $AppId.Trim().ToLower()
+    $map = $script:APP_EXEC_MAP[$cleanId]
+
+    # 1. Kiem tra cac duong dan quen thuoc trong APP_EXEC_MAP
+    if ($map -and $map.CommonPaths) {
+        foreach ($cp in $map.CommonPaths) {
+            if ($cp -like "*\*" -and (Test-Path $cp)) { return $true }
+            if ($cp -like "*\*" -and $cp -like "*\**\*") {
+                $expanded = Resolve-Path $cp -ErrorAction SilentlyContinue
+                if ($expanded) { return $true }
+            }
+        }
+    }
+
+    # 2. Kiem tra thu muc cai dat chuan C:\Tools\<appId>
+    $toolsDir = "$env:SystemDrive\Tools\$cleanId"
+    if (Test-Path $toolsDir) {
+        $exe = Get-ChildItem -Path $toolsDir -Filter "*.exe" -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($exe) { return $true }
+    }
+
+    # 3. Kiem tra tren toan bo cac user profiles C:\Users\*\AppData\Local\Programs
+    $userProgPaths = @(
+        "C:\Users\*\AppData\Local\Programs\$cleanId",
+        "C:\Users\*\AppData\Local\Programs\*\$cleanId.exe",
+        "C:\Users\*\AppData\Local\$cleanId"
+    )
+    foreach ($upp in $userProgPaths) {
+        $matches = Get-ChildItem -Path $upp -Recurse -Filter "*.exe" -File -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($matches) { return $true }
+    }
+
+    # 4. Kiem tra Start Menu Shortcuts
+    $startMenuPaths = @(
+        "$env:ProgramData\Microsoft\Windows\Start Menu\Programs",
+        "$env:APPDATA\Microsoft\Windows\Start Menu\Programs"
+    )
+    foreach ($smp in $startMenuPaths) {
+        if (Test-Path $smp) {
+            $lnk = Get-ChildItem -Path $smp -Filter "*$cleanId*.lnk" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($lnk) { return $true }
+        }
+    }
+
+    # 5. Kiem tra Registry Uninstall HKLM va HKCU
+    $regPaths = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+    foreach ($rp in $regPaths) {
+        $found = Get-ItemProperty -Path $rp -ErrorAction SilentlyContinue | Where-Object {
+            ($_.PSChildName -like "*$cleanId*") -or ($_.DisplayName -like "*$cleanId*")
+        } | Select-Object -First 1
+        if ($found) { return $true }
+    }
+
+    # 6. Kiem tra Appx Package
+    try {
+        $pkg = Get-AppxPackage -Name "*$cleanId*" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($pkg) { return $true }
+    } catch {}
+
+    return $false
+}
+
 if (-not ([System.Management.Automation.PSTypeName]'VUONGTT.ProcessLiveRunner').Type) {
     Add-Type @"
 namespace VUONGTT {
@@ -794,20 +1013,12 @@ function Install-VUONGTTApp {
                 }
             } catch {}
 
-            # Tạo lối tắt Desktop cho ứng dụng Portable
+            # Đăng ký tích hợp hệ thống (Start Menu All-Users, Public Desktop, Programs & Features)
             try {
                 $exeFile = Get-ChildItem -Path $extractDir -Filter "*.exe" -Recurse -File -ErrorAction SilentlyContinue |
                     Sort-Object { if ($_.Name -like "*64*") { 0 } else { 1 } } | Select-Object -First 1
                 if ($exeFile) {
-                    $wsh = New-Object -ComObject WScript.Shell
-                    $desktopDir = [Environment]::GetFolderPath("Desktop")
-                    $cleanShortcutName = ($app.Name -replace '[\\/:*?""<>|]', '')
-                    $lnkPath = Join-Path $desktopDir "$cleanShortcutName.lnk"
-                    $lnk = $wsh.CreateShortcut($lnkPath)
-                    $lnk.TargetPath = $exeFile.FullName
-                    $lnk.WorkingDirectory = $exeFile.DirectoryName
-                    $lnk.Save()
-                    if ($OnProgress) { & $OnProgress "  -> Đã tạo lối tắt Desktop: $lnkPath" }
+                    Register-VUONGTTAppSystemIntegration -AppId $app.Id -AppName $app.Name -ExePath $exeFile.FullName -InstallDir $extractDir -OnLog $OnProgress
                 }
             } catch {}
 
@@ -825,17 +1036,8 @@ function Install-VUONGTTApp {
             if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
             
-            # Kiểm tra xem ứng dụng đã thực sự có mặt trên máy chưa
-            $isAppActuallyInstalled = $false
-            $map = $script:APP_EXEC_MAP[$app.Id.ToLower()]
-            if ($map -and $map.CommonPaths) {
-                foreach ($cp in $map.CommonPaths) {
-                    if ($cp -like "*\*" -and (Test-Path $cp)) {
-                        $isAppActuallyInstalled = $true
-                        break
-                    }
-                }
-            }
+            # Kiểm tra xem ứng dụng đã thực sự có mặt trên máy chưa bằng hàm kiểm tra chuẩn
+            $isAppActuallyInstalled = Test-VUONGTTAppActuallyInstalled -AppId $app.Id
 
             # Nếu LiveRunner gặp hạn chế pipe hoặc access denied trên Domain, thử fallback bằng Start-Process
             if (-not $isAppActuallyInstalled -and $exitCode -ne 0 -and $exitCode -ne 3010) {
@@ -847,23 +1049,31 @@ function Install-VUONGTTApp {
                     if ($OnProgress) { & $OnProgress "  -> Start-Process lỗi: $($_.Exception.Message)" }
                 }
 
-                if ($map -and $map.CommonPaths) {
-                    foreach ($cp in $map.CommonPaths) {
-                        if ($cp -like "*\*" -and (Test-Path $cp)) {
-                            $isAppActuallyInstalled = $true
-                            break
-                        }
-                    }
-                }
+                $isAppActuallyInstalled = Test-VUONGTTAppActuallyInstalled -AppId $app.Id
             }
 
-            if ($exitCode -eq 0 -or $exitCode -eq 3010 -or $isAppActuallyInstalled) {
+            # Tự động đồng bộ Start Menu All-Users và Desktop cho ứng dụng đã cài đặt
+            if ($isAppActuallyInstalled) {
+                $foundExe = $null
+                if ($map -and $map.CommonPaths) {
+                    foreach ($cp in $map.CommonPaths) {
+                        if ($cp -like "*\*" -and (Test-Path $cp)) { $foundExe = $cp; break }
+                    }
+                }
+                if (-not $foundExe) {
+                    $userExes = Get-ChildItem -Path "C:\Users\*\AppData\Local\Programs\$($app.Id)" -Filter "*.exe" -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+                    if ($userExes) { $foundExe = $userExes.FullName }
+                }
+                if ($foundExe) {
+                    Register-VUONGTTAppSystemIntegration -AppId $app.Id -AppName $app.Name -ExePath $foundExe -OnLog $OnProgress
+                }
+
                 if ($AutoLaunch) {
                     [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
                 }
                 return "Đã hoàn tất cài đặt $($app.Name)!"
             } else {
-                return "Cài đặt $($app.Name) thất bại (Mã trả về: $exitCode)!"
+                return "Cài đặt $($app.Name) thất bại (Không tìm thấy tệp thực thi sau khi hoàn tất trình cài đặt - Mã thoát: $exitCode)!"
             }
         }
     }
@@ -887,37 +1097,39 @@ function Install-VUONGTTApp {
         try {
             $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --force"
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $arg -OnOutputLine $OnProgress
-            if ($exitCode -in $wingetOkCodes) {
-                if ($AutoLaunch) {
-                    [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
-                }
-                return "Đã cài đặt thành công $($app.Name) (phiên bản mới nhất qua Winget)!"
-            } elseif ($exitCode -eq -1978335215 -or $exitCode -eq 2316632065) {
-                # Kiểm tra xem ứng dụng đã thực sự có mặt trên máy chưa
-                $isAppActuallyInstalled = $false
-                $map = $script:APP_EXEC_MAP[$app.Id.ToLower()]
-                if ($map -and $map.CommonPaths) {
-                    foreach ($cp in $map.CommonPaths) {
-                        if ($cp -like "*\*" -and (Test-Path $cp)) { $isAppActuallyInstalled = $true; break }
-                    }
-                }
+            
+            $isAppActuallyInstalled = Test-VUONGTTAppActuallyInstalled -AppId $app.Id
+            if ($exitCode -in $wingetOkCodes -or $exitCode -eq -1978335215 -or $exitCode -eq 2316632065) {
                 if ($isAppActuallyInstalled) {
+                    $foundExe = $null
+                    if ($map -and $map.CommonPaths) {
+                        foreach ($cp in $map.CommonPaths) {
+                            if ($cp -like "*\*" -and (Test-Path $cp)) { $foundExe = $cp; break }
+                        }
+                    }
+                    if ($foundExe) {
+                        Register-VUONGTTAppSystemIntegration -AppId $app.Id -AppName $app.Name -ExePath $foundExe -OnLog $OnProgress
+                    }
                     if ($AutoLaunch) {
                         [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
                     }
-                    return "Đã xác nhận $($app.Name) đã được cài đặt trên hệ thống!"
+                    return "Đã cài đặt thành công $($app.Name) (phiên bản mới nhất qua Winget)!"
+                } else {
+                    if ($OnProgress) { & $OnProgress "  -> WinGet báo mã hoàn tất nhưng chưa tìm thấy file thực thi. Tự động chuyển tải trực tiếp..." }
+                    return $false
                 }
-                if ($OnProgress) { & $OnProgress "  -> WinGet báo đã cài đặt nhưng không tìm thấy file. Tự động chuyển tải trực tiếp..." }
-                return $false
             } else {
                 if ($OnProgress) { & $OnProgress "  -> Thử cập nhật bản mới nhất qua Winget upgrade..." }
                 $upgArg = "upgrade --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
                 $upgExitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $upgArg -OnOutputLine $OnProgress
                 if ($upgExitCode -in $wingetOkCodes) {
-                    if ($AutoLaunch) {
-                        [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+                    $isAppActuallyInstalled = Test-VUONGTTAppActuallyInstalled -AppId $app.Id
+                    if ($isAppActuallyInstalled) {
+                        if ($AutoLaunch) {
+                            [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+                        }
+                        return "Đã cập nhật $($app.Name) lên phiên bản mới nhất qua Winget!"
                     }
-                    return "Đã cập nhật $($app.Name) lên phiên bản mới nhất qua Winget!"
                 }
             }
         } catch {
