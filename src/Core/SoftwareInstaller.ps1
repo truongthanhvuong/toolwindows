@@ -16,7 +16,7 @@ function Invoke-VUONGTTDoEvents {
 $script:VUONGTT_APPS = @(
     # --- 1. VAN PHONG & TAI LIEU ---
     [PSCustomObject]@{ Id="office365";   Name="Microsoft 365 (Office 365 Mới Nhất)"; Category="Văn phòng"; WingetId="Microsoft.Office"; Url="https://go.microsoft.com/fwlink/p/?LinkID=2009112"; Silent="/configure"; IsOffice=$true },
-    [PSCustomObject]@{ Id="foxitpdf";    Name="Foxit PDF Reader (Mới Nhất)";         Category="Văn phòng"; WingetId="Foxit.FoxitReader"; Url="https://cdn01.foxitsoftware.com/product/reader/desktop/win/12.1.3/FoxitPDFReader1213_enu_Setup_Prom.exe"; Silent="/VERYSILENT /NORESTART" },
+    [PSCustomObject]@{ Id="foxitpdf";    Name="Foxit PDF Reader (Mới Nhất)";         Category="Văn phòng"; WingetId="Foxit.FoxitReader"; Url="https://cdn01.foxitsoftware.com/pub/foxit/reader/desktop/win/12.x/12.1/en_us/FoxitPDFReader121_enu_Setup_Clean.exe"; Silent="/VERYSILENT /NORESTART" },
     [PSCustomObject]@{ Id="acrobat";     Name="Adobe Acrobat Reader (Mới Nhất)";     Category="Văn phòng"; WingetId="Adobe.Acrobat.Reader.64-bit"; Url="https://ardownload2.adobe.com/pub/adobe/reader/win/AcrobatDC/2400120604/AcroRdrDC2400120604_en_US.exe"; Silent="/sAll /rs /msi EULA_ACCEPT=YES" },
 
     # --- 2. BO GO & FONT ---
@@ -25,7 +25,7 @@ $script:VUONGTT_APPS = @(
 
     # --- 3. TRINH DUYET WEB ---
     [PSCustomObject]@{ Id="chrome";      Name="Google Chrome (Mới Nhất)";            Category="Trình duyệt"; WingetId="Google.Chrome"; Url="https://dl.google.com/chrome/install/standalonesetup64.exe"; Silent="/silent /install" },
-    [PSCustomObject]@{ Id="coccoc";      Name="Trình duyệt Cốc Cốc (Mới Nhất)";      Category="Trình duyệt"; WingetId="CocCoc.CocCoc"; Url="https://files1.coccoc.com/browser/x64/120.0.6099.234/0A137B37-5CC3-881A-70E1-86CE2172C8D1/cmVmPXd3dy5nb29nbGUuY29t/coccoc_vi_machine.exe"; Silent="/silent" },
+    [PSCustomObject]@{ Id="coccoc";      Name="Trình duyệt Cốc Cốc (Mới Nhất)";      Category="Trình duyệt"; WingetId="CocCoc.CocCoc"; Url="https://files1.coccoc.com/browser/x64/coccoc_vi_machine.exe"; Silent="/silent" },
     [PSCustomObject]@{ Id="firefox";     Name="Mozilla Firefox (Mới Nhất)";          Category="Trình duyệt"; WingetId="Mozilla.Firefox"; Url="https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=vi"; Silent="-ms" },
     [PSCustomObject]@{ Id="brave";       Name="Brave Browser (Bảo Mật)";             Category="Trình duyệt"; WingetId="Brave.Brave"; Url="https://laptop-updates.brave.com/latest/winx64"; Silent="/silent" },
 
@@ -34,13 +34,13 @@ $script:VUONGTT_APPS = @(
     [PSCustomObject]@{ Id="winrar";      Name="WinRAR 64-bit (Mới Nhất)";            Category="Nén file";   WingetId="RARLab.WinRAR"; Url="https://www.rarlab.com/rar/winrar-x64-701.exe"; Silent="/s" },
 
     # --- 5. DIEU KHIEN TU XA ---
-    [PSCustomObject]@{ Id="ultraviewer"; Name="UltraViewer (Điều Khiển Từ Xa)";      Category="Điều khiển"; WingetId="DucFabulous.UltraViewer"; Url="https://ultraviewer.net/vi/UltraViewer_setup_6.6_vi.exe"; Silent="/VERYSILENT /NORESTART" },
+    [PSCustomObject]@{ Id="ultraviewer"; Name="UltraViewer (Điều Khiển Từ Xa)";      Category="Điều khiển"; WingetId="DucFabulous.UltraViewer"; Url="https://dl2.ultraviewer.net/UltraViewer_setup_6.6_vi.exe"; Silent="/VERYSILENT /NORESTART" },
     [PSCustomObject]@{ Id="anydesk";     Name="AnyDesk Remote (Mới Nhất)";           Category="Điều khiển"; WingetId="AnyDeskSoftwareGmbH.AnyDesk"; Url="https://download.anydesk.com/AnyDesk.exe"; Silent="--install --start-with-win --silent" },
     [PSCustomObject]@{ Id="rustdesk";    Name="RustDesk Remote (Open Source)";       Category="Điều khiển"; WingetId="RustDesk.RustDesk"; Url="https://github.com/rustdesk/rustdesk/releases/download/1.3.1/rustdesk-1.3.1-x86_64.exe"; Silent="--silent-install" },
     [PSCustomObject]@{ Id="teamviewer";  Name="TeamViewer (Mới Nhất)";               Category="Điều khiển"; WingetId="TeamViewer.TeamViewer"; Url="https://download.teamviewer.com/download/TeamViewer_Setup_x64.exe"; Silent="/S" },
 
     # --- 6. MANG XA HOI & LIEN LAC ---
-    [PSCustomObject]@{ Id="zalo";        Name="Zalo PC (Bản Mới Nhất)";              Category="Liên lạc";   WingetId="VNGCorp.Zalo"; Url="https://res-zaloapp-aka-jpt.zdn.vn/win/ZaloSetup-26.8.20.exe"; Silent="/S" },
+    [PSCustomObject]@{ Id="zalo";        Name="Zalo PC (Bản Mới Nhất)";              Category="Liên lạc";   WingetId="VNGCorp.Zalo"; Url="https://res-zaloapp-aka-jpt.zdn.vn/win/ZaloSetup.exe"; Silent="/S" },
     [PSCustomObject]@{ Id="telegram";    Name="Telegram Desktop (Mới Nhất)";         Category="Liên lạc";   WingetId="Telegram.TelegramDesktop"; Url="https://telegram.org/dl/desktop/win64"; Silent="/VERYSILENT /NORESTART" },
     [PSCustomObject]@{ Id="discord";     Name="Discord PC (Mới Nhất)";               Category="Liên lạc";   WingetId="Discord.Discord"; Url="https://discord.com/api/download?platform=win"; Silent="-s" },
 
@@ -100,12 +100,16 @@ foreach ($dbp in $dbCandidatePaths) {
                 }
                 foreach ($j in $jsonApps) {
                     $jId = $j.Id.ToLower()
+                    $jsonDirectUrl = if (-not [string]::IsNullOrWhiteSpace($j.DirectUrl)) { $j.DirectUrl } else { $j.Url }
                     if ($appsMap.ContainsKey($jId)) {
                         $existing = $appsMap[$jId]
                         if (-not [string]::IsNullOrWhiteSpace($j.WingetId)) { $existing.WingetId = $j.WingetId }
-                        if ([string]::IsNullOrWhiteSpace($existing.Url) -and -not [string]::IsNullOrWhiteSpace($j.Url)) { $existing.Url = $j.Url }
+                        if ([string]::IsNullOrWhiteSpace($existing.Url) -and -not [string]::IsNullOrWhiteSpace($jsonDirectUrl)) { $existing.Url = $jsonDirectUrl }
                         if ([string]::IsNullOrWhiteSpace($existing.Category) -and -not [string]::IsNullOrWhiteSpace($j.Category)) { $existing.Category = $j.Category }
                     } else {
+                        if ([string]::IsNullOrWhiteSpace($j.Url) -and -not [string]::IsNullOrWhiteSpace($jsonDirectUrl)) {
+                            Add-Member -InputObject $j -NotePropertyName "Url" -NotePropertyValue $jsonDirectUrl -Force
+                        }
                         $appsMap[$jId] = $j
                     }
                 }
@@ -121,7 +125,7 @@ $script:APP_EXEC_MAP = @{
     "foxitpdf"        = @{ Exe = "FoxitPDFReader.exe"; ProcessName = "FoxitPDFReader"; CommonPaths = @("$env:ProgramFiles\Foxit Software\Foxit PDF Reader\FoxitPDFReader.exe", "${env:ProgramFiles(x86)}\Foxit Software\Foxit PDF Reader\FoxitPDFReader.exe") }
     "acrobat"         = @{ Exe = "AcroRd32.exe"; ProcessName = "AcroRd32"; CommonPaths = @("$env:ProgramFiles\Adobe\Acrobat DC\Acrobat\Acrobat.exe", "${env:ProgramFiles(x86)}\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe", "$env:ProgramFiles\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe") }
     "unikey"          = @{ Exe = "UniKeyNT.exe"; ProcessName = "UniKeyNT"; CommonPaths = @("$env:SystemDrive\Tools\unikey\UniKeyNT.exe", "$env:ProgramFiles\UniKey\UniKeyNT.exe", "${env:ProgramFiles(x86)}\UniKey\UniKeyNT.exe") }
-    "evkey"           = @{ Exe = "EVKey64.exe"; ProcessName = "EVKey64"; CommonPaths = @("$env:SystemDrive\Tools\evkey\EVKey64.exe", "$env:SystemDrive\Tools\evkey\EVKey32.exe") }
+    "evkey"           = @{ Exe = "EVKey64.exe"; ProcessName = "EVKey64"; CommonPaths = @("$env:SystemDrive\Tools\evkey\x64\EVKey64.exe", "$env:SystemDrive\Tools\evkey\EVKey64.exe", "$env:SystemDrive\Tools\evkey\x86\EVKey32.exe", "$env:SystemDrive\Tools\evkey\EVKey32.exe") }
     "chrome"          = @{ Exe = "chrome.exe"; ProcessName = "chrome"; CommonPaths = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe") }
     "coccoc"          = @{ Exe = "browser.exe"; ProcessName = "browser"; CommonPaths = @("$env:LOCALAPPDATA\CocCoc\Browser\Application\browser.exe", "$env:ProgramFiles\CocCoc\Browser\Application\browser.exe") }
     "firefox"         = @{ Exe = "firefox.exe"; ProcessName = "firefox"; CommonPaths = @("$env:ProgramFiles\Mozilla Firefox\firefox.exe", "${env:ProgramFiles(x86)}\Mozilla Firefox\firefox.exe") }
@@ -176,6 +180,60 @@ function Test-VUONGTTWinget {
     }
 }
 
+if (-not ([System.Management.Automation.PSTypeName]'VUONGTT.ProcessLiveRunner').Type) {
+    Add-Type @"
+namespace VUONGTT {
+    using System;
+    using System.Diagnostics;
+    using System.Collections.Concurrent;
+
+    public class ProcessLiveRunner {
+        public static int Run(string filePath, string args, Action<string> onLine, int timeoutSeconds) {
+            ProcessStartInfo psi = new ProcessStartInfo {
+                FileName = filePath,
+                Arguments = args,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            using (Process proc = new Process { StartInfo = psi }) {
+                ConcurrentQueue<string> queue = new ConcurrentQueue<string>();
+                proc.OutputDataReceived += (s, e) => { if (e.Data != null) queue.Enqueue(e.Data); };
+                proc.ErrorDataReceived += (s, e) => { if (e.Data != null) queue.Enqueue(e.Data); };
+                proc.Start();
+                proc.BeginOutputReadLine();
+                proc.BeginErrorReadLine();
+                
+                DateTime limit = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+                while (!proc.HasExited) {
+                    string line;
+                    while (queue.TryDequeue(out line)) {
+                        if (onLine != null) {
+                            try { onLine(line); } catch {}
+                        }
+                    }
+                    System.Threading.Thread.Sleep(50);
+                    if (DateTime.UtcNow > limit) {
+                        try { proc.Kill(); } catch {}
+                        break;
+                    }
+                }
+                proc.WaitForExit(3000);
+                string remaining;
+                while (queue.TryDequeue(out remaining)) {
+                    if (onLine != null) {
+                        try { onLine(remaining); } catch {}
+                    }
+                }
+                return proc.ExitCode;
+            }
+        }
+    }
+}
+"@
+}
+
 function Invoke-VUONGTTProcessWithLiveLog {
     param(
         [string]$FilePath,
@@ -185,68 +243,18 @@ function Invoke-VUONGTTProcessWithLiveLog {
     )
 
     try {
-        $psi = New-Object System.Diagnostics.ProcessStartInfo
-        $psi.FileName = $FilePath
-        $psi.Arguments = $ArgumentList
-        $psi.UseShellExecute = $false
-        $psi.RedirectStandardOutput = $true
-        $psi.RedirectStandardError = $true
-        $psi.CreateNoWindow = $true
-
-        $proc = New-Object System.Diagnostics.Process
-        $proc.StartInfo = $psi
-        $proc.EnableRaisingEvents = $true
-
-        # Hang doi dong bo an toan da luong tranh deadlock va nghe pipe
-        $logQueue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
-
-        $outHandler = [System.Diagnostics.DataReceivedEventHandler]{
-            param($sender, $e)
-            if ($e -and $e.Data) { $logQueue.Enqueue($e.Data) }
-        }
-        $errHandler = [System.Diagnostics.DataReceivedEventHandler]{
-            param($sender, $e)
-            if ($e -and $e.Data) { $logQueue.Enqueue($e.Data) }
-        }
-
-        $proc.add_OutputDataReceived($outHandler)
-        $proc.add_ErrorDataReceived($errHandler)
-
-        $started = $proc.Start()
-        if (-not $started) {
-            if ($OnOutputLine) { & $OnOutputLine "[LỖI] Không thể khởi chạy tiến trình: $FilePath" }
-            return -1
-        }
-
-        $proc.BeginOutputReadLine()
-        $proc.BeginErrorReadLine()
-
-        $timeoutAt = (Get-Date).AddSeconds($TimeoutSeconds)
-
-        while (-not $proc.HasExited) {
-            $line = ""
-            while ($logQueue.TryDequeue([ref]$line)) {
-                if ($line -and $OnOutputLine) { & $OnOutputLine $line }
+        $action = if ($OnOutputLine) {
+            [Action[string]]{
+                param($line)
+                try {
+                    & $OnOutputLine $line
+                    Invoke-VUONGTTDoEvents
+                } catch {}
             }
-            Start-Sleep -Milliseconds 60
-            Invoke-VUONGTTDoEvents
+        } else { $null }
 
-            if ((Get-Date) -gt $timeoutAt) {
-                if ($OnOutputLine) { & $OnOutputLine "[CẢNH BÁO] Quá thời gian chờ ($TimeoutSeconds giây), tự động đóng tiến trình..." }
-                try { $proc.Kill() } catch {}
-                break
-            }
-        }
-
-        # Doc not cac dong log con sot lai sau khi tien trinh ket thuc
-        Start-Sleep -Milliseconds 120
-        $line = ""
-        while ($logQueue.TryDequeue([ref]$line)) {
-            if ($line -and $OnOutputLine) { & $OnOutputLine $line }
-        }
-        Invoke-VUONGTTDoEvents
-
-        return $proc.ExitCode
+        $exitCode = [VUONGTT.ProcessLiveRunner]::Run($FilePath, $ArgumentList, $action, $TimeoutSeconds)
+        return $exitCode
     } catch {
         if ($OnOutputLine) { & $OnOutputLine "[LỖI TIẾN TRÌNH] $($_.Exception.Message)" }
         return -999
@@ -610,7 +618,8 @@ function Install-VUONGTTApp {
     param(
         [string]$AppId,
         [scriptblock]$OnProgress = $null,
-        [switch]$AutoLaunch = $true
+        [switch]$AutoLaunch = $true,
+        [switch]$PreferDirect = $false
     )
 
     if ($AppId -in @("netfx35", "dotnet35")) {
@@ -621,7 +630,7 @@ function Install-VUONGTTApp {
         if ([bool](Get-Command "Install-VUONGTTAccountingApp" -ErrorAction SilentlyContinue)) {
             $res = Install-VUONGTTAccountingApp -AppId $AppId -OnProgress $OnProgress
             if ($AutoLaunch) {
-                Start-VUONGTTInstalledApp -AppId $AppId -OnLog $OnProgress
+                [void](Start-VUONGTTInstalledApp -AppId $AppId -OnLog $OnProgress)
             }
             return $res
         }
@@ -635,124 +644,186 @@ function Install-VUONGTTApp {
         $cfg = New-VUONGTTOfficeConfig -Version "O365ProPlusRetail" -Arch "64" -Channel "Current" -PrimaryLang "vi-vn"
         $p = Start-VUONGTTOfficeInstall -ConfigFile $cfg -OnProgress $OnProgress
         if ($AutoLaunch) {
-            Start-VUONGTTInstalledApp -AppId "office365" -HintName "Word" -OnLog $OnProgress
+            [void](Start-VUONGTTInstalledApp -AppId "office365" -HintName "Word" -OnLog $OnProgress)
         }
         return "Gói cài đặt Microsoft 365 đã được khởi động ngầm từ CDN Microsoft!"
     }
 
     $hasWinget = Test-VUONGTTWinget
     $wingetOkCodes = @(0, -1978335189, -1978335215, -1978335188, 3010, 1641, 2316632065)
+    $directUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) { $app.Url } else { $app.DirectUrl }
 
-    if ($hasWinget -and -not [string]::IsNullOrEmpty($app.WingetId)) {
+    # Scriptblock thực thi Tải Trực Tiếp & Cài Đặt
+    $runDirectInstall = {
+        if ([string]::IsNullOrWhiteSpace($directUrl)) {
+            return $null
+        }
+
+        $destFolder = "$env:TEMP\VUONGTT_Apps"
+        if (-not (Test-Path $destFolder)) { New-Item -ItemType Directory -Path $destFolder -Force | Out-Null }
+
+        $isZip = ($app.IsZip -eq $true -or $directUrl -like "*.zip")
+        $ext = if ($isZip) { ".zip" } else { ".exe" }
+        $destFile = Join-Path $destFolder "$($app.Id)$ext"
+
+        if ($OnProgress) { & $OnProgress "Đang tải $($app.Name) từ máy chủ chính thức: $directUrl..." }
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+
+        $dlSuccess = $false
+        try {
+            $wc = New-Object System.Net.WebClient
+            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+            
+            $script:dlIsDone = $false
+            $script:dlLastReport = 0
+
+            $wc.add_DownloadProgressChanged({
+                param($s, $e)
+                if ($e.ProgressPercentage -ge ($script:dlLastReport + 10) -or $e.ProgressPercentage -eq 100) {
+                    $script:dlLastReport = $e.ProgressPercentage
+                    $mbRec = [Math]::Round($e.BytesReceived / 1MB, 1)
+                    $mbTot = [Math]::Round($e.TotalBytesToReceive / 1MB, 1)
+                    if ($OnProgress) { & $OnProgress "  -> Đang tải: $($e.ProgressPercentage)% ($mbRec MB / $mbTot MB)..." }
+                }
+                Invoke-VUONGTTDoEvents
+            })
+            $wc.add_DownloadFileCompleted({
+                param($s, $e)
+                $script:dlIsDone = $true
+            })
+
+            $script:dlIsDone = $false
+            $wc.DownloadFileAsync((New-Object System.Uri($directUrl)), $destFile)
+
+            $dlTimeout = (Get-Date).AddSeconds(120)
+            while (-not $script:dlIsDone -and (Get-Date) -lt $dlTimeout) {
+                Start-Sleep -Milliseconds 60
+                Invoke-VUONGTTDoEvents
+            }
+
+            if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
+        } catch {}
+
+        if (-not $dlSuccess) {
+            try {
+                Invoke-WebRequest -Uri $directUrl -OutFile $destFile -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" -TimeoutSec 60
+                if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
+            } catch {}
+        }
+
+        if (-not (Test-Path $destFile) -or (Get-Item $destFile).Length -le 1024) {
+            return $false
+        }
+
+        if ($isZip) {
+            if ($OnProgress) { & $OnProgress "Đang giải nén $($app.Name)..." }
+            $extractDir = "$env:SystemDrive\Tools\$($app.Id)"
+            if (-not (Test-Path $extractDir)) { New-Item -ItemType Directory -Path $extractDir -Force | Out-Null }
+            Expand-Archive -Path $destFile -DestinationPath $extractDir -Force
+
+            # Tạo lối tắt Desktop cho ứng dụng Portable
+            try {
+                $exeFile = Get-ChildItem -Path $extractDir -Filter "*.exe" -Recurse -File -ErrorAction SilentlyContinue |
+                    Sort-Object { if ($_.Name -like "*64*") { 0 } else { 1 } } | Select-Object -First 1
+                if ($exeFile) {
+                    $wsh = New-Object -ComObject WScript.Shell
+                    $desktopDir = [Environment]::GetFolderPath("Desktop")
+                    $cleanShortcutName = ($app.Name -replace '[\\/:*?""<>|]', '')
+                    $lnkPath = Join-Path $desktopDir "$cleanShortcutName.lnk"
+                    $lnk = $wsh.CreateShortcut($lnkPath)
+                    $lnk.TargetPath = $exeFile.FullName
+                    $lnk.WorkingDirectory = $exeFile.DirectoryName
+                    $lnk.Save()
+                    if ($OnProgress) { & $OnProgress "  -> Đã tạo lối tắt Desktop: $lnkPath" }
+                }
+            } catch {}
+
+            if ($AutoLaunch) {
+                [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+            }
+            return "Đã tải và giải nén thành công vào: $extractDir"
+        } else {
+            if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
+            $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
+            if ($AutoLaunch) {
+                [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+            }
+            return "Đã hoàn tất cài đặt $($app.Name) (Mã trả về: $exitCode)!"
+        }
+    }
+
+    # Scriptblock thực thi Cài Đặt WinGet
+    $runWingetInstall = {
+        if (-not $hasWinget -or [string]::IsNullOrEmpty($app.WingetId)) {
+            return $null
+        }
         if ($OnProgress) { & $OnProgress "Đang cài đặt $($app.Name) qua Winget (Phiên bản mới nhất)..." }
         try {
             $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --force"
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $arg -OnOutputLine $OnProgress
             if ($exitCode -in $wingetOkCodes) {
                 if ($AutoLaunch) {
-                    Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
+                    [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
                 }
                 return "Đã cài đặt thành công $($app.Name) (phiên bản mới nhất qua Winget)!"
             } else {
-                # Nếu đã có bản cũ, thử lệnh upgrade để cập nhật bản mới nhất
                 if ($OnProgress) { & $OnProgress "  -> Thử cập nhật bản mới nhất qua Winget upgrade..." }
                 $upgArg = "upgrade --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
                 $upgExitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $upgArg -OnOutputLine $OnProgress
                 if ($upgExitCode -in $wingetOkCodes) {
                     if ($AutoLaunch) {
-                        Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
+                        [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
                     }
                     return "Đã cập nhật $($app.Name) lên phiên bản mới nhất qua Winget!"
                 }
             }
         } catch {
-            if ($OnProgress) { & $OnProgress "  -> Winget gặp sự cố, chuyển sang tải trực tiếp từ máy chủ..." }
+            if ($OnProgress) { & $OnProgress "  -> Winget gặp sự cố: $($_.Exception.Message)" }
         }
+        return $false
     }
 
-    # Fallback direct download
-    if ([string]::IsNullOrWhiteSpace($app.Url)) {
+    # ĐIỀU HƯỚNG DUAL-ENGINE THÔNG MINH KÈM TỰ ĐỘNG DỰ PHÒNG (AUTO-FALLBACK)
+    if ($PreferDirect) {
+        # MODE 1: Ưu tiên tải trực tiếp từ máy chủ nhà phát triển
+        if (-not [string]::IsNullOrWhiteSpace($directUrl)) {
+            $directRes = & $runDirectInstall
+            if ($directRes -and $directRes -ne $false) {
+                return $directRes
+            }
+            if ($OnProgress) { & $OnProgress "  -> Tải trực tiếp không khả dụng hoặc lỗi, tự động chuyển sang WinGet..." }
+        }
+        # Fallback sang WinGet
+        if ($hasWinget -and -not [string]::IsNullOrEmpty($app.WingetId)) {
+            $wingetRes = & $runWingetInstall
+            if ($wingetRes -and $wingetRes -ne $false) {
+                return $wingetRes
+            }
+        }
+        return "Lỗi tải tệp: Không thể cài đặt $($app.Name) qua cả Tải trực tiếp lẫn WinGet!"
+    } else {
+        # MODE 2: Mặc định WinGet (với tự động Fallback sang Tải trực tiếp)
+        if ($hasWinget -and -not [string]::IsNullOrEmpty($app.WingetId)) {
+            $wingetRes = & $runWingetInstall
+            if ($wingetRes -and $wingetRes -ne $false) {
+                return $wingetRes
+            }
+            if ($OnProgress) { & $OnProgress "  -> Winget không hoàn tất, tự động chuyển sang tải trực tiếp từ máy chủ..." }
+        }
+        # Fallback sang Tải trực tiếp
+        if (-not [string]::IsNullOrWhiteSpace($directUrl)) {
+            $directRes = & $runDirectInstall
+            if ($directRes -and $directRes -ne $false) {
+                return $directRes
+            }
+            return "Lỗi tải tệp: Không thể tải gói cài đặt từ máy chủ chính thức ($directUrl)!"
+        }
         if (-not [string]::IsNullOrEmpty($app.WingetId)) {
             return "Phần mềm '$($app.Name)' yêu cầu tiện ích WinGet trên Windows để cài đặt tự động (Mã gói: $($app.WingetId)). Vui lòng kiểm tra dịch vụ WinGet trên máy."
         } else {
-            return "Chưa cấu hình liên kết tải trực tiếp cho '$($app.Name)'."
+            return "Chưa cấu hình liên kết tải trực tiếp hoặc mã WinGet cho '$($app.Name)'."
         }
-    }
-
-    $destFolder = "$env:TEMP\VUONGTT_Apps"
-    if (-not (Test-Path $destFolder)) { New-Item -ItemType Directory -Path $destFolder -Force | Out-Null }
-
-    $isZip = ($app.IsZip -eq $true -or $app.Url -like "*.zip")
-    $ext = if ($isZip) { ".zip" } else { ".exe" }
-    $destFile = Join-Path $destFolder "$($app.Id)$ext"
-
-    if ($OnProgress) { & $OnProgress "Đang tải $($app.Name) từ máy chủ chính thức: $($app.Url)..." }
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
-    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-
-    $dlSuccess = $false
-    try {
-        $wc = New-Object System.Net.WebClient
-        $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
-        
-        $script:dlIsDone = $false
-        $script:dlLastReport = 0
-
-        $wc.add_DownloadProgressChanged({
-            param($s, $e)
-            if ($e.ProgressPercentage -ge ($script:dlLastReport + 10) -or $e.ProgressPercentage -eq 100) {
-                $script:dlLastReport = $e.ProgressPercentage
-                $mbRec = [Math]::Round($e.BytesReceived / 1MB, 1)
-                $mbTot = [Math]::Round($e.TotalBytesToReceive / 1MB, 1)
-                if ($OnProgress) { & $OnProgress "  -> Đang tải: $($e.ProgressPercentage)% ($mbRec MB / $mbTot MB)..." }
-            }
-            Invoke-VUONGTTDoEvents
-        })
-        $wc.add_DownloadFileCompleted({
-            param($s, $e)
-            $script:dlIsDone = $true
-        })
-
-        $script:dlIsDone = $false
-        $wc.DownloadFileAsync((New-Object System.Uri($app.Url)), $destFile)
-
-        $dlTimeout = (Get-Date).AddSeconds(120)
-        while (-not $script:dlIsDone -and (Get-Date) -lt $dlTimeout) {
-            Start-Sleep -Milliseconds 60
-            Invoke-VUONGTTDoEvents
-        }
-
-        if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
-    } catch {}
-
-    if (-not $dlSuccess) {
-        try {
-            Invoke-WebRequest -Uri $app.Url -OutFile $destFile -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" -TimeoutSec 60
-            if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
-        } catch {
-            return "Lỗi tải tệp: $($_.Exception.Message)"
-        }
-    }
-
-    if (-not (Test-Path $destFile) -or (Get-Item $destFile).Length -le 1024) {
-        return "Lỗi tải tệp: Tệp tải về không hợp lệ hoặc máy chủ từ chối kết nối!"
-    }
-
-    if ($isZip) {
-        if ($OnProgress) { & $OnProgress "Đang giải nén $($app.Name)..." }
-        $extractDir = "$env:SystemDrive\Tools\$($app.Id)"
-        Expand-Archive -Path $destFile -DestinationPath $extractDir -Force
-        if ($AutoLaunch) {
-            Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
-        }
-        return "Đã tải và giải nén thành công vào: $extractDir"
-    } else {
-        if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
-        $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
-        if ($AutoLaunch) {
-            Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress
-        }
-        return "Đã hoàn tất cài đặt $($app.Name) (Mã trả về: $exitCode)!"
     }
 }
 

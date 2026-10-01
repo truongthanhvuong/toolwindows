@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.75
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.76
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.75"
+$Script:AppVersion = "v20.5.909.76"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -3273,6 +3273,8 @@ $lblSoftwareProgressPercent= Get-Control "lblSoftwareProgressPercent"
 $lblSoftwareSubText        = Get-Control "lblSoftwareSubText"
 $chkSoftwareAutoLaunch     = Get-Control "chkSoftwareAutoLaunch"
 $btnClearSoftwareLog       = Get-Control "btnClearSoftwareLog"
+$rbPkgWinget               = Get-Control "rbPkgWinget"
+$rbPkgDirect               = Get-Control "rbPkgDirect"
 
 $txtCustomAppInput         = Get-Control "txtCustomAppInput"
 $btnInstallCustomApp       = Get-Control "btnInstallCustomApp"
@@ -3539,6 +3541,7 @@ $btnInstallSelectedApps.Add_Click({
         }
 
         $autoLaunch = if ($chkSoftwareAutoLaunch) { [bool]$chkSoftwareAutoLaunch.IsChecked } else { $true }
+        $preferDirect = if ($rbPkgDirect) { [bool]$rbPkgDirect.IsChecked } else { $false }
         if ($prgSoftware) { $prgSoftware.Value = 0 }
         if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "0%" }
         if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Bắt đầu cài đặt $($selected.Count) ứng dụng..." }
@@ -3576,7 +3579,7 @@ $btnInstallSelectedApps.Add_Click({
             & $streamLog "`r`n>>> BẮT ĐẦU CÀI ĐẶT [$i/$($selected.Count)]: $appName"
 
             try {
-                $res = Install-VUONGTTApp -AppId $appId -OnProgress $streamLog -AutoLaunch:$autoLaunch
+                $res = [string](Install-VUONGTTApp -AppId $appId -OnProgress $streamLog -AutoLaunch:$autoLaunch -PreferDirect:$preferDirect)
                 & $streamLog "-> Kết quả: $res"
                 if ($res -match '\[CHÚ Ý\]|trang chủ') {
                     $redirList += $appName
@@ -9594,7 +9597,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.75" }
+                if (-not $currentVer) { $currentVer = "20.5.909.76" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

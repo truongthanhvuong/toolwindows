@@ -1,5 +1,6 @@
 ﻿$filesToCheck = @(
     "e:\toolwindows\VUONGTT_Toolkit.ps1",
+    "e:\toolwindows\src\Core\SoftwareInstaller.ps1",
     "e:\toolwindows\src\Core\SystemBackupManager.ps1"
 )
 
