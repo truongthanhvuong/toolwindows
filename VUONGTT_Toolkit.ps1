@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.73
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.74
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.73"
+$Script:AppVersion = "v20.5.909.74"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -3559,6 +3559,10 @@ $btnInstallSelectedApps.Add_Click({
         }
 
         $i = 0
+        $succList = @()
+        $redirList = @()
+        $failList = @()
+
         foreach ($appId in $selected) {
             $i++
             $pct = [int](($i / $selected.Count) * 100)
@@ -3572,7 +3576,15 @@ $btnInstallSelectedApps.Add_Click({
             try {
                 $res = Install-VUONGTTApp -AppId $appId -OnProgress $streamLog -AutoLaunch:$autoLaunch
                 & $streamLog "-> Kết quả: $res"
+                if ($res -match '\[CHÚ Ý\]|trang chủ') {
+                    $redirList += $appName
+                } elseif ($res -match '\[LỖI\]|Lỗi tải|thất bại|không hợp lệ') {
+                    $failList += $appName
+                } else {
+                    $succList += $appName
+                }
             } catch {
+                $failList += $appName
                 & $streamLog "-> [LỖI CÀI ĐẶT $appName]: $($_.Exception.Message)"
             }
 
@@ -3581,16 +3593,31 @@ $btnInstallSelectedApps.Add_Click({
             Invoke-VUONGTTDoEvents
         }
 
-        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng!" }
-        if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Quá trình cài đặt kết thúc thành công." }
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã hoàn tất xử lý $($selected.Count) ứng dụng!" }
+        if ($lblSoftwareSubText) { $lblSoftwareSubText.Text = "Thành công: $($succList.Count) | Chuyển hướng: $($redirList.Count) | Sự cố: $($failList.Count)" }
         if ($prgSoftware) { $prgSoftware.Value = 100 }
         if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
-        & $streamLog "`r`n=== [HOÀN TẤT TOÀN BỘ CÀI ĐẶT] ==="
+        & $streamLog "`r`n=== [HOÀN TẤT TOÀN BỘ TIẾN TRÌNH] ==="
+
+        $msgTitle = "Báo Cáo Cài Đặt Ứng Dụng"
+        $msgBody = "Đã hoàn tất tiến trình xử lý $($selected.Count) ứng dụng đã chọn:`n`n"
+        if ($succList.Count -gt 0) {
+            $msgBody += "✅ ĐÃ CÀI ĐẶT THÀNH CÔNG ($($succList.Count)):`n• " + ($succList -join "`n• ") + "`n`n"
+        }
+        if ($redirList.Count -gt 0) {
+            $msgBody += "🌐 ĐÃ MỞ TRANG CHỦ CHÍNH THỨC ($($redirList.Count)):`n• " + ($redirList -join "`n• ") + "`n(Do máy chủ cơ quan nhà nước yêu cầu truy cập xác thực trực tiếp)`n`n"
+        }
+        if ($failList.Count -gt 0) {
+            $msgBody += "❌ CHƯA CÀI ĐƯỢC ($($failList.Count)):`n• " + ($failList -join "`n• ") + "`n`n"
+        }
+        $msgBody += "Chi tiết từng ứng dụng được ghi tại khung Nhật Ký Tiến Trình."
+
+        $msgIcon = if ($failList.Count -eq 0) { [System.Windows.MessageBoxImage]::Information } else { [System.Windows.MessageBoxImage]::Warning }
 
         if ($window) {
-            [System.Windows.MessageBox]::Show($window, "Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng đã chọn!`nCác ứng dụng đã được tự động mở sẵn sàng sử dụng.", "Tải Ứng Dụng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+            [System.Windows.MessageBox]::Show($window, $msgBody, $msgTitle, [System.Windows.MessageBoxButton]::OK, $msgIcon) | Out-Null
         } else {
-            [System.Windows.MessageBox]::Show("Đã hoàn tất cài đặt toàn bộ $($selected.Count) ứng dụng đã chọn!`nCác ứng dụng đã được tự động mở sẵn sàng sử dụng.", "Tải Ứng Dụng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+            [System.Windows.MessageBox]::Show($msgBody, $msgTitle, [System.Windows.MessageBoxButton]::OK, $msgIcon) | Out-Null
         }
     } catch {
         if ($txtSoftwareLog) { $txtSoftwareLog.AppendText("`r`n[LỖI HỆ THỐNG]: $($_.Exception.Message)`r`n") }
@@ -3674,22 +3701,62 @@ if ($btnInstallAccountingOnly) {
         }
 
         $k = 0
+        $succList = @()
+        $redirList = @()
+        $failList = @()
+
         foreach ($appId in $selectedAcct) {
             $k++
             $pct = [int](($k / $selectedAcct.Count) * 100)
-            if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "[$k/$($selectedAcct.Count)] Đang cài gói kế toán: $appId..." }
+            $appObj = if (Get-Command Get-VUONGTTAccountingApps -ErrorAction SilentlyContinue) { (Get-VUONGTTAccountingApps) | Where-Object { $_.Id -eq $appId } } else { $null }
+            $appName = if ($appObj) { $appObj.Name } else { $appId }
+
+            if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "[$k/$($selectedAcct.Count)] Đang cài: $appName..." }
             
-            $res = Install-VUONGTTAccountingApp -AppId $appId -OnProgress $acctStream -AutoLaunch:$autoLaunch
-            & $acctStream "-> Kết quả: $res"
+            try {
+                $res = Install-VUONGTTAccountingApp -AppId $appId -OnProgress $acctStream -AutoLaunch:$autoLaunch
+                & $acctStream "-> Kết quả: $res"
+                if ($res -match '\[CHÚ Ý\]|trang chủ') {
+                    $redirList += $appName
+                } elseif ($res -match '\[LỖI\]|Lỗi tải|thất bại') {
+                    $failList += $appName
+                } else {
+                    $succList += $appName
+                }
+            } catch {
+                $failList += $appName
+                & $acctStream "-> [LỖI CÀI ĐẶT $appName]: $($_.Exception.Message)"
+            }
+
             if ($prgSoftware) { $prgSoftware.Value = $pct }
             if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "$pct%" }
         }
 
-        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Hoàn tất cài đặt gói ứng dụng kế toán!" }
+        if ($lblSoftwareProgressText) { $lblSoftwareProgressText.Text = "Đã hoàn tất xử lý $($selectedAcct.Count) ứng dụng kế toán!" }
         if ($prgSoftware) { $prgSoftware.Value = 100 }
         if ($lblSoftwareProgressPercent) { $lblSoftwareProgressPercent.Text = "100%" }
-        & $acctStream "`r`n=== [HOÀN TẤT CÀI ĐẶT GÓI KẾ TOÁN] ==="
-        [System.Windows.MessageBox]::Show("Đã hoàn tất quá trình tải và cài đặt các ứng dụng kế toán!`nCác ứng dụng đã sẵn sàng sử dụng.", "Kế Toán & Thuế", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        & $acctStream "`r`n=== [HOÀN TẤT TIẾN TRÌNH CÀI ĐẶT GÓI KẾ TOÁN] ==="
+
+        $msgTitle = "Báo Cáo Kế Toán & Thuế"
+        $msgBody = "Đã hoàn tất tiến trình xử lý $($selectedAcct.Count) ứng dụng kế toán & thuế:`n`n"
+        if ($succList.Count -gt 0) {
+            $msgBody += "✅ ĐÃ CÀI ĐẶT THÀNH CÔNG ($($succList.Count)):`n• " + ($succList -join "`n• ") + "`n`n"
+        }
+        if ($redirList.Count -gt 0) {
+            $msgBody += "🌐 ĐÃ MỞ TRANG CHỦ CHÍNH THỨC ($($redirList.Count)):`n• " + ($redirList -join "`n• ") + "`n(Do máy chủ cơ quan nhà nước yêu cầu truy cập xác thực trực tiếp)`n`n"
+        }
+        if ($failList.Count -gt 0) {
+            $msgBody += "❌ CHƯA CÀI ĐƯỢC ($($failList.Count)):`n• " + ($failList -join "`n• ") + "`n`n"
+        }
+        $msgBody += "Chi tiết từng ứng dụng được ghi tại khung Nhật Ký Tiến Trình."
+
+        $msgIcon = if ($failList.Count -eq 0) { [System.Windows.MessageBoxImage]::Information } else { [System.Windows.MessageBoxImage]::Warning }
+
+        if ($window) {
+            [System.Windows.MessageBox]::Show($window, $msgBody, $msgTitle, [System.Windows.MessageBoxButton]::OK, $msgIcon) | Out-Null
+        } else {
+            [System.Windows.MessageBox]::Show($msgBody, $msgTitle, [System.Windows.MessageBoxButton]::OK, $msgIcon) | Out-Null
+        }
     })
 }
 
@@ -9525,7 +9592,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.73" }
+                if (-not $currentVer) { $currentVer = "20.5.909.74" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

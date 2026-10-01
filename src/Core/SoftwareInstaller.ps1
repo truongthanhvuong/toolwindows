@@ -716,7 +716,7 @@ function Install-VUONGTTApp {
         $script:dlIsDone = $false
         $wc.DownloadFileAsync((New-Object System.Uri($app.Url)), $destFile)
 
-        $dlTimeout = (Get-Date).AddMinutes(10)
+        $dlTimeout = (Get-Date).AddSeconds(120)
         while (-not $script:dlIsDone -and (Get-Date) -lt $dlTimeout) {
             Start-Sleep -Milliseconds 60
             Invoke-VUONGTTDoEvents

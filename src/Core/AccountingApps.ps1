@@ -204,7 +204,9 @@ function Invoke-VUONGTTDownloadWithLog {
     param(
         [string]$Url,
         [string]$DestPath,
-        [scriptblock]$OnProgress = $null
+        [scriptblock]$OnProgress = $null,
+        [int]$ConnectTimeoutSec = 8,
+        [int]$TotalTimeoutSec = 180
     )
 
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
@@ -215,44 +217,50 @@ function Invoke-VUONGTTDownloadWithLog {
 
     if ($OnProgress) { & $OnProgress "  -> Đang kết nối tới máy chủ chính hãng: $Url..." }
 
+    $req = $null
+    $resp = $null
+    $stream = $null
+    $fs = $null
+
     try {
-        $client = New-Object System.Net.WebClient
-        $client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
-        
-        $script:VUONGTT_DlPct = 0
-        $script:VUONGTT_DlBytes = 0
-        $script:VUONGTT_DlTotal = 0
-        $script:VUONGTT_DlCompleted = $false
-        $script:VUONGTT_DlError = $null
+        $req = [System.Net.HttpWebRequest]::Create($Url)
+        $req.Timeout = $ConnectTimeoutSec * 1000
+        $req.ReadWriteTimeout = 20000
+        $req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 
-        Register-ObjectEvent -InputObject $client -EventName "DownloadProgressChanged" -Action {
-            $script:VUONGTT_DlPct = $EventArgs.ProgressPercentage
-            $script:VUONGTT_DlBytes = $EventArgs.BytesReceived
-            $script:VUONGTT_DlTotal = $EventArgs.TotalBytesToReceive
-        } | Out-Null
+        $resp = $req.GetResponse()
+        $totalBytes = $resp.ContentLength
+        $stream = $resp.GetResponseStream()
 
-        Register-ObjectEvent -InputObject $client -EventName "DownloadFileCompleted" -Action {
-            $script:VUONGTT_DlCompleted = $true
-            if ($EventArgs.Error) { $script:VUONGTT_DlError = $EventArgs.Error }
-        } | Out-Null
-
-        $client.DownloadFileAsync((New-Object System.Uri($Url)), $DestPath)
-
-        $lastReport = 0
+        $fs = [System.IO.File]::Create($DestPath)
+        $buffer = New-Object byte[] 65536
+        $totalRead = 0
+        $bytesRead = 0
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $lastReportTime = 0
         $lastMb = 0
-        while (-not $script:VUONGTT_DlCompleted) {
-            Start-Sleep -Milliseconds 60
+
+        while (($bytesRead = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+            $fs.Write($buffer, 0, $bytesRead)
+            $totalRead += $bytesRead
+
             if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
                 Invoke-VUONGTTDoEvents
             }
-            $now = [Environment]::TickCount
-            if ($now - $lastReport -ge 1500) {
-                $lastReport = $now
-                $mbRecv = [math]::Round($script:VUONGTT_DlBytes / 1MB, 1)
-                if ($script:VUONGTT_DlTotal -gt 0) {
-                    $mbTot = [math]::Round($script:VUONGTT_DlTotal / 1MB, 1)
+
+            if ($sw.Elapsed.TotalSeconds -gt $TotalTimeoutSec) {
+                throw "Quá thời gian tải tối đa ($TotalTimeoutSec giây)."
+            }
+
+            $elapsedMs = $sw.ElapsedMilliseconds
+            if ($elapsedMs - $lastReportTime -ge 600) {
+                $lastReportTime = $elapsedMs
+                $mbRecv = [math]::Round($totalRead / 1MB, 1)
+                if ($totalBytes -gt 0) {
+                    $mbTot = [math]::Round($totalBytes / 1MB, 1)
+                    $pct = [int](($totalRead / $totalBytes) * 100)
                     if ($OnProgress -and $mbRecv -ne $lastMb) {
-                        & $OnProgress "  -> [Đang tải] $mbRecv MB / $mbTot MB ($($script:VUONGTT_DlPct)%)..."
+                        & $OnProgress "  -> [Đang tải] $mbRecv MB / $mbTot MB ($pct%)..."
                         $lastMb = $mbRecv
                     }
                 } elseif ($mbRecv -gt 0 -and $mbRecv -ne $lastMb) {
@@ -264,14 +272,15 @@ function Invoke-VUONGTTDownloadWithLog {
             }
         }
 
-        Get-EventSubscriber | Where-Object { $_.SourceObject -eq $client } | Unregister-Event -Force -ErrorAction SilentlyContinue
-        $client.Dispose()
+        $fs.Flush()
+        $fs.Close()
+        $fs = $null
+        $stream.Close()
+        $stream = $null
+        $resp.Close()
+        $resp = $null
 
-        if ($script:VUONGTT_DlError) {
-            throw $script:VUONGTT_DlError
-        }
-        
-        if (Test-Path $DestPath) {
+        if ((Test-Path $DestPath) -and (Get-Item $DestPath).Length -gt 1024) {
             $len = (Get-Item $DestPath).Length
             $mb = [math]::Round($len / 1MB, 2)
             if ($OnProgress) { & $OnProgress "  -> [OK] Tải về thành công! Kích thước: $mb MB." }
@@ -280,13 +289,11 @@ function Invoke-VUONGTTDownloadWithLog {
         return $false
     } catch {
         if ($OnProgress) { & $OnProgress "  -> [CHÚ Ý] Lỗi khi tải trực tiếp: $($_.Exception.Message)" }
-        # Fallback qua Invoke-WebRequest
-        try {
-            Invoke-WebRequest -Uri $Url -OutFile $DestPath -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" -TimeoutSec 45
-            return (Test-Path $DestPath)
-        } catch {
-            return $false
-        }
+        return $false
+    } finally {
+        if ($fs) { try { $fs.Dispose() } catch {} }
+        if ($stream) { try { $stream.Dispose() } catch {} }
+        if ($resp) { try { $resp.Dispose() } catch {} }
     }
 }
 
@@ -332,18 +339,31 @@ function Install-VUONGTTAccountingApp {
 
     # Lay link truc tiep tu may chu chinh hang
     if ($OnProgress) { & $OnProgress "  -> Đang kiểm tra liên kết tải gói cài đặt mới nhất..." }
-    $activeUrl = Get-VUONGTTActiveAccountingUrl -App $app
-    if ($OnProgress) { & $OnProgress "  -> Tìm thấy máy chủ cung cấp: $activeUrl" }
 
     $destFolder = "$env:TEMP\VUONGTT_AccountingApps"
     $ext = if ($app.IsZip) { ".zip" } else { ".exe" }
     $destFile = Join-Path $destFolder "$($app.Id)_setup$ext"
 
-    $dlSuccess = Invoke-VUONGTTDownloadWithLog -Url $activeUrl -DestPath $destFile -OnProgress $OnProgress
-    if (-not $dlSuccess -or -not (Test-Path $destFile)) {
-        if ($OnProgress) { & $OnProgress "  -> [CHUYỂN HƯỚNG] Máy chủ yêu cầu xác thực hoặc giới hạn tải trực tiếp. Đang tự động mở cổng chính thức..." }
+    $urlsToTry = @()
+    if ($app.Urls -and $app.Urls.Count -gt 0) {
+        $urlsToTry += $app.Urls
+    }
+
+    $dlSuccess = $false
+    foreach ($candidateUrl in $urlsToTry) {
+        if (-not $candidateUrl -or $candidateUrl -eq $app.HomeUrl) { continue }
+        $dlSuccess = Invoke-VUONGTTDownloadWithLog -Url $candidateUrl -DestPath $destFile -OnProgress $OnProgress -ConnectTimeoutSec 6
+        if ($dlSuccess -and (Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) {
+            break
+        }
+        $dlSuccess = $false
+    }
+
+    if (-not $dlSuccess -or -not (Test-Path $destFile) -or (Get-Item $destFile).Length -le 1024) {
+        if ($OnProgress) { & $OnProgress "  -> [CHUYỂN HƯỚNG] Máy chủ yêu cầu xác thực hoặc bảo mật phiên. Đang tự động mở cổng chính thức..." }
         try {
             Start-Process $app.HomeUrl
+            if ($OnProgress) { & $OnProgress "  -> Đã mở trình duyệt tới trang chủ chính thức: $($app.HomeUrl)" }
         } catch {}
         return "[CHÚ Ý] Đã mở trang chủ chính thức ($($app.HomeUrl)) để tải bản mới nhất $($app.Name)!"
     }
