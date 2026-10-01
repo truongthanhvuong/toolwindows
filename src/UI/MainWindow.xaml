@@ -1,8 +1,8 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.72"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.73"
         Height="720" Width="1180"
-        MinHeight="520" MinWidth="880"
+        MinHeight="480" MinWidth="800"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppBgBrush}"
         FontFamily="-apple-system, 'SF Pro Display', 'SF Pro Text', 'Segoe UI Variable Display', 'Segoe UI Variable Text', 'Segoe UI', 'Helvetica Neue', Inter, sans-serif"
@@ -380,7 +380,7 @@
 
     <Grid x:Name="MainRootGrid">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="270"/>
+            <ColumnDefinition Width="260" MinWidth="210" MaxWidth="280"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -412,7 +412,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.72 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.73 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -735,10 +735,10 @@
                         </StackPanel>
                     </Border>
                     <Grid Grid.Row="1">
-                <ScrollViewer x:Name="pageSysInfo" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" Visibility="Visible">
+                <ScrollViewer x:Name="pageSysInfo" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" Visibility="Visible">
                     <StackPanel>
                         <!-- 6 Gauges / Meter Cards Row (Exact Match Screenshot 1) -->
-                        <UniformGrid Columns="6" Margin="0,0,0,12">
+                        <UniformGrid x:Name="gridSysInfoGauges" Columns="6" Margin="0,0,0,12">
                             <!-- Gauge 1: Total System Load -->
                             <Border Style="{StaticResource CardBorder}" Margin="3" Padding="8,10,8,10">
                                 <StackPanel HorizontalAlignment="Center">
@@ -1562,7 +1562,7 @@
                         </StackPanel>
                     </Border>
                     <Grid Grid.Row="1">
-                <ScrollViewer x:Name="pageCleaner" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" Visibility="Visible">
+                <ScrollViewer x:Name="pageCleaner" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" Visibility="Visible">
                     <StackPanel Margin="0,0,0,16">
                         <!-- Card 1: 1-Click Thao Tác Nhanh Tối Ưu & Dọn Rác -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,10">
@@ -2109,7 +2109,7 @@
 
                 <!-- ================= 3. MẠNG & IP SCANNER ================= -->
                 <Grid x:Name="pageNetworkLAN" Visibility="Collapsed">
-                <ScrollViewer x:Name="pageIpScanner" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" Visibility="Visible">
+                <ScrollViewer x:Name="pageIpScanner" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" Visibility="Visible">
                     <StackPanel>
                         <!-- Header Banner -->
                         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,12,14,12" Margin="0,0,0,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
@@ -2717,7 +2717,7 @@
 
                 <!-- ================= 5. OFFICE & MICROSOFT 365 ================= -->
                 <Grid x:Name="pageOfficeAIO" Visibility="Collapsed">
-                <ScrollViewer x:Name="pageOffice" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" Visibility="Visible">
+                <ScrollViewer x:Name="pageOffice" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" Visibility="Visible">
                     <StackPanel>
                         <!-- Header Banner (Match Screenshot 4) -->
                         <Border Background="{DynamicResource CardBgBrush}" CornerRadius="8" Padding="14,10,14,10" Margin="0,0,0,14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
@@ -3499,7 +3499,7 @@
                         </StackPanel>
                     </Border>
                     <Grid Grid.Row="1">
-                <ScrollViewer x:Name="pageBenchmark" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" Visibility="Visible">
+                <ScrollViewer x:Name="pageBenchmark" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" Visibility="Visible">
                     <StackPanel>
                         <!-- Header & Disk Selector Bar -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
@@ -3941,7 +3941,7 @@
                         </StackPanel>
                     </Border>
                     <Grid Grid.Row="1">
-                <ScrollViewer x:Name="pageActivation" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" Visibility="Visible">
+                <ScrollViewer x:Name="pageActivation" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" Visibility="Visible">
                     <StackPanel>
                         <!-- Header Banner -->
                         <Border Style="{StaticResource CardBorder}" Margin="0,0,0,12">
@@ -4658,7 +4658,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.72" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.73" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

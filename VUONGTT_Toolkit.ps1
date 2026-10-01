@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.72
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.73
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.72"
+$Script:AppVersion = "v20.5.909.73"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -229,6 +229,7 @@ $btnCopyMoMo        = Get-Control "btnCopyMoMo"
 $btnFooterMoMo      = Get-Control "btnFooterMoMo"
 $btnCopyMoMoSysInfo = Get-Control "btnCopyMoMoSysInfo"
 $btnShowDisclaimer  = Get-Control "btnShowDisclaimer"
+$gridSysInfoGauges  = Get-Control "gridSysInfoGauges"
 $txtFooterVersionDisplay = Get-Control "txtFooterVersionDisplay"
 if ($txtFooterVersionDisplay) { $txtFooterVersionDisplay.Text = "v" + (Get-VUONGTTCurrentVersion) }
 $txtLogoVersionDisplay = Get-Control "txtLogoVersionDisplay"
@@ -9524,7 +9525,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.72" }
+                if (-not $currentVer) { $currentVer = "20.5.909.73" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
@@ -10132,8 +10133,56 @@ if ($lstIpDevices) {
 # Khởi tạo trạng thái bản quyền ban đầu
 Update-VUONGTTLicenseUI
 
+# =========================================================================
+# TỰ ĐỘNG CO GIÃN THÍCH ỨNG THEO ĐỘ PHÂN GIẢI MÀN HÌNH (RESPONSIVE SCALING)
+# =========================================================================
+function Update-VUONGTTResponsiveScaling {
+    try {
+        if (-not $window) { return }
+        $currentWidth = $window.ActualWidth
+        if ($currentWidth -le 0) { $currentWidth = $window.Width }
+
+        # Tự động điều chỉnh hàng Gauges (Tổng tải, CPU, RAM, GPU, Mạng, Ổ đĩa)
+        # Trên màn hình laptop hoặc cửa sổ thu nhỏ (< 1080px): chuyển sang 2 hàng x 3 cột để không bị khuất
+        # Trên màn hình rộng (>= 1080px): hiển thị 1 hàng 6 cột chuẩn
+        if ($gridSysInfoGauges) {
+            if ($currentWidth -lt 1080 -and $gridSysInfoGauges.Columns -ne 3) {
+                $gridSysInfoGauges.Columns = 3
+            } elseif ($currentWidth -ge 1080 -and $gridSysInfoGauges.Columns -ne 6) {
+                $gridSysInfoGauges.Columns = 6
+            }
+        }
+    } catch {}
+}
+
+# Tự động tối ưu hóa kích thước cửa sổ theo kích cỡ màn hình làm việc (WorkArea)
+try {
+    $workArea = [System.Windows.SystemParameters]::WorkArea
+    if ($workArea.Width -le 1380 -or $workArea.Height -le 780) {
+        # Laptop 1366x768 hoặc màn hình nhỏ / DPI Scaling 125%-150% -> Tự động Maximize để hiển thị trọn vẹn 100%
+        $window.WindowState = [System.Windows.WindowState]::Maximized
+    } else {
+        # Màn hình Full HD / 2K / 4K -> Đảm bảo cửa sổ mở ra với tỷ lệ vàng và căn giữa màn hình
+        if ($window.Width -gt ($workArea.Width * 0.95)) {
+            $window.Width = [Math]::Floor($workArea.Width * 0.92)
+        }
+        if ($window.Height -gt ($workArea.Height * 0.95)) {
+            $window.Height = [Math]::Floor($workArea.Height * 0.92)
+        }
+        $window.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+    }
+} catch {}
+
+# Lắng nghe sự kiện SizeChanged để tự động thích ứng giao diện thời gian thực khi người dùng kéo giãn hoặc Maximize/Restore
+if ($window) {
+    $window.Add_SizeChanged({
+        Update-VUONGTTResponsiveScaling
+    })
+}
+
 # Áp dụng giao diện Apple macOS Light mặc định ngay khi mở ứng dụng
 Set-ToolkitTheme -Theme "Default"
+Update-VUONGTTResponsiveScaling
 
 # Khởi tạo giao diện trang đầu tiên ngay lập tức mà không chặn WMI
 Switch-Tab -TargetTag "SysInfo" -SkipRefresh
