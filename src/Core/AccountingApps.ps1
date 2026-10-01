@@ -340,7 +340,13 @@ function Install-VUONGTTAccountingApp {
     # Lay link truc tiep tu may chu chinh hang
     if ($OnProgress) { & $OnProgress "  -> Đang kiểm tra liên kết tải gói cài đặt mới nhất..." }
 
-    $destFolder = "$env:TEMP\VUONGTT_AccountingApps"
+    $destFolder = if (Get-Command Get-VUONGTTSafeDownloadDir -ErrorAction SilentlyContinue) {
+        Get-VUONGTTSafeDownloadDir -SubFolder "AccountingApps"
+    } else {
+        $cDir = Join-Path $env:ProgramData "VUONGTT_Toolkit\AccountingApps"
+        if (-not (Test-Path $cDir)) { New-Item -ItemType Directory -Path $cDir -Force | Out-Null }
+        $cDir
+    }
     $ext = if ($app.IsZip) { ".zip" } else { ".exe" }
     $destFile = Join-Path $destFolder "$($app.Id)_setup$ext"
 
@@ -354,6 +360,7 @@ function Install-VUONGTTAccountingApp {
         if (-not $candidateUrl -or $candidateUrl -eq $app.HomeUrl) { continue }
         $dlSuccess = Invoke-VUONGTTDownloadWithLog -Url $candidateUrl -DestPath $destFile -OnProgress $OnProgress -ConnectTimeoutSec 6
         if ($dlSuccess -and (Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) {
+            try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
             break
         }
         $dlSuccess = $false
@@ -368,6 +375,8 @@ function Install-VUONGTTAccountingApp {
         return "[CHÚ Ý] Đã mở trang chủ chính thức ($($app.HomeUrl)) để tải bản mới nhất $($app.Name)!"
     }
 
+    try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
+
     # Giai nen hoac Cai dat
     if ($app.IsZip) {
         $extractDir = Join-Path $destFolder $app.Id
@@ -375,6 +384,11 @@ function Install-VUONGTTAccountingApp {
         if ($OnProgress) { & $OnProgress "  -> Đang giải nén gói cài đặt $($app.Name)..." }
         try {
             Expand-Archive -Path $destFile -DestinationPath $extractDir -Force
+            try {
+                Get-ChildItem -Path $extractDir -Filter "*.exe" -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+                    try { Unblock-File -Path $_.FullName -ErrorAction SilentlyContinue } catch {}
+                }
+            } catch {}
             if ($OnProgress) { & $OnProgress "  -> [OK] Giải nén thành công." }
 
             # Tim setup.exe trong thu muc giai nen

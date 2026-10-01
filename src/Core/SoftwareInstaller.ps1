@@ -1,4 +1,4 @@
-# VUONGTT Toolkit 2026 - Enhanced Software Store & Custom App Module
+﻿# VUONGTT Toolkit 2026 - Enhanced Software Store & Custom App Module
 
 function Invoke-VUONGTTDoEvents {
     try {
@@ -171,10 +171,61 @@ function Get-VUONGTTAppList {
     return $script:VUONGTT_APPS
 }
 
+function Get-VUONGTTSafeDownloadDir {
+    [CmdletBinding()]
+    param([string]$SubFolder = "Downloads")
+
+    $candidates = @(
+        (Join-Path $env:ProgramData "VUONGTT_Toolkit\$SubFolder"),
+        (Join-Path $env:SystemDrive "Tools\$SubFolder"),
+        (Join-Path $env:TEMP "VUONGTT_Apps\$SubFolder")
+    )
+
+    foreach ($cand in $candidates) {
+        try {
+            if (-not (Test-Path $cand)) {
+                New-Item -ItemType Directory -Path $cand -Force -ErrorAction Stop | Out-Null
+            }
+            # Kiem tra quyen ghi thuc te
+            $testFile = Join-Path $cand ".test_write_$(Get-Random).tmp"
+            [System.IO.File]::WriteAllText($testFile, "OK")
+            Remove-Item -Path $testFile -Force -ErrorAction SilentlyContinue
+            return $cand
+        } catch {}
+    }
+    return "$env:ProgramData\VUONGTT_Toolkit\Downloads"
+}
+
 function Test-VUONGTTWinget {
     try {
         $w = Get-Command winget.exe -ErrorAction SilentlyContinue
-        return ($null -ne $w)
+        if (-not $w) { return $false }
+
+        # Kiem tra chinh sach GPO vo hieu hoa Windows Package Manager
+        $gpoKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppInstaller"
+        if (Test-Path $gpoKey) {
+            $val = (Get-ItemProperty -Path $gpoKey -Name "EnableWindowsPackageManager" -ErrorAction SilentlyContinue).EnableWindowsPackageManager
+            if ($val -eq 0) { return $false }
+        }
+
+        # Kiem tra tinh san sang tren may Domain-Joined hoac phien elevated
+        $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+        if ($cs -and $cs.PartOfDomain) {
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = "winget.exe"
+            $psi.Arguments = "--version"
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            $psi.RedirectStandardOutput = $true
+            $proc = [System.Diagnostics.Process]::Start($psi)
+            if ($proc.WaitForExit(3000)) {
+                return ($proc.ExitCode -eq 0)
+            } else {
+                try { $proc.Kill() } catch {}
+                return $false
+            }
+        }
+        return $true
     } catch {
         return $false
     }
@@ -423,8 +474,7 @@ function Install-VUONGTTCustomApp {
     if ($inputClean -like "http*://*") {
         # Direct URL Download & Install
         if ($OnProgress) { & $OnProgress "Đang tải gói cài đặt từ: $inputClean..." }
-        $tempDir = "$env:TEMP\VUONGTT_CustomApp"
-        if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }
+        $tempDir = Get-VUONGTTSafeDownloadDir -SubFolder "CustomApps"
         
         $fileName = [System.IO.Path]::GetFileName($inputClean.Split('?')[0])
         if (-not $fileName) { $fileName = "custom_setup.exe" }
@@ -433,6 +483,7 @@ function Install-VUONGTTCustomApp {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         try {
             Invoke-WebRequest -Uri $inputClean -OutFile $destFile -UseBasicParsing
+            try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
         } catch {
             return "Lỗi khi tải file: $($_.Exception.Message)"
         }
@@ -440,6 +491,13 @@ function Install-VUONGTTCustomApp {
         if ($OnProgress) { & $OnProgress "Đang thực thi tệp cài đặt $fileName (Real-time log)..." }
         try {
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $SilentArgs -OnOutputLine $OnProgress
+            if ($exitCode -ne 0 -and $exitCode -ne 3010) {
+                if ($OnProgress) { & $OnProgress "  -> LiveRunner mã $exitCode. Thử khởi chạy trực tiếp với Start-Process..." }
+                try {
+                    $p = Start-Process -FilePath $destFile -ArgumentList $SilentArgs -Wait -PassThru -ErrorAction Stop
+                    $exitCode = $p.ExitCode
+                } catch {}
+            }
             if ($AutoLaunch) {
                 $baseApp = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
                 Start-VUONGTTInstalledApp -AppId $baseApp -HintName $baseApp -OnLog $OnProgress
@@ -454,15 +512,21 @@ function Install-VUONGTTCustomApp {
         try {
             $arg = "install --id `"$inputClean`" -e --silent --accept-package-agreements --accept-source-agreements --force"
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $arg -OnOutputLine $OnProgress
-            $wingetOkCodes = @(0, -1978335189, -1978335215, -1978335188, 3010, 1641, 2316632065)
+            $wingetOkCodes = @(0, 3010, 1641)
             if ($exitCode -in $wingetOkCodes) {
                 if ($AutoLaunch) {
                     $pkgLeaf = $inputClean.Split('.')[-1]
                     Start-VUONGTTInstalledApp -AppId $pkgLeaf -HintName $pkgLeaf -OnLog $OnProgress
                 }
                 return "[OK] Đã cài đặt thành công ứng dụng '$inputClean' qua Winget (Mã: $exitCode)!"
+            } elseif ($exitCode -eq -1978335215 -or $exitCode -eq 2316632065) {
+                if ($AutoLaunch) {
+                    $pkgLeaf = $inputClean.Split('.')[-1]
+                    Start-VUONGTTInstalledApp -AppId $pkgLeaf -HintName $pkgLeaf -OnLog $OnProgress
+                }
+                return "[OK] Ứng dụng '$inputClean' đã được cài đặt sẵn trên máy!"
             } else {
-                return "Quá trình cài đặt Winget trả về mã: $exitCode"
+                return "Quá trình cài đặt Winget thất bại (Mã trả về: $exitCode)"
             }
         } catch {
             return "Lỗi khi chạy Winget: $($_.Exception.Message)"
@@ -650,7 +714,7 @@ function Install-VUONGTTApp {
     }
 
     $hasWinget = Test-VUONGTTWinget
-    $wingetOkCodes = @(0, -1978335189, -1978335215, -1978335188, 3010, 1641, 2316632065)
+    $wingetOkCodes = @(0, 3010, 1641)
     $directUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) { $app.Url } else { $app.DirectUrl }
 
     # Scriptblock thực thi Tải Trực Tiếp & Cài Đặt
@@ -659,8 +723,7 @@ function Install-VUONGTTApp {
             return $null
         }
 
-        $destFolder = "$env:TEMP\VUONGTT_Apps"
-        if (-not (Test-Path $destFolder)) { New-Item -ItemType Directory -Path $destFolder -Force | Out-Null }
+        $destFolder = Get-VUONGTTSafeDownloadDir -SubFolder "Apps"
 
         $isZip = ($app.IsZip -eq $true -or $directUrl -like "*.zip")
         $ext = if ($isZip) { ".zip" } else { ".exe" }
@@ -675,7 +738,10 @@ function Install-VUONGTTApp {
             $wc = New-Object System.Net.WebClient
             $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
             $wc.DownloadFile($directUrl, $destFile)
-            if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
+            if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) {
+                $dlSuccess = $true
+                try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
+            }
         } catch {
             if ($OnProgress) { & $OnProgress "  -> WebClient tải tệp không hoàn tất, chuyển sang Invoke-WebRequest..." }
         }
@@ -683,7 +749,10 @@ function Install-VUONGTTApp {
         if (-not $dlSuccess) {
             try {
                 Invoke-WebRequest -Uri $directUrl -OutFile $destFile -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" -TimeoutSec 120
-                if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
+                if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) {
+                    $dlSuccess = $true
+                    try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
+                }
             } catch {
                 if ($OnProgress) { & $OnProgress "  -> Lỗi kết nối tải tệp: $($_.Exception.Message)" }
             }
@@ -692,6 +761,8 @@ function Install-VUONGTTApp {
         if (-not (Test-Path $destFile) -or (Get-Item $destFile).Length -le 1024) {
             return $false
         }
+
+        try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
 
         if ($isZip) {
             if ($OnProgress) { & $OnProgress "Đang giải nén $($app.Name)..." }
@@ -715,6 +786,13 @@ function Install-VUONGTTApp {
                     return "Lỗi tải tệp: Không thể giải nén $($app.Name) vào $extractDir!"
                 }
             }
+
+            # Unblock cac file exe da giai nen
+            try {
+                Get-ChildItem -Path $extractDir -Filter "*.exe" -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+                    try { Unblock-File -Path $_.FullName -ErrorAction SilentlyContinue } catch {}
+                }
+            } catch {}
 
             # Tạo lối tắt Desktop cho ứng dụng Portable
             try {
@@ -747,14 +825,39 @@ function Install-VUONGTTApp {
             if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
             
-            # Kiểm tra trạng thái thực tế sau cài đặt
-            if ($exitCode -ne 0 -and $exitCode -ne 3010) {
-                if ($app.Id -eq "zalo" -and (Test-Path "$env:LOCALAPPDATA\Programs\Zalo\Zalo.exe")) {
-                    $exitCode = 0
+            # Kiểm tra xem ứng dụng đã thực sự có mặt trên máy chưa
+            $isAppActuallyInstalled = $false
+            $map = $script:APP_EXEC_MAP[$app.Id.ToLower()]
+            if ($map -and $map.CommonPaths) {
+                foreach ($cp in $map.CommonPaths) {
+                    if ($cp -like "*\*" -and (Test-Path $cp)) {
+                        $isAppActuallyInstalled = $true
+                        break
+                    }
                 }
             }
 
-            if ($exitCode -eq 0 -or $exitCode -eq 3010) {
+            # Nếu LiveRunner gặp hạn chế pipe hoặc access denied trên Domain, thử fallback bằng Start-Process
+            if (-not $isAppActuallyInstalled -and $exitCode -ne 0 -and $exitCode -ne 3010) {
+                if ($OnProgress) { & $OnProgress "  -> LiveRunner mã $exitCode. Thử phương án dự phòng Start-Process..." }
+                try {
+                    $p = Start-Process -FilePath $destFile -ArgumentList $app.Silent -Wait -PassThru -ErrorAction Stop
+                    $exitCode = $p.ExitCode
+                } catch {
+                    if ($OnProgress) { & $OnProgress "  -> Start-Process lỗi: $($_.Exception.Message)" }
+                }
+
+                if ($map -and $map.CommonPaths) {
+                    foreach ($cp in $map.CommonPaths) {
+                        if ($cp -like "*\*" -and (Test-Path $cp)) {
+                            $isAppActuallyInstalled = $true
+                            break
+                        }
+                    }
+                }
+            }
+
+            if ($exitCode -eq 0 -or $exitCode -eq 3010 -or $isAppActuallyInstalled) {
                 if ($AutoLaunch) {
                     [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
                 }
@@ -789,6 +892,23 @@ function Install-VUONGTTApp {
                     [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
                 }
                 return "Đã cài đặt thành công $($app.Name) (phiên bản mới nhất qua Winget)!"
+            } elseif ($exitCode -eq -1978335215 -or $exitCode -eq 2316632065) {
+                # Kiểm tra xem ứng dụng đã thực sự có mặt trên máy chưa
+                $isAppActuallyInstalled = $false
+                $map = $script:APP_EXEC_MAP[$app.Id.ToLower()]
+                if ($map -and $map.CommonPaths) {
+                    foreach ($cp in $map.CommonPaths) {
+                        if ($cp -like "*\*" -and (Test-Path $cp)) { $isAppActuallyInstalled = $true; break }
+                    }
+                }
+                if ($isAppActuallyInstalled) {
+                    if ($AutoLaunch) {
+                        [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+                    }
+                    return "Đã xác nhận $($app.Name) đã được cài đặt trên hệ thống!"
+                }
+                if ($OnProgress) { & $OnProgress "  -> WinGet báo đã cài đặt nhưng không tìm thấy file. Tự động chuyển tải trực tiếp..." }
+                return $false
             } else {
                 if ($OnProgress) { & $OnProgress "  -> Thử cập nhật bản mới nhất qua Winget upgrade..." }
                 $upgArg = "upgrade --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"

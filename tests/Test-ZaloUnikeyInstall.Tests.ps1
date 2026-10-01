@@ -37,7 +37,7 @@ try {
 
 # 2. Test Zalo DirectUrl in SoftwareDatabase.json
 $dbContent = Get-Content -Raw -Encoding UTF8 -Path $dbJsonPath | ConvertFrom-Json
-$dbZalo = $dbContent.Apps | Where-Object { $_.Id -eq "zalo" }
+$dbZalo = $dbContent | Where-Object { $_.Id -eq "zalo" }
 if (-not $dbZalo) {
     throw "TEST FAILED: Zalo app not found in SoftwareDatabase.json!"
 }

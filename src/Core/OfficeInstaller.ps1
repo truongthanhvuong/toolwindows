@@ -102,9 +102,17 @@ $visioXml
 function Get-VUONGTTOfficeDeploymentTool {
     [CmdletBinding()]
     param(
-        [string]$DestinationDir = "$env:TEMP\VUONGTT_ODT",
+        [string]$DestinationDir = "",
         [scriptblock]$OnProgress = $null
     )
+
+    if ([string]::IsNullOrWhiteSpace($DestinationDir)) {
+        $DestinationDir = if (Get-Command Get-VUONGTTSafeDownloadDir -ErrorAction SilentlyContinue) {
+            Get-VUONGTTSafeDownloadDir -SubFolder "ODT"
+        } else {
+            "$env:ProgramData\VUONGTT_Toolkit\ODT"
+        }
+    }
 
     if (-not (Test-Path $DestinationDir)) {
         New-Item -ItemType Directory -Path $DestinationDir -Force | Out-Null
@@ -114,6 +122,7 @@ function Get-VUONGTTOfficeDeploymentTool {
     if (Test-Path $setupExe) {
         $size = (Get-Item $setupExe).Length
         if ($size -gt 500000) {
+            try { Unblock-File -Path $setupExe -ErrorAction SilentlyContinue } catch {}
             return $setupExe
         }
     }
@@ -241,7 +250,11 @@ function Start-VUONGTTOfficeInstall {
         [scriptblock]$OnProgress = $null
     )
 
-    $workDir = "$env:TEMP\VUONGTT_ODT"
+    $workDir = if (Get-Command Get-VUONGTTSafeDownloadDir -ErrorAction SilentlyContinue) {
+        Get-VUONGTTSafeDownloadDir -SubFolder "ODT"
+    } else {
+        "$env:ProgramData\VUONGTT_Toolkit\ODT"
+    }
     $setupExe = Get-VUONGTTOfficeDeploymentTool -DestinationDir $workDir -OnProgress $OnProgress
 
     if (Test-Path $setupExe) {
@@ -259,7 +272,11 @@ function Start-VUONGTTOfficeInstall {
 function Uninstall-VUONGTTOffice {
     param([scriptblock]$OnProgress = $null)
 
-    $workDir = "$env:TEMP\VUONGTT_ODT"
+    $workDir = if (Get-Command Get-VUONGTTSafeDownloadDir -ErrorAction SilentlyContinue) {
+        Get-VUONGTTSafeDownloadDir -SubFolder "ODT"
+    } else {
+        "$env:ProgramData\VUONGTT_Toolkit\ODT"
+    }
     $setupExe = Get-VUONGTTOfficeDeploymentTool -DestinationDir $workDir -OnProgress $OnProgress
     
     $removeXml = "$env:TEMP\VUONGTT_Office_Remove.xml"
