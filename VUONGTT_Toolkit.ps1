@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.83
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.84
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.83"
+$Script:AppVersion = "v20.5.909.84"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -122,6 +122,7 @@ if ($script:isLiveMode) {
 
 # Import Core Modules
 $corePath = Join-Path $ScriptDir "src\Core"
+. (Join-Path $corePath "AdminSecurityManager.ps1")
 . (Join-Path $corePath "HardwareInfo.ps1")
 . (Join-Path $corePath "OfficeInstaller.ps1")
 . (Join-Path $corePath "Activator.ps1")
@@ -1853,8 +1854,8 @@ if ($btnDriverOEMSupport) {
 
 if ($btnDriverOpenDevMgmt) {
     $btnDriverOpenDevMgmt.Add_Click({
-        Start-Process "devmgmt.msc"
-        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Đã mở Device Manager" }
+        Start-VUONGTTAdminProcess -FilePath "$env:WINDIR\System32\mmc.exe" -ArgumentList "$env:WINDIR\System32\devmgmt.msc"
+        if ($lblDriverDoctorStatus) { $lblDriverDoctorStatus.Text = "• Đã mở Device Manager (Administrator)" }
     })
 }
 
@@ -2893,8 +2894,8 @@ if ($btnTestTargetConnection) {
 
 if ($btnOpenCredMgr) {
     $btnOpenCredMgr.Add_Click({
-        Start-Process "control.exe" -ArgumentList "keymgr.dll"
-        Add-PrinterLogMessage "• [OK] Đã mở Credential Manager của Windows."
+        Start-VUONGTTAdminProcess -FilePath "$env:WINDIR\System32\control.exe" -ArgumentList "keymgr.dll"
+        Add-PrinterLogMessage "• [OK] Đã mở Credential Manager của Windows (Administrator)."
     })
 }
 
@@ -2991,8 +2992,8 @@ if ($btnToggleUserAdminRole) {
 
 if ($btnOpenLusrmgr) {
     $btnOpenLusrmgr.Add_Click({
-        Start-Process "lusrmgr.msc"
-        Add-PrinterLogMessage "• [OK] Đã mở Local Users and Groups (lusrmgr.msc)."
+        Start-VUONGTTAdminProcess -FilePath "$env:WINDIR\System32\mmc.exe" -ArgumentList "$env:WINDIR\System32\lusrmgr.msc"
+        Add-PrinterLogMessage "• [OK] Đã mở Local Users and Groups (lusrmgr.msc - Administrator)."
     })
 }
 
@@ -4203,9 +4204,9 @@ if ($btnOpenAppRegistry) {
             }
             $cleanReg = $regPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', '' -replace '^HKLM:', 'HKEY_LOCAL_MACHINE' -replace '^HKCU:', 'HKEY_CURRENT_USER'
             Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit" -Name "LastKey" -Value $cleanReg -ErrorAction SilentlyContinue
-            Start-Process "regedit.exe"
+            Start-VUONGTTAdminProcess -FilePath "$env:WINDIR\System32\regedit.exe"
         } catch {
-            Start-Process "regedit.exe"
+            Start-VUONGTTAdminProcess -FilePath "$env:WINDIR\System32\regedit.exe"
         }
     })
 }
@@ -9624,7 +9625,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.83" }
+                if (-not $currentVer) { $currentVer = "20.5.909.84" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

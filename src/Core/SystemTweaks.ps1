@@ -26,6 +26,11 @@ public class MemoryCleaner {
 }
 "@ -ErrorAction SilentlyContinue
 
+$adminSecCandidate = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "AdminSecurityManager.ps1"
+if (-not (Get-Command "Set-VUONGTTAdminRegistry" -ErrorAction SilentlyContinue) -and (Test-Path $adminSecCandidate)) {
+    . $adminSecCandidate
+}
+
 function Invoke-VUONGTTDoEvents {
     try {
         if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher) {
@@ -41,28 +46,48 @@ function Invoke-VUONGTTDoEvents {
 
 function Set-VUONGTTClassicContextMenu {
     param([bool]$Enable = $true)
-    $keyPath = "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"
+    $subKey = "Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"
     if ($Enable) {
-        if (-not (Test-Path $keyPath)) { New-Item -Path $keyPath -Force | Out-Null }
-        Set-ItemProperty -Path $keyPath -Name "(Default)" -Value "" -Force
+        if (Get-Command "Set-VUONGTTAdminRegistry" -ErrorAction SilentlyContinue) {
+            Set-VUONGTTAdminRegistry -SubKey $subKey -Name "(Default)" -Value "" -Type "String" -TargetScopes @("HKLM", "ActiveUsers")
+        } else {
+            $keyPath = "HKCU:\$subKey"
+            if (-not (Test-Path $keyPath)) { New-Item -Path $keyPath -Force | Out-Null }
+            Set-ItemProperty -Path $keyPath -Name "(Default)" -Value "" -Force
+        }
         Stop-Process -Name explorer -Force
         return "Đã bật Menu chuột phải cổ điển (Windows 10 style). Đã khởi động lại Explorer!"
     } else {
-        if (Test-Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}") {
-            Remove-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Recurse -Force
-            Stop-Process -Name explorer -Force
+        if (Test-Path "HKCU:\$subKey") {
+            Remove-Item -Path "HKCU:\$subKey" -Recurse -Force -ErrorAction SilentlyContinue
         }
+        if (Test-Path "HKLM:\$subKey") {
+            Remove-Item -Path "HKLM:\$subKey" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        if (Get-Command "Get-VUONGTTActiveUserSIDs" -ErrorAction SilentlyContinue) {
+            foreach ($sid in (Get-VUONGTTActiveUserSIDs)) {
+                $userP = "Registry::HKEY_USERS\$sid\$subKey"
+                if (Test-Path $userP) { Remove-Item -Path $userP -Recurse -Force -ErrorAction SilentlyContinue }
+            }
+        }
+        Stop-Process -Name explorer -Force
         return "Đã khôi phục Menu chuột phải mặc định Windows 11. Đã khởi động lại Explorer!"
     }
 }
 Set-Alias -Name Set-ClassicContextMenu -Value Set-VUONGTTClassicContextMenu -ErrorAction SilentlyContinue
 
 function Set-VUONGTTShowFileExtensions {
-    $adv = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-    Set-ItemProperty -Path $adv -Name "HideFileExt" -Value 0 -Force
-    Set-ItemProperty -Path $adv -Name "Hidden" -Value 1 -Force
+    $advKey = "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+    if (Get-Command "Set-VUONGTTAdminRegistry" -ErrorAction SilentlyContinue) {
+        Set-VUONGTTAdminRegistry -SubKey $advKey -Name "HideFileExt" -Value 0 -Type "DWord"
+        Set-VUONGTTAdminRegistry -SubKey $advKey -Name "Hidden" -Value 1 -Type "DWord"
+    } else {
+        $adv = "HKCU:\$advKey"
+        Set-ItemProperty -Path $adv -Name "HideFileExt" -Value 0 -Force
+        Set-ItemProperty -Path $adv -Name "Hidden" -Value 1 -Force
+    }
     Stop-Process -Name explorer -Force
-    return "Đã hiển thị phần mở rộng tệp tin (.exe, .txt...) và file ẩn!"
+    return "Đã hiển thị phần mở rộng tệp tin (.exe, .txt...) và file ẩn cho tất cả người dùng!"
 }
 
 function Disable-VUONGTTTelemetry {

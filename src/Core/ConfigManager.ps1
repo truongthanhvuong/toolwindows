@@ -123,25 +123,39 @@ function Invoke-VUONGTTSyncNtpServer {
 function Open-VUONGTTLegacyPanel {
     param([string]$PanelId)
     try {
-        switch ($PanelId) {
-            "compmgmt"   { Start-Process "compmgmt.msc" }
-            "control"    { Start-Process "control.exe" }
-            "main"       { Start-Process "control.exe" -ArgumentList "main.cpl" }
-            "ncpa"       { Start-Process "control.exe" -ArgumentList "ncpa.cpl" }
-            "power"      { Start-Process "control.exe" -ArgumentList "powercfg.cpl" }
-            "printers"   { Start-Process "control.exe" -ArgumentList "printers" }
-            "appwiz"     { Start-Process "control.exe" -ArgumentList "appwiz.cpl" }
-            "region"     { Start-Process "control.exe" -ArgumentList "intl.cpl" }
-            "security"   { Start-Process "control.exe" -ArgumentList "wscui.cpl" }
-            "sound"      { Start-Process "control.exe" -ArgumentList "mmsys.cpl" }
-            "sysdm"      { Start-Process "control.exe" -ArgumentList "sysdm.cpl" }
-            "timedate"   { Start-Process "control.exe" -ArgumentList "timedate.cpl" }
-            "firewall"   { Start-Process "control.exe" -ArgumentList "firewall.cpl" }
-            "restore"    { Start-Process "rstrui.exe" }
-            "autologon"  { Start-Process "control.exe" -ArgumentList "userpasswords2" }
-            default      { Start-Process "control.exe" }
+        $sys32 = "$env:WINDIR\System32"
+        $ctrlExe = Join-Path $sys32 "control.exe"
+        $mmcExe = Join-Path $sys32 "mmc.exe"
+        $rstruiExe = Join-Path $sys32 "rstrui.exe"
+
+        $launch = {
+            param($file, $args)
+            if (Get-Command "Start-VUONGTTAdminProcess" -ErrorAction SilentlyContinue) {
+                Start-VUONGTTAdminProcess -FilePath $file -ArgumentList $args
+            } else {
+                Start-Process -FilePath $file -ArgumentList $args -Verb RunAs
+            }
         }
-        return "[OK] Đã mở bảng điều khiển $PanelId."
+
+        switch ($PanelId) {
+            "compmgmt"   { & $launch $mmcExe (Join-Path $sys32 "compmgmt.msc") }
+            "control"    { & $launch $ctrlExe "" }
+            "main"       { & $launch $ctrlExe (Join-Path $sys32 "main.cpl") }
+            "ncpa"       { & $launch $ctrlExe (Join-Path $sys32 "ncpa.cpl") }
+            "power"      { & $launch $ctrlExe (Join-Path $sys32 "powercfg.cpl") }
+            "printers"   { & $launch $ctrlExe "printers" }
+            "appwiz"     { & $launch $ctrlExe (Join-Path $sys32 "appwiz.cpl") }
+            "region"     { & $launch $ctrlExe (Join-Path $sys32 "intl.cpl") }
+            "security"   { & $launch $ctrlExe (Join-Path $sys32 "wscui.cpl") }
+            "sound"      { & $launch $ctrlExe (Join-Path $sys32 "mmsys.cpl") }
+            "sysdm"      { & $launch $ctrlExe (Join-Path $sys32 "sysdm.cpl") }
+            "timedate"   { & $launch $ctrlExe (Join-Path $sys32 "timedate.cpl") }
+            "firewall"   { & $launch $ctrlExe (Join-Path $sys32 "firewall.cpl") }
+            "restore"    { & $launch $rstruiExe "" }
+            "autologon"  { & $launch $ctrlExe "userpasswords2" }
+            default      { & $launch $ctrlExe "" }
+        }
+        return "[OK] Đã mở bảng điều khiển $PanelId với đặc quyền Administrator."
     } catch {
         return "[LỖI] Không thể mở bảng điều khiển $PanelId : $($_.Exception.Message)"
     }

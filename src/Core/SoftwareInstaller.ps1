@@ -785,11 +785,20 @@ function Install-VUONGTTCustomApp {
 
         if ($OnProgress) { & $OnProgress "Đang thực thi tệp cài đặt $fileName (Real-time log)..." }
         try {
-            $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $SilentArgs -OnOutputLine $OnProgress
+            $runExe = $destFile
+            $runArgs = $SilentArgs
+            if ($destFile -like "*.msi") {
+                $runExe = "$env:WINDIR\System32\msiexec.exe"
+                $runArgs = "/i `"$destFile`" /qn /norestart ALLUSERS=1 $runArgs"
+            } elseif ($runArgs -match '/VERYSILENT|/SILENT' -and $runArgs -notmatch '/ALLUSERS|/CURRENTUSER') {
+                $runArgs = "$runArgs /ALLUSERS"
+            }
+
+            $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $runExe -ArgumentList $runArgs -OnOutputLine $OnProgress
             if ($exitCode -ne 0 -and $exitCode -ne 3010) {
                 if ($OnProgress) { & $OnProgress "  -> LiveRunner mã $exitCode. Thử khởi chạy trực tiếp với Start-Process..." }
                 try {
-                    $p = Start-Process -FilePath $destFile -ArgumentList $SilentArgs -Wait -PassThru -ErrorAction Stop
+                    $p = Start-Process -FilePath $runExe -ArgumentList $runArgs -Wait -PassThru -ErrorAction Stop
                     $exitCode = $p.ExitCode
                 } catch {}
             }
@@ -802,10 +811,10 @@ function Install-VUONGTTCustomApp {
             return "Lỗi khi khởi chạy: $($_.Exception.Message)"
         }
     } else {
-        # Winget ID
+        # Winget ID (ép --scope machine để cài đặt hệ thống toàn máy cho mọi User)
         if ($OnProgress) { & $OnProgress "Đang cài đặt gói Winget '$inputClean' với luồng log chi tiết..." }
         try {
-            $arg = "install --id `"$inputClean`" -e --silent --accept-package-agreements --accept-source-agreements --force"
+            $arg = "install --id `"$inputClean`" --scope machine -e --silent --accept-package-agreements --accept-source-agreements --force"
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $arg -OnOutputLine $OnProgress
             $wingetOkCodes = @(0, 3010, 1641)
             if ($exitCode -in $wingetOkCodes) {
@@ -1120,7 +1129,15 @@ function Install-VUONGTTApp {
                 }
             } else {
                 if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
-                $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
+                $runExe = $destFile
+                $runArgs = $app.Silent
+                if ($destFile -like "*.msi") {
+                    $runExe = "$env:WINDIR\System32\msiexec.exe"
+                    $runArgs = "/i `"$destFile`" /qn /norestart ALLUSERS=1 $runArgs"
+                } elseif ($runArgs -match '/VERYSILENT|/SILENT' -and $runArgs -notmatch '/ALLUSERS|/CURRENTUSER') {
+                    $runArgs = "$runArgs /ALLUSERS"
+                }
+                $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $runExe -ArgumentList $runArgs -OnOutputLine $OnProgress
             }
             
             # Chờ thêm tối đa 15 giây cho Zalo giải nén hoàn tất tệp app.asar lớn (~170MB)
@@ -1139,7 +1156,9 @@ function Install-VUONGTTApp {
             if (-not $isAppActuallyInstalled -and $exitCode -ne 0 -and $exitCode -ne 3010) {
                 if ($OnProgress) { & $OnProgress "  -> LiveRunner mã $exitCode. Thử phương án dự phòng Start-Process..." }
                 try {
-                    $p = Start-Process -FilePath $destFile -ArgumentList $app.Silent -Wait -PassThru -ErrorAction Stop
+                    $fallbackExe = if ($runExe) { $runExe } else { $destFile }
+                    $fallbackArgs = if ($runArgs) { $runArgs } else { $app.Silent }
+                    $p = Start-Process -FilePath $fallbackExe -ArgumentList $fallbackArgs -Wait -PassThru -ErrorAction Stop
                     $exitCode = $p.ExitCode
                 } catch {
                     if ($OnProgress) { & $OnProgress "  -> Start-Process lỗi: $($_.Exception.Message)" }
@@ -1202,7 +1221,7 @@ function Install-VUONGTTApp {
 
         if ($OnProgress) { & $OnProgress "Đang cài đặt $($app.Name) qua Winget (Phiên bản mới nhất)..." }
         try {
-            $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --force"
+            $arg = "install --id `"$($app.WingetId)`" --scope machine -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --force"
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $arg -OnOutputLine $OnProgress
             
             $isAppActuallyInstalled = Test-VUONGTTAppActuallyInstalled -AppId $app.Id
@@ -1227,7 +1246,7 @@ function Install-VUONGTTApp {
                 }
             } else {
                 if ($OnProgress) { & $OnProgress "  -> Thử cập nhật bản mới nhất qua Winget upgrade..." }
-                $upgArg = "upgrade --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
+                $upgArg = "upgrade --id `"$($app.WingetId)`" --scope machine -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
                 $upgExitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath "winget.exe" -ArgumentList $upgArg -OnOutputLine $OnProgress
                 if ($upgExitCode -in $wingetOkCodes) {
                     $isAppActuallyInstalled = Test-VUONGTTAppActuallyInstalled -AppId $app.Id
