@@ -16,7 +16,7 @@
         "Category": "Communications",
         "WingetId": "VNGCorp.Zalo",
         "Link": "https://zalo.me/pc",
-        "DirectUrl": "https://res-zaloapp-aka-jpt.zdn.vn/win/ZaloSetup.exe",
+        "DirectUrl": "https://res-zaloapp-aka-jpt.zdn.vn/win/ZaloSetup-26.9.10.exe",
         "Silent": "/S",
         "IsZip": false,
         "Icon": "src\\Assets\\AppIcons\\zalo.png"

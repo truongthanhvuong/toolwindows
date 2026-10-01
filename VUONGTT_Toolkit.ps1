@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.76
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.77
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.76"
+$Script:AppVersion = "v20.5.909.77"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -501,6 +501,65 @@ $script:currentTab = "SysInfo"
 
 $script:loadedTabs = @{}
 
+# Unified Gatekeeper Access Control Function (FREE vs PRO vs ADMIN)
+function Test-VUONGTTGatekeeperAccess {
+    param(
+        [string]$FeatureId,
+        [string]$TargetNextTab = ""
+    )
+    if (-not $FeatureId -or $FeatureId -eq "AdminPortal") { return $true }
+    if ($global:isAdminAuthenticated) { return $true }
+
+    # Chuyen doi dinh danh sub-tab hoac alias ve canonical feature id
+    $canonicalId = switch ($FeatureId) {
+        "OfficeAIO"           { "Office" }
+        "IpScanner"           { "NetworkLAN" }
+        "SysFix_Cleaner"      { "Cleaner" }
+        "SysFix_Config"       { "Config" }
+        "SysFix_Troubleshoot" { "Troubleshoot" }
+        "Soft_Store"          { "Software" }
+        "Soft_Custom"         { "CustomApp" }
+        "Soft_Uninstall"      { "Uninstaller" }
+        "Soft_Fonts"          { "Fonts" }
+        "Hw_Disk"             { "DiskHealth" }
+        "Hw_Partition"        { "Partition" }
+        "Hw_Laptop"           { "LaptopCheck" }
+        "SysInfo_View"        { "SysInfo" }
+        "SysInfo_Customize"   { "Customize" }
+        "SysInfo_CpuMain"     { "CpuMain" }
+        "SysInfo_Users"       { "Users" }
+        "Tech_Activation"     { "Activation" }
+        "Tech_BitLocker"      { "BitLocker" }
+        "Tech_Backup"         { "BackupDriver" }
+        "Tech_AutoWin"        { "AutoWin" }
+        default               { $FeatureId }
+    }
+
+    $policies = Get-VUONGTTFeaturePolicies
+    $policy = $policies | Where-Object { $_.Id -eq $canonicalId -or $_.Id -eq $FeatureId }
+    if (-not $policy) { return $true }
+
+    $nextTab = if ($TargetNextTab) { $TargetNextTab } else { $FeatureId }
+
+    if ($policy.Tier -eq "ADMIN") {
+        $featureName = if ($pageTitlesVI.ContainsKey($FeatureId)) { $pageTitlesVI[$FeatureId].Title } elseif ($policy.Name) { $policy.Name } else { $FeatureId }
+        Show-VUONGTTAdminLoginModal -TargetNextTab $nextTab
+        if ($lblAdminLoginNotice) {
+            $lblAdminLoginNotice.Text = "Chức năng '$featureName' chỉ dành riêng cho Quản Trị Viên (Admin)! Vui lòng nhập mật khẩu Quản Trị Viên để tiếp tục."
+        }
+        return $false
+    }
+    elseif ($policy.Tier -eq "PRO") {
+        $isPro = (Test-VUONGTTProLicense).IsPro
+        if (-not $isPro) {
+            $featureName = if ($pageTitlesVI.ContainsKey($FeatureId)) { $pageTitlesVI[$FeatureId].Title } elseif ($policy.Name) { $policy.Name } else { $FeatureId }
+            Show-VUONGTTLicenseActivationModal -PromptNotice "Chức năng '$featureName' thuộc phiên bản PRO! Vui lòng nhập License Key để kích hoạt." -TargetNextTab $nextTab
+            return $false
+        }
+    }
+    return $true
+}
+
 # Switch Tab Function
 function Switch-Tab {
     param([string]$TargetTag, [switch]$SkipRefresh = $false)
@@ -527,27 +586,8 @@ function Switch-Tab {
     # GATEKEEPER 2: FEATURE ACCESS CONTROL (FREE vs PRO vs ADMIN)
     # -------------------------------------------------------------
     if ($TargetTag -ne "AdminPortal") {
-        # NẾU ADMIN ĐANG ĐĂNG NHẬP ($global:isAdminAuthenticated = $true):
-        # MẶC ĐỊNH SỞ HỮU TOÀN BỘ QUYỀN VIP, DÙNG MỌI TÍNH NĂNG KHÔNG CẦN KEY VIP!
-        if (-not $global:isAdminAuthenticated) {
-            $policies = Get-VUONGTTFeaturePolicies
-            $policy = $policies | Where-Object { $_.Id -eq $TargetTag }
-            if ($policy -and $policy.Tier -eq "ADMIN") {
-                $featureName = if ($pageTitlesVI.ContainsKey($TargetTag)) { $pageTitlesVI[$TargetTag].Title } else { $TargetTag }
-                Show-VUONGTTAdminLoginModal -TargetNextTab $TargetTag
-                if ($lblAdminLoginNotice) {
-                    $lblAdminLoginNotice.Text = "Chức năng '$featureName' chỉ dành riêng cho Quản Trị Viên (Admin)! Vui lòng nhập mật khẩu Quản Trị Viên để tiếp tục."
-                }
-                return
-            }
-            elseif ($policy -and $policy.Tier -eq "PRO") {
-                $isPro = (Test-VUONGTTProLicense).IsPro
-                if (-not $isPro) {
-                    $featureName = if ($pageTitlesVI.ContainsKey($TargetTag)) { $pageTitlesVI[$TargetTag].Title } else { $TargetTag }
-                    Show-VUONGTTLicenseActivationModal -PromptNotice "Chức năng '$featureName' thuộc phiên bản PRO! Vui lòng nhập License Key để kích hoạt." -TargetNextTab $TargetTag
-                    return
-                }
-            }
+        if (-not (Test-VUONGTTGatekeeperAccess -FeatureId $TargetTag)) {
+            return
         }
     }
 
@@ -759,6 +799,7 @@ function Set-CapsuleSubTabStyle {
 # --- 1. SysInfo Sub-tabs ---
 function Switch-SysInfoSubTab {
     param([string]$targetTab, [switch]$SkipRefresh = $false)
+    if (-not (Test-VUONGTTGatekeeperAccess -FeatureId $targetTab)) { return }
     $tabs = @($subTabSysInfo_View, $subTabSysInfo_Customize, $subTabSysInfo_CpuMain, $subTabSysInfo_Users)
     $panels = @($pageSysInfo, $pageCustomize, $pageCpuMain, $pageUsers)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -792,6 +833,7 @@ function Switch-SysInfoSubTab {
 # --- 2. SystemFix Sub-tabs ---
 function Switch-SystemFixSubTab {
     param([string]$targetTab, [switch]$SkipRefresh = $false)
+    if (-not (Test-VUONGTTGatekeeperAccess -FeatureId $targetTab)) { return }
     $tabs = @($subTabSysFix_Cleaner, $subTabSysFix_Config, $subTabSysFix_Troubleshoot)
     $panels = @($pageCleaner, $pageConfig, $pnlSubSysFix_Troubleshoot)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -823,6 +865,7 @@ function Switch-SystemFixSubTab {
 # --- 3. SoftwareHub Sub-tabs ---
 function Switch-SoftwareHubSubTab {
     param([string]$targetTab, [switch]$SkipRefresh = $false)
+    if (-not (Test-VUONGTTGatekeeperAccess -FeatureId $targetTab)) { return }
     $tabs = @($subTabSoft_Store, $subTabSoft_Custom, $subTabSoft_Uninstall, $subTabSoft_Fonts)
     $panels = @($pageSoftware, $pageCustomApp, $pageUninstaller, $pageFonts)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -853,6 +896,7 @@ function Switch-SoftwareHubSubTab {
 # --- 4. HardwareDisk Sub-tabs ---
 function Switch-HardwareDiskSubTab {
     param([string]$targetTab, [switch]$SkipRefresh = $false)
+    if (-not (Test-VUONGTTGatekeeperAccess -FeatureId $targetTab)) { return }
     $tabs = @($subTabHw_Disk, $subTabHw_Partition, $subTabHw_Laptop)
     $panels = @($pageBenchmark, $pagePartition, $pageLaptopCheck)
     foreach ($p in $panels) { if ($p) { $p.Visibility = [System.Windows.Visibility]::Collapsed } }
@@ -880,27 +924,7 @@ function Switch-HardwareDiskSubTab {
 function Switch-TechUtilitiesSubTab {
     param([string]$targetTab = "Tech_Backup", [switch]$SkipRefresh = $false)
     if (-not $targetTab) { $targetTab = "Tech_Backup" }
-
-    if ($targetTab -eq "Tech_Activation") {
-        if (-not $global:isAdminAuthenticated) {
-            $policies = Get-VUONGTTFeaturePolicies
-            $policy = $policies | Where-Object { $_.Id -eq "Activation" }
-            if ($policy -and $policy.Tier -eq "ADMIN") {
-                Show-VUONGTTAdminLoginModal -TargetNextTab "Activation"
-                if ($lblAdminLoginNotice) {
-                    $lblAdminLoginNotice.Text = "Chức năng 'Kích Hoạt Bản Quyền Số' chỉ dành riêng cho Quản Trị Viên (Admin)! Vui lòng nhập mật khẩu Quản Trị Viên để tiếp tục."
-                }
-                return
-            }
-            elseif ($policy -and $policy.Tier -eq "PRO") {
-                $isPro = (Test-VUONGTTProLicense).IsPro
-                if (-not $isPro) {
-                    Show-VUONGTTLicenseActivationModal -PromptNotice "Chức năng 'Kích Hoạt Bản Quyền Số' thuộc phiên bản PRO! Vui lòng nhập License Key để kích hoạt." -TargetNextTab "Activation"
-                    return
-                }
-            }
-        }
-    }
+    if (-not (Test-VUONGTTGatekeeperAccess -FeatureId $targetTab)) { return }
 
     $tabs = @($subTabTech_Activation, $subTabTech_BitLocker, $subTabTech_Backup, $subTabTech_AutoWin)
     $panels = @($pageActivation, $pageBitLocker, $pageBackupDriver, $pageAutoWin)
@@ -962,18 +986,21 @@ if ($subTabTech_AutoWin)    { $subTabTech_AutoWin.Add_Click({ Switch-TechUtiliti
 # Wire Sidebar Quick Action Buttons
 if ($btnQuickClean) {
     $btnQuickClean.Add_Click({
+        if (-not (Test-VUONGTTGatekeeperAccess -FeatureId "Cleaner")) { return }
         Switch-Tab -TargetTag "SystemFix"
         Switch-SystemFixSubTab "SysFix_Cleaner"
     })
 }
 if ($btnQuickTroubleshoot) {
     $btnQuickTroubleshoot.Add_Click({
+        if (-not (Test-VUONGTTGatekeeperAccess -FeatureId "Troubleshoot")) { return }
         Switch-Tab -TargetTag "SystemFix"
         Switch-SystemFixSubTab "SysFix_Troubleshoot"
     })
 }
 if ($btnQuickFixPrinter) {
     $btnQuickFixPrinter.Add_Click({
+        if (-not (Test-VUONGTTGatekeeperAccess -FeatureId "PrinterLAN")) { return }
         Switch-Tab -TargetTag "PrinterLAN"
     })
 }
@@ -9597,7 +9624,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.76" }
+                if (-not $currentVer) { $currentVer = "20.5.909.77" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

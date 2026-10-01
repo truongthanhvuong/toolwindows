@@ -244,23 +244,28 @@ function Get-VUONGTTDefaultFeatures {
     return @(
         [PSCustomObject]@{ Id = "SysInfo";      Name = "Xem Cấu Hình Máy Tính";          Icon = "💻"; Tier = "FREE"; Description = "Xem thông số CPU, RAM, GPU, Mainboard, ổ cứng thời gian thực" },
         [PSCustomObject]@{ Id = "Customize";    Name = "Tùy Chỉnh Thông Tin Máy";        Icon = "🖥️"; Tier = "FREE"; Description = "Đổi tên máy tính, Workgroup, chủ sở hữu OEM" },
-        [PSCustomObject]@{ Id = "Users";        Name = "Quản Lý User & PC";              Icon = "👤"; Tier = "FREE"; Description = "Quản trị người dùng Windows, reset mật khẩu, kích hoạt Administrator" },
-        [PSCustomObject]@{ Id = "Benchmark";    Name = "Tốc Độ Ổ Đĩa (Benchmark)";       Icon = "⚡"; Tier = "PRO";  Description = "Đo tốc độ đọc/ghi tuần tự và ngẫu nhiên SSD/HDD chuyên sâu" },
-        [PSCustomObject]@{ Id = "LaptopCheck";  Name = "Kiểm Tra Laptop & Ngoại Vi";     Icon = "🔬"; Tier = "FREE"; Description = "Test bàn phím offline, pin chai, loa đa tần, dead pixel, mic, webcam" },
         [PSCustomObject]@{ Id = "CpuMain";      Name = "Tra Cứu CPU + Main";             Icon = "💡"; Tier = "FREE"; Description = "Tra cứu độ tương thích socket, chipset mainboard và CPU" },
-        [PSCustomObject]@{ Id = "Office";       Name = "Cài Đặt Office (Tự Động)";       Icon = "📑"; Tier = "FREE"; Description = "Cài đặt Office 2016-2024 / 365 tự động trọn gói" },
-        [PSCustomObject]@{ Id = "Software";     Name = "Tải Ứng Dụng Thiết Yếu";         Icon = "📥"; Tier = "FREE"; Description = "Kho phần mềm văn phòng, đồ họa, tiện ích cần thiết" },
-        [PSCustomObject]@{ Id = "CustomApp";    Name = "Phần Mềm Kế Toán & Khác";        Icon = "📊"; Tier = "FREE"; Description = "Cài đặt MISA, HTKK, iTaxViewer và ứng dụng doanh nghiệp" },
-        [PSCustomObject]@{ Id = "Uninstaller";  Name = "Gỡ Phần Mềm & Dọn Sạch Sâu";    Icon = "🗑️"; Tier = "PRO";  Description = "Gỡ cài đặt hàng loạt và dọn sạch sâu tận gốc Registry/AppData" },
-        [PSCustomObject]@{ Id = "Fonts";        Name = "Kho Font Tiếng Việt & AutoCAD";  Icon = "🔤"; Tier = "FREE"; Description = "Cài đặt trọn bộ Font VNI, TCVN3, Unicode và Font AutoCAD .shx" },
+        [PSCustomObject]@{ Id = "Users";        Name = "Quản Lý User & PC";              Icon = "👤"; Tier = "FREE"; Description = "Quản trị người dùng Windows, reset mật khẩu, kích hoạt Administrator" },
         [PSCustomObject]@{ Id = "Cleaner";      Name = "Dọn Rác & Tăng Tốc Win";         Icon = "🧹"; Tier = "FREE"; Description = "Xóa cache tạm, dọn dẹp hệ điều hành và tối ưu hóa" },
-        [PSCustomObject]@{ Id = "Tweaks";       Name = "Tinh Chỉnh Hệ Thống";            Icon = "⚙️"; Tier = "PRO";  Description = "Tối ưu hóa Windows sâu, tắt telemetry, tăng tốc đồ họa & game" },
-        [PSCustomObject]@{ Id = "PrinterLAN";   Name = "Sửa Lỗi Máy In & Mạng LAN";      Icon = "🖨️"; Tier = "PRO";  Description = "Khắc phục lỗi chia sẻ máy in 0x0000011b, 0x00000709 và thông mạng LAN" },
-        [PSCustomObject]@{ Id = "BackupDriver"; Name = "Quản Lý & Cập Nhật Driver";     Icon = "💾"; Tier = "FREE"; Description = "Quản lý Device Manager, kiểm tra driver thiếu hoặc lỗi, sao lưu và cập nhật driver" },
-        [PSCustomObject]@{ Id = "Activation";   Name = "Kích Hoạt Bản Quyền Số";         Icon = "🔑"; Tier = "PRO";  Description = "Kích hoạt bản quyền kỹ thuật số vĩnh viễn cho Windows & Office" },
-        [PSCustomObject]@{ Id = "BitLocker";    Name = "Tắt BitLocker & EFS";            Icon = "🔒"; Tier = "PRO";  Description = "Mở khóa và giải mã phân vùng ổ đĩa an toàn" },
-        [PSCustomObject]@{ Id = "AutoWin";      Name = "Cài Win & Bypass TPM 2.0";       Icon = "🚀"; Tier = "PRO";  Description = "Cài đặt Windows tự động, vượt rào TPM 2.0 / SecureBoot / RAM" },
-        [PSCustomObject]@{ Id = "Partition";    Name = "Quản Lý Phân Vùng (Partition)";  Icon = "💽"; Tier = "PRO";  Description = "Sơ đồ đĩa live, TRIM SSD, chuyển MBR sang GPT không mất dữ liệu" }
+        [PSCustomObject]@{ Id = "Tweaks";       Name = "Tinh Chỉnh Hệ Thống";            Icon = "⚙️"; Tier = "FREE"; Description = "Tối ưu hóa Windows sâu, tắt telemetry, tăng tốc đồ họa & game" },
+        [PSCustomObject]@{ Id = "Config";       Name = "Cấu Hình & Sửa Lỗi Hệ Thống";    Icon = "🛠️"; Tier = "FREE"; Description = "25 công cụ sửa lỗi Windows, 9 tính năng hệ thống, 14 bảng điều khiển cổ điển" },
+        [PSCustomObject]@{ Id = "Troubleshoot"; Name = "Cứu Hộ IT Helpdesk Windows";     Icon = "🩺"; Tier = "FREE"; Description = "Trung tâm cứu hộ hơn 500 sự cố, đo lường Telemetry thực tế & tự động sửa lỗi" },
+        [PSCustomObject]@{ Id = "NetworkLAN";   Name = "Mạng & Advanced IP Scanner";     Icon = "🌐"; Tier = "FREE"; Description = "Quét dải IP LAN, dò tìm thiết bị, kiểm tra port mở & kết nối mạng" },
+        [PSCustomObject]@{ Id = "PrinterLAN";   Name = "Sửa Lỗi Máy In & Mạng LAN";      Icon = "🖨️"; Tier = "FREE"; Description = "Khắc phục lỗi chia sẻ máy in 0x0000011b, 0x00000709 và thông mạng LAN" },
+        [PSCustomObject]@{ Id = "Office";       Name = "Cài Đặt Office (Tự Động AIO)";   Icon = "💼"; Tier = "FREE"; Description = "Cài đặt Office 2016-2024 / 365 tự động trọn gói" },
+        [PSCustomObject]@{ Id = "Software";     Name = "Tải Ứng Dụng Thiết Yếu";         Icon = "📥"; Tier = "FREE"; Description = "Kho hơn 260 phần mềm văn phòng, đồ họa, tiện ích cần thiết" },
+        [PSCustomObject]@{ Id = "CustomApp";    Name = "Phần Mềm Kế Toán & Khác";        Icon = "📊"; Tier = "FREE"; Description = "Cài đặt MISA, HTKK, iTaxViewer và ứng dụng doanh nghiệp" },
+        [PSCustomObject]@{ Id = "Uninstaller";  Name = "Gỡ Phần Mềm & Dọn Sạch Sâu";    Icon = "🗑️"; Tier = "FREE"; Description = "Gỡ cài đặt hàng loạt và dọn sạch sâu tận gốc Registry/AppData" },
+        [PSCustomObject]@{ Id = "Fonts";        Name = "Kho Font Tiếng Việt & AutoCAD";  Icon = "🔤"; Tier = "FREE"; Description = "Cài đặt trọn bộ Font VNI, TCVN3, Unicode và Font AutoCAD .shx" },
+        [PSCustomObject]@{ Id = "DiskHealth";   Name = "Sức Khỏe Ổ Cứng (S.M.A.R.T)";    Icon = "💽"; Tier = "FREE"; Description = "Chẩn đoán CrystalDiskInfo, NVMe spec log page 0x02, nhiệt độ, TBW ghi đọc và giờ chạy" },
+        [PSCustomObject]@{ Id = "Benchmark";    Name = "Tốc Độ Ổ Đĩa (Benchmark)";       Icon = "⚡"; Tier = "FREE"; Description = "Đo tốc độ đọc/ghi tuần tự và ngẫu nhiên SSD/HDD chuyên sâu" },
+        [PSCustomObject]@{ Id = "Partition";    Name = "Quản Lý Phân Vùng (Partition)";  Icon = "🗄️"; Tier = "FREE"; Description = "Sơ đồ đĩa live, TRIM SSD, chuyển MBR sang GPT không mất dữ liệu" },
+        [PSCustomObject]@{ Id = "LaptopCheck";  Name = "Kiểm Tra Laptop & Ngoại Vi";     Icon = "🔬"; Tier = "FREE"; Description = "Test bàn phím offline, pin chai, loa đa tần, dead pixel, mic, webcam" },
+        [PSCustomObject]@{ Id = "AutoWin";      Name = "Cài Win & Bypass TPM 2.0";       Icon = "🚀"; Tier = "FREE"; Description = "Cài đặt Windows tự động, vượt rào TPM 2.0 / SecureBoot / RAM" },
+        [PSCustomObject]@{ Id = "BackupDriver"; Name = "Quản Lý & Sao Lưu Driver";       Icon = "💾"; Tier = "FREE"; Description = "Quản lý Device Manager, kiểm tra driver thiếu hoặc lỗi, sao lưu và cập nhật driver" },
+        [PSCustomObject]@{ Id = "BackupSystem"; Name = "Sao Lưu & Khôi Phục Windows";    Icon = "🔄"; Tier = "FREE"; Description = "Sao lưu toàn bộ Windows System Image WBAdmin / VHDX và khôi phục 1-click" },
+        [PSCustomObject]@{ Id = "BitLocker";    Name = "Tắt BitLocker & EFS";            Icon = "🔒"; Tier = "FREE"; Description = "Mở khóa và giải mã phân vùng ổ đĩa an toàn" },
+        [PSCustomObject]@{ Id = "Activation";   Name = "Kích Hoạt Bản Quyền Số";         Icon = "🔑"; Tier = "ADMIN"; Description = "Kích hoạt bản quyền kỹ thuật số vĩnh viễn cho Windows & Office" }
     )
 }
 
@@ -273,11 +278,37 @@ function Init-VUONGTTFeaturePolicies {
 
 function Get-VUONGTTFeaturePolicies {
     Init-VUONGTTFeaturePolicies
+    $defaults = Get-VUONGTTDefaultFeatures
     try {
-        $policies = Get-Content -Path $script:POLICY_FILE -Raw -Encoding UTF8 | ConvertFrom-Json
+        $policies = @()
+        if (Test-Path $script:POLICY_FILE) {
+            $policies = Get-Content -Path $script:POLICY_FILE -Raw -Encoding UTF8 | ConvertFrom-Json
+        }
+        if (-not $policies -or $policies.Count -eq 0) {
+            return $defaults
+        }
+
+        # SMART MERGE: Tự động bổ sung các tính năng mới vào danh sách hiện tại nếu chưa có
+        $hasNew = $false
+        $policyIds = @($policies | ForEach-Object { $_.Id })
+        foreach ($d in $defaults) {
+            if ($policyIds -notcontains $d.Id) {
+                $policies = @($policies) + @($d)
+                $hasNew = $true
+            }
+        }
+
+        # Lưu lại bản cập nhật đầy đủ nếu có bổ sung tính năng mới
+        if ($hasNew) {
+            try {
+                $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+                $newJson = $policies | ConvertTo-Json -Depth 4
+                [System.IO.File]::WriteAllText($script:POLICY_FILE, $newJson, $utf8NoBom)
+            } catch {}
+        }
         return $policies
     } catch {
-        return (Get-VUONGTTDefaultFeatures)
+        return $defaults
     }
 }
 

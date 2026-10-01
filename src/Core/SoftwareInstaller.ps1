@@ -1,4 +1,4 @@
-﻿# VUONGTT Toolkit 2026 - Enhanced Software Store & Custom App Module
+# VUONGTT Toolkit 2026 - Enhanced Software Store & Custom App Module
 
 function Invoke-VUONGTTDoEvents {
     try {
@@ -40,7 +40,7 @@ $script:VUONGTT_APPS = @(
     [PSCustomObject]@{ Id="teamviewer";  Name="TeamViewer (Mới Nhất)";               Category="Điều khiển"; WingetId="TeamViewer.TeamViewer"; Url="https://download.teamviewer.com/download/TeamViewer_Setup_x64.exe"; Silent="/S" },
 
     # --- 6. MANG XA HOI & LIEN LAC ---
-    [PSCustomObject]@{ Id="zalo";        Name="Zalo PC (Bản Mới Nhất)";              Category="Liên lạc";   WingetId="VNGCorp.Zalo"; Url="https://res-zaloapp-aka-jpt.zdn.vn/win/ZaloSetup.exe"; Silent="/S" },
+    [PSCustomObject]@{ Id="zalo";        Name="Zalo PC (Bản Mới Nhất)";              Category="Liên lạc";   WingetId="VNGCorp.Zalo"; Url="https://res-zaloapp-aka-jpt.zdn.vn/win/ZaloSetup-26.9.10.exe"; Silent="/S" },
     [PSCustomObject]@{ Id="telegram";    Name="Telegram Desktop (Mới Nhất)";         Category="Liên lạc";   WingetId="Telegram.TelegramDesktop"; Url="https://telegram.org/dl/desktop/win64"; Silent="/VERYSILENT /NORESTART" },
     [PSCustomObject]@{ Id="discord";     Name="Discord PC (Mới Nhất)";               Category="Liên lạc";   WingetId="Discord.Discord"; Url="https://discord.com/api/download?platform=win"; Silent="-s" },
 
@@ -674,42 +674,19 @@ function Install-VUONGTTApp {
         try {
             $wc = New-Object System.Net.WebClient
             $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
-            
-            $script:dlIsDone = $false
-            $script:dlLastReport = 0
-
-            $wc.add_DownloadProgressChanged({
-                param($s, $e)
-                if ($e.ProgressPercentage -ge ($script:dlLastReport + 10) -or $e.ProgressPercentage -eq 100) {
-                    $script:dlLastReport = $e.ProgressPercentage
-                    $mbRec = [Math]::Round($e.BytesReceived / 1MB, 1)
-                    $mbTot = [Math]::Round($e.TotalBytesToReceive / 1MB, 1)
-                    if ($OnProgress) { & $OnProgress "  -> Đang tải: $($e.ProgressPercentage)% ($mbRec MB / $mbTot MB)..." }
-                }
-                Invoke-VUONGTTDoEvents
-            })
-            $wc.add_DownloadFileCompleted({
-                param($s, $e)
-                $script:dlIsDone = $true
-            })
-
-            $script:dlIsDone = $false
-            $wc.DownloadFileAsync((New-Object System.Uri($directUrl)), $destFile)
-
-            $dlTimeout = (Get-Date).AddSeconds(120)
-            while (-not $script:dlIsDone -and (Get-Date) -lt $dlTimeout) {
-                Start-Sleep -Milliseconds 60
-                Invoke-VUONGTTDoEvents
-            }
-
+            $wc.DownloadFile($directUrl, $destFile)
             if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
-        } catch {}
+        } catch {
+            if ($OnProgress) { & $OnProgress "  -> WebClient tải tệp không hoàn tất, chuyển sang Invoke-WebRequest..." }
+        }
 
         if (-not $dlSuccess) {
             try {
-                Invoke-WebRequest -Uri $directUrl -OutFile $destFile -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" -TimeoutSec 60
+                Invoke-WebRequest -Uri $directUrl -OutFile $destFile -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" -TimeoutSec 120
                 if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) { $dlSuccess = $true }
-            } catch {}
+            } catch {
+                if ($OnProgress) { & $OnProgress "  -> Lỗi kết nối tải tệp: $($_.Exception.Message)" }
+            }
         }
 
         if (-not (Test-Path $destFile) -or (Get-Item $destFile).Length -le 1024) {
@@ -720,7 +697,24 @@ function Install-VUONGTTApp {
             if ($OnProgress) { & $OnProgress "Đang giải nén $($app.Name)..." }
             $extractDir = "$env:SystemDrive\Tools\$($app.Id)"
             if (-not (Test-Path $extractDir)) { New-Item -ItemType Directory -Path $extractDir -Force | Out-Null }
-            Expand-Archive -Path $destFile -DestinationPath $extractDir -Force
+
+            # Đóng các tiến trình đang chạy có thể khóa tệp trong thư mục giải nén
+            if ($app.Id -in @("unikey", "evkey")) {
+                Stop-Process -Name "UniKeyNT", "EVKey64", "EVKey32" -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 300
+            }
+
+            try {
+                Expand-Archive -Path $destFile -DestinationPath $extractDir -Force -ErrorAction Stop
+            } catch {
+                try {
+                    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+                    [System.IO.Compression.ZipFile]::ExtractToDirectory($destFile, $extractDir)
+                } catch {
+                    if ($OnProgress) { & $OnProgress "  -> Lỗi giải nén: $($_.Exception.Message)" }
+                    return "Lỗi tải tệp: Không thể giải nén $($app.Name) vào $extractDir!"
+                }
+            }
 
             # Tạo lối tắt Desktop cho ứng dụng Portable
             try {
@@ -744,12 +738,30 @@ function Install-VUONGTTApp {
             }
             return "Đã tải và giải nén thành công vào: $extractDir"
         } else {
+            # Đóng tiến trình cũ nếu đang chạy để tránh khóa file cài đặt
+            if ($app.Id -eq "zalo") {
+                Stop-Process -Name "Zalo", "old-uninstaller" -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 300
+            }
+
             if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (chạy ngầm silent)..." }
             $exitCode = Invoke-VUONGTTProcessWithLiveLog -FilePath $destFile -ArgumentList $app.Silent -OnOutputLine $OnProgress
-            if ($AutoLaunch) {
-                [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+            
+            # Kiểm tra trạng thái thực tế sau cài đặt
+            if ($exitCode -ne 0 -and $exitCode -ne 3010) {
+                if ($app.Id -eq "zalo" -and (Test-Path "$env:LOCALAPPDATA\Programs\Zalo\Zalo.exe")) {
+                    $exitCode = 0
+                }
             }
-            return "Đã hoàn tất cài đặt $($app.Name) (Mã trả về: $exitCode)!"
+
+            if ($exitCode -eq 0 -or $exitCode -eq 3010) {
+                if ($AutoLaunch) {
+                    [void](Start-VUONGTTInstalledApp -AppId $app.Id -HintName $app.Name -OnLog $OnProgress)
+                }
+                return "Đã hoàn tất cài đặt $($app.Name)!"
+            } else {
+                return "Cài đặt $($app.Name) thất bại (Mã trả về: $exitCode)!"
+            }
         }
     }
 
@@ -758,6 +770,16 @@ function Install-VUONGTTApp {
         if (-not $hasWinget -or [string]::IsNullOrEmpty($app.WingetId)) {
             return $null
         }
+
+        # Zalo qua WinGet thường bị treo do NSIS uninstaller trong ngữ cảnh elevated; ưu tiên cài trực tiếp
+        if ($app.Id -eq "zalo" -and -not [string]::IsNullOrWhiteSpace($directUrl)) {
+            if ($OnProgress) { & $OnProgress "  -> Cài đặt nhanh Zalo qua gói cài đặt chính thức từ máy chủ..." }
+            $directRes = & $runDirectInstall
+            if ($directRes -and $directRes -notmatch 'Lỗi|thất bại') {
+                return $directRes
+            }
+        }
+
         if ($OnProgress) { & $OnProgress "Đang cài đặt $($app.Name) qua Winget (Phiên bản mới nhất)..." }
         try {
             $arg = "install --id `"$($app.WingetId)`" -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --force"
@@ -789,7 +811,7 @@ function Install-VUONGTTApp {
         # MODE 1: Ưu tiên tải trực tiếp từ máy chủ nhà phát triển
         if (-not [string]::IsNullOrWhiteSpace($directUrl)) {
             $directRes = & $runDirectInstall
-            if ($directRes -and $directRes -ne $false) {
+            if ($directRes -and $directRes -notmatch 'Lỗi|thất bại') {
                 return $directRes
             }
             if ($OnProgress) { & $OnProgress "  -> Tải trực tiếp không khả dụng hoặc lỗi, tự động chuyển sang WinGet..." }
@@ -797,7 +819,7 @@ function Install-VUONGTTApp {
         # Fallback sang WinGet
         if ($hasWinget -and -not [string]::IsNullOrEmpty($app.WingetId)) {
             $wingetRes = & $runWingetInstall
-            if ($wingetRes -and $wingetRes -ne $false) {
+            if ($wingetRes -and $wingetRes -notmatch 'Lỗi|thất bại') {
                 return $wingetRes
             }
         }
@@ -806,7 +828,7 @@ function Install-VUONGTTApp {
         # MODE 2: Mặc định WinGet (với tự động Fallback sang Tải trực tiếp)
         if ($hasWinget -and -not [string]::IsNullOrEmpty($app.WingetId)) {
             $wingetRes = & $runWingetInstall
-            if ($wingetRes -and $wingetRes -ne $false) {
+            if ($wingetRes -and $wingetRes -notmatch 'Lỗi|thất bại') {
                 return $wingetRes
             }
             if ($OnProgress) { & $OnProgress "  -> Winget không hoàn tất, tự động chuyển sang tải trực tiếp từ máy chủ..." }
@@ -814,7 +836,7 @@ function Install-VUONGTTApp {
         # Fallback sang Tải trực tiếp
         if (-not [string]::IsNullOrWhiteSpace($directUrl)) {
             $directRes = & $runDirectInstall
-            if ($directRes -and $directRes -ne $false) {
+            if ($directRes -and $directRes -notmatch 'Lỗi|thất bại') {
                 return $directRes
             }
             return "Lỗi tải tệp: Không thể tải gói cài đặt từ máy chủ chính thức ($directUrl)!"
