@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.84
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.85
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.84"
+$Script:AppVersion = "v20.5.909.85"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -144,6 +144,7 @@ if (Get-Command "Update-VUONGTTRuntimeBundledConfig" -ErrorAction SilentlyContin
 . (Join-Path $corePath "ConfigManager.ps1")
 . (Join-Path $corePath "DiskHealthManager.ps1")
 . (Join-Path $corePath "AutoWinDeployer.ps1")
+. (Join-Path $corePath "WindowsInPlaceUpgrade.ps1")
 . (Join-Path $corePath "SystemBackupManager.ps1")
 . (Join-Path $corePath "KeyViewerEngine.ps1")
 . (Join-Path $corePath "SkuConverterEngine.ps1")
@@ -5641,6 +5642,7 @@ $chkAutoWinAutoActivate         = Get-Control "chkAutoWinAutoActivate"
 $chkAutoWinPostTweak            = Get-Control "chkAutoWinPostTweak"
 $chkAutoWinFastOffline          = Get-Control "chkAutoWinFastOffline"
 
+$btnInPlaceUpgradeWin11         = Get-Control "btnInPlaceUpgradeWin11"
 $btnStartOnlineWindowsInstall   = Get-Control "btnStartOnlineWindowsInstall"
 $btnAutoWinCreateRescueNow      = Get-Control "btnAutoWinCreateRescueNow"
 $btnOpenAutoWinFolder           = Get-Control "btnOpenAutoWinFolder"
@@ -6216,6 +6218,93 @@ if ($btnBypassOOBEMSA) {
             $txtFooterStatus.Text = "• [OK] Đã kích hoạt Bypass Microsoft Account (MSA/OOBE)"
         } catch {
             if ($txtAutoWinLog) { $txtAutoWinLog.Text = "[LỖI] $($_.Exception.Message)" }
+        }
+    })
+}
+
+if ($btnInPlaceUpgradeWin11) {
+    $btnInPlaceUpgradeWin11.Add_Click({
+        # 1. Kiểm tra tính sẵn sàng của hệ điều hành
+        $readiness = Test-VUONGTTInPlaceUpgradeReadiness
+        $winInfo = $readiness.CurrentOS
+
+        $readyMsg = "Hệ điều hành hiện tại: $($winInfo.Caption) ($($winInfo.DisplayVersion) Build $($winInfo.BuildNumber) - $($winInfo.Architecture))`n" +
+                    "Dung lượng trống ổ C: $($readiness.FreeSpaceGB) GB (Khuyến nghị >= 20 GB)`n`n" +
+                    "• Chế độ: NÂNG CẤP ĐÈ TRỰC TIẾP (IN-PLACE UPGRADE)`n" +
+                    "• Dữ liệu & Phần mềm: BẢO TOÀN NGUYÊN VẸN 100% (Không mất file, không mất App)`n" +
+                    "• Phần cứng: TỰ ĐỘNG BỎ QUA KIỂM TRA TPM 2.0 / CPU / SECURE BOOT (BYPASS ALL)`n`n" +
+                    "Bạn có muốn bắt đầu tiến trình nâng cấp lên Windows 11 mới nhất ngay bây giờ không?"
+
+        $confirm = [System.Windows.MessageBox]::Show(
+            $readyMsg,
+            "Xác Nhận Nâng Cấp Windows 11 Mới Nhất 1-Click",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Question
+        )
+        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+        # 2. Xác định file ISO
+        $isoPath = if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text.Trim() } else { "" }
+        if (-not (Test-Path $isoPath -PathType Leaf)) {
+            $candidates = @(
+                "D:\VUONGTT_Windows_Setup\*.iso",
+                "C:\VUONGTT_Windows_Setup\*.iso",
+                "D:\*.iso",
+                "$env:USERPROFILE\Downloads\*.iso"
+            )
+            $foundIso = $null
+            foreach ($cand in $candidates) {
+                $found = Get-ChildItem -Path $cand -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'Win11|Windows11' } | Select-Object -First 1
+                if ($found) { $foundIso = $found.FullName; break }
+            }
+
+            if ($foundIso) {
+                $isoPath = $foundIso
+                if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = $isoPath }
+            } else {
+                # Mở hộp thoại chọn ISO
+                $ofd = New-Object Microsoft.Win32.OpenFileDialog
+                $ofd.Title = "Chọn tệp hình ảnh Windows 11 ISO để nâng cấp trực tiếp"
+                $ofd.Filter = "Tệp Windows ISO (*.iso)|*.iso|Tất cả tệp (*.*)|*.*"
+                if ($ofd.ShowDialog() -eq $true) {
+                    $isoPath = $ofd.FileName
+                    if ($txtAutoWinIsoPath) { $txtAutoWinIsoPath.Text = $isoPath }
+                } else {
+                    if ($txtAutoWinLog) {
+                        $txtAutoWinLog.Text = "[HỦY BỎ] Bạn chưa chọn tệp ISO Windows 11. Vui lòng tải ISO từ danh mục bên dưới hoặc duyệt chọn file ISO có sẵn để tiến hành nâng cấp!"
+                    }
+                    return
+                }
+            }
+        }
+
+        # 3. Thực thi In-Place Upgrade
+        $btnInPlaceUpgradeWin11.IsEnabled = $false
+        if ($txtAutoWinLog) {
+            $txtAutoWinLog.Text = "Đang kích hoạt quy trình nâng cấp Windows 11 In-Place Upgrade... Vui lòng đợi trong giây lát!"
+        }
+        Invoke-VUONGTTDoEvents
+
+        try {
+            $upgradeRes = Start-VUONGTTInPlaceUpgrade -IsoOrSetupPath $isoPath -BypassHardware -OnProgress {
+                param($msg)
+                if ($txtAutoWinLog) {
+                    $txtAutoWinLog.Text = "$msg`n$($txtAutoWinLog.Text)"
+                }
+                Invoke-VUONGTTDoEvents
+            }
+            if ($txtAutoWinLog) {
+                $txtAutoWinLog.Text = "$($upgradeRes.SummaryLog)`n`n$($txtAutoWinLog.Text)"
+            }
+            if ($txtFooterStatus) {
+                $txtFooterStatus.Text = "• [OK] Đã kích hoạt In-Place Upgrade lên Windows 11 mới nhất thành công!"
+            }
+        } catch {
+            if ($txtAutoWinLog) {
+                $txtAutoWinLog.Text = "[LỖI NÂNG CẤP WINDOWS 11] $($_.Exception.Message)`n$($txtAutoWinLog.Text)"
+            }
+        } finally {
+            $btnInPlaceUpgradeWin11.IsEnabled = $true
         }
     })
 }
@@ -9625,7 +9714,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.84" }
+                if (-not $currentVer) { $currentVer = "20.5.909.85" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

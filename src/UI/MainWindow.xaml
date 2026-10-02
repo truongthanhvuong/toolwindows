@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.84"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.85"
         Height="720" Width="1180"
         MinHeight="480" MinWidth="800"
         WindowStartupLocation="CenterScreen"
@@ -412,7 +412,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.84 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.85 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -4306,7 +4306,8 @@
 
                                 <!-- Nút Thực Thi 1-Click Duy Nhất & Công Cụ Hỗ Trợ -->
                                 <WrapPanel Margin="0,0,0,4">
-                                    <Button x:Name="btnStartOnlineWindowsInstall" Content="🚀 BẮT ĐẦU CÀI WINDOWS ONLINE (TỰ ĐỘNG HÓA TỪ A-Z 1-CLICK)" Background="#047857" Style="{StaticResource ActionBtn}" MinWidth="440" Height="40" FontSize="13" FontWeight="Bold" Padding="20,0,20,0" Margin="0,0,8,6"/>
+                                    <Button x:Name="btnInPlaceUpgradeWin11" Content="⚡ NÂNG CẤP WINDOWS 11 MỚI NHẤT 1-CLICK (IN-PLACE UPGRADE - GIỮ NGUYÊN DỮ LIỆU)" Background="#D97706" Style="{StaticResource ActionBtn}" MinWidth="480" Height="40" FontSize="13" FontWeight="Bold" Padding="18,0,18,0" Margin="0,0,8,6" ToolTip="Nâng cấp đè trực tiếp lên Windows 11 26H2/24H2 mới nhất, giữ nguyên 100% dữ liệu, phần mềm, bản quyền và tự động Bypass TPM/CPU/SecureBoot."/>
+                                    <Button x:Name="btnStartOnlineWindowsInstall" Content="🚀 Cài Windows Online (Tự Động Hóa)" Background="#047857" Style="{StaticResource ActionBtn}" Height="40" FontSize="13" FontWeight="Bold" Padding="16,0,16,0" Margin="0,0,8,6"/>
                                     <Button x:Name="btnAutoWinCreateRescueNow" Content="💾 Tạo Ổ Cứu Hộ Z:\ Ngay" Background="#2563EB" Style="{StaticResource ActionBtn}" Height="40" Padding="14,0,14,0" Margin="0,0,8,6" ToolTip="Tách ngay 15GB từ ổ C: để tạo phân vùng Z:\ (VUONGTT_RESCUE) lưu trữ Tool và Driver ngay lập tức mà không cần cài Win."/>
                                     <Button x:Name="btnOpenAutoWinFolder" Content="📂 Mở Thư Mục Cài Đặt" Background="#475569" Style="{StaticResource ActionBtn}" Height="40" Padding="14,0,14,0" Margin="0,0,8,6"/>
                                     <Button x:Name="btnEjectMountedIso" Content="⏏️ Dỡ Ổ Đĩa Ảo (Eject)" Background="#475569" Style="{StaticResource ActionBtn}" Height="40" Padding="14,0,14,0" Margin="0,0,8,6"/>
@@ -4658,7 +4659,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.84" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.85" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

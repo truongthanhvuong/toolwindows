@@ -94,6 +94,16 @@ namespace VUONGTT {
 function Get-VUONGTTAutoWinEditions {
     return @(
         [PSCustomObject]@{
+            Id          = "Win11_26H2_Latest"
+            Name        = "⚡ Windows 11 26H2 / 24H2 Mới Nhất (In-Place Upgrade Giữ Dữ Liệu)"
+            Tag         = "Win11-26H2-Upgrade"
+            Type        = "Windows 11"
+            SizeGB      = 5.5
+            Desc        = "Bản Windows 11 mới nhất 2026, tối ưu cho In-Place Upgrade không mất dữ liệu, tự động Bypass TPM/CPU/SecureBoot."
+            DownloadUrl = "https://software.download.prss.microsoft.com/dbazure/Win11_24H2_English_x64.iso"
+            PortalUrl   = "https://www.microsoft.com/software-download/windows11"
+        },
+        [PSCustomObject]@{
             Id          = "Win11_24H2_Pro"
             Name        = "🚀 Windows 11 Pro (Bản 24H2 Mới Nhất 2026)"
             Tag         = "Win11-24H2-Pro"
