@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.88"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.89"
         Height="720" Width="1180"
         MinHeight="480" MinWidth="800"
         WindowStartupLocation="CenterScreen"
@@ -412,7 +412,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.88 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.89 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -486,7 +486,7 @@
                 <!-- Navigation Menu Scroll -->
                 <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel x:Name="MenuPanel" Margin="0,0,0,8">
-                        <!-- 18 CATEGORIES SIDEBAR MENU (Reorganized & Crystal Clear) -->
+                        <!-- 10 CHUYÊN MỤC MENU CHUẨN HÓA (Streamlined & Deduplicated) -->
                         <!-- 1. Check Cấu Hình -->
                         <Button x:Name="btnMenuSysInfo" Style="{StaticResource MenuBtn}" Tag="SysInfo" Background="{DynamicResource MenuBtnActiveBg}" Foreground="#B45309">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
@@ -497,37 +497,27 @@
                             </StackPanel>
                         </Button>
 
-                        <!-- 2. Cài Win Tự Động -->
+                        <!-- 2. Cài Win & Kho ISO -->
                         <Button x:Name="btnMenuAutoWin" Style="{StaticResource MenuBtn}" Tag="AutoWin">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#EFF6FF" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBlock Text="🚀" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="Cài Win Tự Động" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Text="Cài Win &amp; Kho ISO" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
 
-                        <!-- 3. Đa Tài Khoản -->
-                        <Button x:Name="btnMenuUserManager" Style="{StaticResource MenuBtn}" Tag="UserManager">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="26" Height="26" CornerRadius="7" Background="#EDE9FE" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="👥" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Đa Tài Khoản" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 4. Sao Lưu Windows -->
-                        <Button x:Name="btnMenuBackupWin" Style="{StaticResource MenuBtn}" Tag="BackupWin">
+                        <!-- 3. Sao Lưu & Phục Hồi -->
+                        <Button x:Name="btnMenuBackupRestore" Style="{StaticResource MenuBtn}" Tag="BackupRestore">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#FEE2E2" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBlock Text="💾" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="Sao Lưu Windows" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Text="Sao Lưu &amp; Phục Hồi" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
 
-                        <!-- 5. Cài Đặt Office -->
+                        <!-- 4. Cài Đặt Office -->
                         <Button x:Name="btnMenuOffice" Style="{StaticResource MenuBtn}" Tag="OfficeAIO">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#FEF3C7" Margin="0,0,10,0" VerticalAlignment="Center">
@@ -537,17 +527,17 @@
                             </StackPanel>
                         </Button>
 
-                        <!-- 6. Kích Hoạt - Gỡ Crack -->
+                        <!-- 5. Kích Hoạt & Bản Quyền -->
                         <Button x:Name="btnMenuActivator" Style="{StaticResource MenuBtn}" Tag="Activator">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#FEF08A" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBlock Text="🔑" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="Kích Hoạt - Gỡ Crack" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Text="Kích Hoạt &amp; Bản Quyền" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
 
-                        <!-- 7. Tiện Ích - Sửa Lỗi Win -->
+                        <!-- 6. Tiện Ích - Sửa Lỗi Win -->
                         <Button x:Name="btnMenuSystemFix" Style="{StaticResource MenuBtn}" Tag="SystemFix">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#FEF3C7" Margin="0,0,10,0" VerticalAlignment="Center">
@@ -557,107 +547,37 @@
                             </StackPanel>
                         </Button>
 
-                        <!-- 8. Tắt BitLocker - EFS -->
-                        <Button x:Name="btnMenuBitLocker" Style="{StaticResource MenuBtn}" Tag="BitLocker">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="26" Height="26" CornerRadius="7" Background="#FECDD3" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="🔒" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Tắt BitLocker - EFS" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 9. Fix Máy In - Share LAN -->
+                        <!-- 7. Máy In, Scan & Share LAN -->
                         <Button x:Name="btnMenuPrinterLAN" Style="{StaticResource MenuBtn}" Tag="PrinterLAN">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#E0F2FE" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBlock Text="🖨️" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="Fix Máy In - Share LAN" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Text="Máy In, Scan &amp; Share LAN" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
 
-                        <!-- 10. Sửa Lỗi Scan (Fix Scan) -->
-                        <Button x:Name="btnMenuScanFolder" Style="{StaticResource MenuBtn}" Tag="ScanFolder">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="26" Height="26" CornerRadius="7" Background="#DCFCE7" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="📁" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Sửa Lỗi Scan" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 11. Kho ISO Win - Driver -->
-                        <Button x:Name="btnMenuIsoRepo" Style="{StaticResource MenuBtn}" Tag="IsoRepo">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="26" Height="26" CornerRadius="7" Background="#E0E7FF" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="💿" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Kho ISO Win - Driver" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 12. Phân Vùng Ổ Cứng -->
-                        <Button x:Name="btnMenuDiskPartition" Style="{StaticResource MenuBtn}" Tag="DiskPartition">
+                        <!-- 8. Phân Vùng & Ổ Cứng -->
+                        <Button x:Name="btnMenuHardwareDisk" Style="{StaticResource MenuBtn}" Tag="HardwareDisk">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#EDE9FE" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBlock Text="💽" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="Phân Vùng Ổ Cứng" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Text="Phân Vùng &amp; Ổ Cứng" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
 
-                        <!-- 13. Sao Lưu - Phục Hồi -->
-                        <Button x:Name="btnMenuBackupRestore" Style="{StaticResource MenuBtn}" Tag="BackupRestore">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="26" Height="26" CornerRadius="7" Background="#FCE7F3" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="🔄" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Sao Lưu - Phục Hồi" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 14. Kho Phần Mềm Free -->
+                        <!-- 9. Kho Phần Mềm & Gỡ App -->
                         <Button x:Name="btnMenuSoftwareStore" Style="{StaticResource MenuBtn}" Tag="SoftwareStore">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#DBEAFE" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBlock Text="📦" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="Kho Phần Mềm Free" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <TextBlock Text="Kho Phần Mềm &amp; Gỡ App" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
 
-                        <!-- 15. Tuỳ Chỉnh Windows -->
-                        <Button x:Name="btnMenuCustomizer" Style="{StaticResource MenuBtn}" Tag="Customizer">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="26" Height="26" CornerRadius="7" Background="#FEF9C3" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="🎨" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Tuỳ Chỉnh Windows" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 16. Dọn Dẹp - Tăng Tốc -->
-                        <Button x:Name="btnSpeedupCleaner" Style="{StaticResource MenuBtn}" Tag="SpeedupCleaner">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="26" Height="26" CornerRadius="7" Background="#FEF3C7" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="🧹" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Dọn Dẹp - Tăng Tốc" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 17. Gỡ Cài Đặt -->
-                        <Button x:Name="btnMenuUninstaller" Style="{StaticResource MenuBtn}" Tag="Uninstaller">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                <Border Width="26" Height="26" CornerRadius="7" Background="#FEE2E2" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="🗑️" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Gỡ Cài Đặt" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- 18. Fake VPN / Proxy -->
+                        <!-- 10. Fake VPN / Proxy -->
                         <Button x:Name="btnMenuFakeVpnProxy" Style="{StaticResource MenuBtn}" Tag="FakeVpnProxy">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
                                 <Border Width="26" Height="26" CornerRadius="7" Background="#E0E7FF" Margin="0,0,10,0" VerticalAlignment="Center">
@@ -2299,7 +2219,7 @@
                                     <Button x:Name="tabPrinterLAN_Fix" Grid.Column="0" Content="🖨️ Fix Máy In Mạng LAN" Style="{StaticResource ActionBtn}" Background="#0284C7" Foreground="White" Height="36" Margin="2" FontWeight="SemiBold"/>
                                     <Button x:Name="tabPrinterLAN_Credentials" Grid.Column="1" Content="🔐 Add Windows Credentials" Style="{StaticResource ActionBtn}" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" Height="36" Margin="2" FontWeight="SemiBold"/>
                                     <Button x:Name="tabPrinterLAN_ShareUser" Grid.Column="2" Content="👤 Tạo User Chia Sẻ Máy In - LAN" Style="{StaticResource ActionBtn}" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" Height="36" Margin="2" FontWeight="SemiBold"/>
-                                    <Button x:Name="tabPrinterLAN_ShareData" Grid.Column="3" Content="📁 Fix Chia Sẻ Dữ Liệu" Style="{StaticResource ActionBtn}" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" Height="36" Margin="2" FontWeight="SemiBold"/>
+                                    <Button x:Name="tabPrinterLAN_ShareData" Grid.Column="3" Content="📁 Fix Chia Sẻ &amp; Scan Folder" Style="{StaticResource ActionBtn}" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}" Height="36" Margin="2" FontWeight="SemiBold"/>
                                 </Grid>
                             </Border>
 
@@ -5014,7 +4934,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.88" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.89" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>

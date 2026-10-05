@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.88
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.89
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.88"
+$Script:AppVersion = "v20.5.909.89"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -388,14 +388,11 @@ $btnQuickTroubleshoot           = Get-Control "btnQuickTroubleshoot"
 $btnQuickFixPrinter             = Get-Control "btnQuickFixPrinter"
 $btnQuickRestartExplorer        = Get-Control "btnQuickRestartExplorer"
 
-# 18 Apple Menu Buttons + Admin Buttons
+# 10 Streamlined Menu Buttons + Admin Buttons
 $menuButtons = @(
-    "btnMenuSysInfo", "btnMenuAutoWin", "btnMenuUserManager", "btnMenuBackupWin",
-    "btnMenuOffice", "btnMenuActivator", "btnMenuSystemFix", "btnMenuBitLocker",
-    "btnMenuPrinterLAN", "btnMenuScanFolder", "btnMenuIsoRepo", "btnMenuDiskPartition",
-    "btnMenuBackupRestore", "btnMenuSoftwareStore", "btnMenuCustomizer", "btnSpeedupCleaner",
-    "btnMenuUninstaller", "btnMenuFakeVpnProxy",
-    "btnMenuNetworkLAN", "btnMenuSoftware", "btnMenuHardwareDisk", "btnMenuTechUtilities",
+    "btnMenuSysInfo", "btnMenuAutoWin", "btnMenuBackupRestore", "btnMenuOffice",
+    "btnMenuActivator", "btnMenuSystemFix", "btnMenuPrinterLAN", "btnMenuHardwareDisk",
+    "btnMenuSoftwareStore", "btnMenuFakeVpnProxy",
     "btnMenuAdmin"
 )
 
@@ -9833,7 +9830,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.88" }
+                if (-not $currentVer) { $currentVer = "20.5.909.89" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

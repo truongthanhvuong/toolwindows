@@ -82,21 +82,19 @@ Assert-True ($xamlContent -match 'x:Name="cmbVpnCountry"') "pageFakeVpnProxy pha
 Assert-True ($xamlContent -match 'x:Name="txtVpnPublicIp"') "pageFakeVpnProxy phai co txtVpnPublicIp"
 
 $expectedButtons = @(
-    "btnMenuSysInfo", "btnMenuAutoWin", "btnMenuUserManager", "btnMenuBackupWin",
-    "btnMenuOffice", "btnMenuActivator", "btnMenuSystemFix", "btnMenuBitLocker",
-    "btnMenuPrinterLAN", "btnMenuScanFolder", "btnMenuIsoRepo", "btnMenuDiskPartition",
-    "btnMenuBackupRestore", "btnMenuSoftwareStore", "btnMenuCustomizer", "btnSpeedupCleaner",
-    "btnMenuUninstaller", "btnMenuFakeVpnProxy"
+    "btnMenuSysInfo", "btnMenuAutoWin", "btnMenuBackupRestore", "btnMenuOffice",
+    "btnMenuActivator", "btnMenuSystemFix", "btnMenuPrinterLAN", "btnMenuHardwareDisk",
+    "btnMenuSoftwareStore", "btnMenuFakeVpnProxy"
 )
 
-$hasAll18 = $true
+$hasAll10 = $true
 foreach ($btn in $expectedButtons) {
     if ($xamlContent -notmatch "x:Name=""$btn""") {
-        $hasAll18 = $false
+        $hasAll10 = $false
         Write-Host "       Thieu nut menu: $btn" -ForegroundColor Yellow
     }
 }
-Assert-True $hasAll18 "Sidebar phai chua day du 18 nut menu theo phan loai moi"
+Assert-True $hasAll10 "Sidebar phai chua day du 10 nut menu chuan hoa sau khi tinh gon va gop tinh nang"
 
 # --- NHOM 3: Controller & Integration VUONGTT_Toolkit.ps1 ---
 Write-Host "`n--- NHOM 3: Tich hop Controller VUONGTT_Toolkit.ps1 ---" -ForegroundColor Magenta
