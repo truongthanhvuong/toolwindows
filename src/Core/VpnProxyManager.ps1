@@ -38,92 +38,124 @@ function Get-VUONGTTProxyCountries {
     #>
     return @(
         [PSCustomObject]@{
-            Code       = "VN"
-            Name       = "Việt Nam (Hà Nội / HCM)"
-            Flag       = "🇻🇳"
-            Host       = "vn.proxy.vuongtt.local"
-            Port       = 8080
-            Latency    = "12 ms"
-            MapX       = 680
-            MapY       = 320
-            CountryTag = "Vietnam"
+            Code          = "VN"
+            Name          = "Việt Nam (Hà Nội / HCM)"
+            Flag          = "🇻🇳"
+            Host          = "vn.proxy.vuongtt.local"
+            Port          = 8080
+            Latency       = "12 ms"
+            MapX          = 680
+            MapY          = 320
+            CountryTag    = "Vietnam"
+            StreetAddress = "FPT Tower, Số 10 Phạm Văn Bạch, Dịch Vọng Hậu, Cầu Giấy, Hà Nội"
+            Latitude      = 21.0307
+            Longitude     = 105.7836
+            StreetViewUrl = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=21.0307,105.7836"
         },
         [PSCustomObject]@{
-            Code       = "SG"
-            Name       = "Singapore (Fastest Global)"
-            Flag       = "🇸🇬"
-            Host       = "sg.proxy.vuongtt.local"
-            Port       = 8080
-            Latency    = "35 ms"
-            MapX       = 660
-            MapY       = 350
-            CountryTag = "Singapore"
+            Code          = "SG"
+            Name          = "Singapore (Fastest Global)"
+            Flag          = "🇸🇬"
+            Host          = "sg.proxy.vuongtt.local"
+            Port          = 8080
+            Latency       = "35 ms"
+            MapX          = 660
+            MapY          = 350
+            CountryTag    = "Singapore"
+            StreetAddress = "Equinix SG1, 20 Ayer Rajah Crescent, One-North, Singapore"
+            Latitude      = 1.2982
+            Longitude     = 103.7877
+            StreetViewUrl = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=1.2982,103.7877"
         },
         [PSCustomObject]@{
-            Code       = "US"
-            Name       = "United States (California / NY)"
-            Flag       = "🇺🇸"
-            Host       = "us.proxy.vuongtt.local"
-            Port       = 8080
-            Latency    = "165 ms"
-            MapX       = 240
-            MapY       = 220
-            CountryTag = "USA"
+            Code          = "US"
+            Name          = "United States (California / NY)"
+            Flag          = "🇺🇸"
+            Host          = "us.proxy.vuongtt.local"
+            Port          = 8080
+            Latency       = "165 ms"
+            MapX          = 240
+            MapY          = 220
+            CountryTag    = "USA"
+            StreetAddress = "Digital Realty NYC, 60 Hudson Street, New York, NY 10013"
+            Latitude      = 40.7180
+            Longitude     = -74.0089
+            StreetViewUrl = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=40.7180,-74.0089"
         },
         [PSCustomObject]@{
-            Code       = "JP"
-            Name       = "Japan (Tokyo High-Speed)"
-            Flag       = "🇯🇵"
-            Host       = "jp.proxy.vuongtt.local"
-            Port       = 8080
-            Latency    = "68 ms"
-            MapX       = 760
-            MapY       = 210
-            CountryTag = "Japan"
+            Code          = "JP"
+            Name          = "Japan (Tokyo High-Speed)"
+            Flag          = "🇯🇵"
+            Host          = "jp.proxy.vuongtt.local"
+            Port          = 8080
+            Latency       = "68 ms"
+            MapX          = 760
+            MapY          = 210
+            CountryTag    = "Japan"
+            StreetAddress = "Equinix TY2 Data Center, Shinagawa / Minato, Tokyo"
+            Latitude      = 35.6262
+            Longitude     = 139.7528
+            StreetViewUrl = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=35.6262,139.7528"
         },
         [PSCustomObject]@{
-            Code       = "KR"
-            Name       = "South Korea (Seoul)"
-            Flag       = "🇰🇷"
-            Host       = "kr.proxy.vuongtt.local"
-            Port       = 8080
-            Latency    = "72 ms"
-            MapX       = 730
-            MapY       = 205
-            CountryTag = "Korea"
+            Code          = "KR"
+            Name          = "South Korea (Seoul)"
+            Flag          = "🇰🇷"
+            Host          = "kr.proxy.vuongtt.local"
+            Port          = 8080
+            Latency       = "72 ms"
+            MapX          = 730
+            MapY          = 205
+            CountryTag    = "Korea"
+            StreetAddress = "Gangnam Datacenter, Teheran-ro, Gangnam-gu, Seoul"
+            Latitude      = 37.5008
+            Longitude     = 127.0369
+            StreetViewUrl = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=37.5008,127.0369"
         },
         [PSCustomObject]@{
-            Code       = "UK"
-            Name       = "United Kingdom (London)"
-            Flag       = "🇬🇧"
-            Host       = "uk.proxy.vuongtt.local"
-            Port       = 8080
-            Latency    = "180 ms"
-            MapX       = 460
-            MapY       = 170
-            CountryTag = "UK"
+            Code          = "UK"
+            Name          = "United Kingdom (London)"
+            Flag          = "🇬🇧"
+            Host          = "uk.proxy.vuongtt.local"
+            Port          = 8080
+            Latency       = "180 ms"
+            MapX          = 460
+            MapY          = 170
+            CountryTag    = "UK"
+            StreetAddress = "Telehouse Docklands North, Coriander Ave, London E14 2AA"
+            Latitude      = 51.5113
+            Longitude     = -0.0075
+            StreetViewUrl = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=51.5113,-0.0075"
         },
         [PSCustomObject]@{
-            Code       = "DE"
-            Name       = "Germany (Frankfurt)"
-            Flag       = "🇩🇪"
-            Host       = "de.proxy.vuongtt.local"
-            Port       = 8080
-            Latency    = "190 ms"
-            MapX       = 485
-            MapY       = 175
-            CountryTag = "Germany"
+            Code          = "DE"
+            Name          = "Germany (Frankfurt)"
+            Flag          = "🇩🇪"
+            Host          = "de.proxy.vuongtt.local"
+            Port          = 8080
+            Latency       = "190 ms"
+            MapX          = 485
+            MapY          = 175
+            CountryTag    = "Germany"
+            StreetAddress = "Frankfurt Maincube, Hanauer Landstraße 322, Frankfurt am Main"
+            Latitude      = 50.1109
+            Longitude     = 8.6821
+            StreetViewUrl = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=50.1109,8.6821"
         },
         [PSCustomObject]@{
-            Code       = "FR"
-            Name       = "France (Paris)"
-            Flag       = "🇫🇷"
-            Host       = "fr.proxy.vuongtt.local"
-            Port       = 8080
-            Latency    = "185 ms"
-            MapX       = 465
-            MapY       = 185
-            CountryTag = "France"
+            Code          = "FR"
+            Name          = "France (Paris)"
+            Flag          = "🇫🇷"
+            Host          = "fr.proxy.vuongtt.local"
+            Port          = 8080
+            Latency       = "185 ms"
+            MapX          = 465
+            MapY          = 185
+            CountryTag    = "France"
+            StreetAddress = "Equinix PA3 Paris, Rue Ambroise Croizat, Saint-Denis, Paris"
+            Latitude      = 48.9192
+            Longitude     = 2.3582
+            StreetViewUrl = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=48.9192,2.3582"
         }
     )
 }

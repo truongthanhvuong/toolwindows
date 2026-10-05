@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.89
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.90
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.89"
+$Script:AppVersion = "v20.5.909.90"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -9830,7 +9830,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.89" }
+                if (-not $currentVer) { $currentVer = "20.5.909.90" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
@@ -10463,6 +10463,26 @@ $btnVpnApplyCustom      = Get-Control "btnVpnApplyCustom"
 $lblVpnActiveNodeName   = Get-Control "lblVpnActiveNodeName"
 $polyVpnRoute           = Get-Control "polyVpnRoute"
 $txtVpnRouteStatus      = Get-Control "txtVpnRouteStatus"
+$transMapScale          = Get-Control "transMapScale"
+$btnMapZoomIn           = Get-Control "btnMapZoomIn"
+$btnMapZoomOut          = Get-Control "btnMapZoomOut"
+$btnMapZoomReset        = Get-Control "btnMapZoomReset"
+$cardStreetViewPreview  = Get-Control "cardStreetViewPreview"
+$lblStreetViewFlag      = Get-Control "lblStreetViewFlag"
+$lblStreetViewTitle     = Get-Control "lblStreetViewTitle"
+$lblStreetViewLocation  = Get-Control "lblStreetViewLocation"
+$lblStreetViewCoords    = Get-Control "lblStreetViewCoords"
+$btnOpenStreetView      = Get-Control "btnOpenStreetView"
+$btnConnectSelectedNode = Get-Control "btnConnectSelectedNode"
+$btnCloseStreetView     = Get-Control "btnCloseStreetView"
+$btnNodeVN              = Get-Control "btnNodeVN"
+$btnNodeSG              = Get-Control "btnNodeSG"
+$btnNodeUS              = Get-Control "btnNodeUS"
+$btnNodeJP              = Get-Control "btnNodeJP"
+$btnNodeKR              = Get-Control "btnNodeKR"
+$btnNodeUK              = Get-Control "btnNodeUK"
+$btnNodeDE              = Get-Control "btnNodeDE"
+$btnNodeFR              = Get-Control "btnNodeFR"
 
 $script:vpnConnected = $false
 
@@ -10592,6 +10612,123 @@ if ($btnVpnResetNetwork) {
             $txtFooterStatus.Text = "• [OK] Khôi phục mạng hoàn tất!"
             Refresh-VUONGTTVpnProxyUI
             [System.Windows.MessageBox]::Show("Khôi phục mạng về mặc định thành công!`n`n$log", "Khôi Phục Mạng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+}
+
+# --- WORLD MAP INTERACTIVE CONTROLS & STREET VIEW LOGIC ---
+$script:mapZoom = 1.0
+if ($btnMapZoomIn) {
+    $btnMapZoomIn.Add_Click({
+        if ($script:mapZoom -lt 2.5) {
+            $script:mapZoom = [math]::Round($script:mapZoom + 0.25, 2)
+            if ($transMapScale) {
+                $transMapScale.ScaleX = $script:mapZoom
+                $transMapScale.ScaleY = $script:mapZoom
+            }
+            if ($btnMapZoomReset) { $btnMapZoomReset.Content = "↺ $([int]($script:mapZoom * 100))%" }
+        }
+    })
+}
+
+if ($btnMapZoomOut) {
+    $btnMapZoomOut.Add_Click({
+        if ($script:mapZoom -gt 0.6) {
+            $script:mapZoom = [math]::Round($script:mapZoom - 0.25, 2)
+            if ($transMapScale) {
+                $transMapScale.ScaleX = $script:mapZoom
+                $transMapScale.ScaleY = $script:mapZoom
+            }
+            if ($btnMapZoomReset) { $btnMapZoomReset.Content = "↺ $([int]($script:mapZoom * 100))%" }
+        }
+    })
+}
+
+if ($btnMapZoomReset) {
+    $btnMapZoomReset.Add_Click({
+        $script:mapZoom = 1.0
+        if ($transMapScale) {
+            $transMapScale.ScaleX = 1.0
+            $transMapScale.ScaleY = 1.0
+        }
+        if ($btnMapZoomReset) { $btnMapZoomReset.Content = "↺ 100%" }
+    })
+}
+
+$script:selectedNodeTarget = $null
+
+function Show-VUONGTTNodeDetails($nodeCode) {
+    $countries = Get-VUONGTTProxyCountries
+    $target = $countries | Where-Object { $_.Code -eq $nodeCode }
+    if (-not $target) { $target = $countries[0] }
+    $script:selectedNodeTarget = $target
+
+    # Đồng bộ ComboBox
+    $idx = 0
+    for ($i = 0; $i -lt $countries.Count; $i++) {
+        if ($countries[$i].Code -eq $nodeCode) { $idx = $i; break }
+    }
+    if ($cmbVpnCountry) { $cmbVpnCountry.SelectedIndex = $idx }
+
+    if ($lblVpnActiveNodeName) {
+        $lblVpnActiveNodeName.Text = "Máy chủ đích: $($target.Name) [Active]"
+    }
+    if ($polyVpnRoute) {
+        $polyVpnRoute.Points = [System.Windows.Media.PointCollection]::Parse("680,320 $($target.MapX),$($target.MapY)")
+    }
+
+    # Cập nhật Card xem trước thông tin đường phố
+    if ($lblStreetViewFlag) { $lblStreetViewFlag.Text = $target.Flag }
+    if ($lblStreetViewTitle) { $lblStreetViewTitle.Text = "$($target.Name) [Online]" }
+    if ($lblStreetViewLocation) { $lblStreetViewLocation.Text = $target.StreetAddress }
+    if ($lblStreetViewCoords) { $lblStreetViewCoords.Text = "$($target.Latitude)° N, $($target.Longitude)° E" }
+    if ($cardStreetViewPreview) { $cardStreetViewPreview.Visibility = [System.Windows.Visibility]::Visible }
+    if ($txtFooterStatus) { $txtFooterStatus.Text = "• [BẢN ĐỒ] Đã chọn node: $($target.Name) ($($target.StreetAddress))" }
+}
+
+$nodeMap = @{
+    "VN" = $btnNodeVN
+    "SG" = $btnNodeSG
+    "US" = $btnNodeUS
+    "JP" = $btnNodeJP
+    "KR" = $btnNodeKR
+    "UK" = $btnNodeUK
+    "DE" = $btnNodeDE
+    "FR" = $btnNodeFR
+}
+
+foreach ($item in $nodeMap.GetEnumerator()) {
+    $code = $item.Key
+    $btn = $item.Value
+    if ($btn) {
+        $btn.Add_Click({
+            param($sender, $e)
+            Show-VUONGTTNodeDetails $code
+        }.GetNewClosure())
+    }
+}
+
+if ($btnCloseStreetView) {
+    $btnCloseStreetView.Add_Click({
+        if ($cardStreetViewPreview) { $cardStreetViewPreview.Visibility = [System.Windows.Visibility]::Collapsed }
+    })
+}
+
+if ($btnOpenStreetView) {
+    $btnOpenStreetView.Add_Click({
+        if ($script:selectedNodeTarget -and $script:selectedNodeTarget.StreetViewUrl) {
+            Start-Process $script:selectedNodeTarget.StreetViewUrl
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [STREET VIEW] Đang mở xem phố 360° tại $($script:selectedNodeTarget.Name)..." }
+        }
+    })
+}
+
+if ($btnConnectSelectedNode) {
+    $btnConnectSelectedNode.Add_Click({
+        if ($script:selectedNodeTarget) {
+            Set-VUONGTTSystemProxy -ProxyServer "$($script:selectedNodeTarget.Host):$($script:selectedNodeTarget.Port)"
+            if ($txtFooterStatus) { $txtFooterStatus.Text = "• [VPN] Đã kích hoạt proxy máy chủ $($script:selectedNodeTarget.Name)!" }
+            Refresh-VUONGTTVpnProxyUI
         }
     })
 }
