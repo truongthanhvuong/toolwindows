@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.87
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.88
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.87"
+$Script:AppVersion = "v20.5.909.88"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -158,6 +158,7 @@ if (Get-Command "Update-VUONGTTRuntimeBundledConfig" -ErrorAction SilentlyContin
 . (Join-Path $corePath "DnsChangerEngine.ps1")
 . (Join-Path $corePath "IsoRepositoryEngine.ps1")
 . (Join-Path $corePath "TroubleshootManager.ps1")
+. (Join-Path $corePath "VpnProxyManager.ps1")
 try {
     Initialize-VUONGTTTroubleshootEngine -CustomDbPath (Join-Path (Split-Path $corePath) "Data\TroubleshootDatabase.json") | Out-Null
 } catch {}
@@ -387,15 +388,18 @@ $btnQuickTroubleshoot           = Get-Control "btnQuickTroubleshoot"
 $btnQuickFixPrinter             = Get-Control "btnQuickFixPrinter"
 $btnQuickRestartExplorer        = Get-Control "btnQuickRestartExplorer"
 
-# 9 Apple Menu Cards + Admin Buttons
-$btnMenuAutoWin                 = Get-Control "btnMenuAutoWin"
+# 18 Apple Menu Buttons + Admin Buttons
 $menuButtons = @(
-    "btnMenuSysInfo", "btnMenuSystemFix", "btnMenuNetworkLAN", "btnMenuPrinterLAN",
-    "btnMenuOffice", "btnMenuSoftware", "btnMenuHardwareDisk", "btnMenuAutoWin", "btnMenuTechUtilities",
+    "btnMenuSysInfo", "btnMenuAutoWin", "btnMenuUserManager", "btnMenuBackupWin",
+    "btnMenuOffice", "btnMenuActivator", "btnMenuSystemFix", "btnMenuBitLocker",
+    "btnMenuPrinterLAN", "btnMenuScanFolder", "btnMenuIsoRepo", "btnMenuDiskPartition",
+    "btnMenuBackupRestore", "btnMenuSoftwareStore", "btnMenuCustomizer", "btnSpeedupCleaner",
+    "btnMenuUninstaller", "btnMenuFakeVpnProxy",
+    "btnMenuNetworkLAN", "btnMenuSoftware", "btnMenuHardwareDisk", "btnMenuTechUtilities",
     "btnMenuAdmin"
 )
 
-# Pages Dictionary (9 Hubs + AdminPortal)
+# Pages Dictionary (Hubs + AdminPortal + FakeVpnProxy)
 $containerSysInfo = Get-Control "containerSysInfo"
 $pages = @{
     "SysInfo"        = if ($containerSysInfo) { $containerSysInfo } else { Get-Control "pageSysInfo" }
@@ -408,29 +412,40 @@ $pages = @{
     "AutoWin"        = Get-Control "pageTechUtilities"
     "TechUtilities"  = Get-Control "pageTechUtilities"
     "AdminPortal"    = Get-Control "pageAdminPortal"
+    "FakeVpnProxy"   = Get-Control "pageFakeVpnProxy"
 }
 
-# Legacy Routing Mapping for 100% Backward Compatibility
+# Legacy & Category Routing Mapping for 100% Backward Compatibility
 $legacyRouting = @{
-    "Office"       = @{ Hub = "OfficeAIO"; SubTab = $null }
-    "Software"     = @{ Hub = "SoftwareHub"; SubTab = "Soft_Store" }
-    "CustomApp"    = @{ Hub = "SoftwareHub"; SubTab = "Soft_Custom" }
-    "Uninstaller"  = @{ Hub = "SoftwareHub"; SubTab = "Soft_Uninstall" }
-    "Fonts"        = @{ Hub = "SoftwareHub"; SubTab = "Soft_Fonts" }
-    "Cleaner"      = @{ Hub = "SystemFix"; SubTab = "SysFix_Cleaner" }
-    "Tweaks"       = @{ Hub = "SystemFix"; SubTab = "SysFix_Cleaner" }
-    "Config"       = @{ Hub = "SystemFix"; SubTab = "SysFix_Config" }
-    "Troubleshoot" = @{ Hub = "SystemFix"; SubTab = "SysFix_Troubleshoot" }
-    "Benchmark"    = @{ Hub = "HardwareDisk"; SubTab = "Hw_Disk" }
-    "Partition"    = @{ Hub = "HardwareDisk"; SubTab = "Hw_Partition" }
-    "LaptopCheck"  = @{ Hub = "HardwareDisk"; SubTab = "Hw_Laptop" }
-    "Activation"   = @{ Hub = "TechUtilities"; SubTab = "Tech_Activation" }
-    "BitLocker"    = @{ Hub = "TechUtilities"; SubTab = "Tech_BitLocker" }
-    "BackupDriver" = @{ Hub = "TechUtilities"; SubTab = "Tech_Backup" }
-    "Users"        = @{ Hub = "SysInfo"; SubTab = "SysInfo_Users" }
-    "Customize"    = @{ Hub = "SysInfo"; SubTab = "SysInfo_Customize" }
-    "CpuMain"      = @{ Hub = "SysInfo"; SubTab = "SysInfo_CpuMain" }
-    "IpScanner"    = @{ Hub = "NetworkLAN"; SubTab = $null }
+    "Office"          = @{ Hub = "OfficeAIO"; SubTab = $null }
+    "Software"        = @{ Hub = "SoftwareHub"; SubTab = "Soft_Store" }
+    "SoftwareStore"   = @{ Hub = "SoftwareHub"; SubTab = "Soft_Store" }
+    "CustomApp"       = @{ Hub = "SoftwareHub"; SubTab = "Soft_Custom" }
+    "Customizer"      = @{ Hub = "SysInfo"; SubTab = "SysInfo_Customize" }
+    "Uninstaller"     = @{ Hub = "SoftwareHub"; SubTab = "Soft_Uninstall" }
+    "Fonts"           = @{ Hub = "SoftwareHub"; SubTab = "Soft_Fonts" }
+    "Cleaner"         = @{ Hub = "SystemFix"; SubTab = "SysFix_Cleaner" }
+    "SpeedupCleaner"  = @{ Hub = "SystemFix"; SubTab = "SysFix_Cleaner" }
+    "Tweaks"          = @{ Hub = "SystemFix"; SubTab = "SysFix_Cleaner" }
+    "Config"          = @{ Hub = "SystemFix"; SubTab = "SysFix_Config" }
+    "Troubleshoot"    = @{ Hub = "SystemFix"; SubTab = "SysFix_Troubleshoot" }
+    "Benchmark"       = @{ Hub = "HardwareDisk"; SubTab = "Hw_Disk" }
+    "Partition"       = @{ Hub = "HardwareDisk"; SubTab = "Hw_Partition" }
+    "DiskPartition"   = @{ Hub = "HardwareDisk"; SubTab = "Hw_Partition" }
+    "LaptopCheck"     = @{ Hub = "HardwareDisk"; SubTab = "Hw_Laptop" }
+    "Activation"      = @{ Hub = "TechUtilities"; SubTab = "Tech_Activation" }
+    "Activator"       = @{ Hub = "TechUtilities"; SubTab = "Tech_Activation" }
+    "BitLocker"       = @{ Hub = "TechUtilities"; SubTab = "Tech_BitLocker" }
+    "BackupDriver"    = @{ Hub = "TechUtilities"; SubTab = "Tech_Backup" }
+    "BackupWin"       = @{ Hub = "TechUtilities"; SubTab = "Tech_Backup" }
+    "BackupRestore"   = @{ Hub = "TechUtilities"; SubTab = "Tech_Backup" }
+    "Users"           = @{ Hub = "SysInfo"; SubTab = "SysInfo_Users" }
+    "UserManager"     = @{ Hub = "SysInfo"; SubTab = "SysInfo_Users" }
+    "Customize"       = @{ Hub = "SysInfo"; SubTab = "SysInfo_Customize" }
+    "CpuMain"         = @{ Hub = "SysInfo"; SubTab = "SysInfo_CpuMain" }
+    "IpScanner"       = @{ Hub = "NetworkLAN"; SubTab = $null }
+    "ScanFolder"      = @{ Hub = "PrinterLAN"; SubTab = $null }
+    "IsoRepo"         = @{ Hub = "TechUtilities"; SubTab = $null }
 }
 
 $pageTitlesVI = @{
@@ -443,6 +458,7 @@ $pageTitlesVI = @{
     "HardwareDisk"   = @{ Title = "Chẩn Đoán Phần Cứng & Quản Lý Ổ Đĩa"; Icon = "💽" }
     "TechUtilities"  = @{ Title = "Bộ Tiện Ích Kỹ Thuật Chuyên Sâu (Tech Utilities)"; Icon = "🛠️" }
     "AdminPortal"    = @{ Title = "Quản Trị Viên (Admin Portal)"; Icon = "👑" }
+    "FakeVpnProxy"   = @{ Title = "Fake VPN / Proxy & Bảo Vệ Mạng Toàn Cầu"; Icon = "🛡️" }
 
     # Legacy titles mapping for backward compatibility
     "Customize"      = @{ Title = "Tùy Chỉnh Thông Tin Máy"; Icon = "🖥️" }
@@ -477,6 +493,7 @@ $pageTitlesEN = @{
     "HardwareDisk"   = @{ Title = "Hardware Diagnostics & Disk Management"; Icon = "💽" }
     "TechUtilities"  = @{ Title = "Advanced Technical Utilities"; Icon = "🛠️" }
     "AdminPortal"    = @{ Title = "Administrator Portal"; Icon = "👑" }
+    "FakeVpnProxy"   = @{ Title = "Fake VPN / Proxy & Global Route Security"; Icon = "🛡️" }
 
     # Legacy titles mapping for backward compatibility
     "Customize"      = @{ Title = "Customize OEM Info"; Icon = "🖥️" }
@@ -735,6 +752,10 @@ function Switch-Tab {
                 Refresh-VUONGTTBackupTargetDrives
                 $txtFooterStatus.Text = "• [OK] Bộ tiện ích kỹ thuật chuyên sâu (Tech Utilities) sẵn sàng."
             }
+            "FakeVpnProxy" {
+                Refresh-VUONGTTVpnProxyUI
+                $txtFooterStatus.Text = "• [OK] Fake VPN / Proxy & Chẩn đoán mạng sẵn sàng."
+            }
         }
     } else {
         # Đã nạp trong phiên: Phản hồi 0ms
@@ -751,6 +772,10 @@ function Switch-Tab {
             "HardwareDisk" { $txtFooterStatus.Text = "• [OK] Chẩn đoán phần cứng, S.M.A.R.T & quản lý phân vùng sẵn sàng." }
             "TechUtilities" { $txtFooterStatus.Text = "• [OK] Bộ tiện ích kỹ thuật chuyên sâu (Tech Utilities) sẵn sàng." }
             "AdminPortal"  { $txtFooterStatus.Text = "• [OK] Trang Quản Trị Viên (Admin Portal) sẵn sàng." }
+            "FakeVpnProxy" {
+                Refresh-VUONGTTVpnProxyUI
+                $txtFooterStatus.Text = "• [OK] Fake VPN / Proxy & Chẩn đoán mạng sẵn sàng."
+            }
         }
     }
 }
@@ -9808,7 +9833,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.87" }
+                if (-not $currentVer) { $currentVer = "20.5.909.88" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
@@ -10412,6 +10437,168 @@ if ($lstIpDevices) {
         }
     })
 }
+
+# =========================================================================
+# FAKE VPN / PROXY & NETWORK RECOVERY CONTROLLER
+# =========================================================================
+$pageFakeVpnProxy       = Get-Control "pageFakeVpnProxy"
+$txtVpnPublicIp         = Get-Control "txtVpnPublicIp"
+$btnVpnCopyIp           = Get-Control "btnVpnCopyIp"
+$txtVpnCountryInfo      = Get-Control "txtVpnCountryInfo"
+$txtVpnIspInfo          = Get-Control "txtVpnIspInfo"
+$txtVpnDnsInfo          = Get-Control "txtVpnDnsInfo"
+$txtVpnPingInfo         = Get-Control "txtVpnPingInfo"
+$btnVpnToggle           = Get-Control "btnVpnToggle"
+$txtVpnToggleIcon       = Get-Control "txtVpnToggleIcon"
+$txtVpnToggleLabel      = Get-Control "txtVpnToggleLabel"
+$borderVpnStatusGlow    = Get-Control "borderVpnStatusGlow"
+$badgeVpnState          = Get-Control "badgeVpnState"
+$txtVpnStatusText       = Get-Control "txtVpnStatusText"
+$txtVpnDownloadSpeed    = Get-Control "txtVpnDownloadSpeed"
+$txtVpnUploadSpeed      = Get-Control "txtVpnUploadSpeed"
+$cmbVpnCountry          = Get-Control "cmbVpnCountry"
+$btnVpnSwitchNode       = Get-Control "btnVpnSwitchNode"
+$btnVpnRefreshIp        = Get-Control "btnVpnRefreshIp"
+$btnVpnResetNetwork     = Get-Control "btnVpnResetNetwork"
+$txtCustomProxyHost     = Get-Control "txtCustomProxyHost"
+$txtCustomProxyPort     = Get-Control "txtCustomProxyPort"
+$btnVpnApplyCustom      = Get-Control "btnVpnApplyCustom"
+$lblVpnActiveNodeName   = Get-Control "lblVpnActiveNodeName"
+$polyVpnRoute           = Get-Control "polyVpnRoute"
+$txtVpnRouteStatus      = Get-Control "txtVpnRouteStatus"
+
+$script:vpnConnected = $false
+
+function Refresh-VUONGTTVpnProxyUI {
+    [CmdletBinding()]
+    param([switch]$Async)
+
+    if ($txtVpnPublicIp) { $txtVpnPublicIp.Text = "Đang kiểm tra..." }
+
+    $action = {
+        try {
+            $diag = Get-VUONGTTNetworkCheckup -TimeoutSeconds 3
+            if ($diag) {
+                if ($txtVpnPublicIp)    { $txtVpnPublicIp.Text = $diag.PublicIP }
+                if ($txtVpnCountryInfo) { $txtVpnCountryInfo.Text = if ($diag.Country) { "$($diag.Country) $($diag.City)" } else { "Tự động" } }
+                if ($txtVpnIspInfo)     { $txtVpnIspInfo.Text = if ($diag.ISP) { $diag.ISP } else { "Local Network" } }
+                if ($txtVpnDnsInfo)     { $txtVpnDnsInfo.Text = if ($diag.DnsServers.Count -gt 0) { ($diag.DnsServers -join ", ") } else { "DHCP Auto" } }
+                if ($txtVpnPingInfo)    {
+                    $lat = if ($diag.LatencyMs -ge 0) { "$($diag.LatencyMs) ms" } else { "N/A" }
+                    $txtVpnPingInfo.Text = "$lat [Ổn định]"
+                }
+
+                if ($diag.ProxyState -eq "Enabled") {
+                    $script:vpnConnected = $true
+                    if ($txtVpnToggleLabel)   { $txtVpnToggleLabel.Text = "NGẮT KẾT NỐI" }
+                    if ($txtVpnToggleIcon)    { $txtVpnToggleIcon.Text = "🛑" }
+                    if ($btnVpnToggle)        { $btnVpnToggle.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#DC2626") }
+                    if ($borderVpnStatusGlow) { $borderVpnStatusGlow.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#DC2626") }
+                    if ($txtVpnStatusText)    { $txtVpnStatusText.Text = "Trạng thái: Đang kết nối Proxy ($($diag.ProxyServer))" }
+                } else {
+                    $script:vpnConnected = $false
+                    if ($txtVpnToggleLabel)   { $txtVpnToggleLabel.Text = "KẾT NỐI" }
+                    if ($txtVpnToggleIcon)    { $txtVpnToggleIcon.Text = "⚡" }
+                    if ($btnVpnToggle)        { $btnVpnToggle.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#4F46E5") }
+                    if ($borderVpnStatusGlow) { $borderVpnStatusGlow.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#4F46E5") }
+                    if ($txtVpnStatusText)    { $txtVpnStatusText.Text = "Trạng thái: Chưa kết nối Proxy" }
+                }
+            }
+        } catch {}
+    }
+
+    if ($Async) {
+        [System.Windows.Threading.Dispatcher]::CurrentDispatcher.BeginInvoke([action]$action) | Out-Null
+    } else {
+        & $action
+    }
+}
+
+if ($btnVpnRefreshIp) {
+    $btnVpnRefreshIp.Add_Click({
+        $txtFooterStatus.Text = "• [VPN] Đang kiểm tra địa chỉ IP công cộng và kết nối..."
+        Refresh-VUONGTTVpnProxyUI
+        $txtFooterStatus.Text = "• [VPN] Cập nhật thông tin IP thành công!"
+    })
+}
+
+if ($btnVpnCopyIp) {
+    $btnVpnCopyIp.Add_Click({
+        if ($txtVpnPublicIp -and $txtVpnPublicIp.Text) {
+            [System.Windows.Clipboard]::SetText($txtVpnPublicIp.Text)
+            $txtFooterStatus.Text = "• [COPY] Đã chép IP $($txtVpnPublicIp.Text) vào Clipboard!"
+        }
+    })
+}
+
+if ($btnVpnToggle) {
+    $btnVpnToggle.Add_Click({
+        if ($script:vpnConnected) {
+            Set-VUONGTTSystemProxy -Disable
+            $txtFooterStatus.Text = "• [VPN] Đã ngắt kết nối Proxy hệ thống!"
+            Refresh-VUONGTTVpnProxyUI
+        } else {
+            # Selected country proxy
+            $countries = Get-VUONGTTProxyCountries
+            $idx = if ($cmbVpnCountry) { [math]::Max(0, $cmbVpnCountry.SelectedIndex) } else { 0 }
+            $target = if ($idx -lt $countries.Count) { $countries[$idx] } else { $countries[0] }
+
+            Set-VUONGTTSystemProxy -ProxyServer "$($target.Host):$($target.Port)"
+            $txtFooterStatus.Text = "• [VPN] Đã kết nối Proxy máy chủ: $($target.Name)!"
+            Refresh-VUONGTTVpnProxyUI
+        }
+    })
+}
+
+if ($btnVpnSwitchNode) {
+    $btnVpnSwitchNode.Add_Click({
+        $countries = Get-VUONGTTProxyCountries
+        $idx = if ($cmbVpnCountry) { [math]::Max(0, $cmbVpnCountry.SelectedIndex) } else { 0 }
+        $target = if ($idx -lt $countries.Count) { $countries[$idx] } else { $countries[0] }
+
+        if ($lblVpnActiveNodeName) {
+            $lblVpnActiveNodeName.Text = "Máy chủ đích: $($target.Name) [Active]"
+        }
+        if ($polyVpnRoute) {
+            $polyVpnRoute.Points = [System.Windows.Media.PointCollection]::Parse("680,320 $($target.MapX),$($target.MapY)")
+        }
+
+        if ($script:vpnConnected) {
+            Set-VUONGTTSystemProxy -ProxyServer "$($target.Host):$($target.Port)"
+            $txtFooterStatus.Text = "• [VPN] Đã chuyển đổi định tuyến sang node: $($target.Name)!"
+            Refresh-VUONGTTVpnProxyUI
+        } else {
+            $txtFooterStatus.Text = "• [VPN] Đã chọn node máy chủ $($target.Name). Nhấn KẾT NỐI để kích hoạt!"
+        }
+    })
+}
+
+if ($btnVpnApplyCustom) {
+    $btnVpnApplyCustom.Add_Click({
+        $h = if ($txtCustomProxyHost) { $txtCustomProxyHost.Text.Trim() } else { "" }
+        $p = if ($txtCustomProxyPort) { $txtCustomProxyPort.Text.Trim() } else { "8080" }
+        if (-not $h) {
+            [System.Windows.MessageBox]::Show("Vui lòng nhập địa chỉ Host/IP Proxy!", "Thông báo", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
+        Set-VUONGTTSystemProxy -ProxyServer "$h`:$p"
+        $txtFooterStatus.Text = "• [VPN] Đã áp dụng Custom Proxy: $h`:$p!"
+        Refresh-VUONGTTVpnProxyUI
+    })
+}
+
+if ($btnVpnResetNetwork) {
+    $btnVpnResetNetwork.Add_Click({
+        $ans = [System.Windows.MessageBox]::Show("Bạn có chắc chắn muốn khôi phục toàn bộ cài đặt mạng về mặc định Router (DHCP)?`nThao tác này sẽ:`n1. Tắt Proxy hệ thống`n2. Đặt DNS các card mạng về tự động (DHCP)`n3. Xóa sạch DNS Cache (Flush DNS)", "Xác Nhận Khôi Phục Mạng", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+        if ($ans -eq [System.Windows.MessageBoxResult]::Yes) {
+            $log = Reset-VUONGTTNetworkToDefault
+            $txtFooterStatus.Text = "• [OK] Khôi phục mạng hoàn tất!"
+            Refresh-VUONGTTVpnProxyUI
+            [System.Windows.MessageBox]::Show("Khôi phục mạng về mặc định thành công!`n`n$log", "Khôi Phục Mạng Thành Công", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+}
+
 
 # Khởi tạo trạng thái bản quyền ban đầu
 # Deferred: Update-VUONGTTLicenseUI to ContentRendered

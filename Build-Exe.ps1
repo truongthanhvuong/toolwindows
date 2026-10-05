@@ -148,6 +148,7 @@ $resources = @(
     "/resource:`"$RootDir\src\Core\DnsChangerEngine.ps1`",VUONGTT.DnsChangerEngine.ps1",
     "/resource:`"$RootDir\src\Core\IsoRepositoryEngine.ps1`",VUONGTT.IsoRepositoryEngine.ps1",
     "/resource:`"$RootDir\src\Core\TroubleshootManager.ps1`",VUONGTT.TroubleshootManager.ps1",
+    "/resource:`"$RootDir\src\Core\VpnProxyManager.ps1`",VUONGTT.VpnProxyManager.ps1",
     "/resource:`"$RootDir\src\Data\TroubleshootDatabase.json`",VUONGTT.TroubleshootDatabase.json",
     "/resource:`"$RootDir\src\Config\licenses_vault.json`",VUONGTT.licenses_vault.json",
     "/resource:`"$RootDir\src\Config\feature_policy.json`",VUONGTT.feature_policy.json",
