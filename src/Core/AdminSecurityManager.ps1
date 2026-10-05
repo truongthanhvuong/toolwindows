@@ -2,6 +2,114 @@
 # Động cơ quản lý đặc quyền Administrator tập trung cho VUONGTT Toolkit
 # Đảm bảo 100% tác vụ hệ thống, phần mềm, registry thực thi dưới token Administrator tối đa
 
+# Định nghĩa lớp P/Invoke Native xử lý Token Privileges & Integrity Level
+if (-not ([System.Management.Automation.PSTypeName]'VUONGTT.Security.TokenPrivilegeHelper').Type) {
+    try {
+        Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
+
+namespace VUONGTT.Security
+{
+    public static class TokenPrivilegeHelper
+    {
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges, ref TOKEN_PRIVILEGES NewState, uint BufferLength, IntPtr PreviousState, IntPtr ReturnLength);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool GetTokenInformation(IntPtr TokenHandle, int TokenInformationClass, IntPtr TokenInformation, uint TokenInformationLength, out uint ReturnLength);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr GetCurrentProcess();
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct LUID
+        {
+            public uint LowPart;
+            public int HighPart;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct TOKEN_PRIVILEGES
+        {
+            public uint PrivilegeCount;
+            public LUID Luid;
+            public uint Attributes;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct TOKEN_MANDATORY_LABEL
+        {
+            public SID_AND_ATTRIBUTES Label;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SID_AND_ATTRIBUTES
+        {
+            public IntPtr Sid;
+            public uint Attributes;
+        }
+
+        public const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        public const uint TOKEN_QUERY = 0x0008;
+        public const uint SE_PRIVILEGE_ENABLED = 0x00000002;
+        public const int TokenIntegrityLevel = 25;
+
+        public static readonly string[] CriticalPrivileges = new string[]
+        {
+            "SeDebugPrivilege",
+            "SeTakeOwnershipPrivilege",
+            "SeBackupPrivilege",
+            "SeRestorePrivilege",
+            "SeSecurityPrivilege",
+            "SeShutdownPrivilege",
+            "SeSystemtimePrivilege",
+            "SeIncreaseBasePriorityPrivilege",
+            "SeLoadDriverPrivilege",
+            "SeManageVolumePrivilege",
+            "SeSystemEnvironmentPrivilege",
+            "SeImpersonatePrivilege"
+        };
+
+        public static bool EnablePrivilege(string privilegeName)
+        {
+            IntPtr hToken;
+            if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out hToken))
+                return false;
+            try
+            {
+                LUID luid;
+                if (!LookupPrivilegeValue(null, privilegeName, out luid))
+                    return false;
+
+                TOKEN_PRIVILEGES tp = new TOKEN_PRIVILEGES();
+                tp.PrivilegeCount = 1;
+                tp.Luid = luid;
+                tp.Attributes = SE_PRIVILEGE_ENABLED;
+
+                return AdjustTokenPrivileges(hToken, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
+            }
+            finally
+            {
+                CloseHandle(hToken);
+            }
+        }
+    }
+}
+"@ -ErrorAction SilentlyContinue
+    } catch {}
+}
+
 <#
 .SYNOPSIS
     Xác định tiến trình hiện tại có đang chạy dưới quyền Administrator (Elevated Token) hay không.
@@ -19,6 +127,109 @@ function Test-VUONGTTIsAdmin {
         Write-Verbose "Lỗi khi kiểm tra quyền Administrator: $_"
         return $false
     }
+}
+
+<#
+.SYNOPSIS
+    Lấy mức độ toàn vẹn (Mandatory Integrity Level) của tiến trình hiện tại (Low, Medium, High, System).
+#>
+function Get-VUONGTTProcessIntegrityLevel {
+    [CmdletBinding()]
+    param()
+
+    $result = [PSCustomObject]@{
+        LevelName       = "Unknown"
+        LevelCode       = 0
+        IsHighOrSystem  = $false
+    }
+
+    try {
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $isAdmin = Test-VUONGTTIsAdmin
+        
+        # Kiểm tra qua các nhóm SID trong Windows Identity
+        $hasHighLabel = $false
+        $hasSystemLabel = $false
+        foreach ($group in $identity.Groups) {
+            if ($group.Value -eq "S-1-16-12288") { # High Mandatory Level
+                $hasHighLabel = $true
+            }
+            elseif ($group.Value -eq "S-1-16-16384") { # System Mandatory Level
+                $hasSystemLabel = $true
+            }
+        }
+
+        if ($hasSystemLabel) {
+            $result.LevelName = "System"
+            $result.LevelCode = 16384
+            $result.IsHighOrSystem = $true
+        }
+        elseif ($hasHighLabel -or $isAdmin) {
+            $result.LevelName = "High"
+            $result.LevelCode = 12288
+            $result.IsHighOrSystem = $true
+        }
+        else {
+            $result.LevelName = "Medium"
+            $result.LevelCode = 8192
+            $result.IsHighOrSystem = $false
+        }
+    }
+    catch {
+        $result.LevelName = if (Test-VUONGTTIsAdmin) { "High" } else { "Medium" }
+        $result.IsHighOrSystem = Test-VUONGTTIsAdmin
+    }
+
+    return $result
+}
+
+<#
+.SYNOPSIS
+    Kích hoạt toàn bộ đặc quyền kernel trong Token tiến trình (SeDebugPrivilege, SeTakeOwnershipPrivilege, SeBackupPrivilege, v.v.).
+#>
+function Enable-VUONGTTHighestPrivileges {
+    [CmdletBinding()]
+    param()
+
+    $result = [PSCustomObject]@{
+        Success      = $false
+        EnabledCount = 0
+        Privileges   = [System.Collections.Generic.Dictionary[string, bool]]::new()
+        Integrity    = $null
+    }
+
+    $privList = @(
+        "SeDebugPrivilege",
+        "SeTakeOwnershipPrivilege",
+        "SeBackupPrivilege",
+        "SeRestorePrivilege",
+        "SeSecurityPrivilege",
+        "SeShutdownPrivilege",
+        "SeSystemtimePrivilege",
+        "SeIncreaseBasePriorityPrivilege",
+        "SeLoadDriverPrivilege",
+        "SeManageVolumePrivilege",
+        "SeSystemEnvironmentPrivilege",
+        "SeImpersonatePrivilege"
+    )
+
+    $helperType = [System.Type]::GetType("VUONGTT.Security.TokenPrivilegeHelper")
+    foreach ($priv in $privList) {
+        $enabled = $false
+        if ($helperType) {
+            try {
+                $enabled = [VUONGTT.Security.TokenPrivilegeHelper]::EnablePrivilege($priv)
+            } catch {}
+        }
+        $result.Privileges[$priv] = $enabled
+        if ($enabled) {
+            $result.EnabledCount++
+        }
+    }
+
+    $result.Integrity = Get-VUONGTTProcessIntegrityLevel
+    $result.Success = ($result.EnabledCount -gt 0 -or (Test-VUONGTTIsAdmin))
+    return $result
 }
 
 <#
@@ -51,7 +262,48 @@ function Get-VUONGTTActiveUserSIDs {
 
 <#
 .SYNOPSIS
-    Khởi chạy tiến trình với đầy đủ đặc quyền Administrator (Verb RunAs) và môi trường làm việc chuẩn.
+    Chiếm quyền sở hữu và cấp Full Control (Take Ownership & Grant Full Control) cho file hoặc registry key cứng đầu.
+#>
+function Grant-VUONGTTOwnershipAndAccess {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("FileSystem", "Registry")]
+        [string]$TargetType = "FileSystem"
+    )
+
+    $result = [PSCustomObject]@{
+        Success = $false
+        Message = ""
+    }
+
+    try {
+        Enable-VUONGTTHighestPrivileges | Out-Null
+        if ($TargetType -eq "FileSystem" -and (Test-Path $Path)) {
+            # Dùng takeown và icacls để đảm bảo Administrators có full quyền
+            $null = Start-Process -FilePath "$env:WINDIR\System32\takeown.exe" -ArgumentList "/F `"$Path`" /A /R /D Y" -NoNewWindow -Wait -PassThru
+            $null = Start-Process -FilePath "$env:WINDIR\System32\icacls.exe" -ArgumentList "`"$Path`" /grant *S-1-5-32-544:F /T /C /Q" -NoNewWindow -Wait -PassThru
+            $result.Success = $true
+            $result.Message = "Đã chiếm quyền sở hữu tệp/thư mục thành công."
+        }
+        else {
+            $result.Success = $true
+            $result.Message = "Sẵn sàng truy cập tài nguyên."
+        }
+    }
+    catch {
+        $result.Message = $_.Exception.Message
+    }
+
+    return $result
+}
+
+<#
+.SYNOPSIS
+    Khởi chạy tiến trình với đầy đủ đặc quyền Administrator tối thượng (Verb RunAs, Token Privileges và WorkingDirectory an toàn).
 #>
 function Start-VUONGTTAdminProcess {
     [CmdletBinding()]
@@ -72,7 +324,10 @@ function Start-VUONGTTAdminProcess {
         [switch]$Wait,
 
         [Parameter(Mandatory = $false)]
-        [switch]$NoElevation
+        [switch]$NoElevation,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$ForceHighestPrivilege
     )
 
     $result = [PSCustomObject]@{
@@ -83,6 +338,11 @@ function Start-VUONGTTAdminProcess {
     }
 
     try {
+        # Đảm bảo token tiến trình hiện tại được đẩy lên đặc quyền tối đa trước khi tạo tiến trình con
+        if ($ForceHighestPrivilege -or (-not $NoElevation)) {
+            Enable-VUONGTTHighestPrivileges | Out-Null
+        }
+
         # Chuẩn hóa đường dẫn thực thi
         $resolvedPath = $FilePath
         if (-not [System.IO.Path]::IsPathRooted($resolvedPath)) {
@@ -113,7 +373,7 @@ function Start-VUONGTTAdminProcess {
         $psi.WindowStyle = $WindowStyle
         $psi.UseShellExecute = $true
 
-        $useRunAs = (-not $NoElevation) -and (-not (Test-VUONGTTIsAdmin))
+        $useRunAs = (-not $NoElevation) -and ((-not (Test-VUONGTTIsAdmin)) -or $ForceHighestPrivilege)
         if ($useRunAs) {
             $psi.Verb = "RunAs"
         }
@@ -186,6 +446,9 @@ function Set-VUONGTTAdminRegistry {
         ModifiedKeys = [System.Collections.Generic.List[string]]::new()
         Errors       = [System.Collections.Generic.List[string]]::new()
     }
+
+    # Kích hoạt đặc quyền SeTakeOwnershipPrivilege & SeBackupPrivilege trước khi ghi Registry
+    Enable-VUONGTTHighestPrivileges | Out-Null
 
     # Chuẩn hóa subkey (loại bỏ ký tự gạch chéo đầu/cuối)
     $cleanSubKey = $SubKey.TrimStart('\').TrimEnd('\')

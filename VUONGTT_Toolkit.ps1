@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.85
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.86
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.85"
+$Script:AppVersion = "v20.5.909.86"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -123,6 +123,12 @@ if ($script:isLiveMode) {
 # Import Core Modules
 $corePath = Join-Path $ScriptDir "src\Core"
 . (Join-Path $corePath "AdminSecurityManager.ps1")
+try {
+    # Tự động kích hoạt toàn bộ đặc quyền Quản trị viên tối thượng (Highest System Privileges)
+    if (Get-Command "Enable-VUONGTTHighestPrivileges" -ErrorAction SilentlyContinue) {
+        $script:highestPrivilegesResult = Enable-VUONGTTHighestPrivileges
+    }
+} catch {}
 . (Join-Path $corePath "HardwareInfo.ps1")
 . (Join-Path $corePath "OfficeInstaller.ps1")
 . (Join-Path $corePath "Activator.ps1")
@@ -9714,7 +9720,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.85" }
+                if (-not $currentVer) { $currentVer = "20.5.909.86" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

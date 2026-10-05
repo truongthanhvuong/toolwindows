@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "20.5.909.85",
-    "releaseDate":  "02/10/2026",
+    "version":  "20.5.909.86",
+    "releaseDate":  "05/10/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
                       "Khắc phục triệt để lỗi \u0027A JavaScript error occurred in the main process\u0027 (ENOENT package.json) khi cài đặt Zalo trên máy Domain: (1) Thay thế cơ chế ProcessLiveRunner có pipe redirection (bị kẹt treo 10 phút do tiến trình con Zalo ngầm kế thừa pipe output) bằng phương thức Start-Process độc lập an toàn, rút ngắn thời gian cài đặt hoàn tất xuống chỉ 15-17 giây với ExitCode 0; (2) Tích hợp hàm Test-VUONGTTZaloIntegrity xác thực tính toàn vẹn của tệp tài nguyên app.asar (\u003e 50MB) trước khi xác nhận cài đặt thành công, loại bỏ hoàn toàn hiện tượng văng lỗi thiếu package.json do giải nén dở dang; (3) Tích hợp hàm Clear-VUONGTTCorruptedZaloInstall tự động phát hiện và làm sạch các thư mục Zalo bị lỗi dở dang trên toàn bộ các tài khoản (đặc biệt là Administrator trên máy Domain) trước khi cài đặt mới; (4) Bổ sung cơ chế chống va chạm tiến trình, không gọi lặp Start-Process nếu Zalo đã được bộ cài đặt NSIS tự động kích hoạt; (5) Vượt qua 100% toàn bộ các bài kiểm thử TDD tự động của hệ thống.",

@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.85")]
-[assembly: AssemblyFileVersion("20.5.909.85")]
+[assembly: AssemblyVersion("20.5.909.86")]
+[assembly: AssemblyFileVersion("20.5.909.86")]
 
 namespace VUONGTT
 {
@@ -171,6 +171,9 @@ namespace VUONGTT
                     }
                     return;
                 }
+
+                // Kích hoạt toàn bộ đặc quyền Quản trị viên tối thượng (SeDebugPrivilege, SeTakeOwnershipPrivilege, v.v.)
+                EnableAllHighestPrivileges();
 
                 // Tự động bảo vệ VUONGTT Toolkit khỏi Windows Defender (Anti-Virus False Positive Protection)
                 EnsureDefenderExclusion();
@@ -705,6 +708,95 @@ namespace VUONGTT
                 tDef.Start();
             }
             catch { }
+        }
+
+        /// <summary>
+        /// Tự động nâng toàn bộ Windows Token Privileges cho tiến trình C# (SeDebugPrivilege, SeTakeOwnershipPrivilege, v.v.)
+        /// </summary>
+        [System.Runtime.InteropServices.DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
+
+        [System.Runtime.InteropServices.DllImport("advapi32.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        private static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+
+        [System.Runtime.InteropServices.DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges, ref TOKEN_PRIVILEGES NewState, uint BufferLength, IntPtr PreviousState, IntPtr ReturnLength);
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct LUID
+        {
+            public uint LowPart;
+            public int HighPart;
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
+        private struct TOKEN_PRIVILEGES
+        {
+            public uint PrivilegeCount;
+            public LUID Luid;
+            public uint Attributes;
+        }
+
+        private const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        private const uint TOKEN_QUERY = 0x0008;
+        private const uint SE_PRIVILEGE_ENABLED = 0x00000002;
+
+        public static bool EnablePrivilege(string privilegeName)
+        {
+            try
+            {
+                IntPtr hToken;
+                if (!OpenProcessToken(Process.GetCurrentProcess().Handle, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out hToken))
+                    return false;
+                try
+                {
+                    LUID luid;
+                    if (!LookupPrivilegeValue(null, privilegeName, out luid))
+                        return false;
+
+                    TOKEN_PRIVILEGES tp = new TOKEN_PRIVILEGES();
+                    tp.PrivilegeCount = 1;
+                    tp.Luid = luid;
+                    tp.Attributes = SE_PRIVILEGE_ENABLED;
+
+                    return AdjustTokenPrivileges(hToken, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
+                }
+                finally
+                {
+                    CloseHandle(hToken);
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static void EnableAllHighestPrivileges()
+        {
+            string[] privileges = new string[]
+            {
+                "SeDebugPrivilege",
+                "SeTakeOwnershipPrivilege",
+                "SeBackupPrivilege",
+                "SeRestorePrivilege",
+                "SeSecurityPrivilege",
+                "SeShutdownPrivilege",
+                "SeSystemtimePrivilege",
+                "SeIncreaseBasePriorityPrivilege",
+                "SeLoadDriverPrivilege",
+                "SeManageVolumePrivilege",
+                "SeSystemEnvironmentPrivilege",
+                "SeImpersonatePrivilege"
+            };
+
+            foreach (string priv in privileges)
+            {
+                EnablePrivilege(priv);
+            }
         }
 
         /// <summary>
