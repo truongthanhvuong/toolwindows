@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.86
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.87
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.86"
+$Script:AppVersion = "v20.5.909.87"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -6651,11 +6651,13 @@ $btnPresetStandard    = Get-Control "btnPresetStandard"
 $btnPresetMinimal     = Get-Control "btnPresetMinimal"
 $btnPresetAdvanced    = Get-Control "btnPresetAdvanced"
 $btnPresetClear       = Get-Control "btnPresetClear"
+$btnPresetDefaultWin  = Get-Control "btnPresetDefaultWin"
 $btnGetInstalledTweaks= Get-Control "btnGetInstalledTweaks"
 $btnAppXRemoval       = Get-Control "btnAppXRemoval"
 
 $btnRunTweaks         = Get-Control "btnRunTweaks"
 $btnUndoTweaks        = Get-Control "btnUndoTweaks"
+$btnRestoreDefaultWin = Get-Control "btnRestoreDefaultWin"
 $chk_DnsProvider      = Get-Control "chk_DnsProvider"
 $cmbDnsProvider       = Get-Control "cmbDnsProvider"
 $txtCurrentPowerPlan    = Get-Control "txtCurrentPowerPlan"
@@ -6731,6 +6733,20 @@ if ($btnPresetClear) {
         }
         if ($txtTweaksLog) { $txtTweaksLog.Text = "Đã bỏ chọn toàn bộ các mục tinh chỉnh." }
         $txtFooterStatus.Text = "• [OK] Đã bỏ chọn toàn bộ Tweaks"
+    })
+}
+
+if ($btnPresetDefaultWin) {
+    $btnPresetDefaultWin.Add_Click({
+        # Tích chọn toàn bộ các mục cần đưa về trạng thái mặc định như lúc mới cài Windows
+        foreach ($name in $allTweakCheckboxes) {
+            $c = Get-Control $name
+            if ($c) { $c.IsChecked = $true }
+        }
+        if ($txtTweaksLog) {
+            $txtTweaksLog.Text = "[CHỌN MẶC ĐỊNH GỐC] Đã đánh dấu toàn bộ các thiết lập để chuẩn bị khôi phục về trạng thái nguyên bản của Windows mới cài.`r`nNhấn 'Hoàn Tác Tweaks Đã Chọn' hoặc 'Khôi Phục Như Lúc Mới Cài Win' để tiến hành!"
+        }
+        $txtFooterStatus.Text = "• [OK] Đã chọn cấu hình khôi phục gốc Windows"
     })
 }
 
@@ -6900,6 +6916,78 @@ if ($btnUndoTweaks) {
             [System.Windows.Input.Mouse]::OverrideCursor = $cursorBefore
             $btnUndoTweaks.IsEnabled = $true
             if ($btnRunTweaks) { $btnRunTweaks.IsEnabled = $true }
+            Invoke-VUONGTTDoEvents
+        }
+    })
+}
+
+# 1-Click Khôi phục toàn bộ các chức năng như lúc mới cài Windows
+if ($btnRestoreDefaultWin) {
+    $btnRestoreDefaultWin.Add_Click({
+        $confirm = [System.Windows.MessageBox]::Show(
+            "Bạn có chắc chắn muốn khôi phục toàn bộ hệ thống về trạng thái nguyên bản như lúc mới cài Windows không?`n`n" +
+            "• Khôi phục Menu chuột phải Windows 11 hiện đại gốc`n" +
+            "• Khôi phục ẩn phần mở rộng tệp tin và ẩn tệp ẩn`n" +
+            "• Đưa Taskbar về căn giữa chuẩn Windows`n" +
+            "• Khôi phục toàn bộ Dịch vụ Windows (Windows Update, SysMain, Telemetry...) về mặc định`n" +
+            "• Khôi phục gói nguồn điện Balanced (Cân bằng) mặc định`n" +
+            "• Khôi phục DNS mạng về tự động nhận từ Router (DHCP)`n" +
+            "• Hệ thống sẽ tự động tạo Điểm Khôi Phục (System Restore Point) trước khi chạy.",
+            "Xác Nhận Khôi Phục Mặc Định Windows",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Warning
+        )
+
+        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+        $btnRestoreDefaultWin.IsEnabled = $false
+        if ($btnRunTweaks) { $btnRunTweaks.IsEnabled = $false }
+        if ($btnUndoTweaks) { $btnUndoTweaks.IsEnabled = $false }
+        $cursorBefore = [System.Windows.Input.Mouse]::OverrideCursor
+        [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+
+        try {
+            if ($txtTweaksLog) {
+                $txtTweaksLog.Text = "=== [BẮT ĐẦU KHÔI PHỤC TOÀN BỘ VỀ MẶC ĐỊNH WINDOWS - $(Get-Date -Format 'HH:mm:ss')] ===`r`n"
+                $txtTweaksLog.ScrollToEnd()
+            }
+            Invoke-VUONGTTDoEvents
+
+            $res = Restore-VUONGTTDefaultWindows
+            if ($txtTweaksLog -and $res -and $res.Log) {
+                foreach ($line in $res.Log) {
+                    $txtTweaksLog.AppendText("$line`r`n")
+                }
+                $txtTweaksLog.AppendText("=== [HOÀN TẤT] Đã khôi phục $($res.RestoredCount) chức năng về trạng thái nguyên bản như lúc mới cài Win! ===`r`n")
+                $txtTweaksLog.ScrollToEnd()
+            }
+
+            # Cập nhật lại trạng thái giao diện UI
+            foreach ($name in $allTweakCheckboxes) {
+                $c = Get-Control $name
+                if ($c) { $c.IsChecked = $false }
+            }
+            Refresh-PowerPlanBadge
+            $txtFooterStatus.Text = "• [OK] Đã khôi phục thành công các chức năng như lúc mới cài Windows!"
+            [System.Windows.MessageBox]::Show(
+                "Đã khôi phục thành công toàn bộ chức năng, dịch vụ và giao diện về trạng thái nguyên bản như lúc mới cài Windows!",
+                "Khôi Phục Thành Công",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Information
+            )
+        }
+        catch {
+            if ($txtTweaksLog) {
+                $txtTweaksLog.AppendText("[LỖI] Xảy ra sự cố khi khôi phục: $($_.Exception.Message)`r`n")
+                $txtTweaksLog.ScrollToEnd()
+            }
+            [System.Windows.MessageBox]::Show("Lỗi khi khôi phục: $($_.Exception.Message)", "Lỗi Khôi Phục", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+        }
+        finally {
+            [System.Windows.Input.Mouse]::OverrideCursor = $cursorBefore
+            $btnRestoreDefaultWin.IsEnabled = $true
+            if ($btnRunTweaks) { $btnRunTweaks.IsEnabled = $true }
+            if ($btnUndoTweaks) { $btnUndoTweaks.IsEnabled = $true }
             Invoke-VUONGTTDoEvents
         }
     })
@@ -9720,7 +9808,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.86" }
+                if (-not $currentVer) { $currentVer = "20.5.909.87" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

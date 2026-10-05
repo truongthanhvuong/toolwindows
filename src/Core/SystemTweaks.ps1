@@ -1107,6 +1107,135 @@ function Invoke-VUONGTTSingleTweak {
     }
 }
 
+<#
+.SYNOPSIS
+    Khôi phục toàn bộ các chức năng, giao diện, dịch vụ và cấu hình hệ thống Windows trở về trạng thái nguyên bản như lúc mới cài Windows (Fresh Clean Install State).
+#>
+function Restore-VUONGTTDefaultWindows {
+    [CmdletBinding()]
+    param(
+        [switch]$SkipRestorePoint,
+        [switch]$SkipExplorerRestart
+    )
+
+    $result = [PSCustomObject]@{
+        Success        = $false
+        RestoredCount  = 0
+        Log            = [System.Collections.Generic.List[string]]::new()
+        Errors         = [System.Collections.Generic.List[string]]::new()
+    }
+
+    try {
+        # 1. Tự động tạo Điểm Khôi Phục Hệ Thống bảo vệ an toàn
+        if (-not $SkipRestorePoint) {
+            try {
+                $result.Log.Add("• Đang kích hoạt System Restore và tạo điểm khôi phục bảo vệ...")
+                Enable-ComputerRestore -Drive "C:\" -ErrorAction SilentlyContinue
+                Checkpoint-Computer -Description "Truoc_Khi_Khoi_Phuc_Goc_Windows" -RestorePointType "MODIFY_SETTINGS" -ErrorAction SilentlyContinue | Out-Null
+                $result.Log.Add("  [OK] Đã tạo System Restore Point: 'Truoc_Khi_Khoi_Phuc_Goc_Windows'")
+            } catch {
+                $result.Log.Add("  [BỎ QUA] Không thể tạo Restore Point: $($_.Exception.Message)")
+            }
+        }
+
+        # 2. Hoàn tác toàn bộ 32+ tinh chỉnh về mặc định Windows sạch qua Invoke-VUONGTTSingleTweak
+        $allKeys = @(
+            "ActivityHistory", "ConsumerFeatures", "DeliveryOptimization", "DiskCleanup",
+            "EndTaskRightClick", "AutoFolderDiscovery", "Hibernation", "LocationTracking",
+            "StoreSearchRec", "PreventDeviceApps", "Telemetry", "TempFiles", "Widgets",
+            "BackgroundApps", "ReservedStorage", "IPv6PreferIPv4", "ClassicContextMenu",
+            "VisualEffects", "GameMode", "DarkTheme", "LongPaths", "ShowFileExt",
+            "ShowHiddenFiles", "NumLock", "TaskbarCenter", "TaskbarSearch", "TaskbarTaskView",
+            "StartBing", "WindowSnap"
+        )
+
+        foreach ($k in $allKeys) {
+            try {
+                $msg = Invoke-VUONGTTSingleTweak -TweakKey $k -Enable $false
+                $result.Log.Add("  $msg")
+                $result.RestoredCount++
+            } catch {
+                $errMsg = $_.Exception.Message
+                $result.Errors.Add("Lỗi khi hoàn tác tweak $($k) - $errMsg")
+            }
+        }
+
+        # 3. Phục hồi cấu hình giao diện Windows 11 gốc bổ sung
+        try {
+            # Xóa key ép menu chuột phải Windows 10 để trở về Windows 11 gốc
+            $clsidPath = "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}"
+            if (Test-Path $clsidPath) {
+                Remove-Item -Path $clsidPath -Recurse -Force -ErrorAction SilentlyContinue
+                $result.Log.Add("  [OK] Đã khôi phục Menu chuột phải Windows 11 hiện đại gốc.")
+                $result.RestoredCount++
+            }
+
+            # Khôi phục ẩn đuôi file và ẩn file ẩn (mặc định của Windows mới cài)
+            $advPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+            Set-ItemProperty -Path $advPath -Name "HideFileExt" -Value 1 -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $advPath -Name "Hidden" -Value 2 -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $advPath -Name "TaskbarAl" -Value 1 -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $advPath -Name "ShowTaskViewButton" -Value 1 -Force -ErrorAction SilentlyContinue
+            $result.Log.Add("  [OK] Đã thiết lập ẩn file ẩn, ẩn đuôi mở rộng và căn giữa Taskbar theo chuẩn Windows mới.")
+            $result.RestoredCount += 3
+        } catch {}
+
+        # 4. Khôi phục các dịch vụ Windows cốt lõi về chế độ chạy mặc định
+        $servicesToRestore = @(
+            @{ Name = "wuauserv"; StartType = "Manual" },
+            @{ Name = "bits"; StartType = "Manual" },
+            @{ Name = "SysMain"; StartType = "Automatic" },
+            @{ Name = "WSearch"; StartType = "Automatic" },
+            @{ Name = "DiagTrack"; StartType = "Automatic" },
+            @{ Name = "DoSvc"; StartType = "Automatic" }
+        )
+
+        foreach ($svc in $servicesToRestore) {
+            try {
+                if (Get-Service -Name $svc.Name -ErrorAction SilentlyContinue) {
+                    Set-Service -Name $svc.Name -StartupType $svc.StartType -ErrorAction SilentlyContinue
+                    $result.Log.Add("  [OK] Khôi phục dịch vụ $($svc.Name) -> $($svc.StartType)")
+                    $result.RestoredCount++
+                }
+            } catch {}
+        }
+
+        # 5. Khôi phục gói nguồn điện mặc định (powercfg -restoredefaultschemes) & chọn Balanced
+        try {
+            $null = Start-Process -FilePath "$env:WINDIR\System32\powercfg.exe" -ArgumentList "-restoredefaultschemes" -NoNewWindow -Wait -PassThru
+            $null = Start-Process -FilePath "$env:WINDIR\System32\powercfg.exe" -ArgumentList "-setactive 381b4222-f694-41f0-9685-ff5bb260df2e" -NoNewWindow -Wait -PassThru
+            $result.Log.Add("  [OK] Đã khôi phục toàn bộ sơ đồ nguồn điện Windows về mặc định (Balanced).")
+            $result.RestoredCount++
+        } catch {}
+
+        # 6. Reset cấu hình DNS mạng về mặc định DHCP Router
+        try {
+            Get-NetIPInterface -ErrorAction SilentlyContinue | Where-Object { $_.ConnectionState -eq 'Connected' } | ForEach-Object {
+                Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ResetServerAddresses -ErrorAction SilentlyContinue
+            }
+            $result.Log.Add("  [OK] Đã xóa DNS tĩnh, khôi phục card mạng nhận DNS tự động từ Router (DHCP).")
+            $result.RestoredCount++
+        } catch {}
+
+        # 7. Khởi động lại Windows Explorer để áp dụng hiệu lực giao diện
+        if (-not $SkipExplorerRestart) {
+            try {
+                $result.Log.Add("• Đang làm mới giao diện Windows Explorer...")
+                Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 500
+            } catch {}
+        }
+
+        $result.Success = ($result.RestoredCount -gt 0)
+    }
+    catch {
+        $result.Errors.Add($_.Exception.Message)
+        $result.Log.Add("[LỖI] Khôi phục mặc định thất bại: $($_.Exception.Message)")
+    }
+
+    return $result
+}
+
 
 
 

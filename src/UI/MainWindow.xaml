@@ -1,6 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VUONGTT Tool Pro 2026 - v20.5.909.86"
+        Title="VUONGTT Tool Pro 2026 - v20.5.909.87"
         Height="720" Width="1180"
         MinHeight="480" MinWidth="800"
         WindowStartupLocation="CenterScreen"
@@ -412,7 +412,7 @@
                                     <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.86 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="txtLogoVersionDisplay" Text="v20.5.909.87 - Professional" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>                    </Grid>
                 </Border>
 
@@ -1590,11 +1590,12 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock Text="Khuyến Nghị Chọn Sẵn (Recommended Selections):" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-                                <UniformGrid Grid.Row="1" Columns="6" Margin="0,2,0,0">
+                                <UniformGrid Grid.Row="1" Columns="7" Margin="0,2,0,0">
                                     <Button x:Name="btnPresetStandard" Content="Chuẩn (Standard)" Background="#2563EB" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
                                     <Button x:Name="btnPresetMinimal" Content="Tối Giản (Minimal)" Background="#334155" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
                                     <Button x:Name="btnPresetAdvanced" Content="Nâng Cao (Advanced)" Background="#D97706" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
                                     <Button x:Name="btnPresetClear" Content="Bỏ Chọn (Clear)" Background="#64748B" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
+                                    <Button x:Name="btnPresetDefaultWin" Content="Khôi Phục Gốc" ToolTip="Chọn các thiết lập an toàn để khôi phục trạng thái mặc định như lúc mới cài Windows" Background="#475569" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
                                     <Button x:Name="btnGetInstalledTweaks" Content="Lấy Tweak Đang Dùng" Background="#059669" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
                                     <Button x:Name="btnAppXRemoval" Content="Dọn App Rác (AppX)" Background="#DC2626" Style="{StaticResource ActionBtn}" Height="30" Margin="2,0,2,0"/>
                                 </UniformGrid>
@@ -1718,11 +1719,13 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button x:Name="btnRunTweaks" Content="⚡ Áp Dụng Tweaks (Run Tweaks)" Background="#059669" Style="{StaticResource ActionBtn}" MinWidth="220" Height="36" Margin="0,0,8,0"/>
-                                <Button x:Name="btnUndoTweaks" Content="🔄 Hoàn Tác Tweaks Đã Chọn (Undo Tweaks)" Background="#D97706" Style="{StaticResource ActionBtn}" MinWidth="240" Height="36" Grid.Column="1" Margin="0,0,12,0"/>
-                                <TextBlock Grid.Column="2" Text="* Chú thích: Rê chuột vào từng mục để xem giải thích chi tiết. Có thể hoàn tác mọi thay đổi an toàn." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                <Button x:Name="btnRunTweaks" Content="⚡ Áp Dụng Tweaks (Run Tweaks)" Background="#059669" Style="{StaticResource ActionBtn}" MinWidth="200" Height="36" Margin="0,0,8,0"/>
+                                <Button x:Name="btnUndoTweaks" Content="🔄 Hoàn Tác Tweaks Đã Chọn (Undo Tweaks)" Background="#D97706" Style="{StaticResource ActionBtn}" MinWidth="220" Height="36" Grid.Column="1" Margin="0,0,8,0"/>
+                                <Button x:Name="btnRestoreDefaultWin" Content="⏮️ Khôi Phục Như Lúc Mới Cài Win" ToolTip="Khôi phục toàn bộ giao diện, menu chuột phải, dịch vụ, power plan và DNS trở về nguyên bản như lúc mới cài Windows" Background="#E11D48" Style="{StaticResource ActionBtn}" MinWidth="250" Height="36" Grid.Column="2" Margin="0,0,12,0"/>
+                                <TextBlock Grid.Column="3" Text="* Chú thích: Rê chuột vào từng mục để xem giải thích chi tiết. Có thể hoàn tác mọi thay đổi an toàn." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                             </Grid>
                         </Border>
 
@@ -4659,7 +4662,7 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="btnShowDisclaimer" Content="⚖️ Miễn trừ trách nhiệm" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0" ToolTip="Xem điều khoản miễn trừ trách nhiệm &amp; bản quyền"/>
-                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.86" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtFooterVersionDisplay" Text="v20.5.909.87" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>                </Grid>
             </Border>
         </Grid>
