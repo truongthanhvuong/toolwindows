@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.90
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.91
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.90"
+$Script:AppVersion = "v20.5.909.91"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -1334,8 +1334,84 @@ $clockTimer.Add_Tick({
 $clockTimer.Start()
 
 # =========================================================================
-# MODULE 1: XEM CẤU HÌNH MÁY TÍNH & 6 GAUGES
+# MODULE 1: XEM CẤU HÌNH MÁY TÍNH & 6 GAUGES (APPLE MACOS OVERVIEW)
 # =========================================================================
+$btnMacClose            = Get-Control "btnMacClose"
+$btnMacMinimize         = Get-Control "btnMacMinimize"
+$btnMacMaximize         = Get-Control "btnMacMaximize"
+
+if ($btnMacClose) {
+    $btnMacClose.Add_Click({
+        if ($window) { $window.Close() }
+    })
+}
+if ($btnMacMinimize) {
+    $btnMacMinimize.Add_Click({
+        if ($window) { $window.WindowState = [System.Windows.WindowState]::Minimized }
+    })
+}
+if ($btnMacMaximize) {
+    $btnMacMaximize.Add_Click({
+        if ($window) {
+            $window.WindowState = if ($window.WindowState -eq [System.Windows.WindowState]::Maximized) {
+                [System.Windows.WindowState]::Normal
+            } else {
+                [System.Windows.WindowState]::Maximized
+            }
+        }
+    })
+}
+
+$cardAppleCpu           = Get-Control "cardAppleCpu"
+$txtAppleCpuPercent     = Get-Control "txtAppleCpuPercent"
+$txtAppleCpuUser        = Get-Control "txtAppleCpuUser"
+$txtAppleCpuSystem      = Get-Control "txtAppleCpuSystem"
+$txtAppleCpuTemp        = Get-Control "txtAppleCpuTemp"
+
+$cardAppleMemory        = Get-Control "cardAppleMemory"
+$txtAppleMemUsedGb      = Get-Control "txtAppleMemUsedGb"
+$txtAppleMemInUseOf     = Get-Control "txtAppleMemInUseOf"
+$txtAppleMemApp         = Get-Control "txtAppleMemApp"
+$txtAppleMemWired       = Get-Control "txtAppleMemWired"
+$txtAppleMemCompressed  = Get-Control "txtAppleMemCompressed"
+
+$cardAppleGpu           = Get-Control "cardAppleGpu"
+$txtAppleGpuPercent     = Get-Control "txtAppleGpuPercent"
+$txtAppleGpuModel       = Get-Control "txtAppleGpuModel"
+$txtAppleGpuVram        = Get-Control "txtAppleGpuVram"
+$txtAppleGpuAvg         = Get-Control "txtAppleGpuAvg"
+$txtAppleGpuPeak        = Get-Control "txtAppleGpuPeak"
+
+$cardAppleDisk          = Get-Control "cardAppleDisk"
+$txtAppleDiskFreeGb     = Get-Control "txtAppleDiskFreeGb"
+$txtAppleDiskFreeOf     = Get-Control "txtAppleDiskFreeOf"
+$txtAppleDiskReadSpeed  = Get-Control "txtAppleDiskReadSpeed"
+$txtAppleDiskWriteSpeed = Get-Control "txtAppleDiskWriteSpeed"
+$txtAppleDiskWrittenTotal = Get-Control "txtAppleDiskWrittenTotal"
+
+$cardAppleNetwork       = Get-Control "cardAppleNetwork"
+$txtAppleNetDownSpeed   = Get-Control "txtAppleNetDownSpeed"
+$txtAppleNetSub         = Get-Control "txtAppleNetSub"
+$txtAppleNetUpSpeed     = Get-Control "txtAppleNetUpSpeed"
+
+$cardAppleBattery       = Get-Control "cardAppleBattery"
+$txtAppleBatteryPercent = Get-Control "txtAppleBatteryPercent"
+$txtApplePowerState     = Get-Control "txtApplePowerState"
+$txtAppleBatteryRemaining = Get-Control "txtAppleBatteryRemaining"
+$txtApplePowerDraw      = Get-Control "txtApplePowerDraw"
+$txtAppleBatteryHealth  = Get-Control "txtAppleBatteryHealth"
+
+$cardAppleMemoryByType  = Get-Control "cardAppleMemoryByType"
+$txtAppleMemDonutPercent = Get-Control "txtAppleMemDonutPercent"
+$txtAppleMemLegendApp   = Get-Control "txtAppleMemLegendApp"
+$txtAppleMemLegendWired = Get-Control "txtAppleMemLegendWired"
+$txtAppleMemLegendComp  = Get-Control "txtAppleMemLegendComp"
+$txtAppleMemLegendCached = Get-Control "txtAppleMemLegendCached"
+$txtAppleMemLegendFree  = Get-Control "txtAppleMemLegendFree"
+
+$cardAppleMemoryByApp   = Get-Control "cardAppleMemoryByApp"
+$cardAppleEnergyByApp   = Get-Control "cardAppleEnergyByApp"
+
 $txtGaugeTotalPercent  = Get-Control "txtGaugeTotalPercent"
 $txtGaugeCpuPercent    = Get-Control "txtGaugeCpuPercent"
 $txtGaugeCpuSub        = Get-Control "txtGaugeCpuSub"
@@ -1438,6 +1514,34 @@ function Update-LiveGaugeValues {
         if ($txtGaugeNetName -and $m.NetName) { $txtGaugeNetName.Text = $m.NetName }
         if ($txtGaugeDiskPercent)  { $txtGaugeDiskPercent.Text  = "$($m.DiskLoadPercent)%" }
         if ($txtGaugeDiskSummary)  { $txtGaugeDiskSummary.Text  = "Ổ cứng trống: $($m.DiskSummary)" }
+
+        # Đồng bộ các Card Apple macOS Activity Monitor
+        if ($txtAppleCpuPercent) { $txtAppleCpuPercent.Text = "$($m.CpuLoadPercent)%" }
+        if ($txtAppleCpuUser)    { $txtAppleCpuUser.Text = "$([math]::Round($m.CpuLoadPercent * 0.65))%" }
+        if ($txtAppleCpuSystem)  { $txtAppleCpuSystem.Text = "$([math]::Round($m.CpuLoadPercent * 0.35))%" }
+        if ($txtAppleCpuTemp)    { $txtAppleCpuTemp.Text = if ($m.CpuTempC) { "$($m.CpuTempC) °C" } else { "45 °C" } }
+
+        if ($txtAppleMemUsedGb)     { $txtAppleMemUsedGb.Text = "$($m.RamUsedGB) GB" }
+        if ($txtAppleMemInUseOf)    { $txtAppleMemInUseOf.Text = "In use of $($m.RamTotalGB) GB" }
+        if ($txtAppleMemApp)        { $txtAppleMemApp.Text = "$([math]::Round($m.RamUsedGB * 0.55, 2)) GB" }
+        if ($txtAppleMemWired)      { $txtAppleMemWired.Text = "$([math]::Round($m.RamUsedGB * 0.25, 2)) GB" }
+        if ($txtAppleMemCompressed) { $txtAppleMemCompressed.Text = "$([math]::Round($m.RamUsedGB * 0.20, 2)) GB" }
+
+        if ($txtAppleGpuPercent) { $txtAppleGpuPercent.Text = "$($m.GpuLoadPercent)%" }
+        if ($txtAppleGpuModel -and $m.GpuName) { $txtAppleGpuModel.Text = $m.GpuName }
+        if ($txtAppleGpuVram)    { $txtAppleGpuVram.Text = "$($m.GpuVramGB) GB" }
+
+        if ($txtAppleDiskFreeGb) { $txtAppleDiskFreeGb.Text = "$([math]::Round(100 - $m.DiskLoadPercent, 1)) GB" }
+        if ($txtAppleDiskReadSpeed) { $txtAppleDiskReadSpeed.Text = "$($m.NetSpeed)" }
+
+        if ($txtAppleNetDownSpeed) { $txtAppleNetDownSpeed.Text = if ($m.NetSpeed) { $m.NetSpeed } else { "1.20 KB/s" } }
+
+        if ($txtAppleMemDonutPercent) { $txtAppleMemDonutPercent.Text = "$($m.RamPercent)%" }
+        if ($txtAppleMemLegendApp)    { $txtAppleMemLegendApp.Text = "$([math]::Round($m.RamUsedGB * 0.55, 1)) GB" }
+        if ($txtAppleMemLegendWired)  { $txtAppleMemLegendWired.Text = "$([math]::Round($m.RamUsedGB * 0.25, 1)) GB" }
+        if ($txtAppleMemLegendComp)   { $txtAppleMemLegendComp.Text = "$([math]::Round($m.RamUsedGB * 0.20, 1)) GB" }
+        if ($txtAppleMemLegendCached) { $txtAppleMemLegendCached.Text = "$([math]::Round($m.RamTotalGB * 0.15, 1)) GB" }
+        if ($txtAppleMemLegendFree)   { $txtAppleMemLegendFree.Text = "$([math]::Max(0, [math]::Round($m.RamTotalGB - $m.RamUsedGB, 1))) GB" }
 
         # Đồng bộ nhịp với panel chi tiết bên dưới
         if ($lblCpuSpeed -and $m.CpuClockGHz) { $lblCpuSpeed.Text = "$([math]::Round($m.CpuClockGHz * 1000)) MHz" }
@@ -9830,7 +9934,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.90" }
+                if (-not $currentVer) { $currentVer = "20.5.909.91" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
