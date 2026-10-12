@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.91
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.92
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.91"
+$Script:AppVersion = "v20.5.909.92"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -2683,7 +2683,7 @@ function Add-PrinterLogMessage {
 function Switch-PrinterLANSubTab {
     param([string]$targetTab, [switch]$SkipRefresh = $false)
     $bc = [System.Windows.Media.BrushConverter]::new()
-    $activeBg = $bc.ConvertFromString("#0284C7")
+    $activeBg = $bc.ConvertFromString("#007AFF")
     $transBg = [System.Windows.Media.Brushes]::Transparent
     $whiteFg = [System.Windows.Media.Brushes]::White
 
@@ -4672,9 +4672,9 @@ function Select-VUONGTTDiskIndex {
                 $txtDiskTempStatus.Text = "CẢNH BÁO • Nhiệt độ quá cao"
                 $txtDiskTempStatus.Foreground = $conv.ConvertFromString("#BE123C")
             } elseif ($d.TemperatureC -ge 50) {
-                $txtDiskTemp.Foreground = $conv.ConvertFromString("#B45309")
+                $txtDiskTemp.Foreground = $conv.ConvertFromString("#FF9500")
                 $txtDiskTempStatus.Text = "Ấm • Hoạt động bình thường"
-                $txtDiskTempStatus.Foreground = $conv.ConvertFromString("#B45309")
+                $txtDiskTempStatus.Foreground = $conv.ConvertFromString("#FF9500")
             } else {
                 $txtDiskTemp.Foreground = $conv.ConvertFromString("#0284C7")
                 $txtDiskTempStatus.Text = "Mát Mẻ • Hoạt động an toàn"
@@ -4757,7 +4757,7 @@ function Select-VUONGTTDiskIndex {
                 $pb.Minimum = 0
                 $pb.Maximum = 100
                 $pb.Value = $v.UsedPercent
-                $pb.Foreground = if ($v.UsedPercent -ge 90) { $conv.ConvertFromString("#BE123C") } elseif ($v.UsedPercent -ge 75) { $conv.ConvertFromString("#B45309") } else { $conv.ConvertFromString("#0284C7") }
+                $pb.Foreground = if ($v.UsedPercent -ge 90) { $conv.ConvertFromString("#BE123C") } elseif ($v.UsedPercent -ge 75) { $conv.ConvertFromString("#FF9500") } else { $conv.ConvertFromString("#0284C7") }
                 $pb.Background = $conv.ConvertFromString("#E2E8F0")
 
                 $vSp.Children.Add($pb) | Out-Null
@@ -8317,7 +8317,7 @@ function Refresh-DiskPartitionDisplay {
         $bSize.Margin = [System.Windows.Thickness]::new(4, 0, 4, 0)
         $tSize = New-Object System.Windows.Controls.TextBlock
         $tSize.Text = "Tổng: $($disk.SizeGB) GB"
-        $tSize.Foreground = $bc.ConvertFromString("#B45309")
+        $tSize.Foreground = $bc.ConvertFromString("#FF9500")
         $tSize.FontWeight = [System.Windows.FontWeights]::Bold
         $tSize.FontSize = 11.5
         $bSize.Child = $tSize
@@ -9182,7 +9182,7 @@ function Show-VUONGTTUpdateChangelogWindow {
     $lblTitle.Text = if ($HasUpdate) { "🚀 ĐÃ CÓ BẢN CẬP NHẬT MỚI (v$LatestVersion)!" } else { "✅ BẠN ĐANG SỬ DỤNG PHIÊN BẢN MỚI NHẤT" }
     $lblTitle.FontSize = 16
     $lblTitle.FontWeight = [System.Windows.FontWeights]::Bold
-    $lblTitle.Foreground = if ($HasUpdate) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#B45309") } else { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1D4ED8") }
+    $lblTitle.Foreground = if ($HasUpdate) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FF9500") } else { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#007AFF") }
     $titlePanel.Children.Add($lblTitle)
 
     $lblMeta = New-Object System.Windows.Controls.TextBlock
@@ -9476,7 +9476,7 @@ function Update-VUONGTTLicenseUI {
         }
         if ($txtLicenseBadge) {
             $txtLicenseBadge.Text       = "⚪ FREE VERSION"
-            $txtLicenseBadge.Foreground = $conv.ConvertFromString("#B45309")
+            $txtLicenseBadge.Foreground = $conv.ConvertFromString("#FF9500")
         }
         if ($btnActivateLicense) {
             $btnActivateLicense.Visibility = [System.Windows.Visibility]::Visible
@@ -9581,7 +9581,7 @@ function Render-VUONGTTAdminPolicies {
         $itemPro = New-Object System.Windows.Controls.ComboBoxItem
         $itemPro.Content = "⭐ PRO"
         $itemPro.FontWeight = [System.Windows.FontWeights]::Bold
-        $itemPro.Foreground = $conv.ConvertFromString("#B45309")
+        $itemPro.Foreground = $conv.ConvertFromString("#FF9500")
 
         $itemAdmin = New-Object System.Windows.Controls.ComboBoxItem
         $itemAdmin.Content = "👑 ADMIN"
@@ -9682,7 +9682,7 @@ function Render-VUONGTTAdminKeys {
         $durTxt.Text = $k.Duration
         $durTxt.FontSize = 10.5
         $durTxt.FontWeight = [System.Windows.FontWeights]::Bold
-        $durTxt.Foreground = $conv.ConvertFromString("#B45309")
+        $durTxt.Foreground = $conv.ConvertFromString("#FF9500")
         $durBadge.Child = $durTxt
         $spKeyRow.Children.Add($durBadge) | Out-Null
 
@@ -9758,7 +9758,7 @@ function Render-VUONGTTAdminKeys {
             $btnToggleStatus.Content = "🔄 Reset"
             $btnToggleStatus.ToolTip = "Đặt lại key này về trạng thái Chưa Sử Dụng (để cấp cho máy khác)"
             $btnToggleStatus.Background = $conv.ConvertFromString("#FEF3C7")
-            $btnToggleStatus.Foreground = $conv.ConvertFromString("#B45309")
+            $btnToggleStatus.Foreground = $conv.ConvertFromString("#FF9500")
         } else {
             $btnToggleStatus.Content = "✅ Đã Dùng"
             $btnToggleStatus.ToolTip = "Đánh dấu key này đã được kích hoạt sử dụng"
@@ -9934,7 +9934,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.91" }
+                if (-not $currentVer) { $currentVer = "20.5.909.92" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {
