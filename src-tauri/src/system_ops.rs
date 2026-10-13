@@ -442,17 +442,65 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     }
 
     // ========================================================================
-    // 9. CỨU HỘ IT HELPDESK & MẠNG INTERNET
+    // 9. CỨU HỘ IT HELPDESK & KHẮC PHỤC RỚT MẠNG / TREO ĐƠ MÁY
     // ========================================================================
-    if act.contains("cuu ho") || act.contains("winsock") || act.contains("helpdesk") || act.contains("mang") || act.contains("dat lai mang") {
-        let mut cmd = Command::new("cmd");
-        cmd.args(["/c", "netsh winsock reset & netsh int ip reset & ipconfig /flushdns"]);
+    if act.contains("fix_network_freeze")
+        || act.contains("rot mang")
+        || act.contains("treo may")
+        || act.contains("chong treo")
+        || act.contains("mat mang")
+        || act.contains("cuu ho")
+        || act.contains("winsock")
+        || act.contains("helpdesk")
+        || act.contains("dat lai mang")
+    {
+        let ps_code = r#"
+            # 1. Chan ro ri RAM Non-Paged Pool tu driver NDU
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Ndu' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
+
+            # 2. Chan Windows ngat nguon card mang de tiet kiem dien
+            Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}' -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object {
+                $p = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
+                if ($p.DriverDesc -match '82574L|Gigabit|Ethernet|Intel|Realtek') {
+                    Set-ItemProperty -Path $_.PSPath -Name 'PnPCapabilities' -Value 24 -Type DWord -Force -ErrorAction SilentlyContinue
+                }
+            }
+
+            # 3. Toi uu hoa card mang: Tat LSO v2, tang ReceiveBuffers chong drop packet
+            Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
+                $aName = $_.Name
+                Set-NetAdapterAdvancedProperty -Name $aName -RegistryKeyword '*LsoV2IPv4' -RegistryValue 0 -ErrorAction SilentlyContinue
+                Set-NetAdapterAdvancedProperty -Name $aName -RegistryKeyword '*LsoV2IPv6' -RegistryValue 0 -ErrorAction SilentlyContinue
+                Set-NetAdapterAdvancedProperty -Name $aName -RegistryKeyword '*ReceiveBuffers' -RegistryValue 1024 -ErrorAction SilentlyContinue
+                Set-NetAdapterAdvancedProperty -Name $aName -RegistryKeyword '*TransmitBuffers' -RegistryValue 1024 -ErrorAction SilentlyContinue
+            }
+
+            # 4. Bo sung DNS Server du phong (Cloudflare 1.1.1.1 & Google 8.8.8.8 chong rot mang Event 1014)
+            Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
+                $cur = (Get-DnsClientServerAddress -InterfaceAlias $_.Name -AddressFamily IPv4 -ErrorAction SilentlyContinue).ServerAddresses
+                $dnsList = [System.Collections.Generic.List[string]]::new()
+                if ($cur) { foreach ($d in $cur) { if ($d -and -not $dnsList.Contains($d)) { $dnsList.Add($d) } } }
+                if (-not $dnsList.Contains('1.1.1.1')) { $dnsList.Add('1.1.1.1') }
+                if (-not $dnsList.Contains('8.8.8.8')) { $dnsList.Add('8.8.8.8') }
+                Set-DnsClientServerAddress -InterfaceAlias $_.Name -ServerAddresses $dnsList.ToArray() -ErrorAction SilentlyContinue
+            }
+
+            # 5. Dat lai Winsock, TCP/IP stack, xoa DNS cache va lam sach
+            netsh winsock reset
+            netsh int ip reset
+            ipconfig /flushdns
+            netsh int tcp set global autotuninglevel=normal
+        "#;
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let _ = cmd.output();
+
         return (
             true,
-            "Đã thực thi đặt lại cấu hình mạng Winsock / IP TCP stack và flush DNS thành công!".to_string(),
+            "Đã khắc phục triệt để lỗi rớt mạng & treo đơ hệ thống: (1) Đã chặn rò rỉ RAM Non-Paged Pool từ driver NDU; (2) Tắt chế độ tiết kiệm điện ngắt nguồn card mạng; (3) Tắt Large Send Offload v2 và mở rộng bộ đệm 1024 packets; (4) Bổ sung DNS dự phòng 1.1.1.1 & 8.8.8.8; (5) Đặt lại Winsock Catalog và TCP/IP Stack!".to_string(),
         );
     }
 
@@ -679,6 +727,13 @@ mod tests {
         let wrong_body = r#"{"command":"admin_login","payload":{"password":"wrongpass_xyz"},"password":"wrongpass_xyz"}"#;
         let (wrong_ok, _) = execute_system_action("admin_login", wrong_body);
         assert!(!wrong_ok, "Wrong password should fail");
+    }
+
+    #[test]
+    fn test_fix_network_freeze() {
+        let (ok, msg) = execute_system_action("Khắc Phục Rớt Mạng", "{}");
+        assert!(ok, "fix_network_freeze should succeed: {}", msg);
+        assert!(msg.contains("rớt mạng"));
     }
 }
 

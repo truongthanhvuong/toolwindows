@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Tool Pro 2026</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.100 • Rust Tauri v2</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.101 • Rust Tauri v2</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -1105,7 +1105,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span>Build: v20.5.909.100</span>
+<span>Build: v20.5.909.101</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -1485,7 +1485,17 @@
 </div>
 <span class="font-label-sm text-label-sm text-outline font-mono">Kernel Latency: 0.12ms | Standby Clean: Auto</span>
 </div>
-<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+<!-- Action 0: Sửa Rớt Mạng & Treo Đơ -->
+<button class="group p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all flex items-center gap-2.5 text-left shadow-sm" type="button" title="Sửa triệt để rò rỉ RAM NDU, tắt chế độ ngắt nguồn card mạng, tắt LSOv2 và bổ sung DNS 1.1.1.1 & 8.8.8.8">
+<div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">signal_wifi_bad</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-amber-300 font-semibold truncate">Khắc Phục Rớt Mạng</div>
+<div class="font-label-sm text-label-sm text-amber-200/70 truncate">Chống treo đơ máy</div>
+</div>
+</button>
 <!-- Action 1 -->
 <button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Dọn dẹp Temp &amp; Cache thành công! Đã giải phóng 4.8 GB')" type="button">
 <div class="w-8 h-8 rounded-lg bg-surface-container-highest text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
