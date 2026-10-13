@@ -135,18 +135,39 @@ fn main() {
 
     // 5. Open Edge WebView2 App Mode Window
     let url = format!("http://127.0.0.1:{}", port);
-    let mut edge_cmd = Command::new("msedge.exe");
-    edge_cmd.args([
-        format!("--app={}", url),
-        "--window-size=1440,900".to_string(),
-        "--disable-features=Translate".to_string(),
-    ]);
+    let profile_dir = std::env::temp_dir().join("vuongtt_toolkit_edge_profile");
 
-    match edge_cmd.status() {
-        Ok(_) => {}
-        Err(_) => {
-            // Fallback default browser
-            let _ = Command::new("cmd").args(["/c", "start", &url]).status();
+    // Tim duong dan Edge thuc te tren Windows
+    let edge_paths = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        "msedge.exe",
+    ];
+
+    let mut launched = false;
+    for path in edge_paths {
+        let mut edge_cmd = Command::new(path);
+        edge_cmd.args([
+            format!("--app={}", url),
+            format!("--user-data-dir={}", profile_dir.to_string_lossy()),
+            "--window-size=1440,900".to_string(),
+            "--disable-features=Translate,PrivacySandboxSettings4".to_string(),
+            "--no-first-run".to_string(),
+            "--no-default-browser-check".to_string(),
+        ]);
+
+        if let Ok(mut child) = edge_cmd.spawn() {
+            launched = true;
+            let _ = child.wait();
+            break;
+        }
+    }
+
+    if !launched {
+        // Fallback default browser va cho
+        let _ = Command::new("cmd").args(["/c", "start", &url]).status();
+        while is_running.load(Ordering::SeqCst) {
+            std::thread::sleep(std::time::Duration::from_millis(500));
         }
     }
 }

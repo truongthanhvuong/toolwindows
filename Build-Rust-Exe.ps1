@@ -24,15 +24,18 @@ if ($LASTEXITCODE -ne 0) {
     throw "Loi bien dich Rust!"
 }
 
-# 3. Copy file ra thu muc goc
+# 3. Copy file ra thu muc goc (ca VUONGTT_Toolkit.exe va VUONGTT_Toolkit_Rust.exe)
 $srcExe = "$projectRoot\src-tauri\target\release\vuongtt_toolkit.exe"
-$distExe = "$projectRoot\VUONGTT_Toolkit_Rust.exe"
+$distExe = "$projectRoot\VUONGTT_Toolkit.exe"
+$distRustExe = "$projectRoot\VUONGTT_Toolkit_Rust.exe"
 
 Copy-Item -Path $srcExe -Destination $distExe -Force
+Copy-Item -Path $srcExe -Destination $distRustExe -Force
 $sizeKb = [math]::Round(((Get-Item $distExe).Length / 1KB), 2)
 
 Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host "[THANH CONG] Da tao file: $distExe" -ForegroundColor Green
+Write-Host "[THANH CONG] Da tao file chinh: $distExe" -ForegroundColor Green
+Write-Host "[THANH CONG] Da tao file phu:   $distRustExe" -ForegroundColor Green
 Write-Host "Dung luong: $sizeKb KB (Sieu nhe ~1.7 MB)" -ForegroundColor Green
 Write-Host "Design System: Fluent OS Utility (13+1 Stitch Screens)" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green

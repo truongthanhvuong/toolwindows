@@ -226,7 +226,10 @@ if ($proc.ExitCode -eq 0 -and (Test-Path $outputExe)) {
     Write-Host "[THANH CONG] Da tao thanh cong file: VUONGTT_Toolkit.exe" -ForegroundColor Green
     Write-Host "Dung luong: $([math]::Round($size, 2)) KB" -ForegroundColor Green
     Write-Host "Duong dan: $outputExe" -ForegroundColor Green
-    Write-Host "Dac quyen: Administrator Tu dong tu nang quyen qua UAC (runas)" -ForegroundColor Green
+    # Dong bo file thuc thi Rust moi
+    try {
+        & "$RootDir\Build-Rust-Exe.ps1"
+    } catch {}
     Write-Host "==========================================================" -ForegroundColor Green
 } else {
     Write-Error "Qua trinh bien dich that bai voi ma loi: $($proc.ExitCode)"
