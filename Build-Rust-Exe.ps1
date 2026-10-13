@@ -1,4 +1,4 @@
-﻿# =========================================================================
+# =========================================================================
 #   VUONGTT TOOL PRO 2026 — BUILD RUST (TAURI V2) EXECUTABLE
 # =========================================================================
 param()
@@ -8,9 +8,9 @@ $projectRoot = $PSScriptRoot
 
 Write-Host ">>> BAT DAU BIEN DICH VUONGTT TOOL PRO 2026 (RUST TAURI V2)..." -ForegroundColor Cyan
 
-# 1. Cap nhat src-ui/index.html tu 14 man hinh Stitch
-Write-Host " -> Dong bo 14 man hinh Stitch vao src-ui/index.html..." -ForegroundColor Yellow
-& "$projectRoot\scripts\Build-StitchUI.ps1"
+# 1. Cap nhat src-ui/index.html (da duoc tinh chinh truc tiep, khong tu dong ghi de)
+# Write-Host " -> Dong bo 14 man hinh Stitch vao src-ui/index.html..." -ForegroundColor Yellow
+# & "$projectRoot\scripts\Build-StitchUI.ps1"
 
 # 2. Bien dich bang Cargo
 Write-Host " -> Dang bien dich Rust release binary..." -ForegroundColor Yellow

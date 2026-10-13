@@ -41,6 +41,12 @@ pub struct SystemTelemetry {
     pub battery_percent: u32,
     pub battery_health: String,
     pub top_processes: Vec<ProcessMetric>,
+    pub mb_model: String,
+    pub bios_ver: String,
+    pub disk_serial: String,
+    pub disk_firmware: String,
+    pub pnp_count: u32,
+    pub err_pnp_count: u32,
 }
 
 #[derive(Clone)]
@@ -60,6 +66,12 @@ struct HardwareSnapshot {
     battery_percent: u32,
     battery_health: String,
     top_processes: Vec<ProcessMetric>,
+    mb_model: String,
+    bios_ver: String,
+    disk_serial: String,
+    disk_firmware: String,
+    pnp_count: u32,
+    err_pnp_count: u32,
     last_update: Instant,
 }
 
@@ -88,6 +100,12 @@ fn get_global_snapshot() -> Arc<Mutex<HardwareSnapshot>> {
         battery_percent: 100,
         battery_health: "100% Ổn định".to_string(),
         top_processes: Vec::new(),
+        mb_model: "Desktop Reference Platform".to_string(),
+        bios_ver: "UEFI x64".to_string(),
+        disk_serial: "PHYSICAL_DRIVE_0".to_string(),
+        disk_firmware: "GENERIC".to_string(),
+        pnp_count: 218,
+        err_pnp_count: 0,
         last_update: Instant::now() - Duration::from_secs(60),
     };
     let arc = Arc::new(Mutex::new(default_snap));
@@ -120,11 +138,18 @@ $cpu = (Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0')
 $mhz = (Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0').'~MHz'
 $cores = [System.Environment]::ProcessorCount
 $gpu = (Get-CimInstance Win32_VideoController | Select-Object -First 1 -ExpandProperty Name)
-$disk = (Get-CimInstance Win32_DiskDrive | Select-Object -First 1 -ExpandProperty Model)
+$diskDrive = (Get-CimInstance Win32_DiskDrive | Select-Object -First 1)
+$disk = if ($diskDrive.Model) { $diskDrive.Model.Trim() } else { "Local Disk" }
+$disk_sn = if ($diskDrive.SerialNumber) { $diskDrive.SerialNumber.Trim() } else { "PHYSICAL_DRIVE_0" }
+$disk_fw = if ($diskDrive.FirmwareRevision) { $diskDrive.FirmwareRevision.Trim() } else { "1.0" }
+$mb = (Get-CimInstance Win32_BaseBoard | Select-Object -First 1 | ForEach-Object { "$($_.Manufacturer) $($_.Product)".Trim() })
+$bios = (Get-CimInstance Win32_BIOS | Select-Object -First 1 -ExpandProperty SMBIOSBIOSVersion)
+$pnp_cnt = @(Get-CimInstance Win32_PnPEntity).Count
+$err_pnp_cnt = @(Get-CimInstance Win32_PnPEntity -Filter 'ConfigManagerErrorCode != 0').Count
 $net = (Get-CimInstance Win32_NetworkAdapter -Filter 'NetConnectionStatus=2' | Select-Object -First 1 -ExpandProperty Name)
 $bat = (Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty EstimatedChargeRemaining)
 $procs = @(Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 5 Id, ProcessName, @{N='mem_mb';E={[math]::Round($_.WorkingSet64/1MB)}} | ForEach-Object { [PSCustomObject]@{ name=$_.ProcessName; pid=$_.Id; memory_mb=$_.mem_mb; cpu_percent=0.5 } })
-ConvertTo-Json -Compress ([PSCustomObject]@{ os=$os; build=$build; disp=$disp; cpu=$cpu; mhz=$mhz; cores=$cores; gpu=$gpu; disk=$disk; net=$net; bat=$bat; procs=$procs })
+ConvertTo-Json -Compress ([PSCustomObject]@{ os=$os; build=$build; disp=$disp; cpu=$cpu; mhz=$mhz; cores=$cores; gpu=$gpu; disk=$disk; disk_sn=$disk_sn; disk_fw=$disk_fw; mb=$mb; bios=$bios; pnp_cnt=$pnp_cnt; err_pnp_cnt=$err_pnp_cnt; net=$net; bat=$bat; procs=$procs })
 "#
         } else {
             r#"
@@ -232,6 +257,32 @@ fn parse_and_update_snapshot(json: &str, state: &Arc<Mutex<HardwareSnapshot>>) {
         if !net.is_empty() {
             lock.net_name = net;
         }
+    }
+    if let Some(mb) = extract_str("mb") {
+        if !mb.is_empty() {
+            lock.mb_model = mb;
+        }
+    }
+    if let Some(bios) = extract_str("bios") {
+        if !bios.is_empty() {
+            lock.bios_ver = bios;
+        }
+    }
+    if let Some(sn) = extract_str("disk_sn") {
+        if !sn.is_empty() {
+            lock.disk_serial = sn;
+        }
+    }
+    if let Some(fw) = extract_str("disk_fw") {
+        if !fw.is_empty() {
+            lock.disk_firmware = fw;
+        }
+    }
+    if let Some(cnt) = extract_num("pnp_cnt") {
+        lock.pnp_count = cnt;
+    }
+    if let Some(err_cnt) = extract_num("err_pnp_cnt") {
+        lock.err_pnp_count = err_cnt;
     }
 
     if let Some(bat) = extract_num("bat") {
@@ -430,6 +481,12 @@ pub fn collect_telemetry() -> SystemTelemetry {
         battery_percent: snap.battery_percent,
         battery_health: snap.battery_health,
         top_processes,
+        mb_model: snap.mb_model,
+        bios_ver: snap.bios_ver,
+        disk_serial: snap.disk_serial,
+        disk_firmware: snap.disk_firmware,
+        pnp_count: snap.pnp_count,
+        err_pnp_count: snap.err_pnp_count,
     }
 }
 
@@ -450,7 +507,7 @@ impl SystemTelemetry {
             .collect();
 
         format!(
-            r#"{{"os_summary":"{}","hostname":"{}","cpu_name":"{}","cpu_cores":{},"cpu_mhz":{},"cpu_percent":{:.1},"ram_name":"{}","ram_total_gb":{:.1},"ram_used_gb":{:.1},"ram_percent":{:.1},"gpu_name":"{}","gpu_percent":{:.1},"disk_name":"{}","disk_interface":"{}","disk_free_gb":{:.1},"disk_total_gb":{:.1},"net_name":"{}","net_status":"{}","net_down_kb":{:.1},"net_up_kb":{:.1},"power_source":"{}","battery_percent":{},"battery_health":"{}","top_processes":[{}]}}"#,
+            r#"{{"os_summary":"{}","hostname":"{}","cpu_name":"{}","cpu_cores":{},"cpu_mhz":{},"cpu_percent":{:.1},"ram_name":"{}","ram_total_gb":{:.1},"ram_used_gb":{:.1},"ram_percent":{:.1},"gpu_name":"{}","gpu_percent":{:.1},"disk_name":"{}","disk_interface":"{}","disk_free_gb":{:.1},"disk_total_gb":{:.1},"net_name":"{}","net_status":"{}","net_down_kb":{:.1},"net_up_kb":{:.1},"power_source":"{}","battery_percent":{},"battery_health":"{}","mb_model":"{}","bios_ver":"{}","disk_serial":"{}","disk_firmware":"{}","pnp_count":{},"err_pnp_count":{},"top_processes":[{}]}}"#,
             self.os_summary.replace('\\', "\\\\").replace('"', "\\\""),
             self.hostname.replace('"', "\\\""),
             self.cpu_name.replace('"', "\\\""),
@@ -474,6 +531,12 @@ impl SystemTelemetry {
             self.power_source.replace('"', "\\\""),
             self.battery_percent,
             self.battery_health.replace('"', "\\\""),
+            self.mb_model.replace('"', "\\\""),
+            self.bios_ver.replace('"', "\\\""),
+            self.disk_serial.replace('"', "\\\""),
+            self.disk_firmware.replace('"', "\\\""),
+            self.pnp_count,
+            self.err_pnp_count,
             procs_json.join(",")
         )
     }

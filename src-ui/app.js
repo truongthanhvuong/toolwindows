@@ -104,10 +104,10 @@
     { match: "Cấu Hình Máy", target: "view-sys-monitor" },
     { match: "Tùy Chỉnh OEM", target: "view-oem-brand" },
     { match: "OEM", target: "view-oem-brand" },
-    { match: "Tra Cứu CPU", action: "msinfo32", target: "view-sys-monitor", toast: "Đang mở bảng tra cứu thông tin CPU & Hệ Thống (msinfo32)..." },
-    { match: "CPU/Main", action: "msinfo32", target: "view-sys-monitor", toast: "Đang mở bảng tra cứu CPU & Mainboard (msinfo32)..." },
-    { match: "Quản Trị User", action: "lusrmgr", target: "view-sys-monitor", toast: "Đang mở trình quản trị User & Groups (lusrmgr.msc)..." },
-    { match: "User/PC", action: "lusrmgr", target: "view-sys-monitor", toast: "Đang mở trình quản trị User & Groups (lusrmgr.msc)..." },
+    { match: "Tra Cứu CPU", custom: "cpu_main" },
+    { match: "CPU/Main", custom: "cpu_main" },
+    { match: "Quản Trị User", custom: "user_mgmt" },
+    { match: "User/PC", custom: "user_mgmt" },
     { match: "Chẩn Đoán Laptop", target: "view-tech-driver" },
     { match: "Cài Win", target: "view-win-deploy" },
     { match: "Bypass", target: "view-win-deploy" },
@@ -323,6 +323,7 @@
           <select class="px-2 py-1 rounded bg-surface-container border border-outline-variant/40 font-code-sm text-code-sm font-bold text-on-surface focus:outline-none focus:border-primary">
             <option value="FREE" ${p.Tier === "FREE" ? "selected" : ""}>FREE</option>
             <option value="PRO" ${p.Tier === "PRO" ? "selected" : ""}>PRO (VIP)</option>
+            <option value="ADMIN" ${p.Tier === "ADMIN" ? "selected" : ""}>ADMIN (Chỉ Quản Trị)</option>
           </select>
         </div>`
         )
@@ -465,9 +466,9 @@
       });
     }
 
-    // Category Filter Pills Handler (Tách biệt hoàn toàn, không kích hoạt system action)
+    // Category Filter Pills Handler (Sử dụng trực tiếp thuộc tính data-cat)
     const filterPills = storeView.querySelectorAll(".mb-space-lg button");
-    const categoryContainers = storeView.querySelectorAll(".xl\\:col-span-9 > div");
+    const categoryContainers = storeView.querySelectorAll(".category-pod, .xl\\:col-span-9 > div");
 
     filterPills.forEach((pill) => {
       pill.addEventListener("click", (e) => {
@@ -479,27 +480,14 @@
         });
         pill.className = "px-3 py-1.5 rounded-full font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm flex-shrink-0 flex items-center gap-1.5 font-bold cursor-pointer";
 
-        const rawText = pill.innerText.toLowerCase().replace(/\s*\(\d+\)/, "").trim();
+        const cat = pill.getAttribute("data-cat") || "all";
 
         categoryContainers.forEach((pod) => {
-          const titleEl = pod.querySelector("span, h2, h3, div");
-          const podTitle = titleEl ? titleEl.textContent.toLowerCase() : "";
-          if (rawText.includes("tất cả") || rawText.includes("all")) {
+          const podCat = pod.getAttribute("data-cat") || "";
+          if (cat === "all" || podCat === cat) {
             pod.style.display = "";
           } else {
-            let match = false;
-            if (rawText.includes("trình duyệt") && podTitle.includes("trình duyệt")) match = true;
-            else if (rawText.includes("liên lạc") && podTitle.includes("liên lạc")) match = true;
-            else if (rawText.includes("lập trình") && podTitle.includes("lập trình")) match = true;
-            else if (rawText.includes("văn phòng") && podTitle.includes("văn phòng")) match = true;
-            else if (rawText.includes("microsoft") && (podTitle.includes("microsoft") || podTitle.includes("văn phòng"))) match = true;
-            else if (rawText.includes("trò chơi") && podTitle.includes("trò chơi")) match = true;
-            else if (rawText.includes("đa phương tiện") && podTitle.includes("đa phương tiện")) match = true;
-            else if (rawText.includes("kế toán") && podTitle.includes("kế toán")) match = true;
-            else if (rawText.includes("tiện ích") && podTitle.includes("tiện ích")) match = true;
-            else if (podTitle.includes(rawText)) match = true;
-
-            pod.style.display = match ? "" : "none";
+            pod.style.display = "none";
           }
         });
       });
@@ -510,7 +498,7 @@
     if (searchInput) {
       searchInput.addEventListener("input", (e) => {
         const query = (e.target.value || "").toLowerCase().trim();
-        storeView.querySelectorAll(".grid > div").forEach((card) => {
+        storeView.querySelectorAll(".app-card").forEach((card) => {
           const cardText = card.textContent.toLowerCase();
           card.style.display = cardText.includes(query) ? "" : "none";
         });
@@ -523,10 +511,10 @@
       btnInstall.addEventListener("click", async (e) => {
         e.preventDefault();
         const selectedApps = [];
-        storeView.querySelectorAll(".grid > div").forEach((card) => {
+        storeView.querySelectorAll(".app-card").forEach((card) => {
           const cb = card.querySelector("input[type='checkbox']");
           if (cb && cb.checked) {
-            const titleEl = card.querySelector("span.font-body-md, span.font-label-md, div.font-body-md, span");
+            const titleEl = card.querySelector(".font-headline-md, .font-body-md, .font-label-md, div");
             const appName = titleEl ? titleEl.textContent.trim() : "";
             const appId = appMap[appName] || appName.toLowerCase().replace(/\s+/g, "-");
             if (appId) selectedApps.push(appId);
@@ -786,6 +774,14 @@
         if (text.includes(route.match)) {
           btn.addEventListener("click", (e) => {
             e.preventDefault();
+            if (route.custom === "cpu_main") {
+              openCpuMainModal();
+              return;
+            }
+            if (route.custom === "user_mgmt") {
+              openUserMgmtModal();
+              return;
+            }
             if (route.action) {
               invokeRust("run_system_action", { actionId: route.action });
               if (route.toast) showToast("Hệ Thống", route.toast, "info");
@@ -964,24 +960,358 @@
       `).join("");
     }
 
-    // 9. Update GPU and Disk labels on other screens if present
+    // 9. Phân hệ 03: Tiện ích Kỹ thuật & Driver Realtime Telemetry (100% Thực Tế)
+    const techModel = document.getElementById("tech-diag-model");
+    if (techModel && (data.mb_model || data.cpu_name)) {
+      techModel.textContent = data.mb_model || data.cpu_name;
+      techModel.title = data.mb_model || data.cpu_name;
+    }
+    const techPnp = document.getElementById("tech-diag-pnp-count");
+    if (techPnp && data.pnp_count !== undefined) techPnp.textContent = data.pnp_count;
+    const techErr = document.getElementById("tech-diag-err-count");
+    if (techErr && data.err_pnp_count !== undefined) {
+      techErr.textContent = data.err_pnp_count;
+      const statusBadge = document.getElementById("tech-diag-status-badge");
+      const statusText = document.getElementById("tech-diag-status-text");
+      if (data.err_pnp_count === 0) {
+        if (statusBadge) {
+          statusBadge.textContent = "TỐI ƯU OK";
+          statusBadge.className = "px-1.5 py-0.2 rounded text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container uppercase";
+        }
+        if (statusText) statusText.textContent = "Không có xung đột";
+      } else {
+        if (statusBadge) {
+          statusBadge.textContent = "CẢNH BÁO";
+          statusBadge.className = "px-1.5 py-0.2 rounded text-[10px] font-semibold bg-error-container text-on-error uppercase";
+        }
+        if (statusText) statusText.textContent = `Có ${data.err_pnp_count} thiết bị thiếu driver`;
+      }
+    }
+    const techGpu = document.getElementById("tech-diag-gpu");
+    if (techGpu && data.gpu_name) {
+      techGpu.textContent = data.gpu_name;
+      techGpu.title = data.gpu_name;
+    }
+    const techNet = document.getElementById("tech-diag-net-chip");
+    if (techNet && data.net_name) techNet.textContent = `${data.net_name}: OK`;
+
+    // 10. Phân hệ 07: SMART Ổ Đĩa Realtime Identification
+    const diskModel = document.getElementById("disk-model-name");
+    if (diskModel && data.disk_name) diskModel.textContent = data.disk_name;
+    const diskType = document.getElementById("disk-media-type");
+    if (diskType && data.disk_interface) diskType.textContent = data.disk_interface;
+    const diskCap = document.getElementById("disk-capacity-val");
+    if (diskCap && data.disk_total_gb) diskCap.textContent = `${Math.round(data.disk_total_gb)} GB Physical Storage`;
+    const diskSerial = document.getElementById("disk-serial-val");
+    if (diskSerial && data.disk_serial) diskSerial.textContent = data.disk_serial;
+    const diskFw = document.getElementById("disk-firmware-val");
+    if (diskFw && data.disk_firmware) diskFw.textContent = data.disk_firmware;
+
+    // 11. Đồng bộ các nhãn ổ đĩa và GPU trên toàn bộ các view
     const cardGpuDriver = document.getElementById("card-gpu-driver-name");
     if (cardGpuDriver && data.gpu_name) cardGpuDriver.textContent = data.gpu_name;
     const cardPartDisk = document.getElementById("card-partition-disk-name");
     if (cardPartDisk && data.disk_name) cardPartDisk.textContent = `Disk 0: ${data.disk_name}`;
   }
 
-  // --- 9. HEARTBEAT & LIFECYCLE CONTROLLER ---
+  // --- 8. CPU & MAINBOARD LOOKUP NATIVE MODAL CONTROLLER ---
+  let cachedCpuDetails = null;
+  async function loadCpuMainData() {
+    try {
+      const res = await invokeRust("get_cpu_main_details");
+      if (res && res.data) {
+        cachedCpuDetails = res.data;
+        const d = res.data;
+        const cpu = d.cpu || {};
+        const mb = d.mb || {};
+        const bios = d.bios || {};
+        const os = d.os || {};
+        const cs = d.cs || {};
+
+        const el = (id) => document.getElementById(id);
+        if (el("cpu-info-name")) el("cpu-info-name").textContent = cpu.Name || "Intel / AMD Processor";
+        if (el("cpu-info-cores")) el("cpu-info-cores").textContent = `${cpu.NumberOfCores || 4} Nhân Thực • ${cpu.NumberOfLogicalProcessors || 4} Luồng Xử Lý`;
+        if (el("cpu-info-clock")) el("cpu-info-clock").textContent = `${cpu.MaxClockSpeed || 2400} MHz (Base Clock)`;
+        if (el("cpu-info-socket")) el("cpu-info-socket").textContent = cpu.SocketDesignation || "Socket ACPI Standard";
+        if (el("cpu-info-arch")) el("cpu-info-arch").textContent = `Architecture: ${cpu.Architecture === 9 ? "x64 (64-bit)" : "x86/ARM"}`;
+
+        if (el("mb-info-mfg")) el("mb-info-mfg").textContent = mb.Manufacturer || "Standard PC";
+        if (el("mb-info-model")) el("mb-info-model").textContent = mb.Product || "Reference Platform";
+        if (el("mb-info-sn")) el("mb-info-sn").textContent = mb.SerialNumber || "N/A";
+        if (el("mb-info-ver")) el("mb-info-ver").textContent = mb.Version || "1.0";
+
+        if (el("bios-info-ver")) el("bios-info-ver").textContent = bios.SMBIOSBIOSVersion || "UEFI";
+        if (el("bios-info-mfg")) el("bios-info-mfg").textContent = bios.Manufacturer || "AMI / Insyde";
+        if (el("bios-info-date")) el("bios-info-date").textContent = bios.ReleaseDate ? String(bios.ReleaseDate).substring(0, 10) : "Official Release";
+
+        if (el("os-info-caption")) el("os-info-caption").textContent = os.Caption || "Microsoft Windows";
+        if (el("os-info-build")) el("os-info-build").textContent = `Build ${os.BuildNumber || os.Version || "19045"}`;
+        if (el("cs-info-type")) el("cs-info-type").textContent = cs.Model || "x64-based PC";
+      }
+    } catch (err) {
+      console.warn("loadCpuMainData err:", err);
+    }
+  }
+
+  function openCpuMainModal() {
+    const modal = document.getElementById("modal-cpu-main");
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    loadCpuMainData();
+  }
+
+  function closeCpuMainModal() {
+    const modal = document.getElementById("modal-cpu-main");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  function initCpuMainController() {
+    const modal = document.getElementById("modal-cpu-main");
+    if (!modal) return;
+
+    const btnClose = document.getElementById("btn-close-cpu-modal");
+    const btnCloseFoot = document.getElementById("btn-close-cpu-modal-foot");
+    if (btnClose) btnClose.addEventListener("click", closeCpuMainModal);
+    if (btnCloseFoot) btnCloseFoot.addEventListener("click", closeCpuMainModal);
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeCpuMainModal();
+    });
+
+    const btnRefresh = document.getElementById("btn-refresh-cpu-data");
+    if (btnRefresh) {
+      btnRefresh.addEventListener("click", () => {
+        showToast("Phần Cứng", "Đang quét lại thông số CPU & Mainboard...", "info");
+        loadCpuMainData();
+      });
+    }
+
+    const btnCopy = document.getElementById("btn-copy-cpu-data");
+    if (btnCopy) {
+      btnCopy.addEventListener("click", () => {
+        if (cachedCpuDetails) {
+          navigator.clipboard.writeText(JSON.stringify(cachedCpuDetails, null, 2)).then(() => {
+            showToast("Đã Sao Chép", "Đã sao chép cấu hình CPU/Mainboard vào Clipboard!", "success");
+          });
+        } else {
+          showToast("Chưa Sẵn Sàng", "Đang tải dữ liệu phần cứng...", "warning");
+        }
+      });
+    }
+  }
+
+  // --- 9. LOCAL USER MANAGEMENT NATIVE CONTROLLER ---
+  async function loadUserMgmtData() {
+    const tableBody = document.getElementById("table-users-body");
+    const lblTotal = document.getElementById("lbl-users-total");
+    if (!tableBody) return;
+
+    try {
+      tableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-on-surface-variant">Đang tải danh sách tài khoản...</td></tr>';
+      const res = await invokeRust("get_local_users");
+      let users = [];
+      if (res && res.data) {
+        users = Array.isArray(res.data) ? res.data : [res.data];
+      }
+      if (users.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-on-surface-variant">Không tìm thấy tài khoản người dùng cục bộ.</td></tr>';
+        if (lblTotal) lblTotal.textContent = "0 tài khoản";
+        return;
+      }
+
+      if (lblTotal) lblTotal.textContent = `Tổng cộng: ${users.length} tài khoản người dùng`;
+
+      tableBody.innerHTML = users.map((u) => {
+        const isAdmin = u.is_admin === true;
+        const isEnabled = u.enabled === true;
+        const roleBadge = isAdmin
+          ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">Administrator</span>'
+          : '<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface-container-high text-on-surface-variant">Standard User</span>';
+        const statusBadge = isEnabled
+          ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-tertiary-container/30 text-tertiary">Hoạt Động</span>'
+          : '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-error-container/30 text-error">Vô Hiệu Hóa</span>';
+
+        return `
+          <tr class="hover:bg-surface-container-high/40 transition-colors">
+            <td class="p-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface font-bold text-xs">
+                  ${u.name.substring(0, 1).toUpperCase()}
+                </div>
+                <div>
+                  <div class="font-bold text-on-surface">${u.name}</div>
+                  <div class="font-code-sm text-xs text-outline">${u.full_name || u.description || "Tài khoản cục bộ"}</div>
+                </div>
+              </div>
+            </td>
+            <td class="p-3">${roleBadge}</td>
+            <td class="p-3">${statusBadge}</td>
+            <td class="p-3 font-code-sm text-xs text-on-surface-variant">${u.last_logon || "Chưa có"}</td>
+            <td class="p-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button data-action="toggle_active" data-user="${u.name}" data-val="${isEnabled ? 'disable' : 'enable'}" class="btn-user-action px-2.5 py-1 rounded bg-surface-container hover:bg-surface-bright text-xs font-semibold ${isEnabled ? 'text-error' : 'text-tertiary'} transition-colors cursor-pointer" title="${isEnabled ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}">
+                  ${isEnabled ? 'Khóa' : 'Kích hoạt'}
+                </button>
+                <button data-action="set_password" data-user="${u.name}" class="btn-user-action px-2.5 py-1 rounded bg-surface-container hover:bg-surface-bright text-xs font-semibold text-primary transition-colors cursor-pointer" title="Đổi mật khẩu">
+                  Đổi Pass
+                </button>
+                <button data-action="toggle_admin" data-user="${u.name}" data-val="${isAdmin ? 'remove' : 'add'}" class="btn-user-action px-2.5 py-1 rounded bg-surface-container hover:bg-surface-bright text-xs font-semibold text-secondary transition-colors cursor-pointer" title="${isAdmin ? 'Hạ quyền Admin' : 'Cấp quyền Admin'}">
+                  ${isAdmin ? 'Hạ quyền' : 'Lên Admin'}
+                </button>
+                <button data-action="delete_user" data-user="${u.name}" class="btn-user-action px-2 py-1 rounded bg-error-container/30 hover:bg-error text-xs font-semibold text-error hover:text-on-error transition-colors cursor-pointer" title="Xóa tài khoản">
+                  Xóa
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      tableBody.querySelectorAll(".btn-user-action").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const action = btn.getAttribute("data-action");
+          const username = btn.getAttribute("data-user");
+          let val = btn.getAttribute("data-val") || "";
+
+          if (action === "set_password") {
+            const newPass = prompt(`Nhập mật khẩu mới cho tài khoản [${username}]:`);
+            if (newPass === null) return;
+            if (!newPass.trim()) {
+              showToast("Quản Trị User", "Mật khẩu không được để trống!", "warning");
+              return;
+            }
+            val = newPass.trim();
+          } else if (action === "delete_user") {
+            if (!confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN tài khoản [${username}]?`)) return;
+          }
+
+          showToast("Quản Trị User", `Đang thực thi tác vụ trên tài khoản ${username}...`, "info");
+          const mRes = await invokeRust("manage_local_user", {
+            subAction: action,
+            username: username,
+            value: val,
+          });
+
+          if (mRes && mRes.success) {
+            showToast("Thành Công", mRes.message, "success");
+            loadUserMgmtData();
+          } else {
+            showToast("Thất Bại", (mRes && mRes.message) || "Không thể thực hiện tác vụ!", "error");
+          }
+        });
+      });
+    } catch (err) {
+      console.warn("loadUserMgmtData err:", err);
+      tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-error">Lỗi khi nạp dữ liệu: ${err.message}</td></tr>`;
+    }
+  }
+
+  function openUserMgmtModal() {
+    const modal = document.getElementById("modal-user-mgmt");
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    loadUserMgmtData();
+  }
+
+  function closeUserMgmtModal() {
+    const modal = document.getElementById("modal-user-mgmt");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  function initUserMgmtController() {
+    const modal = document.getElementById("modal-user-mgmt");
+    if (!modal) return;
+
+    const btnClose = document.getElementById("btn-close-user-modal");
+    const btnCloseFoot = document.getElementById("btn-close-user-modal-foot");
+    if (btnClose) btnClose.addEventListener("click", closeUserMgmtModal);
+    if (btnCloseFoot) btnCloseFoot.addEventListener("click", closeUserMgmtModal);
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeUserMgmtModal();
+    });
+
+    const btnRefresh = document.getElementById("btn-refresh-users");
+    if (btnRefresh) {
+      btnRefresh.addEventListener("click", () => {
+        showToast("Quản Trị User", "Đang làm mới danh sách tài khoản...", "info");
+        loadUserMgmtData();
+      });
+    }
+
+    const btnShowAdd = document.getElementById("btn-show-add-user");
+    const formAddPanel = document.getElementById("form-add-user-panel");
+    const btnCancelAdd = document.getElementById("btn-cancel-add-user");
+    const btnSubmitAdd = document.getElementById("btn-submit-add-user");
+
+    if (btnShowAdd && formAddPanel) {
+      btnShowAdd.addEventListener("click", () => {
+        formAddPanel.classList.toggle("hidden");
+      });
+    }
+
+    if (btnCancelAdd && formAddPanel) {
+      btnCancelAdd.addEventListener("click", () => {
+        formAddPanel.classList.add("hidden");
+      });
+    }
+
+    if (btnSubmitAdd) {
+      btnSubmitAdd.addEventListener("click", async () => {
+        const uInput = document.getElementById("input-new-user-name");
+        const pInput = document.getElementById("input-new-user-pass");
+        const rSelect = document.getElementById("select-new-user-role");
+
+        const username = (uInput ? uInput.value : "").trim();
+        const password = (pInput ? pInput.value : "").trim();
+        const role = rSelect ? rSelect.value : "user";
+
+        if (!username) {
+          showToast("Tạo Tài Khoản", "Vui lòng nhập tên người dùng!", "warning");
+          return;
+        }
+
+        showToast("Tạo Tài Khoản", `Đang khởi tạo tài khoản [${username}]...`, "info");
+        const cRes = await invokeRust("manage_local_user", {
+          subAction: "create_user",
+          username: username,
+          value: password || "User@123",
+        });
+
+        if (cRes && cRes.success) {
+          if (role === "admin") {
+            await invokeRust("manage_local_user", {
+              subAction: "toggle_admin",
+              username: username,
+              value: "add",
+            });
+          }
+          showToast("Thành Công", `Đã tạo tài khoản [${username}] thành công!`, "success");
+          if (uInput) uInput.value = "";
+          if (pInput) pInput.value = "";
+          if (formAddPanel) formAddPanel.classList.add("hidden");
+          loadUserMgmtData();
+        } else {
+          showToast("Thất Bại", (cRes && cRes.message) || "Không thể tạo tài khoản!", "error");
+        }
+      });
+    }
+  }
+
+  // --- 10. HEARTBEAT & LIFECYCLE CONTROLLER ---
   function sendHeartbeat() {
     fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
   }
 
-  // --- 10. INITIALIZATION ---
+  // --- 11. INITIALIZATION ---
   document.addEventListener("DOMContentLoaded", () => {
     bindNavigationAndActions();
     initAdminPortal();
     initAppStoreController();
     initDiskSmartController();
+    initCpuMainController();
+    initUserMgmtController();
     updateClock();
     setInterval(updateClock, 1000);
     pollSystemTelemetry();

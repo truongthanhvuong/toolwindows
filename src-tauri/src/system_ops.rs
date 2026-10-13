@@ -149,20 +149,32 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     }
 
     if act == "admin_save_policies" {
+        let mut json_arr_str = String::new();
         if let Some(idx) = params_json.find("\"policies\":") {
-            let rest = &params_json[idx + 11..];
-            if let Some(end) = rest.rfind('}') {
-                let json_slice = rest[..end].trim();
-                let repo = get_repo_dir();
-                let policy_path = repo.join("src").join("Config").join("feature_policy.json");
-                let _ = fs::write(&policy_path, json_slice);
-                
-                // Đồng bộ cả ProgramData
-                let progdata = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\feature_policy.json");
-                let _ = fs::write(progdata, json_slice);
-
-                return (true, "Đã lưu chính sách phân quyền tính năng (feature_policy.json) thành công!".to_string());
+            let rest = params_json[idx + 11..].trim();
+            if rest.starts_with('[') {
+                if let Some(end) = rest.rfind(']') {
+                    json_arr_str = rest[..=end].to_string();
+                }
+            } else if rest.starts_with('"') {
+                if let Some(end) = rest[1..].find('"') {
+                    let unescaped = rest[1..1 + end].replace("\\\"", "\"").replace("\\\\", "\\");
+                    if unescaped.trim().starts_with('[') {
+                        json_arr_str = unescaped;
+                    }
+                }
             }
+        }
+
+        if !json_arr_str.is_empty() {
+            let repo = get_repo_dir();
+            let policy_path = repo.join("src").join("Config").join("feature_policy.json");
+            let _ = fs::write(&policy_path, &json_arr_str);
+            
+            let progdata = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\feature_policy.json");
+            let _ = fs::write(progdata, &json_arr_str);
+
+            return (true, "Đã lưu chính sách phân quyền tính năng (feature_policy.json) thành công!".to_string());
         }
         return (false, "Dữ liệu cấu hình phân quyền không hợp lệ!".to_string());
     }
@@ -239,17 +251,22 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         cmd.args([
             "-NoProfile",
             "-Command",
-            "git add src/Config/*.json version.json; git commit -m 'sync(admin): cap nhat tu Admin Portal'; git push origin main",
+            "git add src/Config/*.json version.json; if (git status --porcelain src/Config/*.json version.json) { git commit -m 'sync(admin): cap nhat tu Admin Portal' }; git push origin main",
         ]);
         cmd.current_dir(&repo);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let out = cmd.output();
         return match out {
-            Ok(o) if o.status.success() => (true, "Đã đẩy toàn bộ cấu hình phân quyền & License Key lên GitHub thành công!".to_string()),
+            Ok(o) if o.status.success() => (true, "Đã đồng bộ và đẩy toàn bộ cấu hình phân quyền & License Key lên GitHub thành công!".to_string()),
             Ok(o) => {
                 let err = String::from_utf8_lossy(&o.stderr);
-                (false, format!("Lỗi khi đẩy Git: {}", err))
+                let out_str = String::from_utf8_lossy(&o.stdout);
+                if out_str.contains("Everything up-to-date") || out_str.contains("main -> main") {
+                    (true, "Cấu hình phân quyền đã đồng bộ mới nhất trên GitHub!".to_string())
+                } else {
+                    (false, format!("Lỗi khi đẩy Git: {}", if err.trim().is_empty() { out_str } else { err }))
+                }
             }
             Err(e) => (false, format!("Không thể thực thi lệnh Git: {}", e)),
         };
@@ -622,7 +639,7 @@ pub fn collect_disk_smart_telemetry() -> String {
     cmd.args([
         "-NoProfile",
         "-Command",
-        "ConvertTo-Json -Compress ([PSCustomObject]@{ disks = @(Get-CimInstance Win32_DiskDrive | Select-Object Index, Model, Size, Status); volumes = @(Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | Select-Object DeviceID, VolumeName, Size, FreeSpace) })",
+        r#"ConvertTo-Json -Compress ([PSCustomObject]@{ disks = @(Get-CimInstance Win32_DiskDrive | Select-Object Index, Model, Size, Status, InterfaceType, SerialNumber, FirmwareRevision); volumes = @(Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | Select-Object DeviceID, VolumeName, Size, FreeSpace) })"#,
     ]);
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
@@ -633,6 +650,140 @@ pub fn collect_disk_smart_telemetry() -> String {
         }
     }
     r#"{"disks":[],"volumes":[]}"#.to_string()
+}
+
+pub fn collect_cpu_main_details() -> String {
+    let mut cmd = Command::new("powershell");
+    cmd.args([
+        "-NoProfile",
+        "-Command",
+        r#"ConvertTo-Json -Compress ([PSCustomObject]@{ cpu=(Get-CimInstance Win32_Processor | Select-Object -First 1 Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, SocketDesignation, Architecture); mb=(Get-CimInstance Win32_BaseBoard | Select-Object -First 1 Manufacturer, Product, SerialNumber, Version); bios=(Get-CimInstance Win32_BIOS | Select-Object -First 1 Manufacturer, SMBIOSBIOSVersion, ReleaseDate); cs=(Get-CimInstance Win32_ComputerSystem | Select-Object -First 1 TotalPhysicalMemory, Model, Manufacturer, SystemType); os=(Get-CimInstance Win32_OperatingSystem | Select-Object -First 1 Caption, Version, BuildNumber, OSArchitecture) })"#,
+    ]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    if let Ok(output) = cmd.output() {
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() && text.starts_with('{') {
+            return text;
+        }
+    }
+    r#"{"cpu":{},"mb":{},"bios":{},"cs":{},"os":{}}"#.to_string()
+}
+
+pub fn collect_local_users() -> String {
+    let mut cmd = Command::new("powershell");
+    cmd.args([
+        "-NoProfile",
+        "-Command",
+        r#"$adminNames = @(Get-LocalGroupMember -Group Administrators -ErrorAction SilentlyContinue | ForEach-Object { $_.Name -replace '.*\\' }); @(Get-LocalUser | ForEach-Object { $u = $_; $adm = $adminNames -contains $u.Name; $log = ''; if ($u.LastLogon) { $log = $u.LastLogon.ToString('yyyy-MM-dd HH:mm') } else { $log = 'Chua co' }; [PSCustomObject]@{ name=$u.Name; full_name=$u.FullName; enabled=$u.Enabled; description=$u.Description; is_admin=$adm; last_logon=$log } }) | ConvertTo-Json -Compress"#,
+    ]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    if let Ok(output) = cmd.output() {
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() && (text.starts_with('[') || text.starts_with('{')) {
+            if text.starts_with('{') {
+                return format!("[{}]", text);
+            }
+            return text;
+        }
+    }
+    "[]".to_string()
+}
+
+pub fn manage_local_user(sub_action: &str, username: &str, value: &str) -> (bool, String) {
+    if username.trim().is_empty() {
+        return (false, "Tên tài khoản người dùng không được để trống!".to_string());
+    }
+    let safe_user = username.trim().replace('"', "").replace(';', "");
+
+    match sub_action {
+        "toggle_active" => {
+            let flag = if value == "enable" { "yes" } else { "no" };
+            let mut cmd = Command::new("net");
+            cmd.args(["user", &safe_user, &format!("/active:{}", flag)]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            match cmd.output() {
+                Ok(out) if out.status.success() => {
+                    let st = if value == "enable" { "Kích hoạt (Active)" } else { "Vô hiệu hóa (Disabled)" };
+                    (true, format!("Đã chuyển trạng thái tài khoản [{}] sang: {} thành công!", safe_user, st))
+                }
+                Ok(out) => {
+                    (false, format!("Không thể cập nhật: {}", String::from_utf8_lossy(&out.stderr)))
+                }
+                Err(e) => (false, format!("Lỗi thực thi: {}", e)),
+            }
+        }
+        "set_password" => {
+            if value.trim().is_empty() {
+                return (false, "Mật khẩu mới không được để trống!".to_string());
+            }
+            let safe_pwd = value.trim().replace('"', "");
+            let mut cmd = Command::new("net");
+            cmd.args(["user", &safe_user, &safe_pwd]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            match cmd.output() {
+                Ok(out) if out.status.success() => {
+                    (true, format!("Đã đổi mật khẩu cho tài khoản [{}] thành công!", safe_user))
+                }
+                Ok(out) => {
+                    (false, format!("Không thể đổi mật khẩu: {}", String::from_utf8_lossy(&out.stderr)))
+                }
+                Err(e) => (false, format!("Lỗi thực thi: {}", e)),
+            }
+        }
+        "toggle_admin" => {
+            let flag = if value == "add" { "/add" } else { "/delete" };
+            let mut cmd = Command::new("net");
+            cmd.args(["localgroup", "Administrators", &safe_user, flag]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            match cmd.output() {
+                Ok(out) if out.status.success() => {
+                    let role = if value == "add" { "Quản trị viên (Administrators)" } else { "Người dùng tiêu chuẩn (Standard User)" };
+                    (true, format!("Đã cập nhật vai trò tài khoản [{}] thành: {}!", safe_user, role))
+                }
+                Ok(out) => {
+                    (false, format!("Không thể cập nhật nhóm: {}", String::from_utf8_lossy(&out.stderr)))
+                }
+                Err(e) => (false, format!("Lỗi thực thi: {}", e)),
+            }
+        }
+        "create_user" => {
+            let pwd = if value.trim().is_empty() { "User@123" } else { value.trim() };
+            let mut cmd = Command::new("net");
+            cmd.args(["user", &safe_user, pwd, "/add"]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            match cmd.output() {
+                Ok(out) if out.status.success() => {
+                    (true, format!("Đã tạo tài khoản người dùng [{}] thành công!", safe_user))
+                }
+                Ok(out) => {
+                    (false, format!("Không thể tạo tài khoản: {}", String::from_utf8_lossy(&out.stderr)))
+                }
+                Err(e) => (false, format!("Lỗi thực thi: {}", e)),
+            }
+        }
+        "delete_user" => {
+            let mut cmd = Command::new("net");
+            cmd.args(["user", &safe_user, "/delete"]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            match cmd.output() {
+                Ok(out) if out.status.success() => {
+                    (true, format!("Đã xóa tài khoản người dùng [{}] thành công!", safe_user))
+                }
+                Ok(out) => {
+                    (false, format!("Không thể xóa tài khoản: {}", String::from_utf8_lossy(&out.stderr)))
+                }
+                Err(e) => (false, format!("Lỗi thực thi: {}", e)),
+            }
+        }
+        _ => (false, format!("Thao tác quản trị người dùng [{}] không hợp lệ!", sub_action)),
+    }
 }
 
 fn parse_selected_apps(params: &str) -> Vec<String> {
@@ -743,6 +894,21 @@ mod tests {
         let (ok, msg) = execute_system_action("Khắc Phục Rớt Mạng", "{}");
         assert!(ok, "fix_network_freeze should succeed: {}", msg);
         assert!(msg.contains("rớt mạng"));
+    }
+
+    #[test]
+    fn test_collect_cpu_main_details() {
+        let details = collect_cpu_main_details();
+        assert!(!details.is_empty(), "CPU main details should not be empty");
+        assert!(details.contains("cpu") && details.contains("mb"), "JSON should contain cpu and mb keys");
+    }
+
+    #[test]
+    fn test_collect_local_users() {
+        let users = collect_local_users();
+        assert!(!users.is_empty(), "Users list should not be empty");
+        assert!(users.starts_with('[') && users.ends_with(']'), "Users should be a JSON array");
+        assert!(users.to_lowercase().contains("vuongtt") || users.to_lowercase().contains("administrator"), "Users should contain local accounts");
     }
 }
 

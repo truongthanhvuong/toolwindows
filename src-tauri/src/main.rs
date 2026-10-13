@@ -164,6 +164,22 @@ fn handle_client(
         } else if body.contains("get_disk_smart_telemetry") {
             let disk_json = system_ops::collect_disk_smart_telemetry();
             json_resp = format!(r#"{{"success":true,"data":{}}}"#, disk_json);
+        } else if body.contains("get_cpu_main_details") {
+            let details = system_ops::collect_cpu_main_details();
+            json_resp = format!(r#"{{"success":true,"data":{}}}"#, details);
+        } else if body.contains("get_local_users") {
+            let users = system_ops::collect_local_users();
+            json_resp = format!(r#"{{"success":true,"data":{}}}"#, users);
+        } else if body.contains("manage_local_user") {
+            let sub = system_ops::extract_json_field(body, "subAction").unwrap_or("toggle_active");
+            let user = system_ops::extract_json_field(body, "username").unwrap_or("");
+            let val = system_ops::extract_json_field(body, "value").unwrap_or("");
+            let (ok, msg) = system_ops::manage_local_user(sub, user, val);
+            json_resp = format!(
+                r#"{{"success":{},"message":"{}"}}"#,
+                ok,
+                msg.replace('"', "\\\"")
+            );
         } else if body.contains("window_control") {
             if body.contains("close") {
                 is_running.store(false, Ordering::SeqCst);
@@ -235,7 +251,7 @@ fn main() {
 
     // 2. Version argument
     if args.iter().any(|a| a == "--version" || a == "-v") {
-        println!("VUONGTT Toolkit v20.5.909.102");
+        println!("VUONGTT Toolkit v20.5.909.103");
         std::process::exit(0);
     }
 
