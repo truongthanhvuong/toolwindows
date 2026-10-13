@@ -131,8 +131,14 @@
     const btnExplorer = document.getElementById("btn-emerg-explorer");
     const btnUpdate = document.getElementById("btn-header-update");
 
-    if (btnClose) btnClose.addEventListener("click", () => invokeRust("window_control", { action: "close" }));
-    if (btnExit) btnExit.addEventListener("click", () => invokeRust("window_control", { action: "close" }));
+    if (btnClose) btnClose.addEventListener("click", () => {
+      invokeRust("window_control", { action: "close" });
+      setTimeout(() => window.close(), 150);
+    });
+    if (btnExit) btnExit.addEventListener("click", () => {
+      invokeRust("window_control", { action: "close" });
+      setTimeout(() => window.close(), 150);
+    });
     if (btnMin) btnMin.addEventListener("click", () => invokeRust("window_control", { action: "minimize" }));
     if (btnMax) btnMax.addEventListener("click", () => invokeRust("window_control", { action: "maximize" }));
 
@@ -305,5 +311,20 @@
     setInterval(updateClock, 1000);
     pollSystemTelemetry();
     setInterval(pollSystemTelemetry, 2000);
+  });
+
+  // --- 7. HEARTBEAT & LIFECYCLE CONTROLLER ---
+  function sendHeartbeat() {
+    fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
+  }
+  sendHeartbeat();
+  setInterval(sendHeartbeat, 1000);
+
+  window.addEventListener("beforeunload", () => {
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon("/api/exit");
+      }
+    } catch (_) {}
   });
 })();
