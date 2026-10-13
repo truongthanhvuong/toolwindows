@@ -136,17 +136,36 @@ fn handle_client(
                 is_running.store(false, Ordering::SeqCst);
                 json_resp = "{\"success\":true,\"message\":\"Closing\"}".to_string();
             }
-        } else if body.contains("run_system_action") {
-            let act_id = if let Some(idx) = body.find("\"actionId\":\"") {
-                let rest = &body[idx + 12..];
-                if let Some(end) = rest.find('"') {
-                    &rest[..end]
-                } else {
-                    "general"
-                }
+        } else if body.contains("admin_") {
+            let act_id = if body.contains("admin_login") {
+                "admin_login"
+            } else if body.contains("admin_get_data") {
+                "admin_get_data"
+            } else if body.contains("admin_save_policies") {
+                "admin_save_policies"
+            } else if body.contains("admin_generate_key") {
+                "admin_generate_key"
+            } else if body.contains("admin_delete_key") {
+                "admin_delete_key"
+            } else if body.contains("admin_push_git") {
+                "admin_push_git"
             } else {
-                "general"
+                "admin_general"
             };
+            let (success, msg) = system_ops::execute_system_action(act_id, body);
+            if act_id == "admin_get_data" && success {
+                json_resp = format!(r#"{{"success":true,"data":{}}}"#, msg);
+            } else {
+                json_resp = format!(
+                    r#"{{"success":{},"message":"{}"}}"#,
+                    success,
+                    msg.replace('"', "\\\"")
+                );
+            }
+        } else if body.contains("run_system_action") {
+            let act_id = system_ops::extract_json_field(body, "actionId")
+                .or_else(|| system_ops::extract_json_field(body, "command"))
+                .unwrap_or("general");
 
             let (success, msg) = system_ops::execute_system_action(act_id, body);
             json_resp = format!(
@@ -183,7 +202,7 @@ fn main() {
 
     // 2. Version argument
     if args.iter().any(|a| a == "--version" || a == "-v") {
-        println!("VUONGTT Tool Pro 2026 v20.5.909.94 (Rust Tauri v2)");
+        println!("VUONGTT Tool Pro 2026 v20.5.909.97 (Rust Tauri v2)");
         std::process::exit(0);
     }
 

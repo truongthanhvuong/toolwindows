@@ -1,14 +1,18 @@
 /**
  * ============================================================================
  * VUONGTT TOOL PRO 2026 — FRONTEND ROUTER & RUST (TAURI V2) IPC CONTROLLER
- * Design System: Fluent OS Utility (13+1 Google Stitch Screens)
+ * Design System: Fluent OS Utility (13+1 Stitch Screens + Admin Portal VIP)
  * ============================================================================
  */
 
 (function () {
   "use strict";
 
-  // --- 1. RUST IPC INVOKER (Supports both Tauri v2 IPC & Local Rust Native Bridge) ---
+  let isAdminAuth = false;
+  let currentPolicies = [];
+  let currentVault = [];
+
+  // --- 1. RUST IPC INVOKER ---
   async function invokeRust(command, payload = {}) {
     try {
       if (window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === "function") {
@@ -20,7 +24,7 @@
       const res = await fetch("/api/rust-invoke", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command, payload }),
+        body: JSON.stringify({ command, payload, ...payload }),
       });
       if (res.ok) {
         return await res.json();
@@ -62,7 +66,7 @@
     }, 3800);
   }
 
-  // --- 3. SPA VIEW ROUTER (13+1 STITCH SCREENS) ---
+  // --- 3. SPA VIEW ROUTER ---
   function switchView(targetId) {
     const views = document.querySelectorAll(".stitch-view");
     let found = false;
@@ -95,33 +99,410 @@
 
   window.switchView = switchView;
 
-  // --- 4. AUTO-BIND SUB-TAB BUTTONS INSIDE ALL 13 SCREENS ---
+  // --- 4. SUB-TAB ROUTE MAPPINGS ---
   const subTabRouteMap = [
     { match: "Cấu Hình Máy", target: "view-sys-monitor" },
-    { match: "Tùy Chỉnh OEM", target: "view-oem-brand" },
-    { match: "Tra Cứu CPU/Main", target: "view-sys-monitor" },
-    { match: "Quản Trị User/PC", target: "view-it-helpdesk" },
-    { match: "Quét Driver & Sao Lưu", target: "view-tech-driver" },
-    { match: "Kích Hoạt HWID", target: "view-hwid-act" },
-    { match: "Cài Win Bypass", target: "view-win-deploy" },
-    { match: "Tắt BitLocker", target: "view-disk-part" },
-    { match: "Tối Ưu & Tweaks", target: "view-win-optimize" },
-    { match: "Cấu Hình & Sửa Lỗi", target: "view-win-optimize" },
-    { match: "Cứu Hộ IT Helpdesk", target: "view-it-helpdesk" },
-    { match: "Sức Khỏe / Tốc Độ", target: "view-disk-smart" },
-    { match: "Quản Lý Phân Vùng", target: "view-disk-part" },
-    { match: "Test Laptop & Ngoại Vi", target: "view-sys-monitor" },
+    { match: "Tra Cứu CPU", target: "view-sys-monitor" },
+    { match: "Quản Lý User", target: "view-sys-monitor" },
+    { match: "Chẩn Đoán Laptop", target: "view-sys-monitor" },
+    { match: "Cài Win", target: "view-autowin" },
+    { match: "Bypass", target: "view-autowin" },
+    { match: "Kỹ Thuật", target: "view-tech-utils" },
+    { match: "Driver", target: "view-tech-utils" },
+    { match: "Tối Ưu", target: "view-win-tweaks" },
+    { match: "Sửa Lỗi Win", target: "view-win-tweaks" },
+    { match: "Office", target: "view-office" },
+    { match: "Máy In", target: "view-printers" },
+    { match: "Scan", target: "view-printers" },
+    { match: "Ổ Cứng", target: "view-disk-tools" },
+    { match: "SMART", target: "view-disk-tools" },
+    { match: "Phần Mềm", target: "view-app-store" },
+    { match: "Winget", target: "view-app-store" },
+    { match: "VPN", target: "view-fake-vpn" },
+    { match: "Proxy", target: "view-fake-vpn" },
+    { match: "OEM", target: "view-oem-brand" },
+    { match: "Kích Hoạt", target: "view-hwid-act" },
+    { match: "HWID", target: "view-hwid-act" },
+    { match: "Phân Vùng", target: "view-disk-part" },
+    { match: "Cứu Hộ", target: "view-it-helpdesk" },
+    { match: "Helpdesk", target: "view-it-helpdesk" },
   ];
 
+  // --- 5. ADMIN PORTAL CONTROLLER ---
+  function initAdminPortal() {
+    const btnHeaderAdmin = document.getElementById("btn-header-admin");
+    const btnHeaderAvatar = document.getElementById("btn-header-avatar");
+    const navAdmin = document.getElementById("nav-item-admin");
+    const modalLogin = document.getElementById("modal-admin-login");
+    const inputPass = document.getElementById("input-admin-pass");
+    const lblErr = document.getElementById("lbl-admin-err");
+    const btnSubmit = document.getElementById("btn-admin-submit-login");
+    const btnCancel = document.getElementById("btn-admin-cancel-login");
+    const btnLogout = document.getElementById("btn-admin-logout");
+    const btnPushGit = document.getElementById("btn-admin-push-git");
+    const btnGenKey = document.getElementById("btn-admin-gen-key");
+    const btnSavePolicy = document.getElementById("btn-admin-save-policy");
+    const btnSyncPolicy = document.getElementById("btn-admin-sync-policy");
+    const btnCopyAllKeys = document.getElementById("btn-admin-copy-all-keys");
+
+    function openAdminPortal() {
+      if (isAdminAuth) {
+        switchView("view-admin-portal");
+        loadAdminData();
+      } else {
+        if (modalLogin) {
+          modalLogin.classList.remove("hidden");
+          if (inputPass) {
+            inputPass.value = "";
+            inputPass.focus();
+          }
+          if (lblErr) lblErr.classList.add("hidden");
+        }
+      }
+    }
+
+    if (btnHeaderAdmin) btnHeaderAdmin.addEventListener("click", openAdminPortal);
+    if (btnHeaderAvatar) btnHeaderAvatar.addEventListener("click", openAdminPortal);
+    if (navAdmin) navAdmin.addEventListener("click", (e) => { e.preventDefault(); openAdminPortal(); });
+
+    if (btnCancel && modalLogin) {
+      btnCancel.addEventListener("click", () => modalLogin.classList.add("hidden"));
+    }
+
+    async function handleLogin() {
+      const pass = (inputPass ? inputPass.value : "").trim();
+      if (!pass) {
+        if (lblErr) {
+          lblErr.textContent = "Vui lòng nhập mật khẩu quản trị viên!";
+          lblErr.classList.remove("hidden");
+        }
+        return;
+      }
+
+      const res = await invokeRust("admin_login", { password: pass });
+      if (res && res.success) {
+        isAdminAuth = true;
+        if (modalLogin) modalLogin.classList.add("hidden");
+        showToast("Xác Thực VIP", "Chào mừng Quản Trị Viên hệ thống!", "success");
+        switchView("view-admin-portal");
+        loadAdminData();
+      } else {
+        if (lblErr) {
+          lblErr.textContent = (res && res.message) || "Mật khẩu Admin không chính xác!";
+          lblErr.classList.remove("hidden");
+        }
+      }
+    }
+
+    if (btnSubmit) btnSubmit.addEventListener("click", handleLogin);
+    if (inputPass) {
+      inputPass.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") handleLogin();
+      });
+    }
+
+    if (btnLogout) {
+      btnLogout.addEventListener("click", () => {
+        isAdminAuth = false;
+        switchView("view-sys-monitor");
+        showToast("Đăng Xuất", "Đã đăng xuất khỏi Admin Portal an toàn.", "info");
+      });
+    }
+
+    if (btnPushGit) {
+      btnPushGit.addEventListener("click", async () => {
+        const ok = confirm("BẠN CÓ CHẮC CHẮN MUỐN ĐẨY BẢN CẬP NHẬT MỚI LÊN GITHUB?\n\nHệ thống sẽ tự động lưu cấu hình phân quyền, License Key và kích hoạt Git Push lên origin main.");
+        if (!ok) return;
+
+        showToast("Git Push", "Đang tự động đẩy mã nguồn & cấu hình lên GitHub...", "info");
+        const res = await invokeRust("admin_push_git", {});
+        if (res && res.success) {
+          showToast("Xuất Bản Thành Công", res.message, "success");
+        } else {
+          showToast("Lỗi Git Push", (res && res.message) || "Không thể đẩy lên GitHub", "error");
+        }
+      });
+    }
+
+    if (btnGenKey) {
+      btnGenKey.addEventListener("click", async () => {
+        const cust = (document.getElementById("admin-new-key-cust")?.value || "Khách Hàng VIP").trim();
+        const dur = document.getElementById("admin-new-key-dur")?.value || "Lifetime";
+
+        showToast("Tạo Key", "Đang khởi tạo mã License Key mới...", "info");
+        const res = await invokeRust("admin_generate_key", { customer: cust, duration: dur });
+        if (res && res.success) {
+          showToast("Tạo Key Thành Công", res.message, "success");
+          loadAdminData();
+        }
+      });
+    }
+
+    if (btnSavePolicy) {
+      btnSavePolicy.addEventListener("click", async () => {
+        // Collect current policies
+        const listEl = document.getElementById("admin-policy-list");
+        if (!listEl) return;
+        const items = listEl.querySelectorAll(".policy-row");
+        const newPolicies = [];
+
+        items.forEach((row) => {
+          const id = row.getAttribute("data-id");
+          const sel = row.querySelector("select");
+          const tier = sel ? sel.value : "FREE";
+          const original = currentPolicies.find((p) => p.Id === id) || {};
+          newPolicies.push({ ...original, Id: id, Tier: tier });
+        });
+
+        showToast("Lưu Phân Quyền", "Đang lưu chính sách phân quyền vào hệ thống...", "info");
+        const res = await invokeRust("admin_save_policies", { policies: JSON.stringify(newPolicies) });
+        if (res && res.success) {
+          showToast("Đã Lưu", res.message, "success");
+          currentPolicies = newPolicies;
+        }
+      });
+    }
+
+    if (btnSyncPolicy) {
+      btnSyncPolicy.addEventListener("click", () => {
+        showToast("Đồng Bộ Cloud", "Đang tải dữ liệu phân quyền mới nhất từ Cloud...", "info");
+        loadAdminData();
+      });
+    }
+
+    if (btnCopyAllKeys) {
+      btnCopyAllKeys.addEventListener("click", () => {
+        if (!currentVault || currentVault.length === 0) {
+          showToast("Thông báo", "Kho key hiện đang trống!", "warning");
+          return;
+        }
+        const text = currentVault.map((k) => `${k.Key} | ${k.Customer} | ${k.Duration} | ${k.IsUsed ? "Đã dùng" : "Chưa dùng"}`).join("\n");
+        navigator.clipboard.writeText(text);
+        showToast("Đã Sao Chép", `Đã sao chép toàn bộ ${currentVault.length} License Keys vào Clipboard!`, "success");
+      });
+    }
+  }
+
+  async function loadAdminData() {
+    const res = await invokeRust("admin_get_data", {});
+    if (!res || !res.success || !res.data) return;
+
+    const { policies, vault } = res.data;
+    currentPolicies = Array.isArray(policies) ? policies : [];
+    currentVault = Array.isArray(vault) ? vault : [];
+
+    // 1. Render Policies
+    const policyListEl = document.getElementById("admin-policy-list");
+    if (policyListEl && currentPolicies.length > 0) {
+      policyListEl.innerHTML = currentPolicies
+        .map(
+          (p) => `
+        <div class="policy-row flex items-center justify-between p-2.5 rounded-lg bg-surface-container-high/60 border border-outline-variant/20 hover:border-primary/40 transition-colors" data-id="${p.Id}">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">${p.Icon || "⚙️"}</span>
+            <div>
+              <div class="font-label-md text-label-md text-on-surface font-semibold leading-tight">${p.Name || p.Id}</div>
+              <div class="font-label-sm text-[11px] text-on-surface-variant line-clamp-1">${p.Description || ""}</div>
+            </div>
+          </div>
+          <select class="px-2 py-1 rounded bg-surface-container border border-outline-variant/40 font-code-sm text-code-sm font-bold text-on-surface focus:outline-none focus:border-primary">
+            <option value="FREE" ${p.Tier === "FREE" ? "selected" : ""}>FREE</option>
+            <option value="PRO" ${p.Tier === "PRO" ? "selected" : ""}>PRO (VIP)</option>
+          </select>
+        </div>`
+        )
+        .join("");
+    }
+
+    // 2. Render Vault
+    const vaultListEl = document.getElementById("admin-keys-container");
+    const statsEl = document.getElementById("admin-vault-stats");
+
+    if (statsEl) {
+      const total = currentVault.length;
+      const used = currentVault.filter((k) => k.IsUsed).length;
+      const free = total - used;
+      statsEl.textContent = `Tổng: ${total} | Đã kích hoạt: ${used} | Còn trống: ${free}`;
+    }
+
+    if (vaultListEl) {
+      if (currentVault.length === 0) {
+        vaultListEl.innerHTML = '<div class="text-center text-on-surface-variant py-8 font-label-sm">Chưa có License Key nào trong kho.</div>';
+      } else {
+        vaultListEl.innerHTML = currentVault
+          .map(
+            (k) => `
+          <div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-high/60 border border-outline-variant/20 hover:border-amber-400/40 transition-colors">
+            <div class="flex flex-col gap-0.5">
+              <div class="flex items-center gap-2">
+                <span class="font-code-sm text-code-sm font-bold text-amber-300 select-all">${k.Key}</span>
+                <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${k.IsUsed ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}">
+                  ${k.IsUsed ? "Đã Kích Hoạt" : "Chưa Dùng"}
+                </span>
+              </div>
+              <div class="font-label-sm text-[11px] text-on-surface-variant">
+                <span>Khách: ${k.Customer}</span> • <span>Hạn: ${k.Duration}</span> ${k.UsedHWID ? `• <span class="font-code-sm text-[10px]">(${k.UsedHWID})</span>` : ""}
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="btn-copy-key p-1 rounded hover:bg-surface-bright text-on-surface-variant hover:text-on-surface transition-colors" data-key="${k.Key}" title="Copy Key">
+                <span class="material-symbols-outlined text-[16px]">content_copy</span>
+              </button>
+              <button class="btn-del-key p-1 rounded hover:bg-error-container text-on-surface-variant hover:text-error transition-colors" data-key="${k.Key}" title="Xóa Key">
+                <span class="material-symbols-outlined text-[16px]">delete</span>
+              </button>
+            </div>
+          </div>`
+          )
+          .join("");
+
+        // Bind copy & delete events
+        vaultListEl.querySelectorAll(".btn-copy-key").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const key = btn.getAttribute("data-key");
+            navigator.clipboard.writeText(key);
+            showToast("Đã Copy", `Đã sao chép ${key} vào Clipboard!`, "success");
+          });
+        });
+
+        vaultListEl.querySelectorAll(".btn-del-key").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const key = btn.getAttribute("data-key");
+            const ok = confirm(`Bạn có chắc muốn xóa License Key [${key}] khỏi kho?`);
+            if (!ok) return;
+            const res = await invokeRust("admin_delete_key", { key });
+            if (res && res.success) {
+              showToast("Đã Xóa", res.message, "success");
+              loadAdminData();
+            }
+          });
+        });
+      }
+    }
+  }
+
+  // --- 6. APP STORE & CHECKBOX CONTROLLER ---
+  function initAppStoreController() {
+    const storeView = document.getElementById("view-app-store");
+    if (!storeView) return;
+
+    // Map application names to package identifiers
+    const appMap = {
+      "Google Chrome": "google-chrome",
+      "Zalo PC": "zalo",
+      "Mozilla Firefox": "firefox",
+      "Microsoft Edge": "edge",
+      "Brave Browser": "brave",
+      "Cốc Cốc Browser": "coccoc",
+      "Telegram Desktop": "telegram",
+      "Discord": "discord",
+      "Visual Studio Code": "vscode",
+      "Git for Windows": "git",
+      "NodeJS (LTS)": "nodejs",
+      "Python 3.12": "python",
+      "UltraViewer": "ultraviewer",
+      "UniKey": "unikey",
+    };
+
+    function updateCartCount() {
+      const checkedBoxes = storeView.querySelectorAll("input[type='checkbox']:checked");
+      const cartBadge = storeView.querySelector(".rounded.bg-surface-container-high");
+      const selectionBadges = storeView.querySelectorAll("span");
+      selectionBadges.forEach((s) => {
+        if (s.textContent && s.textContent.includes("Đã chọn:")) {
+          s.textContent = `Đã chọn: ${checkedBoxes.length} ứng dụng`;
+        }
+      });
+    }
+
+    // Toggle card on click
+    storeView.querySelectorAll(".grid > div").forEach((card) => {
+      const cb = card.querySelector("input[type='checkbox']");
+      if (!cb) return;
+
+      card.addEventListener("click", (e) => {
+        if (e.target.tagName !== "INPUT") {
+          cb.checked = !cb.checked;
+          updateCartCount();
+        }
+      });
+      cb.addEventListener("change", updateCartCount);
+    });
+
+    // Select All / Deselect All
+    storeView.querySelectorAll("button").forEach((btn) => {
+      const txt = (btn.innerText || "").trim();
+      if (txt.includes("Chọn Tất Cả")) {
+        btn.addEventListener("click", () => {
+          storeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = true));
+          updateCartCount();
+          showToast("Kho Phần Mềm", "Đã chọn toàn bộ danh sách phần mềm!", "info");
+        });
+      } else if (txt.includes("Bỏ Chọn")) {
+        btn.addEventListener("click", () => {
+          storeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = false));
+          updateCartCount();
+          showToast("Kho Phần Mềm", "Đã bỏ chọn toàn bộ phần mềm.", "info");
+        });
+      }
+    });
+
+    // Action button: Cài Đặt / Update
+    const btnInstall = Array.from(storeView.querySelectorAll("button")).find((b) =>
+      b.innerText && b.innerText.includes("Cài Đặt / Update")
+    );
+
+    if (btnInstall) {
+      btnInstall.addEventListener("click", async () => {
+        const selectedApps = [];
+        storeView.querySelectorAll(".grid > div").forEach((card) => {
+          const cb = card.querySelector("input[type='checkbox']");
+          if (cb && cb.checked) {
+            const titleEl = card.querySelector("span.font-body-md, span.font-label-md, div.font-body-md");
+            const appName = titleEl ? titleEl.textContent.trim() : "";
+            const appId = appMap[appName] || appName.toLowerCase().replace(/\s+/g, "-");
+            selectedApps.push(appId);
+          }
+        });
+
+        if (selectedApps.length === 0) {
+          showToast("Kho Phần Mềm", "Vui lòng tích chọn ít nhất 1 ứng dụng để cài đặt!", "warning");
+          return;
+        }
+
+        showToast("Đang Cài Đặt", `Đang gửi lệnh cài đặt ${selectedApps.length} ứng dụng tới nhân Windows...`, "info");
+        const res = await invokeRust("run_system_action", {
+          actionId: "install_apps",
+          apps: selectedApps,
+          params: { apps: selectedApps },
+        });
+
+        if (res && res.success) {
+          showToast("Đang Tiến Hành", res.message, "success");
+        } else {
+          showToast("Lỗi Cài Đặt", (res && res.message) || "Không thể thực thi lệnh cài đặt", "error");
+        }
+      });
+    }
+  }
+
+  // --- 7. NAVIGATION & ACTIONS BINDING ---
   function bindNavigationAndActions() {
-    // Sidebar links
-    document.querySelectorAll("[data-target]").forEach((el) => {
-      el.addEventListener("click", (e) => {
+    // Sidebar Navigation
+    const navItems = document.querySelectorAll("#sidebar-nav .nav-item");
+    navItems.forEach((item) => {
+      item.addEventListener("click", (e) => {
         e.preventDefault();
-        const target = el.getAttribute("data-target");
-        if (target) switchView(target);
+        const targetId = item.getAttribute("data-target");
+        if (targetId) switchView(targetId);
       });
     });
+
+    // Overview Blueprint Button
+    const btnOverview = document.getElementById("btn-overview-all");
+    if (btnOverview) {
+      btnOverview.addEventListener("click", () => switchView("view-all-overview"));
+    }
 
     // Window Controls
     const btnClose = document.getElementById("btn-win-close");
@@ -130,15 +511,21 @@
     const btnExit = document.getElementById("btn-emerg-exit");
     const btnExplorer = document.getElementById("btn-emerg-explorer");
     const btnUpdate = document.getElementById("btn-header-update");
+    const btnClean = document.getElementById("btn-emerg-clean");
+    const btnHelpdesk = document.getElementById("btn-emerg-helpdesk");
 
-    if (btnClose) btnClose.addEventListener("click", () => {
-      invokeRust("window_control", { action: "close" });
-      setTimeout(() => window.close(), 150);
-    });
-    if (btnExit) btnExit.addEventListener("click", () => {
-      invokeRust("window_control", { action: "close" });
-      setTimeout(() => window.close(), 150);
-    });
+    if (btnClose) {
+      btnClose.addEventListener("click", () => {
+        invokeRust("window_control", { action: "close" });
+        setTimeout(() => window.close(), 150);
+      });
+    }
+    if (btnExit) {
+      btnExit.addEventListener("click", () => {
+        invokeRust("window_control", { action: "close" });
+        setTimeout(() => window.close(), 150);
+      });
+    }
     if (btnMin) btnMin.addEventListener("click", () => invokeRust("window_control", { action: "minimize" }));
     if (btnMax) btnMax.addEventListener("click", () => invokeRust("window_control", { action: "maximize" }));
 
@@ -148,6 +535,18 @@
         const res = await invokeRust("run_system_action", { actionId: "restart_explorer", params: {} });
         showToast("Hoàn tất", (res && res.message) || "Đã khởi động lại Windows Explorer thành công!", "success");
       });
+    }
+
+    if (btnClean) {
+      btnClean.addEventListener("click", async () => {
+        showToast("Dọn Dẹp", "Đang dọn dẹp các tệp tạm %TEMP% và xóa cache DNS...", "info");
+        const res = await invokeRust("run_system_action", { actionId: "dọn dẹp", params: {} });
+        showToast("Dọn Dẹp Hoàn Tất", (res && res.message) || "Đã dọn dẹp hệ thống sạch sẽ!", "success");
+      });
+    }
+
+    if (btnHelpdesk) {
+      btnHelpdesk.addEventListener("click", () => switchView("view-it-helpdesk"));
     }
 
     if (btnUpdate) {
@@ -191,12 +590,15 @@
     if (btnLight) btnLight.addEventListener("click", () => setThemeMode("light"));
     if (btnSys) btnSys.addEventListener("click", () => setThemeMode("sys"));
 
-    // Bind all buttons inside the 14 views
+    // Bind sub-tabs and general functional action buttons
     document.querySelectorAll(".stitch-view button").forEach((btn) => {
       const text = (btn.innerText || "").trim();
       if (!text) return;
 
-      // Check if button is a sub-tab switcher
+      // Skip admin buttons handled separately
+      if (btn.id && btn.id.startsWith("btn-admin-")) return;
+
+      // Sub-tab switcher
       for (const route of subTabRouteMap) {
         if (text.includes(route.match)) {
           btn.addEventListener("click", (e) => {
@@ -207,7 +609,7 @@
         }
       }
 
-      // Time range pills (1m, 5m, 15m, 1h)
+      // Time range pills
       if (["1m", "5m", "15m", "1h"].includes(text)) {
         btn.addEventListener("click", () => {
           const parent = btn.parentElement;
@@ -222,11 +624,14 @@
         return;
       }
 
-      // General functional action buttons
+      // General functional actions
       btn.addEventListener("click", async (e) => {
+        // Skip if inside app store action area already handled
+        if (btn.closest("#view-app-store") && (text.includes("Cài Đặt") || text.includes("Chọn"))) return;
+
         e.preventDefault();
         const label = text.replace(/\s+/g, " ").trim();
-        showToast("Đang thực thi (Rust Native)", `Tác vụ: ${label}`, "info");
+        showToast("Đang thực thi", `Tác vụ: ${label}`, "info");
         const res = await invokeRust("run_system_action", {
           actionId: label,
           params: { screen: btn.closest(".stitch-view")?.id || "unknown" },
@@ -240,13 +645,13 @@
     });
   }
 
-  // --- 5. REALTIME CLOCK & HARDWARE TELEMETRY POLLING (get_system_telemetry) ---
+  // --- 8. REAL-TIME TELEMETRY POLLING ---
   function updateClock() {
-    const clockEl = document.getElementById("system-clock");
-    if (!clockEl) return;
+    const el = document.getElementById("system-clock");
+    if (!el) return;
     const now = new Date();
     const pad = (n) => String(n).padStart(2, "0");
-    clockEl.textContent = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    el.textContent = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   }
 
   async function pollSystemTelemetry() {
@@ -256,13 +661,11 @@
     const view01 = document.getElementById("view-sys-monitor");
     if (!view01) return;
 
-    // Update Host & OS subtitle
     const osSubtitle = view01.querySelector("p.font-body-md.text-on-surface-variant");
     if (osSubtitle && data.os_summary) {
       osSubtitle.textContent = data.os_summary;
     }
 
-    // Update Metric Cards (CPU, RAM, GPU, Disk, Net, Battery)
     const metricEls = view01.querySelectorAll(".font-metric-num.text-metric-num");
     if (metricEls.length >= 4) {
       if (data.cpu_percent !== undefined) {
@@ -275,50 +678,25 @@
         metricEls[3].innerHTML = `${Math.round(data.disk_free_gb)} <span class="text-headline-md font-body-md text-outline">GB Trống</span>`;
       }
     }
-
-    // Update Top 5 Processes Table if available
-    if (Array.isArray(data.top_processes) && data.top_processes.length > 0) {
-      const tbody = view01.querySelector("table tbody");
-      if (tbody) {
-        tbody.innerHTML = data.top_processes
-          .slice(0, 5)
-          .map(
-            (p) => `
-          <tr class="hover:bg-surface-container transition-colors">
-            <td class="py-2.5 px-3 flex items-center gap-2.5">
-              <div class="w-6 h-6 rounded bg-surface-container-highest flex items-center justify-center text-primary">
-                <span class="material-symbols-outlined text-[15px]">memory</span>
-              </div>
-              <span class="font-label-md text-label-md text-on-surface">${p.name}</span>
-            </td>
-            <td class="py-2.5 px-3 text-outline font-code-sm text-code-sm">${p.pid}</td>
-            <td class="py-2.5 px-3 text-on-surface">${p.cpu_percent.toFixed(1)}%</td>
-            <td class="py-2.5 px-3 text-primary font-semibold">${p.memory_mb} MB</td>
-            <td class="py-2.5 px-3 text-right">
-              <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-tertiary font-label-sm text-label-sm">Active</span>
-            </td>
-          </tr>`
-          )
-          .join("");
-      }
-    }
   }
 
-  // --- 6. INITIALIZATION ---
+  // --- 9. HEARTBEAT & LIFECYCLE CONTROLLER ---
+  function sendHeartbeat() {
+    fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
+  }
+
+  // --- 10. INITIALIZATION ---
   document.addEventListener("DOMContentLoaded", () => {
     bindNavigationAndActions();
+    initAdminPortal();
+    initAppStoreController();
     updateClock();
     setInterval(updateClock, 1000);
     pollSystemTelemetry();
     setInterval(pollSystemTelemetry, 2000);
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 1000);
   });
-
-  // --- 7. HEARTBEAT & LIFECYCLE CONTROLLER ---
-  function sendHeartbeat() {
-    fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
-  }
-  sendHeartbeat();
-  setInterval(sendHeartbeat, 1000);
 
   window.addEventListener("beforeunload", () => {
     try {
