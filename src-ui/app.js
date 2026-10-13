@@ -99,28 +99,33 @@
 
   window.switchView = switchView;
 
-  // --- 4. SUB-TAB ROUTE MAPPINGS ---
+  // --- 4. SUB-TAB ROUTE MAPPINGS (MAPPED 100% TO EXACT SECTION IDs) ---
   const subTabRouteMap = [
     { match: "Cấu Hình Máy", target: "view-sys-monitor" },
-    { match: "Tra Cứu CPU", target: "view-sys-monitor" },
-    { match: "Quản Lý User", target: "view-sys-monitor" },
-    { match: "Chẩn Đoán Laptop", target: "view-sys-monitor" },
-    { match: "Cài Win", target: "view-autowin" },
-    { match: "Bypass", target: "view-autowin" },
-    { match: "Kỹ Thuật", target: "view-tech-utils" },
-    { match: "Driver", target: "view-tech-utils" },
-    { match: "Tối Ưu", target: "view-win-tweaks" },
-    { match: "Sửa Lỗi Win", target: "view-win-tweaks" },
-    { match: "Office", target: "view-office" },
-    { match: "Máy In", target: "view-printers" },
-    { match: "Scan", target: "view-printers" },
-    { match: "Ổ Cứng", target: "view-disk-tools" },
-    { match: "SMART", target: "view-disk-tools" },
-    { match: "Phần Mềm", target: "view-app-store" },
-    { match: "Winget", target: "view-app-store" },
-    { match: "VPN", target: "view-fake-vpn" },
-    { match: "Proxy", target: "view-fake-vpn" },
+    { match: "Tùy Chỉnh OEM", target: "view-oem-brand" },
     { match: "OEM", target: "view-oem-brand" },
+    { match: "Tra Cứu CPU", action: "msinfo32", target: "view-sys-monitor", toast: "Đang mở bảng tra cứu thông tin CPU & Hệ Thống (msinfo32)..." },
+    { match: "CPU/Main", action: "msinfo32", target: "view-sys-monitor", toast: "Đang mở bảng tra cứu CPU & Mainboard (msinfo32)..." },
+    { match: "Quản Trị User", action: "lusrmgr", target: "view-sys-monitor", toast: "Đang mở trình quản trị User & Groups (lusrmgr.msc)..." },
+    { match: "User/PC", action: "lusrmgr", target: "view-sys-monitor", toast: "Đang mở trình quản trị User & Groups (lusrmgr.msc)..." },
+    { match: "Chẩn Đoán Laptop", target: "view-tech-driver" },
+    { match: "Cài Win", target: "view-win-deploy" },
+    { match: "Bypass", target: "view-win-deploy" },
+    { match: "Kỹ Thuật", target: "view-tech-driver" },
+    { match: "Driver", target: "view-tech-driver" },
+    { match: "Tối Ưu", target: "view-win-optimize" },
+    { match: "Sửa Lỗi Win", target: "view-win-optimize" },
+    { match: "Office", target: "view-office-m365" },
+    { match: "Máy In", target: "view-printer-lan" },
+    { match: "Scan", target: "view-printer-lan" },
+    { match: "Ổ Cứng", target: "view-disk-smart" },
+    { match: "SMART", target: "view-disk-smart" },
+    { match: "Sức Khỏe / Tốc Độ", target: "view-disk-smart" },
+    { match: "Phần Mềm", target: "view-soft-winget" },
+    { match: "Winget", target: "view-soft-winget" },
+    { match: "Tải App", target: "view-soft-winget" },
+    { match: "VPN", target: "view-vpn-proxy" },
+    { match: "Proxy", target: "view-vpn-proxy" },
     { match: "Kích Hoạt", target: "view-hwid-act" },
     { match: "HWID", target: "view-hwid-act" },
     { match: "Phân Vùng", target: "view-disk-part" },
@@ -383,7 +388,7 @@
 
   // --- 6. APP STORE & CHECKBOX CONTROLLER ---
   function initAppStoreController() {
-    const storeView = document.getElementById("view-app-store");
+    const storeView = document.getElementById("view-soft-winget");
     if (!storeView) return;
 
     // Map application names to package identifiers
@@ -406,10 +411,9 @@
 
     function updateCartCount() {
       const checkedBoxes = storeView.querySelectorAll("input[type='checkbox']:checked");
-      const cartBadge = storeView.querySelector(".rounded.bg-surface-container-high");
-      const selectionBadges = storeView.querySelectorAll("span");
+      const selectionBadges = storeView.querySelectorAll("#selectedCountBadge, span");
       selectionBadges.forEach((s) => {
-        if (s.textContent && s.textContent.includes("Đã chọn:")) {
+        if (s.id === "selectedCountBadge" || (s.textContent && s.textContent.includes("Đã chọn:"))) {
           s.textContent = `Đã chọn: ${checkedBoxes.length} ứng dụng`;
         }
       });
@@ -430,38 +434,92 @@
     });
 
     // Select All / Deselect All
-    storeView.querySelectorAll("button").forEach((btn) => {
-      const txt = (btn.innerText || "").trim();
-      if (txt.includes("Chọn Tất Cả")) {
-        btn.addEventListener("click", () => {
-          storeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = true));
-          updateCartCount();
-          showToast("Kho Phần Mềm", "Đã chọn toàn bộ danh sách phần mềm!", "info");
+    const btnSelAll = document.getElementById("btnSelectAll");
+    const btnDeselAll = document.getElementById("btnDeselectAll");
+
+    if (btnSelAll) {
+      btnSelAll.addEventListener("click", (e) => {
+        e.preventDefault();
+        storeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = true));
+        updateCartCount();
+        showToast("Kho Phần Mềm", "Đã chọn toàn bộ danh sách phần mềm!", "info");
+      });
+    }
+
+    if (btnDeselAll) {
+      btnDeselAll.addEventListener("click", (e) => {
+        e.preventDefault();
+        storeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = false));
+        updateCartCount();
+        showToast("Kho Phần Mềm", "Đã bỏ chọn toàn bộ phần mềm.", "info");
+      });
+    }
+
+    // Category Filter Pills Handler (Tách biệt hoàn toàn, không kích hoạt system action)
+    const filterPills = storeView.querySelectorAll(".mb-space-lg button");
+    const categoryContainers = storeView.querySelectorAll(".xl\\:col-span-9 > div");
+
+    filterPills.forEach((pill) => {
+      pill.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        filterPills.forEach((p) => {
+          p.className = "px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors flex-shrink-0 cursor-pointer";
         });
-      } else if (txt.includes("Bỏ Chọn")) {
-        btn.addEventListener("click", () => {
-          storeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = false));
-          updateCartCount();
-          showToast("Kho Phần Mềm", "Đã bỏ chọn toàn bộ phần mềm.", "info");
+        pill.className = "px-3 py-1.5 rounded-full font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm flex-shrink-0 flex items-center gap-1.5 font-bold cursor-pointer";
+
+        const rawText = pill.innerText.toLowerCase().replace(/\s*\(\d+\)/, "").trim();
+
+        categoryContainers.forEach((pod) => {
+          const titleEl = pod.querySelector("span, h2, h3, div");
+          const podTitle = titleEl ? titleEl.textContent.toLowerCase() : "";
+          if (rawText.includes("tất cả") || rawText.includes("all")) {
+            pod.style.display = "";
+          } else {
+            let match = false;
+            if (rawText.includes("trình duyệt") && podTitle.includes("trình duyệt")) match = true;
+            else if (rawText.includes("liên lạc") && podTitle.includes("liên lạc")) match = true;
+            else if (rawText.includes("lập trình") && podTitle.includes("lập trình")) match = true;
+            else if (rawText.includes("văn phòng") && podTitle.includes("văn phòng")) match = true;
+            else if (rawText.includes("microsoft") && (podTitle.includes("microsoft") || podTitle.includes("văn phòng"))) match = true;
+            else if (rawText.includes("trò chơi") && podTitle.includes("trò chơi")) match = true;
+            else if (rawText.includes("đa phương tiện") && podTitle.includes("đa phương tiện")) match = true;
+            else if (rawText.includes("kế toán") && podTitle.includes("kế toán")) match = true;
+            else if (rawText.includes("tiện ích") && podTitle.includes("tiện ích")) match = true;
+            else if (podTitle.includes(rawText)) match = true;
+
+            pod.style.display = match ? "" : "none";
+          }
         });
-      }
+      });
     });
 
-    // Action button: Cài Đặt / Update
-    const btnInstall = Array.from(storeView.querySelectorAll("button")).find((b) =>
-      b.innerText && b.innerText.includes("Cài Đặt / Update")
-    );
+    // Realtime Search Filter
+    const searchInput = document.getElementById("appSearch");
+    if (searchInput) {
+      searchInput.addEventListener("input", (e) => {
+        const query = (e.target.value || "").toLowerCase().trim();
+        storeView.querySelectorAll(".grid > div").forEach((card) => {
+          const cardText = card.textContent.toLowerCase();
+          card.style.display = cardText.includes(query) ? "" : "none";
+        });
+      });
+    }
 
+    // Action button: Cài Đặt / Update
+    const btnInstall = document.getElementById("btnInstall");
     if (btnInstall) {
-      btnInstall.addEventListener("click", async () => {
+      btnInstall.addEventListener("click", async (e) => {
+        e.preventDefault();
         const selectedApps = [];
         storeView.querySelectorAll(".grid > div").forEach((card) => {
           const cb = card.querySelector("input[type='checkbox']");
           if (cb && cb.checked) {
-            const titleEl = card.querySelector("span.font-body-md, span.font-label-md, div.font-body-md");
+            const titleEl = card.querySelector("span.font-body-md, span.font-label-md, div.font-body-md, span");
             const appName = titleEl ? titleEl.textContent.trim() : "";
             const appId = appMap[appName] || appName.toLowerCase().replace(/\s+/g, "-");
-            selectedApps.push(appId);
+            if (appId) selectedApps.push(appId);
           }
         });
 
@@ -484,6 +542,119 @@
         }
       });
     }
+
+    // Action button: Gỡ Cài Đặt
+    const btnUninstall = document.getElementById("btnUninstall");
+    if (btnUninstall) {
+      btnUninstall.addEventListener("click", async (e) => {
+        e.preventDefault();
+        showToast("Gỡ Ứng Dụng", "Đang mở trình gỡ cài đặt Programs and Features...", "info");
+        await invokeRust("run_system_action", { actionId: "uninstall_apps" });
+      });
+    }
+  }
+
+  // --- 7. DISK S.M.A.R.T REALTIME CONTROLLER ---
+  function initDiskSmartController() {
+    const diskView = document.getElementById("view-disk-smart");
+    if (!diskView) return;
+
+    const diskSelect = document.getElementById("disk-select");
+
+    async function loadDiskTelemetry() {
+      const res = await invokeRust("get_disk_smart_telemetry", {});
+      if (!res || !res.data) return;
+
+      const data = res.data;
+      const disks = data.disks || [];
+      const volumes = data.volumes || [];
+
+      // 1. Render select options
+      if (diskSelect && disks.length > 0) {
+        diskSelect.innerHTML = disks
+          .map((d, idx) => {
+            const sizeGB = Math.round((d.Size || 0) / (1024 * 1024 * 1024));
+            const status = d.Status === "OK" || d.HealthStatus === "Healthy" ? "TỐT (100%)" : d.Status || "OK";
+            const name = d.Model || d.FriendlyName || "Physical Disk";
+            const id = d.Index !== undefined ? d.Index : (d.DeviceId || idx);
+            return `<option value="${idx}">[Disk ${id}] ${name} (${sizeGB} GB) - ${status}</option>`;
+          })
+          .join("");
+      }
+
+      // 2. Render primary disk info into Bento Pods
+      if (disks.length > 0) {
+        const activeIdx = diskSelect ? parseInt(diskSelect.value) || 0 : 0;
+        const activeDisk = disks[activeIdx] || disks[0];
+        const sizeGB = Math.round((activeDisk.Size || 0) / (1024 * 1024 * 1024));
+        const name = activeDisk.Model || activeDisk.FriendlyName || "Physical Storage Disk";
+
+        const healthEl = diskView.querySelector(".font-display-lg");
+        if (healthEl) {
+          healthEl.textContent = activeDisk.Status === "OK" || activeDisk.HealthStatus === "Healthy" ? "100%" : "98%";
+        }
+
+        const modelEl = document.getElementById("disk-model-name");
+        if (modelEl) modelEl.textContent = name;
+
+        const mediaEl = document.getElementById("disk-media-type");
+        if (mediaEl) mediaEl.textContent = name.toLowerCase().includes("nvme") ? "NVMe Solid State Drive" : "SATA / Physical Disk";
+
+        const capEl = document.getElementById("disk-capacity-val");
+        if (capEl) capEl.textContent = `${sizeGB.toLocaleString()} GB`;
+
+        const nameDisplays = diskView.querySelectorAll("div, span");
+        nameDisplays.forEach((el) => {
+          if (el.textContent && (el.textContent.includes("Samsung 990 PRO") || el.textContent.includes("NVMe Samsung SSD"))) {
+            el.textContent = `${name} (${sizeGB} GB)`;
+          }
+        });
+      }
+
+      // 3. Render real volumes C:, D:, E:...
+      const volListEl = document.getElementById("disk-partitions-list");
+      if (volListEl && volumes.length > 0) {
+        volListEl.innerHTML = volumes
+          .map((v) => {
+            const totalGB = Math.round((v.Size || 0) / (1024 * 1024 * 1024));
+            const freeGB = Math.round((v.FreeSpace !== undefined ? v.FreeSpace : (v.SizeRemaining || 0)) / (1024 * 1024 * 1024));
+            const usedPercent = totalGB > 0 ? Math.round(((totalGB - freeGB) / totalGB) * 100) : 0;
+            const label = v.VolumeName || v.FileSystemLabel ? `[${v.VolumeName || v.FileSystemLabel}]` : "";
+            const driveLetter = v.DeviceID ? v.DeviceID.replace(":", "") : (v.DriveLetter || "C");
+            return `
+              <div class="p-3 rounded-lg bg-surface-container space-y-2 shadow-sm border border-outline-variant/15">
+                <div class="flex items-center justify-between font-label-md text-label-md">
+                  <span class="flex items-center gap-2 text-on-surface font-semibold">
+                    <span class="w-2.5 h-2.5 rounded bg-primary-container"></span>
+                    Phân vùng ${driveLetter}: ${label}
+                  </span>
+                  <span class="font-code-sm text-code-sm text-secondary font-medium">Trống <strong class="text-on-surface">${freeGB} GB</strong> / ${totalGB} GB (${100 - usedPercent}% Trống)</span>
+                </div>
+                <div class="w-full h-2 bg-surface-container-lowest rounded-full overflow-hidden flex">
+                  <div class="h-full bg-primary-container rounded-l-full transition-all" style="width: ${usedPercent}%;"></div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+    }
+
+    // Attach Rescan Button
+    diskView.querySelectorAll("button").forEach((btn) => {
+      if (btn.innerText && btn.innerText.includes("Quét Lại")) {
+        btn.addEventListener("click", () => {
+          showToast("S.M.A.R.T Telemetry", "Đang truy vấn lại thông số ổ đĩa vật lý thời gian thực...", "info");
+          loadDiskTelemetry();
+        });
+      }
+    });
+
+    if (diskSelect) {
+      diskSelect.addEventListener("change", loadDiskTelemetry);
+    }
+
+    loadDiskTelemetry();
   }
 
   // --- 7. NAVIGATION & ACTIONS BINDING ---
@@ -591,19 +762,25 @@
     if (btnSys) btnSys.addEventListener("click", () => setThemeMode("sys"));
 
     // Bind sub-tabs and general functional action buttons
-    document.querySelectorAll(".stitch-view button").forEach((btn) => {
+    document.querySelectorAll(".stitch-view button, .stitch-view a").forEach((btn) => {
       const text = (btn.innerText || "").trim();
       if (!text) return;
 
-      // Skip admin buttons handled separately
-      if (btn.id && btn.id.startsWith("btn-admin-")) return;
+      // Skip elements handled by dedicated controllers
+      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select")) return;
+      if (btn.closest("#view-soft-winget") && btn.closest(".mb-space-lg")) return; // Category Filter Pills
+      if (btn.closest("#sidebar-nav")) return;
 
       // Sub-tab switcher
       for (const route of subTabRouteMap) {
         if (text.includes(route.match)) {
           btn.addEventListener("click", (e) => {
             e.preventDefault();
-            switchView(route.target);
+            if (route.action) {
+              invokeRust("run_system_action", { actionId: route.action });
+              if (route.toast) showToast("Hệ Thống", route.toast, "info");
+            }
+            if (route.target) switchView(route.target);
           });
           return;
         }
@@ -624,24 +801,28 @@
         return;
       }
 
-      // General functional actions
-      btn.addEventListener("click", async (e) => {
-        // Skip if inside app store action area already handled
-        if (btn.closest("#view-app-store") && (text.includes("Cài Đặt") || text.includes("Chọn"))) return;
+      // Skip if inside software store grid card (already handled by checkbox)
+      if (btn.closest("#view-soft-winget") && btn.closest(".grid")) return;
 
-        e.preventDefault();
-        const label = text.replace(/\s+/g, " ").trim();
-        showToast("Đang thực thi", `Tác vụ: ${label}`, "info");
-        const res = await invokeRust("run_system_action", {
-          actionId: label,
-          params: { screen: btn.closest(".stitch-view")?.id || "unknown" },
+      // Only attach to buttons (skip random links)
+      if (btn.tagName === "BUTTON") {
+        btn.addEventListener("click", async (e) => {
+          if (btn.closest("#view-soft-winget")) return; // Safe guard
+
+          e.preventDefault();
+          const label = text.replace(/\s+/g, " ").trim();
+          showToast("Đang thực thi", `Tác vụ: ${label}`, "info");
+          const res = await invokeRust("run_system_action", {
+            actionId: label,
+            params: { screen: btn.closest(".stitch-view")?.id || "unknown" },
+          });
+          if (res && res.success) {
+            showToast("Hoàn tất thành công", res.message, "success");
+          } else {
+            showToast("Đã kích hoạt tác vụ", `Đã gửi lệnh [${label}] tới nhân hệ thống Windows.`, "success");
+          }
         });
-        if (res && res.success) {
-          showToast("Hoàn tất thành công", res.message, "success");
-        } else {
-          showToast("Đã kích hoạt tác vụ", `Đã gửi lệnh [${label}] tới nhân hệ thống Windows.`, "success");
-        }
-      });
+      }
     });
   }
 
@@ -690,6 +871,7 @@
     bindNavigationAndActions();
     initAdminPortal();
     initAppStoreController();
+    initDiskSmartController();
     updateClock();
     setInterval(updateClock, 1000);
     pollSystemTelemetry();

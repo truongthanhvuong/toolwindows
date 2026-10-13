@@ -478,11 +478,48 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         );
     }
 
+    // ========================================================================
+    // 14. QUẢN TRỊ USER / PC (LUSRMGR.MSC)
+    // ========================================================================
+    if act.contains("quan tri user") || act.contains("user/pc") || act.contains("lusrmgr") || act.contains("tai khoan") {
+        let mut cmd = Command::new("mmc");
+        cmd.args(["lusrmgr.msc"]);
+        let _ = cmd.spawn();
+        return (true, "Đang mở trình quản trị người dùng Local Users and Groups (lusrmgr.msc)...".to_string());
+    }
+
+    // ========================================================================
+    // 15. TRA CỨU CPU / MAINBOARD (MSINFO32 / DXDIAG)
+    // ========================================================================
+    if act.contains("tra cuu cpu") || act.contains("cpu/main") || act.contains("dxdiag") || act.contains("msinfo32") {
+        let mut cmd = Command::new("msinfo32");
+        let _ = cmd.spawn();
+        return (true, "Đang mở bảng tra cứu thông tin hệ thống & phần cứng System Information (msinfo32)...".to_string());
+    }
+
     // Default Fallback
     (
         true,
         format!("Đã tiếp nhận và thực thi tác vụ [{}] thành công!", action_id),
     )
+}
+
+pub fn collect_disk_smart_telemetry() -> String {
+    let mut cmd = Command::new("powershell");
+    cmd.args([
+        "-NoProfile",
+        "-Command",
+        "ConvertTo-Json -Compress ([PSCustomObject]@{ disks = @(Get-CimInstance Win32_DiskDrive | Select-Object Index, Model, Size, Status); volumes = @(Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | Select-Object DeviceID, VolumeName, Size, FreeSpace) })",
+    ]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    if let Ok(output) = cmd.output() {
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() && text.starts_with('{') {
+            return text;
+        }
+    }
+    r#"{"disks":[],"volumes":[]}"#.to_string()
 }
 
 fn parse_selected_apps(params: &str) -> Vec<String> {

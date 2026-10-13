@@ -131,6 +131,9 @@ fn handle_client(
         if body.contains("get_system_telemetry") {
             let telem = telemetry::collect_telemetry();
             json_resp = telem.to_json();
+        } else if body.contains("get_disk_smart_telemetry") {
+            let disk_json = system_ops::collect_disk_smart_telemetry();
+            json_resp = format!(r#"{{"success":true,"data":{}}}"#, disk_json);
         } else if body.contains("window_control") {
             if body.contains("close") {
                 is_running.store(false, Ordering::SeqCst);
@@ -202,7 +205,7 @@ fn main() {
 
     // 2. Version argument
     if args.iter().any(|a| a == "--version" || a == "-v") {
-        println!("VUONGTT Tool Pro 2026 v20.5.909.97 (Rust Tauri v2)");
+        println!("VUONGTT Tool Pro 2026 v20.5.909.98 (Rust Tauri v2)");
         std::process::exit(0);
     }
 
