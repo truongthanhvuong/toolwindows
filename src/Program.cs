@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Diagnostics;
@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.93")]
-[assembly: AssemblyFileVersion("20.5.909.93")]
+[assembly: AssemblyVersion("20.5.909.94")]
+[assembly: AssemblyFileVersion("20.5.909.94")]
 
 namespace VUONGTT
 {
