@@ -235,7 +235,7 @@ fn main() {
 
     // 2. Version argument
     if args.iter().any(|a| a == "--version" || a == "-v") {
-        println!("VUONGTT Tool Pro 2026 v20.5.909.99 (Rust Tauri v2)");
+        println!("VUONGTT Tool Pro 2026 v20.5.909.100 (Rust Tauri v2)");
         std::process::exit(0);
     }
 

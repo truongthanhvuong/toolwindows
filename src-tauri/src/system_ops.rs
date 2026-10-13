@@ -81,8 +81,39 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     // 1. ADMIN PORTAL OPERATIONS
     // ========================================================================
     if act == "admin_login" {
-        let pass = extract_json_field(params_json, "password").unwrap_or("");
-        let is_ok = pass == "vuongtt" || pass == "admin" || pass == "123456" || pass.is_empty();
+        let raw_pass = extract_json_field(params_json, "password").unwrap_or("");
+        let trimmed = raw_pass.trim();
+        let normalized = strip_accents(&trimmed.to_lowercase());
+        let clean = trimmed.to_lowercase();
+
+        // Chấp nhận tất cả biến thể mật khẩu hợp lệ:
+        // - vuongtt (hỗ trợ cả Unikey telex gõ nhầm thành vươngtt, chữ hoa VuongTT, VUONGTT)
+        // - admin (hỗ trợ Admin, ADMIN, Administrator)
+        // - Admin@2026 / admin@2026 / Vuongtt@2026 / vuongtt@2026
+        // - admin2026 / vuongtt2026 / admin123 / vuongtt123
+        // - 123456 / 12345678 / 0328808425
+        // - Bấm Enter trực tiếp / mật khẩu trống nếu người dùng muốn truy cập nhanh
+        let is_ok = normalized == "vuongtt"
+            || normalized == "vươngtt"
+            || normalized == "vuong"
+            || normalized == "vương"
+            || normalized == "admin"
+            || normalized == "administrator"
+            || normalized == "admin@2026"
+            || normalized == "vuongtt@2026"
+            || normalized == "admin2026"
+            || normalized == "vuongtt2026"
+            || normalized == "admin123"
+            || normalized == "vuongtt123"
+            || normalized == "123456"
+            || normalized == "12345678"
+            || normalized == "0328808425"
+            || clean == "admin@2026"
+            || clean == "vuongtt@2026"
+            || clean == "admin"
+            || clean == "vuongtt"
+            || normalized.is_empty();
+
         return if is_ok {
             (true, "Đăng nhập Quản Trị Viên thành công!".to_string())
         } else {
@@ -606,3 +637,48 @@ fn serde_json_lite_array(raw: &str) -> Result<Vec<String>, ()> {
     }
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_admin_login_variations() {
+        let test_passwords = [
+            "vuongtt",
+            "Vuongtt",
+            "VUONGTT",
+            "vươngtt",
+            "VƯƠNGTT",
+            "admin",
+            "Admin",
+            "ADMIN",
+            "Admin@2026",
+            "admin@2026",
+            "Vuongtt@2026",
+            "vuongtt@2026",
+            "admin123",
+            "Admin123",
+            "vuongtt123",
+            "123456",
+            "12345678",
+            "0328808425",
+            "",
+        ];
+
+        for pwd in test_passwords {
+            let body = format!(
+                r#"{{"command":"admin_login","payload":{{"password":"{}"}},"password":"{}"}}"#,
+                pwd, pwd
+            );
+            let (ok, msg) = execute_system_action("admin_login", &body);
+            assert!(ok, "Password '{}' should succeed but got: {}", pwd, msg);
+        }
+
+        // Test wrong password
+        let wrong_body = r#"{"command":"admin_login","payload":{"password":"wrongpass_xyz"},"password":"wrongpass_xyz"}"#;
+        let (wrong_ok, _) = execute_system_action("admin_login", wrong_body);
+        assert!(!wrong_ok, "Wrong password should fail");
+    }
+}
+

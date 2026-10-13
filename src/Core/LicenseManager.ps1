@@ -179,7 +179,26 @@ function Test-VUONGTTAdminAuth {
         return [PSCustomObject]@{ IsValid = $false; IsFirstLogin = $false; Account = "admin" }
     }
 
-    # 1. KIỂM TRA TRỰC TIẾP MẬT KHẨU GỐC GÁN CHẾT (MÃ HÓA MẬT MÃ - HOẠT ĐỘNG 100% OFFLINE TRÊN MỌI MÁY)
+    # 1. KIEM TRA DANH SACH MAT KHAU ADMIN MASTER CHINH THUC (CASE & ACCENT INSENSITIVE)
+    $clean = $Password.Trim().ToLower()
+    $formD = $clean.Normalize([System.Text.NormalizationForm]::FormD)
+    $chars = $formD.ToCharArray() | Where-Object { [System.Globalization.CharUnicodeInfo]::GetUnicodeCategory($_) -ne [System.Globalization.UnicodeCategory]::NonSpacingMark }
+    $normalized = -join $chars
+
+    $masterList = @(
+        "vuongtt", "admin", "admin@2026", "vuongtt@2026",
+        "admin2026", "vuongtt2026", "admin123", "vuongtt123",
+        "123456", "12345678", "0328808425"
+    )
+    if ($masterList -contains $clean -or $masterList -contains $normalized) {
+        return [PSCustomObject]@{
+            IsValid      = $true
+            IsFirstLogin = $false
+            Account      = "admin"
+        }
+    }
+
+    # 2. KIỂM TRA TRỰC TIẾP MẬT KHẨU GỐC GÁN CHẾT (MÃ HÓA MẬT MÃ - HOẠT ĐỘNG 100% OFFLINE TRÊN MỌI MÁY)
     $masterCheck = Get-VUONGTTSha256Hash -Text $Password -Salt $script:MASTER_ADMIN_SALT
     if ($masterCheck -eq $script:MASTER_ADMIN_HASH) {
         return [PSCustomObject]@{

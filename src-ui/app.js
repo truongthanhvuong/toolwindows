@@ -174,6 +174,16 @@
       btnCancel.addEventListener("click", () => modalLogin.classList.add("hidden"));
     }
 
+    const btnTogglePass = document.getElementById("btn-toggle-admin-pass");
+    if (btnTogglePass && inputPass) {
+      btnTogglePass.addEventListener("click", () => {
+        const isPwd = inputPass.getAttribute("type") === "password";
+        inputPass.setAttribute("type", isPwd ? "text" : "password");
+        const icon = btnTogglePass.querySelector(".material-symbols-outlined");
+        if (icon) icon.textContent = isPwd ? "visibility_off" : "visibility";
+      });
+    }
+
     async function handleLogin() {
       const pass = (inputPass ? inputPass.value : "").trim();
       if (!pass) {
