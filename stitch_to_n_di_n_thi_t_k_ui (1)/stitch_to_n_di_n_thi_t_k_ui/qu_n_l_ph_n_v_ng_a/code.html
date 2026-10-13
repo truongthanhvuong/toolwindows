@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-high":"#222a3d","surface-tint":"#b4c5ff","inverse-surface":"#dae2fd","primary-container":"#2563eb","surface-dim":"#0b1326","on-primary-fixed-variant":"#003ea8","surface-variant":"#2d3449","outline":"#8d90a0","on-error-container":"#ffdad6","outline-variant":"#434655","on-surface-variant":"#c3c6d7","error":"#ffb4ab","primary-fixed-dim":"#b4c5ff","tertiary-fixed":"#6ffbbe","inverse-primary":"#0053db","on-background":"#dae2fd","on-surface":"#dae2fd","on-secondary-fixed-variant":"#004395","secondary-container":"#0566d9","surface-container-lowest":"#060e20","on-secondary-container":"#e6ecff","tertiary-container":"#007d55","on-tertiary-fixed":"#002113","primary":"#b4c5ff","error-container":"#93000a","surface-container-highest":"#2d3449","inverse-on-surface":"#283044","background":"#0b1326","on-secondary":"#002e6a","on-secondary-fixed":"#001a42","secondary":"#adc6ff","primary-fixed":"#dbe1ff","surface":"#0b1326","on-tertiary":"#003824","on-primary-container":"#eeefff","surface-bright":"#31394d","secondary-fixed-dim":"#adc6ff","surface-container":"#171f33","on-tertiary-container":"#bdffdb","secondary-fixed":"#d8e2ff","on-primary-fixed":"#00174b","tertiary-fixed-dim":"#4edea3","surface-container-low":"#131b2e","on-error":"#690005","tertiary":"#4edea3","on-tertiary-fixed-variant":"#005236","on-primary":"#002a78"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xl":"1.5rem","margin-window":"1.25rem",gutter:"0.75rem","space-xs":"0.25rem","space-sm":"0.5rem",margin:"1rem","space-lg":"1rem","gutter-lg":"1rem","space-md":"0.75rem"},fontFamily:{"label-md":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"headline-lg":["Inter"],"display-md":["Inter"],"metric-num":["Inter"],"display-lg":["Inter"],"body-lg":["Inter"],"label-sm":["Inter"],"code-sm":["Inter"]},fontSize:{"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"body-md":["13px",{lineHeight:"18px",fontWeight:"400"}],"headline-md":["16px",{lineHeight:"24px",fontWeight:"600"}],"headline-lg":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"display-md":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"metric-num":["28px",{lineHeight:"32px",letterSpacing:"-0.03em",fontWeight:"700"}],"display-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"body-lg":["14px",{lineHeight:"20px",fontWeight:"500"}],"label-sm":["11px",{lineHeight:"14px",fontWeight:"500"}],"code-sm":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface select-none antialiased"><header class="fixed top-0 left-0 right-0 h-14 z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-14 w-full px-space-md flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 pr-space-xs"><button aria-label="Close" class="w-3 h-3 rounded-full bg-error-container hover:bg-error transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-error text-[8px] opacity-0 hover:opacity-100">close</span></button><button aria-label="Minimize" class="w-3 h-3 rounded-full bg-surface-bright hover:bg-outline transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-surface text-[8px] opacity-0 hover:opacity-100">remove</span></button><button aria-label="Maximize" class="w-3 h-3 rounded-full bg-tertiary-container hover:bg-tertiary transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-tertiary text-[8px] opacity-0 hover:opacity-100">crop_square</span></button></div><div class="flex items-center gap-space-xs"><img alt="VUONGTT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDquUjOYfGosQlucRKlpUr48YdUVfxvv29mcPKgGqct19562Vuz7QUAMfh-yy6ONdJYNFP0rGqM675mAaqiyhgQR-cAjBjTEzJrgXvjZx12J0UGDw640jmF1-WMW-pQ9NNBVM6-5Kz9t5gTQQVmIVdOwleFUzUPIYGXSKva37xBPpqfjSyv_uKgiDVXv6XkmuZi_eLyIjeP-Qp_mAnzZu5MCJZ06D5TWo6QUjhycJ5FZmtESpjaDE1gsg"/><span class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Tool Pro 2026</span><span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5 - Professional</span></div><div class="hidden xl:flex items-center gap-2"><span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">verified_user</span>Admin Privileges [Active]</span><span class="px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">PRO • Lifetime</span></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-xs px-2.5 py-1 rounded bg-surface-container font-code-sm text-code-sm text-on-surface-variant"><span class="material-symbols-outlined text-[14px] text-primary">schedule</span><span id="system-clock">2026-03-31 09:42:15</span></div><button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1.5 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">sync</span><span>Cập nhật</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-72 bg-surface-container-low/95 backdrop-blur-xl z-40 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.2)]"><div class="flex flex-col flex-1 min-h-0"><div class="px-space-md pt-space-md pb-space-sm flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center"><span class="material-symbols-outlined text-secondary text-[16px]">admin_panel_settings</span></div><div><div class="font-label-md text-label-md text-on-surface leading-tight">IT Administrator</div><div class="font-label-sm text-label-sm text-tertiary">Superuser Mode</div></div></div><div class="flex items-center gap-1"><button class="px-1.5 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-primary" type="button">VN</button><button class="px-1.5 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-outline" type="button">EN</button></div></div><div class="px-space-md pb-space-xs"><div class="flex items-center justify-between p-1 rounded-lg bg-surface-container-lowest"><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-on-surface bg-surface-container-high" type="button">Tối</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Sáng</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Hệ thống</button></div></div><nav class="flex-1 px-space-sm py-space-xs overflow-y-auto space-y-1" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-sm"><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="check-cau-hinh-giam-sat" href="#">Check Cấu Hình &amp; Giám Sát</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="cai-win-kho-iso" href="#">Cài Win &amp; Kho ISO</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="tien-ich-ky-thuat-driver" href="#">Tiện Ích Kỹ Thuật &amp; Driver</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="toi-uu-sua-loi-win" href="#">Tối Ưu &amp; Sửa Lỗi Win</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="cai-dat-office-m365" href="#">Cài Đặt Office M365</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="may-in-scan-lan" href="#">Máy In, Scan &amp; LAN</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="phan-vung-o-cung-smart" href="#">Phân Vùng &amp; Ổ Cứng SMART</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="kho-phan-mem-winget" href="#">Kho Phần Mềm &amp; Winget</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="fake-vpn-socks5-proxy" href="#">Fake VPN / SOCKS5 Proxy</a></nav></div><div class="p-space-md bg-surface-container-lowest/60"><div class="font-label-sm text-label-sm text-outline mb-space-xs uppercase tracking-wider">Thao tác khẩn cấp</div><div class="grid grid-cols-2 gap-1.5"><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-tertiary">cleaning_services</span><span>Dọn Dẹp</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-primary">medical_services</span><span>Cứu Hộ IT</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-secondary">restart_alt</span><span>Explorer</span></button><button class="px-2 py-1.5 rounded-lg bg-error-container hover:bg-error hover:text-on-error text-on-error-container font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">power_settings_new</span><span>Thoát</span></button></div></div></aside><div class="pl-72"><main class="w-full pt-14 px-margin-window pb-space-xl bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Sub-navigation Bar for Module Tabs -->
+<div class="flex items-center justify-between pb-space-md mb-space-lg">
+<div class="flex items-center gap-1.5 p-1 rounded-xl bg-surface-container-low backdrop-blur-md shadow-sm">
+<button class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all font-body-md text-body-md" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">speed</span>
+<span>Sức Khỏe / Tốc Độ</span>
+</button>
+<button class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-headline-md text-body-md shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">pie_chart</span>
+<span>Quản Lý Phân Vùng</span>
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</button>
+<button class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all font-body-md text-body-md" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">devices</span>
+<span>Test Laptop &amp; Ngoại Vi</span>
+</button>
+</div>
+<!-- Quick Tool Launchers -->
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[15px] text-secondary">settings_suggest</span>
+<span>Disk Management Win</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[15px] text-tertiary">terminal</span>
+<span>Partition Wizard Engine</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-error-container hover:text-on-error-container text-on-surface font-label-md text-label-md transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[15px] text-error">format_paint</span>
+<span>Format Nhanh</span>
+</button>
+</div>
+</div>
+<!-- Main Section Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">verified</span>
+          DiskPart &amp; Virtual Disk Engine
+        </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-low font-code-sm text-code-sm text-secondary">VDS API v2.4</span>
+</div>
+<h1 class="font-display-md text-display-md text-on-surface tracking-tight">QUẢN LÝ PHÂN VÙNG &amp; ĐỊNH DẠNG Ổ ĐĨA NATIVE</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
+        Quản lý cấu trúc ổ đĩa GPT/MBR, chia tách gộp phân vùng, kiểm tra căn chỉnh 4K Alignment và chuyển đổi chuẩn ổ cứng an toàn tuyệt đối.
+      </p>
+</div>
+<!-- Active Storage Status Meta -->
+<div class="flex items-center gap-3 p-2 px-3 rounded-xl bg-surface-container-low">
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-outline">Tổng Số Ổ Đĩa Nhận Diện</span>
+<span class="font-headline-md text-headline-md text-tertiary">2 Ổ Vật Lý (3.0 TB)</span>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">hard_drive</span>
+</div>
+</div>
+</div>
+<!-- KHỐI 1: Interactive Visual Disk Partition Bar -->
+<div class="rounded-xl bg-surface-container-low p-space-lg mb-space-lg shadow-md">
+<!-- Physical Disk Selector Tabs -->
+<div class="flex flex-wrap items-center justify-between gap-space-md pb-space-md mb-space-md">
+<div class="flex items-center gap-2">
+<!-- Disk 0 Active -->
+<button class="flex items-center gap-3 px-3.5 py-2 rounded-lg bg-surface-container-high text-on-surface shadow-sm transition-all text-left" type="button">
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></div>
+<div>
+<div class="font-label-md text-label-md flex items-center gap-1.5">
+<span>Disk 0: Samsung 990 PRO 1TB</span>
+<span class="px-1.5 py-0.2 rounded bg-primary-container text-on-primary-container font-code-sm text-code-sm">NVMe</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">GUID Partition Table (GPT) • 931.5 GB khả dụng</div>
+</div>
+</button>
+<!-- Disk 1 Secondary -->
+<button class="flex items-center gap-3 px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all text-left" type="button">
+<div class="w-2.5 h-2.5 rounded-full bg-outline"></div>
+<div>
+<div class="font-label-md text-label-md flex items-center gap-1.5">
+<span>Disk 1: Seagate Barracuda 2TB</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container-highest text-secondary font-code-sm text-code-sm">SATA III</span>
+</div>
+<div class="font-label-sm text-label-sm text-outline">Master Boot Record (MBR) • 1863.0 GB khả dụng</div>
+</div>
+</button>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>4K Aligned: 1024 KB offset</span>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1 transition-colors" type="button">
+<span class="material-symbols-outlined text-[13px]">refresh</span>
+<span>Quét lại Disk</span>
+</button>
+</div>
+</div>
+<!-- Visual Interactive Partition Map Container -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1 font-semibold text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-tertiary">analytics</span>
+          Bản Đồ Phân Bổ Sector Vật Lý (Disk 0)
+        </span>
+<span>Phân vùng khả dụng: 4 | Dung lượng chưa phân bổ: 30.5 GB (3.2%)</span>
+</div>
+<!-- Segmented Bar Visualization -->
+<div class="h-14 w-full rounded-lg bg-surface-container-lowest p-1 flex items-stretch gap-1 select-none overflow-hidden shadow-inner">
+<!-- 1. EFI System Partition -->
+<div class="relative group cursor-pointer rounded bg-[#4c1d95] hover:brightness-110 transition-all flex flex-col justify-center px-2 text-on-primary overflow-hidden" style="width: 5%;">
+<div class="font-code-sm text-code-sm truncate font-bold">EFI (100MB)</div>
+<div class="font-label-sm text-[10px] text-primary-fixed-dim truncate">FAT32 • Boot</div>
+<!-- Tooltip on hover -->
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col w-48 p-2 rounded-lg bg-surface-container-highest shadow-xl z-30 pointer-events-none">
+<span class="font-label-md text-label-md text-on-surface">Phân vùng EFI Khởi Động</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Dung lượng: 100 MB • FAT32</span>
+<span class="font-label-sm text-label-sm text-tertiary">Hệ thống ESP Boot • An toàn</span>
+</div>
+</div>
+<!-- 2. Partition C: Windows System -->
+<div class="relative group cursor-pointer rounded bg-primary-container hover:brightness-110 transition-all flex flex-col justify-center px-3 text-on-primary-container overflow-hidden shadow-sm" style="width: 27%;">
+<div class="flex items-center justify-between gap-1">
+<span class="font-label-md text-label-md font-bold truncate">C: Windows OS</span>
+<span class="font-code-sm text-code-sm bg-surface-container-lowest/40 px-1 rounded text-on-surface">Active</span>
+</div>
+<div class="flex items-center justify-between gap-1 mt-0.5">
+<span class="font-label-sm text-[10px] text-on-primary-fixed-variant truncate">NTFS • 250 GB</span>
+<span class="font-code-sm text-[10px] text-primary-fixed font-semibold">107.6 GB / 250 GB</span>
+</div>
+<!-- Internal miniature usage progress bar -->
+<div class="w-full h-1 bg-surface-container-lowest/50 rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-secondary" style="width: 43%;"></div>
+</div>
+<!-- Tooltip on hover -->
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col w-56 p-2 rounded-lg bg-surface-container-highest shadow-xl z-30 pointer-events-none">
+<span class="font-label-md text-label-md text-on-surface">Phân Vùng Hệ Thống (C:)</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Đã dùng: 107.6 GB / 250.0 GB (43%)</span>
+<span class="font-label-sm text-label-sm text-tertiary">NTFS • 4K Aligned • BitLocker Tắt</span>
+</div>
+</div>
+<!-- 3. Recovery Environment -->
+<div class="relative group cursor-pointer rounded bg-[#c2410c] hover:brightness-110 transition-all flex flex-col justify-center px-2 text-on-error-container overflow-hidden" style="width: 6%;">
+<div class="font-code-sm text-code-sm truncate font-bold text-on-background">Recovery</div>
+<div class="font-label-sm text-[10px] text-on-surface-variant truncate">750 MB • WinRE</div>
+<!-- Tooltip on hover -->
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col w-48 p-2 rounded-lg bg-surface-container-highest shadow-xl z-30 pointer-events-none">
+<span class="font-label-md text-label-md text-on-surface">Windows Recovery (WinRE)</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Dung lượng: 750 MB • NTFS</span>
+<span class="font-label-sm text-label-sm text-secondary">Phục hồi lỗi OS khẩn cấp</span>
+</div>
+</div>
+<!-- 4. Partition D: Data & Projects -->
+<div class="relative group cursor-pointer rounded bg-tertiary-container hover:brightness-110 transition-all flex flex-col justify-center px-3 text-on-tertiary-container overflow-hidden" style="width: 58%;">
+<div class="flex items-center justify-between gap-1">
+<span class="font-label-md text-label-md font-bold truncate">D: Data &amp; Projects</span>
+<span class="font-code-sm text-code-sm bg-surface-container-lowest/40 px-1 rounded text-tertiary">Primary</span>
+</div>
+<div class="flex items-center justify-between gap-1 mt-0.5">
+<span class="font-label-sm text-[10px] text-tertiary-fixed-dim truncate">NTFS • 650 GB</span>
+<span class="font-code-sm text-[10px] text-on-tertiary-container">312.4 GB Trống (48% sử dụng)</span>
+</div>
+<div class="w-full h-1 bg-surface-container-lowest/50 rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-tertiary" style="width: 52%;"></div>
+</div>
+<!-- Tooltip on hover -->
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col w-56 p-2 rounded-lg bg-surface-container-highest shadow-xl z-30 pointer-events-none">
+<span class="font-label-md text-label-md text-on-surface">Phân Vùng Dữ Liệu (D:)</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Dung lượng: 650 GB (337.6 GB đã dùng)</span>
+<span class="font-label-sm text-label-sm text-tertiary">NTFS • Trạng thái Hoàn hảo</span>
+</div>
+</div>
+<!-- 5. Unallocated Free Space -->
+<div class="relative group cursor-pointer rounded bg-surface-variant/80 hover:bg-surface-variant transition-all flex flex-col justify-center px-2 text-outline overflow-hidden border-2 border-dashed border-outline-variant/50" style="width: 4%; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.04) 5px, rgba(255,255,255,0.04) 10px);">
+<div class="font-code-sm text-[10px] truncate text-center text-on-surface-variant font-semibold">Trống</div>
+<div class="font-label-sm text-[9px] truncate text-center text-outline">30.5 GB</div>
+<!-- Tooltip on hover -->
+<div class="absolute bottom-full right-0 mb-2 hidden group-hover:flex flex-col w-52 p-2 rounded-lg bg-surface-container-highest shadow-xl z-30 pointer-events-none">
+<span class="font-label-md text-label-md text-on-surface">Vùng Chưa Phân Bổ (Unallocated)</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Dung lượng: 30.5 GB (31,232 MB)</span>
+<span class="font-label-sm text-label-sm text-primary">Có thể gộp ngay vào ổ C: hoặc D:</span>
+</div>
+</div>
+</div>
+<!-- Partition Legend Labels -->
+<div class="flex flex-wrap items-center gap-4 mt-1 pt-1 text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded bg-[#4c1d95]"></span>
+<span>EFI System (100 MB)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded bg-primary-container"></span>
+<span>C: Windows System (250 GB)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded bg-[#c2410c]"></span>
+<span>Recovery Environment (750 MB)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded bg-tertiary-container"></span>
+<span>D: Data &amp; Projects (650 GB)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded bg-surface-variant border border-outline-variant"></span>
+<span>Unallocated Free Space (30.5 GB)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- KHỐI 2: Volume List Table -->
+<div class="rounded-xl bg-surface-container-low p-space-lg mb-space-lg shadow-md overflow-hidden">
+<div class="flex items-center justify-between pb-space-sm mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">table_rows</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Danh Sách Chi Tiết Các Phân Vùng (Volume List Table)</h2>
+</div>
+<div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
+<span>Sector Size: 4096 bytes (Advanced Format)</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-md text-body-md border-collapse">
+<thead>
+<tr class="bg-surface-container font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
+<th class="py-2.5 px-3 rounded-l-lg">Ổ Đĩa</th>
+<th class="py-2.5 px-2">Ký Tự</th>
+<th class="py-2.5 px-3">Nhãn (Volume Label)</th>
+<th class="py-2.5 px-3">Hệ Thống Tệp</th>
+<th class="py-2.5 px-3">Dung Lượng</th>
+<th class="py-2.5 px-3">Trống (Free)</th>
+<th class="py-2.5 px-3">Chuẩn 4K Alignment</th>
+<th class="py-2.5 px-3">BitLocker</th>
+<th class="py-2.5 px-3 text-right rounded-r-lg">Tác Vụ</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-highest/20 font-body-md">
+<!-- Row 1: EFI -->
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="py-3 px-3">
+<span class="font-code-sm text-code-sm font-semibold text-on-surface">Disk 0 Part 1</span>
+</td>
+<td class="py-3 px-2">
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-outline">None</span>
+</td>
+<td class="py-3 px-3 text-on-surface">SYSTEM_EFI</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-primary">FAT32</span>
+</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-on-surface">100 MB</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-on-surface-variant">68 MB (68%)</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+                4K [OK]
+              </span>
+</td>
+<td class="py-3 px-3">
+<span class="text-outline font-label-sm text-label-sm">N/A</span>
+</td>
+<td class="py-3 px-3 text-right">
+<button class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" type="button">Chi Tiết</button>
+</td>
+</tr>
+<!-- Row 2: Windows System C: -->
+<tr class="hover:bg-surface-container-high/40 transition-colors bg-primary-container/5">
+<td class="py-3 px-3">
+<span class="font-code-sm text-code-sm font-semibold text-primary">Disk 0 Part 2</span>
+</td>
+<td class="py-3 px-2">
+<span class="px-2 py-0.5 rounded bg-primary-container font-code-sm text-code-sm font-bold text-on-primary-container">C:</span>
+</td>
+<td class="py-3 px-3 font-semibold text-on-surface flex items-center gap-1.5">
+<span>Windows System</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-secondary">NTFS</span>
+</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-on-surface font-semibold">250.00 GB</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-tertiary font-semibold">142.40 GB (57%)</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+                4K [OK]
+              </span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 text-outline font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[13px]">lock_open</span>
+                Tắt
+              </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="px-2 py-1 rounded bg-primary-container text-on-primary-container font-label-sm text-label-sm hover:opacity-90 transition-opacity" type="button">Gộp Ổ</button>
+<button class="p-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant" type="button">
+<span class="material-symbols-outlined text-[14px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Recovery -->
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="py-3 px-3">
+<span class="font-code-sm text-code-sm font-semibold text-on-surface">Disk 0 Part 3</span>
+</td>
+<td class="py-3 px-2">
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-outline">None</span>
+</td>
+<td class="py-3 px-3 text-on-surface">Recovery (WinRE)</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-secondary">NTFS</span>
+</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-on-surface">750 MB</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-on-surface-variant">210 MB (28%)</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+                4K [OK]
+              </span>
+</td>
+<td class="py-3 px-3">
+<span class="text-outline font-label-sm text-label-sm">N/A</span>
+</td>
+<td class="py-3 px-3 text-right">
+<button class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" type="button">Kiểm Tra</button>
+</td>
+</tr>
+<!-- Row 4: Data & Projects D: -->
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="py-3 px-3">
+<span class="font-code-sm text-code-sm font-semibold text-on-surface">Disk 0 Part 4</span>
+</td>
+<td class="py-3 px-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm font-bold text-on-surface">D:</span>
+</td>
+<td class="py-3 px-3 text-on-surface">Data &amp; Projects</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-secondary">NTFS</span>
+</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-on-surface font-semibold">650.00 GB</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-tertiary font-semibold">312.40 GB (48%)</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+                4K [OK]
+              </span>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center gap-1 text-tertiary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[13px]">lock</span>
+                Đã Khóa
+              </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" type="button">Chia Lại</button>
+<button class="p-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant" type="button">
+<span class="material-symbols-outlined text-[14px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5: Unallocated -->
+<tr class="hover:bg-surface-container-high/40 transition-colors opacity-80">
+<td class="py-3 px-3">
+<span class="font-code-sm text-code-sm text-outline">Disk 0 Free</span>
+</td>
+<td class="py-3 px-2">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest font-code-sm text-code-sm text-outline">-</span>
+</td>
+<td class="py-3 px-3 text-outline italic">Chưa Phân Bổ (Unallocated)</td>
+<td class="py-3 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest font-code-sm text-code-sm text-outline">RAW</span>
+</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-secondary">30.50 GB</td>
+<td class="py-3 px-3 font-code-sm text-code-sm text-secondary">30.50 GB (100%)</td>
+<td class="py-3 px-3">
+<span class="text-outline font-label-sm text-label-sm">Sector 18764920</span>
+</td>
+<td class="py-3 px-3">
+<span class="text-outline font-label-sm text-label-sm">-</span>
+</td>
+<td class="py-3 px-3 text-right">
+<button class="px-2 py-1 rounded bg-tertiary-container hover:bg-tertiary text-on-tertiary-container font-label-sm text-label-sm transition-colors" type="button">Tạo Mới</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- KHỐI 3: Advanced Operations Grid -->
+<div class="mb-space-md">
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Thao Tác Kỹ Thuật Nâng Cao (Advanced Operations Grid)</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Thao tác can thiệp cấp Master Boot Record &amp; Partition Table không phá hủy tệp dữ liệu</p>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-high font-code-sm text-code-sm text-tertiary">
+<span class="material-symbols-outlined text-[14px]">shield_with_heart</span>
+<span>Chế độ an toàn chống mất dữ liệu: BẬT</span>
+</div>
+</div>
+<!-- 5 Cards Bento Layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md">
+<!-- Card 1: Extend Partition C -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between group shadow-sm">
+<div>
+<div class="flex items-start justify-between mb-space-sm">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[22px]">expand</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-primary">Tự Động</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Mở Rộng Phân Vùng C: (Extend)</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-space-md">
+            Tự động lấy 30.5 GB unallocated trống bên phải gộp trực tiếp vào ổ hệ thống C: mà không cần khởi động lại máy hay format.
+          </p>
+</div>
+<div class="pt-space-sm flex items-center justify-between">
+<span class="font-code-sm text-code-sm text-tertiary">+30.5 GB vào C:</span>
+<button class="px-3.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md hover:brightness-110 transition-all flex items-center gap-1 shadow-sm" type="button">
+<span>Tiến Hành Gộp</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Convert MBR to GPT -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between group shadow-sm">
+<div>
+<div class="flex items-start justify-between mb-space-sm">
+<div class="w-10 h-10 rounded-lg bg-secondary-container/20 flex items-center justify-center text-secondary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[22px]">swap_horiz</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">Non-Destructive</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Chuyển MBR sang GPT (UEFI)</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-space-md">
+            Chuyển đổi chuẩn ổ cứng từ MBR sang GPT cho Disk 1 (Seagate 2TB) chuẩn bị cài Win 11 UEFI Secure Boot mà không làm mất dữ liệu.
+          </p>
+</div>
+<div class="pt-space-sm flex items-center justify-between">
+<span class="font-code-sm text-code-sm text-on-surface-variant">Disk 1: MBR -&gt; GPT</span>
+<button class="px-3.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-secondary-container hover:text-on-secondary-container text-on-surface font-label-md text-label-md transition-all flex items-center gap-1" type="button">
+<span>Chuyển Đổi</span>
+<span class="material-symbols-outlined text-[14px]">sync_alt</span>
+</button>
+</div>
+</div>
+<!-- Card 3: 4K Alignment -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between group shadow-sm">
+<div>
+<div class="flex items-start justify-between mb-space-sm">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/20 flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[22px]">straighten</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-tertiary-container font-code-sm text-code-sm text-on-tertiary-container">SSD Boost</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Căn Chỉnh 4K Align SSD</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-space-md">
+            Quét và sửa lỗi phân vùng lệch sector cluster (4096-byte alignment), giúp ổ SSD đạt 100% tốc độ đọc ghi danh định và kéo dài tuổi thọ NAND.
+          </p>
+</div>
+<div class="pt-space-sm flex items-center justify-between">
+<span class="font-code-sm text-code-sm text-tertiary">Hiện tại: 100% Chuẩn 4K</span>
+<button class="px-3.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md transition-all flex items-center gap-1" type="button">
+<span>Kiểm Tra Lại</span>
+<span class="material-symbols-outlined text-[14px]">tune</span>
+</button>
+</div>
+</div>
+<!-- Card 4: Partition Hide / Letter Manage -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between group shadow-sm">
+<div>
+<div class="flex items-start justify-between mb-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface-variant group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[22px]">visibility_off</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-outline">Bảo Mật</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Tạo / Xóa / Ẩn Phân Vùng</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-space-md">
+            Đổi ký tự gán ổ đĩa (Drive Letter), xóa bỏ phân vùng rác OEM, ẩn hoàn toàn phân vùng chứa dữ liệu quan trọng khỏi Windows Explorer.
+          </p>
+</div>
+<div class="pt-space-sm flex items-center justify-between">
+<span class="font-code-sm text-code-sm text-outline">Drive Letter &amp; Hidden flag</span>
+<button class="px-3.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md transition-all flex items-center gap-1" type="button">
+<span>Quản Lý Ký Tự</span>
+<span class="material-symbols-outlined text-[14px]">drive_file_rename_outline</span>
+</button>
+</div>
+</div>
+<!-- Card 5: Repair EFI / BCD Boot -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between group shadow-sm lg:col-span-2">
+<div>
+<div class="flex items-start justify-between mb-space-sm">
+<div class="w-10 h-10 rounded-lg bg-[#93000a]/20 flex items-center justify-center text-error group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[22px]">build_circle</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-error-container font-code-sm text-code-sm text-on-error-container font-semibold">Cứu Hộ Boot</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Sửa Lỗi Khởi Động EFI / BCD (Rebuild Bootloader)</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-space-md">
+            Tự động tìm kiếm phân vùng Windows, format và nạp lại toàn bộ file boot loader vào phân vùng EFI (FAT32) thông qua lệnh bcdboot native. Khắc phục dứt điểm màn hình xanh Inaccessible Boot Device, lỗi 0xc000000e và mất menu boot khi cài song song OS.
+          </p>
+</div>
+<div class="pt-space-sm flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<span class="font-code-sm text-code-sm text-on-surface-variant">Target EFI: \\Device\\Harddisk0\\Partition1</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-tertiary">UEFI x64 Ready</span>
+</div>
+<button class="px-4 py-1.5 rounded-lg bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface font-label-md text-label-md transition-all flex items-center gap-1.5 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[15px] text-tertiary">healing</span>
+<span>Nạp Lại Boot BCD Ngay</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Console Status Bar -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest flex flex-col sm:flex-row items-center justify-between gap-space-sm shadow-inner">
+<div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant truncate">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-on-surface font-semibold">DiskPart Shell Ready:</span>
+<span class="truncate">Select disk 0 -&gt; Partition 2 (C:) Selected -&gt; Offset: 1048576 B -&gt; Status: Healthy (Online)</span>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<span class="font-label-sm text-label-sm text-outline">Virtual Disk Service: Đang Chạy</span>
+<button class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high font-code-sm text-code-sm text-primary transition-colors" type="button">
+        Xem Log Chi Tiết
+      </button>
+</div>
+</div>
+</div></main></div></body></html>

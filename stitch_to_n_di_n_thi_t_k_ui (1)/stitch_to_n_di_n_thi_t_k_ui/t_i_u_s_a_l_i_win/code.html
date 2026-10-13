@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-high":"#222a3d","surface-tint":"#b4c5ff","inverse-surface":"#dae2fd","primary-container":"#2563eb","surface-dim":"#0b1326","on-primary-fixed-variant":"#003ea8","surface-variant":"#2d3449","outline":"#8d90a0","on-error-container":"#ffdad6","outline-variant":"#434655","on-surface-variant":"#c3c6d7","error":"#ffb4ab","primary-fixed-dim":"#b4c5ff","tertiary-fixed":"#6ffbbe","inverse-primary":"#0053db","on-background":"#dae2fd","on-surface":"#dae2fd","on-secondary-fixed-variant":"#004395","secondary-container":"#0566d9","surface-container-lowest":"#060e20","on-secondary-container":"#e6ecff","tertiary-container":"#007d55","on-tertiary-fixed":"#002113","primary":"#b4c5ff","error-container":"#93000a","surface-container-highest":"#2d3449","inverse-on-surface":"#283044","background":"#0b1326","on-secondary":"#002e6a","on-secondary-fixed":"#001a42","secondary":"#adc6ff","primary-fixed":"#dbe1ff","surface":"#0b1326","on-tertiary":"#003824","on-primary-container":"#eeefff","surface-bright":"#31394d","secondary-fixed-dim":"#adc6ff","surface-container":"#171f33","on-tertiary-container":"#bdffdb","secondary-fixed":"#d8e2ff","on-primary-fixed":"#00174b","tertiary-fixed-dim":"#4edea3","surface-container-low":"#131b2e","on-error":"#690005","tertiary":"#4edea3","on-tertiary-fixed-variant":"#005236","on-primary":"#002a78"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xl":"1.5rem","margin-window":"1.25rem",gutter:"0.75rem","space-xs":"0.25rem","space-sm":"0.5rem",margin:"1rem","space-lg":"1rem","gutter-lg":"1rem","space-md":"0.75rem"},fontFamily:{"label-md":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"headline-lg":["Inter"],"display-md":["Inter"],"metric-num":["Inter"],"display-lg":["Inter"],"body-lg":["Inter"],"label-sm":["Inter"],"code-sm":["Inter"]},fontSize:{"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"body-md":["13px",{lineHeight:"18px",fontWeight:"400"}],"headline-md":["16px",{lineHeight:"24px",fontWeight:"600"}],"headline-lg":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"display-md":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"metric-num":["28px",{lineHeight:"32px",letterSpacing:"-0.03em",fontWeight:"700"}],"display-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"body-lg":["14px",{lineHeight:"20px",fontWeight:"500"}],"label-sm":["11px",{lineHeight:"14px",fontWeight:"500"}],"code-sm":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface select-none antialiased"><header class="fixed top-0 left-0 right-0 h-14 z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-14 w-full px-space-md flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 pr-space-xs"><button aria-label="Close" class="w-3 h-3 rounded-full bg-error-container hover:bg-error transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-error text-[8px] opacity-0 hover:opacity-100">close</span></button><button aria-label="Minimize" class="w-3 h-3 rounded-full bg-surface-bright hover:bg-outline transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-surface text-[8px] opacity-0 hover:opacity-100">remove</span></button><button aria-label="Maximize" class="w-3 h-3 rounded-full bg-tertiary-container hover:bg-tertiary transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-tertiary text-[8px] opacity-0 hover:opacity-100">crop_square</span></button></div><div class="flex items-center gap-space-xs"><img alt="VUONGTT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDquUjOYfGosQlucRKlpUr48YdUVfxvv29mcPKgGqct19562Vuz7QUAMfh-yy6ONdJYNFP0rGqM675mAaqiyhgQR-cAjBjTEzJrgXvjZx12J0UGDw640jmF1-WMW-pQ9NNBVM6-5Kz9t5gTQQVmIVdOwleFUzUPIYGXSKva37xBPpqfjSyv_uKgiDVXv6XkmuZi_eLyIjeP-Qp_mAnzZu5MCJZ06D5TWo6QUjhycJ5FZmtESpjaDE1gsg"/><span class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Tool Pro 2026</span><span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5 - Professional</span></div><div class="hidden xl:flex items-center gap-2"><span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">verified_user</span>Admin Privileges [Active]</span><span class="px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">PRO • Lifetime</span></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-xs px-2.5 py-1 rounded bg-surface-container font-code-sm text-code-sm text-on-surface-variant"><span class="material-symbols-outlined text-[14px] text-primary">schedule</span><span id="system-clock">2026-03-31 09:42:15</span></div><button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1.5 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">sync</span><span>Cập nhật</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-72 bg-surface-container-low/95 backdrop-blur-xl z-40 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.2)]"><div class="flex flex-col flex-1 min-h-0"><div class="px-space-md pt-space-md pb-space-sm flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center"><span class="material-symbols-outlined text-secondary text-[16px]">admin_panel_settings</span></div><div><div class="font-label-md text-label-md text-on-surface leading-tight">IT Administrator</div><div class="font-label-sm text-label-sm text-tertiary">Superuser Mode</div></div></div><div class="flex items-center gap-1"><button class="px-1.5 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-primary" type="button">VN</button><button class="px-1.5 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-outline" type="button">EN</button></div></div><div class="px-space-md pb-space-xs"><div class="flex items-center justify-between p-1 rounded-lg bg-surface-container-lowest"><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-on-surface bg-surface-container-high" type="button">Tối</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Sáng</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Hệ thống</button></div></div><nav class="flex-1 px-space-sm py-space-xs overflow-y-auto space-y-1" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-sm"><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="check-cau-hinh-giam-sat" href="#">Check Cấu Hình &amp; Giám Sát</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="cai-win-kho-iso" href="#">Cài Win &amp; Kho ISO</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="tien-ich-ky-thuat-driver" href="#">Tiện Ích Kỹ Thuật &amp; Driver</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="toi-uu-sua-loi-win" href="#">Tối Ưu &amp; Sửa Lỗi Win</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="cai-dat-office-m365" href="#">Cài Đặt Office M365</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="may-in-scan-lan" href="#">Máy In, Scan &amp; LAN</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="phan-vung-o-cung-smart" href="#">Phân Vùng &amp; Ổ Cứng SMART</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="kho-phan-mem-winget" href="#">Kho Phần Mềm &amp; Winget</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="fake-vpn-socks5-proxy" href="#">Fake VPN / SOCKS5 Proxy</a></nav></div><div class="p-space-md bg-surface-container-lowest/60"><div class="font-label-sm text-label-sm text-outline mb-space-xs uppercase tracking-wider">Thao tác khẩn cấp</div><div class="grid grid-cols-2 gap-1.5"><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-tertiary">cleaning_services</span><span>Dọn Dẹp</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-primary">medical_services</span><span>Cứu Hộ IT</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-secondary">restart_alt</span><span>Explorer</span></button><button class="px-2 py-1.5 rounded-lg bg-error-container hover:bg-error hover:text-on-error text-on-error-container font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">power_settings_new</span><span>Thoát</span></button></div></div></aside><div class="pl-72"><main class="w-full pt-14 px-margin-window pb-space-xl bg-background min-h-screen"><div class="flex flex-col w-full gap-space-lg select-none">
+<!-- Top Hub Bar / Segmented Module Navigation -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md p-space-md rounded-xl bg-surface-container-low shadow-sm">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shadow-inner">
+<span class="material-symbols-outlined text-[24px]">tune</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Tối Ưu &amp; Sửa Lỗi Toàn Diện Windows</h1>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-code-sm text-code-sm">AI Engine v20.5</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Giải phóng tài nguyên, tinh chỉnh nhân hệ điều hành, dọn sạch bloatware và nâng cao phản hồi hệ thống.</p>
+</div>
+</div>
+<!-- Sub-nav Tabs -->
+<div class="flex items-center gap-1.5 p-1 rounded-xl bg-surface-container-lowest">
+<button class="px-3.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-1.5 shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span>Tối Ưu &amp; Tweaks</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">build_circle</span>
+<span>Cấu Hình &amp; Sửa Lỗi</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">support_agent</span>
+<span>Cứu Hộ IT Helpdesk</span>
+</button>
+</div>
+</div>
+<!-- Section 1: 1-Click Fast Actions (Action Badges / Pills) -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">electric_bolt</span>
+<h2 class="font-headline-md text-headline-md text-on-surface tracking-tight uppercase">1-Click Thao Tác Nhanh - Tối Ưu &amp; Giải Phóng Hệ Thống</h2>
+</div>
+<span class="font-label-sm text-label-sm text-outline font-mono">Kernel Latency: 0.12ms | Standby Clean: Auto</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+<!-- Action 1 -->
+<button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Dọn dẹp Temp &amp; Cache thành công! Đã giải phóng 4.8 GB')" type="button">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">cleaning_services</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Dọn File Rác &amp; Temp</div>
+<div class="font-label-sm text-label-sm text-outline truncate">~4.8 GB khả dụng</div>
+</div>
+</button>
+<!-- Action 2 -->
+<button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Đã dọn WinSxS và xóa bộ nhớ đệm cập nhật!')" type="button">
+<div class="w-8 h-8 rounded-lg bg-tertiary-container text-on-tertiary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">folder_delete</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Dọn WinSxS &amp; Update</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Giảm phình ổ C</div>
+</div>
+</button>
+<!-- Action 3 -->
+<button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Đã làm sạch DNS cache và tệp Prefetch!')" type="button">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">dns</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Xóa Prefetch &amp; Flush DNS</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Thông luồng mạng</div>
+</div>
+</button>
+<!-- Action 4 -->
+<button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Kích hoạt Compact OS nén file nhị phân core thành công!')" type="button">
+<div class="w-8 h-8 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">compress</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Nén Compact OS</div>
+<div class="font-label-sm text-label-sm text-tertiary truncate">Tiết kiệm 3 - 6 GB</div>
+</div>
+</button>
+<!-- Action 5 -->
+<button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Giải phóng RAM: Đã hoàn trả 3.2 GB bộ nhớ!')" type="button">
+<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">memory</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Tối Ưu Bộ Nhớ RAM</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Empty standby list</div>
+</div>
+</button>
+<!-- Action 6 -->
+<button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Kích hoạt GPU Hardware Acceleration &amp; Game Mode!')" type="button">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest text-tertiary flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">speed</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Tối Ưu Đồ Họa Siêu Mượt</div>
+<div class="font-label-sm text-label-sm text-outline truncate">HAGS + VSync Fix</div>
+</div>
+</button>
+<!-- Action 7 -->
+<button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Đã tắt 42 services rác chạy ngầm của Windows!')" type="button">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest text-error flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">power_off</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Tắt Dịch Vụ Ngầm Rác</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Giảm 25% CPU Idle</div>
+</div>
+</button>
+<!-- Action 8 -->
+<button class="group p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Đã chuyển đổi trạng thái Khởi Động Nhanh (Fast Startup)!')" type="button">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">cached</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Bật/Tắt Khởi Động Nhanh</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Fix đóng băng boot</div>
+</div>
+</button>
+<!-- Action 9 (Col span 2 on lg) -->
+<button class="group lg:col-span-2 p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex items-center gap-2.5 text-left shadow-sm" onclick="triggerAction('Bắt đầu tiến trình kiểm tra toàn vẹn SFC /scannow và DISM...')" type="button">
+<div class="w-8 h-8 rounded-lg bg-tertiary-container text-on-tertiary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<div class="min-w-0 flex-1">
+<div class="font-label-md text-label-md text-on-surface truncate">Quét Sửa File Win (SFC / DISM)</div>
+<div class="font-label-sm text-label-sm text-tertiary truncate">Tự động vá lỗi tệp hệ điều hành hỏng hóc</div>
+</div>
+</button>
+</div>
+</div>
+<!-- Section 2: Preset Profiles & Bulk Triggers -->
+<div class="p-space-md rounded-xl bg-surface-container-low shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">bookmark_manager</span>
+<span class="font-label-md text-label-md text-on-surface">Khuyến Nghị Chọn Sẵn (Preset Profiles):</span>
+</div>
+<div class="flex flex-wrap items-center gap-1.5" id="preset-button-bar">
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-1 shadow-sm transition-all" onclick="applyPreset('standard')" type="button">
+<span class="material-symbols-outlined text-[15px]">verified</span>
+<span>Chuẩn (Standard)</span>
+</button>
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-all" onclick="applyPreset('minimal')" type="button">
+<span>Tối Giản (Minimal)</span>
+</button>
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-secondary hover:bg-surface-container-high font-label-md text-label-md transition-all" onclick="applyPreset('advanced')" type="button">
+<span>Nâng Cao (Advanced)</span>
+</button>
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-outline hover:text-on-surface font-label-md text-label-md transition-all" onclick="applyPreset('clear')" type="button">
+<span>Bỏ Chọn (Clear)</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all flex items-center gap-1" onclick="triggerAction('Đã tải lại trạng thái mặc định ban đầu của Windows!')" type="button">
+<span class="material-symbols-outlined text-[14px]">history</span>
+<span>Khôi Phục Gốc</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high text-tertiary hover:bg-surface-container font-label-md text-label-md transition-all flex items-center gap-1" onclick="triggerAction('Đã quét toàn bộ Registry và cập nhật danh sách tùy chọn hiện tại!')" type="button">
+<span class="material-symbols-outlined text-[14px]">sync</span>
+<span>Lấy Tweak Đang Dùng</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg bg-error-container text-on-error-container hover:bg-error hover:text-on-error font-label-md text-label-md transition-all flex items-center gap-1" onclick="triggerAction('Mở trình gỡ bỏ AppX Bloatware nâng cao...')" type="button">
+<span class="material-symbols-outlined text-[14px]">delete_sweep</span>
+<span>Dọn App Rác (AppX)</span>
+</button>
+</div>
+</div>
+<!-- Notification Banner (Dynamic feedback) -->
+<div class="hidden p-space-md rounded-xl bg-tertiary-container text-on-tertiary-container font-body-md text-body-md items-center justify-between shadow-md transition-all" id="status-toast">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span id="toast-message">Đã áp dụng thiết lập thành công.</span>
+</div>
+<button class="hover:opacity-75" onclick="document.getElementById('status-toast').classList.add('hidden')">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+<!-- Section 3: Dual Column Tweaks Matrix -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Left Column: Checkbox Lists (Essential & Advanced) (7 Cols) -->
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<!-- Sub-card: Cơ Bản An Toàn (Essential Tweaks) -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">security</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Cơ Bản An Toàn (Essential Tweaks)</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-label-sm text-label-sm font-semibold">100% An Toàn Khuyên Dùng</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-space-md gap-y-2" id="essential-list">
+<!-- Checkbox Item 1 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Lịch Sử Hoạt Động</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Activity History - Disable</div>
+</div>
+</label>
+<!-- Checkbox Item 2 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Mã Hóa Ổ C Tự Động</div>
+<div class="font-label-sm text-label-sm text-outline truncate">BitLocker Auto Device - Disable</div>
+</div>
+</label>
+<!-- Checkbox Item 3 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Chặn Tự Cài App Rác</div>
+<div class="font-label-sm text-label-sm text-outline truncate">ConsumerFeatures - Disable</div>
+</div>
+</label>
+<!-- Checkbox Item 4 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Tải Ngang Hàng Update</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Delivery Optimization - Off</div>
+</div>
+</label>
+<!-- Checkbox Item 5 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Bật End Task Chuột Phải</div>
+<div class="font-label-sm text-label-sm text-tertiary truncate">Taskbar Right Click End Task</div>
+</div>
+</label>
+<!-- Checkbox Item 6 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Tự Dò Thư Mục Chậm</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Folder Discovery - Disable</div>
+</div>
+</label>
+<!-- Checkbox Item 7 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Chế Độ Ngủ Đông</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Hibernation - Giải phóng RAM disk</div>
+</div>
+</label>
+<!-- Checkbox Item 8 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Theo Dõi Vị Trí OS</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Location Tracking - Disable</div>
+</div>
+</label>
+<!-- Checkbox Item 9 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Gợi Ý Quảng Cáo MS Store</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Store Recommendations - Off</div>
+</div>
+</label>
+<!-- Checkbox Item 10 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Thu Thập Dữ Liệu</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Telemetry &amp; DiagTrack - Disable</div>
+</div>
+</label>
+<!-- Checkbox Item 11 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tạo Điểm Khôi Phục (Restore)</div>
+<div class="font-label-sm text-label-sm text-tertiary truncate">Create Safety Restore Point</div>
+</div>
+</label>
+<!-- Checkbox Item 12 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Gỡ Widgets Tin Tức &amp; Thời Tiết</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Taskbar Widgets Service - Remove</div>
+</div>
+</label>
+</div>
+</div>
+<!-- Sub-card: Nâng Cao - CẨN THẬN (Advanced Tweaks - CAUTION) -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[18px]">warning</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Nâng Cao - CẨN THẬN (Advanced Tweaks)</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">Chỉ Dành Cho Kỹ Thuật Viên</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-space-md gap-y-2" id="advanced-list">
+<!-- Advanced 1 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt App Chạy Ngầm Toàn Bộ</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Background Apps - Global Off</div>
+</div>
+</label>
+<!-- Advanced 2 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tắt Bộ Nhớ Dự Phòng (7GB)</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Disable Reserved Storage</div>
+</div>
+</label>
+<!-- Advanced 3 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Ưu Tiên IPv4 Hơn IPv6</div>
+<div class="font-label-sm text-label-sm text-outline truncate">IPv4 as Preferred Protocol</div>
+</div>
+</label>
+<!-- Advanced 4 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Menu Chuột Phải Cũ (Win 10)</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Classic Full Context Menu</div>
+</div>
+</label>
+<!-- Advanced 5 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tối Ưu Hiệu Năng Tối Đa</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Visual Effects - Best Performance</div>
+</div>
+</label>
+<!-- Advanced 6 -->
+<label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<div class="min-w-0">
+<div class="font-body-md text-body-md text-on-surface truncate">Tối Ưu Game (Game DVR Off)</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Tắt Game Bar DVR Background Rec</div>
+</div>
+</label>
+</div>
+</div>
+<!-- Quick Action Commit Trigger -->
+<div class="p-space-md rounded-xl bg-surface-container flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">system_update_alt</span>
+<span class="font-body-md text-body-md text-on-surface">Đã sẵn sàng áp dụng các mục được đánh dấu vào Windows Registry.</span>
+</div>
+<button class="px-5 py-2 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-headline-md text-headline-md shadow-md flex items-center gap-2 transition-all" onclick="triggerAction('Đã ghi thành công 16 tweak vào Registry! Khởi động lại Explorer.')" type="button">
+<span class="material-symbols-outlined text-[18px]">done_all</span>
+<span>Áp Dụng Tweaks Đã Chọn</span>
+</button>
+</div>
+</div>
+<!-- Right Column: System Customization & Power Profiles (5 Cols) -->
+<div class="lg:col-span-5 flex flex-col gap-space-lg">
+<!-- Sub-card: Tùy Chỉnh Cá Nhân (Customize Preferences - macOS/Fluent Toggle Style) -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">display_settings</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Tùy Chỉnh Cá Nhân (Preferences)</h3>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Giao diện &amp; Shell</span>
+</div>
+<div class="flex flex-col space-y-1.5" id="toggle-list">
+<!-- Toggle 1 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Giao Diện Tối (Dark Theme)</div>
+<div class="font-label-sm text-label-sm text-outline">Kích hoạt chế độ tối hệ thống &amp; ứng dụng</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 2 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Cho Phép Đường Dẫn Dài</div>
+<div class="font-label-sm text-label-sm text-outline">Enable Win32 Long Paths (&gt;260 ký tự)</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 3 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Hiện Đuôi File (.extension)</div>
+<div class="font-label-sm text-label-sm text-outline">File Explorer Show File Extensions</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 4 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Hiện Tệp Ẩn &amp; Ẩn Hệ Thống</div>
+<div class="font-label-sm text-label-sm text-outline">File Explorer Show Hidden Files</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 5 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Bật Phím Số Khi Khởi Động</div>
+<div class="font-label-sm text-label-sm text-outline">Auto NumLock on Boot Screen</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 6 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Căn Giữa Biểu Tượng Taskbar</div>
+<div class="font-label-sm text-label-sm text-outline">Windows 11 Centered Taskbar Icons</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 7 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Hiện Ô Tìm Kiếm Taskbar</div>
+<div class="font-label-sm text-label-sm text-outline">Taskbar Search Box Expanded</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 8 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Tìm Kiếm Web Trong Menu Start</div>
+<div class="font-label-sm text-label-sm text-outline">Bing Search Integration in Start Menu</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Toggle 9 -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="min-w-0 pr-2">
+<div class="font-body-md text-body-md text-on-surface">Chia Cửa Sổ (Window Snapping)</div>
+<div class="font-label-sm text-label-sm text-outline">Kéo thả cạnh &amp; bố cục đa nhiệm thông minh</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Sub-card: Gói Nguồn Điện (Performance Plans) -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[18px]">battery_charging_full</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Gói Nguồn Điện (Power Plans)</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-code-sm text-code-sm font-bold uppercase">Ultimate Active</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Chọn profile điện năng để mở khóa tối đa xung nhịp vi xử lý CPU và loại bỏ độ trễ phản hồi:</p>
+<!-- Power Profile Selector Grid -->
+<div class="grid grid-cols-2 gap-2" id="power-plans-grid">
+<!-- Ultimate Performance (Active Default) -->
+<button class="power-plan-btn p-3 rounded-xl bg-error-container text-on-error-container flex flex-col gap-1 text-left shadow-sm transition-all ring-1 ring-error" onclick="selectPowerPlan(this, 'Ultimate Performance')" type="button">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-[20px]">local_fire_department</span>
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+</div>
+<div class="font-headline-md text-headline-md leading-tight">Ultimate Perf</div>
+<div class="font-label-sm text-label-sm opacity-80">Full Core Clocks 100%</div>
+</button>
+<!-- High Performance -->
+<button class="power-plan-btn p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex flex-col gap-1 text-left transition-all" onclick="selectPowerPlan(this, 'High Performance')" type="button">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-secondary text-[20px]">flash_on</span>
+</div>
+<div class="font-headline-md text-headline-md leading-tight">High Perf</div>
+<div class="font-label-sm text-label-sm text-outline">Hiệu năng máy bàn cao</div>
+</button>
+<!-- Balanced -->
+<button class="power-plan-btn p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex flex-col gap-1 text-left transition-all" onclick="selectPowerPlan(this, 'Balanced (Cân Bằng)')" type="button">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-tertiary text-[20px]">balance</span>
+</div>
+<div class="font-headline-md text-headline-md leading-tight">Balanced</div>
+<div class="font-label-sm text-label-sm text-outline">Cân bằng tự động</div>
+</button>
+<!-- Power Saver -->
+<button class="power-plan-btn p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex flex-col gap-1 text-left transition-all" onclick="selectPowerPlan(this, 'Power Saver (Tiết Kiệm)')" type="button">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-outline text-[20px]">eco</span>
+</div>
+<div class="font-headline-md text-headline-md leading-tight">Power Saver</div>
+<div class="font-label-sm text-label-sm text-outline">Tiết kiệm pin Laptop</div>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-1">
+<button class="py-2 px-3 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center justify-center gap-1 transition-all" onclick="triggerAction('Đã đặt lại cấu hình nguồn mặc định!')" type="button">
+<span class="material-symbols-outlined text-[15px]">settings_backup_restore</span>
+<span>Khôi Phục Mặc Định</span>
+</button>
+<button class="py-2 px-3 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center justify-center gap-1 transition-all" onclick="triggerAction('Mở Windows Control Panel Power Options (powercfg.cpl)...')" type="button">
+<span class="material-symbols-outlined text-[15px]">open_in_new</span>
+<span>Mở Power Options (cpl)</span>
+</button>
+</div>
+</div>
+<!-- Sub-card: Đổi DNS Máy Chủ Phân Giải -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">language</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Đổi DNS Phân Giải Nhanh</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container text-secondary font-code-sm text-code-sm">DoH Ready</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative flex-1">
+<select class="w-full py-2 px-3 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md border-0 focus:ring-1 focus:ring-primary appearance-none cursor-pointer" id="dns-selector" onchange="changeDns(this.value)">
+<option value="cloudflare">Cloudflare DNS (1.1.1.1 - 1.0.0.1)</option>
+<option value="google">Google Public DNS (8.8.8.8 - 8.8.4.4)</option>
+<option value="quad9">Quad9 Security (9.9.9.9 - 149.112.112.112)</option>
+<option value="adguard">AdGuard DNS (Chặn quảng cáo)</option>
+<option value="dhcp">Tự nhận DHCP Mặc định từ Router</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-outline">
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</div>
+</div>
+<button class="px-3.5 py-2 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-1 shadow-sm transition-all" onclick="triggerAction('Đã áp dụng DNS mới và xóa cache bộ định tuyến!')" type="button">
+<span class="material-symbols-outlined text-[16px]">check</span>
+<span>Gán DNS</span>
+</button>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline pt-1">
+<span>Primary: 1.1.1.1</span>
+<span>Secondary: 1.0.0.1</span>
+<span class="text-tertiary">Ping: 3ms (Viettel/VNPT/FPT)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function triggerAction(message) {
+    const toast = document.getElementById('status-toast');
+    const toastMsg = document.getElementById('toast-message');
+    if (toast && toastMsg) {
+      toastMsg.innerText = message;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 4000);
+    }
+  }
+
+  function applyPreset(type) {
+    const essentialCheckboxes = document.querySelectorAll('#essential-list input[type="checkbox"]');
+    const advancedCheckboxes = document.querySelectorAll('#advanced-list input[type="checkbox"]');
+    const presetButtons = document.querySelectorAll('#preset-button-bar .preset-btn');
+
+    presetButtons.forEach(btn => {
+      btn.classList.remove('bg-primary-container', 'text-on-primary-container');
+      btn.classList.add('bg-surface-container');
+    });
+
+    if (type === 'standard') {
+      essentialCheckboxes.forEach(cb => cb.checked = true);
+      advancedCheckboxes.forEach((cb, idx) => {
+        cb.checked = (idx === 2 || idx === 3 || idx === 5);
+      });
+      triggerAction('Đã tải cấu hình Chuẩn (Standard): An toàn & Tối ưu hiệu năng cao!');
+    } else if (type === 'minimal') {
+      essentialCheckboxes.forEach((cb, idx) => cb.checked = (idx < 5));
+      advancedCheckboxes.forEach(cb => cb.checked = false);
+      triggerAction('Đã tải cấu hình Tối Giản (Minimal): Chỉ dọn dẹp hệ thống nhẹ nhàng.');
+    } else if (type === 'advanced') {
+      essentialCheckboxes.forEach(cb => cb.checked = true);
+      advancedCheckboxes.forEach(cb => cb.checked = true);
+      triggerAction('Đã tải cấu hình Nâng Cao (Advanced): Toàn bộ tinh chỉnh chuyên sâu được bật!');
+    } else if (type === 'clear') {
+      essentialCheckboxes.forEach(cb => cb.checked = false);
+      advancedCheckboxes.forEach(cb => cb.checked = false);
+      triggerAction('Đã bỏ chọn toàn bộ tùy chọn trên cả hai bảng.');
+    }
+  }
+
+  function selectPowerPlan(element, name) {
+    const buttons = document.querySelectorAll('#power-plans-grid .power-plan-btn');
+    buttons.forEach(btn => {
+      btn.classList.remove('bg-error-container', 'text-on-error-container', 'ring-1', 'ring-error');
+      btn.classList.add('bg-surface-container', 'text-on-surface');
+      const ping = btn.querySelector('.animate-ping');
+      if (ping) ping.remove();
+    });
+
+    element.classList.remove('bg-surface-container', 'text-on-surface');
+    element.classList.add('bg-error-container', 'text-on-error-container', 'ring-1', 'ring-error');
+    triggerAction('Đã kích hoạt nguồn điện: ' + name);
+  }
+
+  function changeDns(val) {
+    triggerAction('Lựa chọn DNS: ' + val.toUpperCase() + '. Nhấn "Gán DNS" để lưu vào card mạng.');
+  }
+</script></main></div></body></html>

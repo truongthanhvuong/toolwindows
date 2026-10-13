@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-high":"#222a3d","surface-tint":"#b4c5ff","inverse-surface":"#dae2fd","primary-container":"#2563eb","surface-dim":"#0b1326","on-primary-fixed-variant":"#003ea8","surface-variant":"#2d3449","outline":"#8d90a0","on-error-container":"#ffdad6","outline-variant":"#434655","on-surface-variant":"#c3c6d7","error":"#ffb4ab","primary-fixed-dim":"#b4c5ff","tertiary-fixed":"#6ffbbe","inverse-primary":"#0053db","on-background":"#dae2fd","on-surface":"#dae2fd","on-secondary-fixed-variant":"#004395","secondary-container":"#0566d9","surface-container-lowest":"#060e20","on-secondary-container":"#e6ecff","tertiary-container":"#007d55","on-tertiary-fixed":"#002113","primary":"#b4c5ff","error-container":"#93000a","surface-container-highest":"#2d3449","inverse-on-surface":"#283044","background":"#0b1326","on-secondary":"#002e6a","on-secondary-fixed":"#001a42","secondary":"#adc6ff","primary-fixed":"#dbe1ff","surface":"#0b1326","on-tertiary":"#003824","on-primary-container":"#eeefff","surface-bright":"#31394d","secondary-fixed-dim":"#adc6ff","surface-container":"#171f33","on-tertiary-container":"#bdffdb","secondary-fixed":"#d8e2ff","on-primary-fixed":"#00174b","tertiary-fixed-dim":"#4edea3","surface-container-low":"#131b2e","on-error":"#690005","tertiary":"#4edea3","on-tertiary-fixed-variant":"#005236","on-primary":"#002a78"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xl":"1.5rem","margin-window":"1.25rem",gutter:"0.75rem","space-xs":"0.25rem","space-sm":"0.5rem",margin:"1rem","space-lg":"1rem","gutter-lg":"1rem","space-md":"0.75rem"},fontFamily:{"label-md":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"headline-lg":["Inter"],"display-md":["Inter"],"metric-num":["Inter"],"display-lg":["Inter"],"body-lg":["Inter"],"label-sm":["Inter"],"code-sm":["Inter"]},fontSize:{"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"body-md":["13px",{lineHeight:"18px",fontWeight:"400"}],"headline-md":["16px",{lineHeight:"24px",fontWeight:"600"}],"headline-lg":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"display-md":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"metric-num":["28px",{lineHeight:"32px",letterSpacing:"-0.03em",fontWeight:"700"}],"display-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"body-lg":["14px",{lineHeight:"20px",fontWeight:"500"}],"label-sm":["11px",{lineHeight:"14px",fontWeight:"500"}],"code-sm":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface select-none antialiased"><header class="fixed top-0 left-0 right-0 h-14 z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-14 w-full px-space-md flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 pr-space-xs"><button aria-label="Close" class="w-3 h-3 rounded-full bg-error-container hover:bg-error transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-error text-[8px] opacity-0 hover:opacity-100">close</span></button><button aria-label="Minimize" class="w-3 h-3 rounded-full bg-surface-bright hover:bg-outline transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-surface text-[8px] opacity-0 hover:opacity-100">remove</span></button><button aria-label="Maximize" class="w-3 h-3 rounded-full bg-tertiary-container hover:bg-tertiary transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-tertiary text-[8px] opacity-0 hover:opacity-100">crop_square</span></button></div><div class="flex items-center gap-space-xs"><img alt="VUONGTT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDquUjOYfGosQlucRKlpUr48YdUVfxvv29mcPKgGqct19562Vuz7QUAMfh-yy6ONdJYNFP0rGqM675mAaqiyhgQR-cAjBjTEzJrgXvjZx12J0UGDw640jmF1-WMW-pQ9NNBVM6-5Kz9t5gTQQVmIVdOwleFUzUPIYGXSKva37xBPpqfjSyv_uKgiDVXv6XkmuZi_eLyIjeP-Qp_mAnzZu5MCJZ06D5TWo6QUjhycJ5FZmtESpjaDE1gsg"/><span class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Tool Pro 2026</span><span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5 - Professional</span></div><div class="hidden xl:flex items-center gap-2"><span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">verified_user</span>Admin Privileges [Active]</span><span class="px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">PRO • Lifetime</span></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-xs px-2.5 py-1 rounded bg-surface-container font-code-sm text-code-sm text-on-surface-variant"><span class="material-symbols-outlined text-[14px] text-primary">schedule</span><span id="system-clock">2026-03-31 09:42:15</span></div><button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1.5 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">sync</span><span>Cập nhật</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-72 bg-surface-container-low/95 backdrop-blur-xl z-40 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.2)]"><div class="flex flex-col flex-1 min-h-0"><div class="px-space-md pt-space-md pb-space-sm flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center"><span class="material-symbols-outlined text-secondary text-[16px]">admin_panel_settings</span></div><div><div class="font-label-md text-label-md text-on-surface leading-tight">IT Administrator</div><div class="font-label-sm text-label-sm text-tertiary">Superuser Mode</div></div></div><div class="flex items-center gap-1"><button class="px-1.5 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-primary" type="button">VN</button><button class="px-1.5 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-outline" type="button">EN</button></div></div><div class="px-space-md pb-space-xs"><div class="flex items-center justify-between p-1 rounded-lg bg-surface-container-lowest"><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-on-surface bg-surface-container-high" type="button">Tối</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Sáng</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Hệ thống</button></div></div><nav class="flex-1 px-space-sm py-space-xs overflow-y-auto space-y-1" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-sm"><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="check-cau-hinh" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-primary">monitor_heart</span><span>Check Cấu Hình &amp; Giám Sát</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="cai-win-kho-iso" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-secondary">install_desktop</span><span>Cài Win &amp; Kho ISO</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="tien-ich-ky-thuat" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-tertiary">build_circle</span><span>Tiện Ích Kỹ Thuật &amp; Driver</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="toi-uu-sua-loi-win" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-primary-fixed">tune</span><span>Tối Ưu &amp; Sửa Lỗi Win</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="cai-dat-office" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-secondary-fixed">description</span><span>Cài Đặt Office M365</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="may-in-scan-lan" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-tertiary-fixed">print</span><span>Máy In, Scan &amp; LAN</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="phan-vung-o-cung" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-primary">hard_drive</span><span>Phân Vùng &amp; Ổ Cứng SMART</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="kho-phan-mem-go-app" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-secondary">apps</span><span>Kho Phần Mềm &amp; Winget</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="fake-vpn-proxy" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-tertiary">vpn_lock</span><span>Fake VPN / SOCKS5 Proxy</span></a></nav></div><div class="p-space-md bg-surface-container-lowest/60"><div class="font-label-sm text-label-sm text-outline mb-space-xs uppercase tracking-wider">Thao tác khẩn cấp</div><div class="grid grid-cols-2 gap-1.5"><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-tertiary">cleaning_services</span><span>Dọn Dẹp</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-primary">medical_services</span><span>Cứu Hộ IT</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-secondary">restart_alt</span><span>Explorer</span></button><button class="px-2 py-1.5 rounded-lg bg-error-container hover:bg-error hover:text-on-error text-on-error-container font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">power_settings_new</span><span>Thoát</span></button></div></div></aside><div class="pl-72"><main class="w-full pt-14 px-margin-window pb-space-xl bg-background min-h-screen"><div class="flex flex-col w-full gap-space-lg">
+<!-- Sub-Navigation Bar -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm p-1.5 rounded-xl bg-surface-container-low shadow-sm">
+<div class="flex items-center flex-wrap gap-1">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">memory</span>
+<span>Cài Win Bypass</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span>Kích Hoạt HWID</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-outline">lock_open</span>
+<span>Tắt BitLocker</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary">save</span>
+<span>Sao Lưu Win / Driver</span>
+</button>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-label-sm text-label-sm bg-surface-container-high hover:bg-surface-bright text-primary transition-all shadow-sm" id="btn-recheck-license" type="button">
+<span class="material-symbols-outlined text-[15px] animate-spin-reverse">refresh</span>
+<span>Check Trạng Thái Bản Quyền</span>
+</button>
+</div>
+</div>
+<!-- Header Banner Section -->
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-high p-space-lg shadow-md">
+<div class="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-primary-container/10 blur-3xl pointer-events-none"></div>
+<div class="absolute right-12 top-1/2 -translate-y-1/2 opacity-10 pointer-events-none hidden md:block">
+<span class="material-symbols-outlined text-[160px] text-primary">verified_user</span>
+</div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="space-y-1">
+<div class="flex items-center flex-wrap gap-2">
+<span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container uppercase tracking-wider font-semibold">
+            MAS Microsoft Activation Scripts v2.6 Core
+          </span>
+<span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-surface-container-highest text-secondary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+            Online Activation Ticket Direct MSFT
+          </span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">
+          TRUNG TÂM KÍCH HOẠT BẢN QUYỀN SỐ VĨNH VIỄN
+        </h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+          Hệ thống cấp phép kỹ thuật số tự động liên kết với Hardware ID (Bo mạch chủ). Bảo lưu bản quyền trọn đời khi cài mới lại Windows và Microsoft Office mà không qua trung gian bên thứ ba.
+        </p>
+</div>
+<div class="flex items-center gap-3">
+<div class="p-3 rounded-lg bg-surface-container-lowest/80 flex items-center gap-3 shadow-inner">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-[22px]">cloud_done</span>
+</div>
+<div>
+<div class="font-code-sm text-code-sm text-outline">KMS &amp; Ticket Status</div>
+<div class="font-label-md text-label-md text-tertiary">Official Server Connected</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Block 1: Current License Status (Dual Cards) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter-lg">
+<!-- Windows License Pod -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">desktop_windows</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">Windows 11 Pro 64-bit</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant">OS Build: 26100.2161 • Kernel NT 10.0</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-tertiary-container text-on-tertiary-container flex items-center gap-1 font-semibold">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+          DIGITAL LICENSE : ACTIVE
+        </span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-space-sm rounded-lg bg-surface-container-lowest/70 mb-space-md">
+<div>
+<div class="font-label-sm text-label-sm text-outline">Giấy phép</div>
+<div class="font-label-md text-label-md text-tertiary font-semibold">Vĩnh Viễn (HWID)</div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-outline">Partial Key</div>
+<div class="font-code-sm text-code-sm text-secondary font-mono tracking-wider">VK7JG-..-3V66T</div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-outline">Kênh phân phối</div>
+<div class="font-label-md text-label-md text-on-surface">Retail Channel</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs text-on-surface-variant font-body-md text-body-md">
+<span class="flex items-center gap-1.5 text-tertiary">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+          Đã liên kết bo mạch chủ (Motherboard ID)
+        </span>
+<span class="font-code-sm text-code-sm text-outline">Hết hạn: Không bao giờ</span>
+</div>
+</div>
+<!-- Office License Pod -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-secondary-container/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">Microsoft 365 Apps for Enterprise</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant">Version 2409 (Build 18025.20104 Click-to-Run)</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-tertiary-container text-on-tertiary-container flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[13px]">shield_lock</span>
+          OHOOK PERMANENT
+        </span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-space-sm rounded-lg bg-surface-container-lowest/70 mb-space-md">
+<div>
+<div class="font-label-sm text-label-sm text-outline">Trạng thái</div>
+<div class="font-label-md text-label-md text-tertiary font-semibold">Kích hoạt vĩnh viễn</div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-outline">Cơ chế</div>
+<div class="font-code-sm text-code-sm text-secondary">Ohook Hook (sppc.dll)</div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-outline">Tính năng AI/Cloud</div>
+<div class="font-label-md text-label-md text-on-surface">Đầy đủ quyền Enterprise</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs text-on-surface-variant font-body-md text-body-md">
+<span class="flex items-center gap-1.5 text-tertiary">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+          Kháng triệt để thông báo bản quyền giả mạo
+        </span>
+<span class="font-code-sm text-code-sm text-outline">Telemetry: Blocked</span>
+</div>
+</div>
+</div>
+<!-- Block 2: 4 Activation Engines (Interactive Cards) -->
+<div class="space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">bolt</span>
+<span class="font-headline-md text-headline-md text-on-surface">Phương Thức Kích Hoạt Hệ Thống</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Chọn phương pháp phù hợp với loại thiết bị</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-gutter">
+<!-- Engine 1: HWID (Recommended) -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between gap-space-md shadow-sm relative group overflow-hidden">
+<div class="absolute top-0 right-0 px-2 py-0.5 bg-primary-container text-on-primary-container font-code-sm text-code-sm rounded-bl-lg font-semibold uppercase">
+          Khuyên dùng
+        </div>
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 text-primary flex items-center justify-center mb-space-sm">
+<span class="material-symbols-outlined text-[24px]">workspace_premium</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface mb-1">HWID Activation</div>
+<div class="font-label-sm text-label-sm text-tertiary font-semibold mb-2">Windows 10 / 11 Tất Cả Bản</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Kích hoạt giấy phép kỹ thuật số vĩnh viễn theo mã bo mạch chủ (Motherboard). Khi format hoặc cài lại Windows sẽ tự động kích hoạt có mạng mà không cần dùng tool lần hai.
+          </p>
+</div>
+<div class="space-y-2 pt-space-xs">
+<div class="flex items-center gap-2 text-outline font-code-sm text-code-sm">
+<span class="material-symbols-outlined text-[14px] text-tertiary">task_alt</span>
+<span>Không cài file rác vào Windows</span>
+</div>
+<button class="w-full py-2.5 px-3 rounded-lg bg-primary-container hover:bg-inverse-primary text-on-primary-container font-headline-md text-label-md flex items-center justify-center gap-2 transition-all shadow-md active:scale-95" data-action="hwid" type="button">
+<span class="material-symbols-outlined text-[18px]">touch_app</span>
+<span>Kích Hoạt HWID 1-Click</span>
+</button>
+</div>
+</div>
+<!-- Engine 2: Ohook Office -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between gap-space-md shadow-sm relative group overflow-hidden">
+<div>
+<div class="w-10 h-10 rounded-lg bg-secondary-container/20 text-secondary flex items-center justify-center mb-space-sm">
+<span class="material-symbols-outlined text-[24px]">magic_button</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface mb-1">Ohook Office Engine</div>
+<div class="font-label-sm text-label-sm text-secondary font-semibold mb-2">Office 365 / 2016 - 2024</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Hook trực tiếp sppc.dll cho Microsoft Office. Hoạt động vĩnh viễn, không chạy ngầm tiến trình, không bị Microsoft Defender xóa và chặn triệt để thông báo phần mềm giả mạo.
+          </p>
+</div>
+<div class="space-y-2 pt-space-xs">
+<div class="flex items-center gap-2 text-outline font-code-sm text-code-sm">
+<span class="material-symbols-outlined text-[14px] text-tertiary">task_alt</span>
+<span>Hỗ trợ update ứng dụng Office thả ga</span>
+</div>
+<button class="w-full py-2.5 px-3 rounded-lg bg-secondary-container hover:bg-primary-container text-on-secondary-container font-headline-md text-label-md flex items-center justify-center gap-2 transition-all shadow-md active:scale-95" data-action="ohook" type="button">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Kích Hoạt Ohook Office</span>
+</button>
+</div>
+</div>
+<!-- Engine 3: KMS38 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between gap-space-md shadow-sm relative group overflow-hidden">
+<div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-tertiary flex items-center justify-center mb-space-sm">
+<span class="material-symbols-outlined text-[24px]">hourglass_top</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface mb-1">KMS38 (Server/LTSC)</div>
+<div class="font-label-sm text-label-sm text-outline font-semibold mb-2">Enterprise LTSC &amp; Server</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Phương thức cấp phép đặc biệt kéo dài thời hạn kích hoạt đến năm 2038 (19 năm). Dành riêng cho Windows 10/11 Enterprise IoT LTSC và hệ điều hành Windows Server 2022/2025.
+          </p>
+</div>
+<div class="space-y-2 pt-space-xs">
+<div class="flex items-center gap-2 text-outline font-code-sm text-code-sm">
+<span class="material-symbols-outlined text-[14px] text-tertiary">task_alt</span>
+<span>Hoàn toàn Offline, không cần mạng</span>
+</div>
+<button class="w-full py-2.5 px-3 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface font-headline-md text-label-md flex items-center justify-center gap-2 transition-all shadow-md active:scale-95" data-action="kms38" type="button">
+<span class="material-symbols-outlined text-[18px]">timer</span>
+<span>Kích Hoạt KMS38</span>
+</button>
+</div>
+</div>
+<!-- Engine 4: Clean License & Tokens -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-all flex flex-col justify-between gap-space-md shadow-sm relative group overflow-hidden">
+<div>
+<div class="w-10 h-10 rounded-lg bg-error-container/30 text-error flex items-center justify-center mb-space-sm">
+<span class="material-symbols-outlined text-[24px]">restart_alt</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface mb-1">Gỡ Bỏ &amp; Reset Tokens</div>
+<div class="font-label-sm text-label-sm text-error font-semibold mb-2">Khắc Phục Lỗi Giấy Phép</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Xóa bỏ triệt để key lậu, key KMS bên thứ ba gây lỗi màn hình đen, xóa cache Tokens.dat hỏng và tự động nạp lại Default Generic Key tương ứng cho phiên bản Windows hiện tại.
+          </p>
+</div>
+<div class="space-y-2 pt-space-xs">
+<div class="flex items-center gap-2 text-outline font-code-sm text-code-sm">
+<span class="material-symbols-outlined text-[14px] text-error">warning</span>
+<span>Khôi phục trạng thái ban đầu</span>
+</div>
+<button class="w-full py-2.5 px-3 rounded-lg bg-surface-container-high hover:bg-error-container hover:text-on-error-container text-on-surface font-headline-md text-label-md flex items-center justify-center gap-2 transition-all shadow-md active:scale-95" data-action="clean" type="button">
+<span class="material-symbols-outlined text-[18px]">mop</span>
+<span>Clean License &amp; Tokens</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Block 3 & Block 4: Edition Upgrade & Terminal Execution Output -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter-lg">
+<!-- Block 3: Quick Edition Switcher / Key Inserter (5 Cols) -->
+<div class="xl:col-span-5 p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between gap-space-md">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">upgrade</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Nâng Cấp Phiên Bản &amp; Thay Đổi Key</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+          Chuyển đổi trực tiếp các bản Windows (Ví dụ: từ Win 11 Home lên Win 11 Pro/Enterprise) trong 30 giây mà không cần cài lại hệ điều hành hay mất ứng dụng.
+        </p>
+</div>
+<div class="space-y-3">
+<div>
+<label class="block font-label-sm text-label-sm text-outline mb-1.5 uppercase">Chọn phiên bản đích muốn nâng cấp</label>
+<div class="grid grid-cols-2 gap-2">
+<label class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-highest cursor-pointer hover:bg-surface-bright transition-colors">
+<input checked="" class="text-primary-container focus:ring-0" name="edition-target" type="radio" value="Pro"/>
+<div class="min-w-0">
+<div class="font-label-md text-label-md text-on-surface font-semibold truncate">Windows 11 Pro</div>
+<div class="font-code-sm text-code-sm text-outline truncate">VK7JG-..-3V66T</div>
+</div>
+</label>
+<label class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-highest cursor-pointer hover:bg-surface-bright transition-colors">
+<input class="text-primary-container focus:ring-0" name="edition-target" type="radio" value="Enterprise"/>
+<div class="min-w-0">
+<div class="font-label-md text-label-md text-on-surface font-semibold truncate">Win 11 Enterprise</div>
+<div class="font-code-sm text-code-sm text-outline truncate">NPPR9-..-849BY</div>
+</div>
+</label>
+<label class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-highest cursor-pointer hover:bg-surface-bright transition-colors">
+<input class="text-primary-container focus:ring-0" name="edition-target" type="radio" value="ProWorkstations"/>
+<div class="min-w-0">
+<div class="font-label-md text-label-md text-on-surface font-semibold truncate">Pro Workstation</div>
+<div class="font-code-sm text-code-sm text-outline truncate">DXG7C-..-63P7T</div>
+</div>
+</label>
+<label class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-highest cursor-pointer hover:bg-surface-bright transition-colors">
+<input class="text-primary-container focus:ring-0" name="edition-target" type="radio" value="IoTEnterprise"/>
+<div class="min-w-0">
+<div class="font-label-md text-label-md text-on-surface font-semibold truncate">IoT Enterprise</div>
+<div class="font-code-sm text-code-sm text-outline truncate">XGVPP-..-W47CH</div>
+</div>
+</label>
+</div>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-outline mb-1.5 uppercase" for="custom-key-input">Hoặc nhập Product Key thủ công</label>
+<div class="flex items-center gap-2">
+<div class="relative flex-1">
+<input class="w-full py-2 px-3 pl-8 rounded-lg bg-surface-container-lowest text-on-surface font-code-sm text-code-sm placeholder:text-outline-variant outline-none focus:bg-surface-container" id="custom-key-input" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" type="text" value="VK7JG-NPHTM-C97JM-9MPGT-3V66T"/>
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[16px]">vpn_key</span>
+</div>
+<button class="px-3 py-2 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-sm text-label-sm transition-colors flex items-center gap-1" id="btn-paste-key" type="button">
+<span class="material-symbols-outlined text-[14px]">content_paste</span>
+<span>Dán</span>
+</button>
+</div>
+</div>
+</div>
+<div class="pt-space-xs">
+<button class="w-full py-2.5 px-4 rounded-lg bg-primary-container hover:bg-inverse-primary text-on-primary-container font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95" id="btn-upgrade-edition" type="button">
+<span class="material-symbols-outlined text-[18px]">publish</span>
+<span>Nâng Cấp Phiên Bản Đã Chọn (1-Click)</span>
+</button>
+</div>
+</div>
+<!-- Block 4: Script Output / Terminal Log Console (7 Cols) -->
+<div class="xl:col-span-7 p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col justify-between gap-space-sm">
+<div class="flex items-center justify-between border-b-0 pb-1">
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-error-container"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-bright"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary-container"></span>
+</div>
+<span class="font-code-sm text-code-sm text-on-surface font-semibold ml-2">Console Live Output [slmgr.vbs &amp; MAS Dispatcher]</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-outline hover:text-on-surface font-code-sm text-code-sm transition-colors" id="btn-clear-console" type="button">
+            Xóa Console
+          </button>
+<span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container/30 text-tertiary">
+            IDLE
+          </span>
+</div>
+</div>
+<!-- Realtime Output Canvas -->
+<div class="w-full h-64 overflow-y-auto p-3.5 rounded-lg bg-surface-container-lowest font-code-sm text-code-sm font-mono text-on-surface space-y-1.5 leading-relaxed shadow-inner" id="terminal-screen">
+<div class="text-outline">[2026-03-31 09:42:01] Initializing VUONGTT Activation Module Core v20.5...</div>
+<div class="text-secondary">[2026-03-31 09:42:02] Querying WMI License Repository: Win32_OperatingSystem</div>
+<div class="text-on-surface">[2026-03-31 09:42:02] Detected OS: Windows 11 Pro [64-bit] - Build: 26100.2161</div>
+<div class="text-on-surface">[2026-03-31 09:42:03] Querying SoftwareLicensingProduct PartialProductKey: 3V66T</div>
+<div class="text-tertiary">[2026-03-31 09:42:03] License Status: Licensed (Status Code: 1) - HWID Digital Permanence</div>
+<div class="text-outline">[2026-03-31 09:42:03] Checking Office 16/19/2021/365 Click-to-Run installation directory...</div>
+<div class="text-secondary">[2026-03-31 09:42:04] Found: C:\Program Files\Microsoft Office\root\Office16</div>
+<div class="text-tertiary">[2026-03-31 09:42:04] sppc64.dll Hook Verified: Active (Ohook Permanent Injection)</div>
+<div class="text-outline-variant">[2026-03-31 09:42:05] Ready for manual engine activation trigger or edition transformation.</div>
+<div class="text-primary flex items-center gap-1">
+<span class="text-tertiary">PS C:\VUONGTT_Tools\MAS&gt;</span>
+<span class="inline-block w-2 h-3.5 bg-primary animate-pulse"></span>
+</div>
+</div>
+<div class="flex items-center justify-between text-outline font-code-sm text-code-sm pt-1">
+<span>Microsoft Activation Scripts MAS 2.6 • Author: WindowsAddict • Repack: VUONGTT 2026</span>
+<span class="text-tertiary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+          Safe Injection Mode (AV-Compliant)
+        </span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function () {
+    const terminal = document.getElementById('terminal-screen');
+    const clearBtn = document.getElementById('btn-clear-console');
+    const recheckBtn = document.getElementById('btn-recheck-license');
+    const upgradeBtn = document.getElementById('btn-upgrade-edition');
+    const pasteBtn = document.getElementById('btn-paste-key');
+    const keyInput = document.getElementById('custom-key-input');
+    const actionBtns = document.querySelectorAll('button[data-action]');
+
+    function appendLog(text, colorClass = 'text-on-surface') {
+      if (!terminal) return;
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const line = document.createElement('div');
+      line.className = colorClass;
+      line.textContent = `[${timeStr}] ${text}`;
+      
+      const lastChild = terminal.lastElementChild;
+      if (lastChild && lastChild.classList.contains('text-primary')) {
+        terminal.insertBefore(line, lastChild);
+      } else {
+        terminal.appendChild(line);
+      }
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        terminal.innerHTML = `
+          <div class="text-outline">[System] Console cleared by operator.</div>
+          <div class="text-primary flex items-center gap-1">
+            <span class="text-tertiary">PS C:\\VUONGTT_Tools\\MAS&gt;</span>
+            <span class="inline-block w-2 h-3.5 bg-primary animate-pulse"></span>
+          </div>
+        `;
+      });
+    }
+
+    if (recheckBtn) {
+      recheckBtn.addEventListener('click', () => {
+        appendLog('Executing: slmgr.vbs /xpr & slmgr.vbs /dli ...', 'text-secondary');
+        setTimeout(() => {
+          appendLog('Response: Windows(R), Professional edition - The machine is permanently activated.', 'text-tertiary');
+          appendLog('Response: Office 365 Enterprise - License Status: 1 (Licensed via Ohook).', 'text-tertiary');
+        }, 600);
+      });
+    }
+
+    actionBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.getAttribute('data-action');
+        if (action === 'hwid') {
+          appendLog('Initializing HWID Activation Sequence...', 'text-primary');
+          appendLog('Fetching Genuine Ticket from MS Licensing Endpoints...', 'text-secondary');
+          setTimeout(() => {
+            appendLog('Gathering Hardware Hash (SMBIOS / BaseBoard / CPU ID)...', 'text-on-surface');
+          }, 400);
+          setTimeout(() => {
+            appendLog('Submitting Downlevel Ticket to Microsoft Licensing Server...', 'text-secondary');
+          }, 900);
+          setTimeout(() => {
+            appendLog('SUCCESS: HWID Digital License successfully written into Windows Ticket store!', 'text-tertiary');
+          }, 1500);
+        } else if (action === 'ohook') {
+          appendLog('Triggering Ohook Office Activation...', 'text-secondary');
+          appendLog('Deploying sppc.dll shim into Microsoft Office system folder...', 'text-on-surface');
+          setTimeout(() => {
+            appendLog('Injecting registry entries into HKLM\\SOFTWARE\\Microsoft\\Office...', 'text-on-surface');
+          }, 500);
+          setTimeout(() => {
+            appendLog('SUCCESS: Microsoft 365 Apps for Enterprise activated permanently via Ohook!', 'text-tertiary');
+          }, 1100);
+        } else if (action === 'kms38') {
+          appendLog('Initializing KMS38 Activation for Enterprise/Server...', 'text-secondary');
+          appendLog('Injecting Local KMS Ticket valid up to 2038-01-19 03:14:07 UTC...', 'text-on-surface');
+          setTimeout(() => {
+            appendLog('SUCCESS: System license locked and activated through the year 2038!', 'text-tertiary');
+          }, 800);
+        } else if (action === 'clean') {
+          appendLog('WARNING: Executing License Clean and Token Reset...', 'text-error');
+          appendLog('Removing old registry keys: slmgr.vbs /upk & /cpky...', 'text-on-surface');
+          setTimeout(() => {
+            appendLog('Purging corrupted Tokens.dat from %windir%\\System32\\spp\\store...', 'text-secondary');
+            appendLog('Applying default generic GVLK key for current edition...', 'text-on-surface');
+            appendLog('SUCCESS: License subsystem reset cleanly to factory defaults.', 'text-tertiary');
+          }, 900);
+        }
+      });
+    });
+
+    if (upgradeBtn) {
+      upgradeBtn.addEventListener('click', () => {
+        const checkedRadio = document.querySelector('input[name="edition-target"]:checked');
+        const targetEdition = checkedRadio ? checkedRadio.value : 'Pro';
+        const keyVal = keyInput ? keyInput.value : 'VK7JG-NPHTM-C97JM-9MPGT-3V66T';
+        appendLog(`Initiating Edition Upgrade to [Windows 11 ${targetEdition}]...`, 'text-primary');
+        appendLog(`Installing Product Key: ${keyVal} via slmgr.vbs /ipk ...`, 'text-secondary');
+        setTimeout(() => {
+          appendLog('Invoking DISM.exe /online /Set-Edition /NoRestart ...', 'text-on-surface');
+        }, 500);
+        setTimeout(() => {
+          appendLog(`Upgrade Complete! Windows is now converted to ${targetEdition}. No restart required.`, 'text-tertiary');
+        }, 1300);
+      });
+    }
+
+    if (pasteBtn && keyInput) {
+      pasteBtn.addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) keyInput.value = text.trim();
+        } catch (e) {
+          keyInput.focus();
+        }
+      });
+    }
+
+    const radios = document.querySelectorAll('input[name="edition-target"]');
+    const keyMap = {
+      'Pro': 'VK7JG-NPHTM-C97JM-9MPGT-3V66T',
+      'Enterprise': 'NPPR9-FWDCX-D2C8J-H872K-2YT43',
+      'ProWorkstations': 'DXG7C-N37C8-8WD47-3BPJJ-63P7T',
+      'IoTEnterprise': 'XGVPP-NMH47-7TTHJ-W3FW7-8HV2C'
+    };
+    radios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (keyInput && keyMap[e.target.value]) {
+          keyInput.value = keyMap[e.target.value];
+        }
+      });
+    });
+  })();
+</script></main></div></body></html>

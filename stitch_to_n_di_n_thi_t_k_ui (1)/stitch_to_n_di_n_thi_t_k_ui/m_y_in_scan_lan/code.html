@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-high":"#222a3d","surface-tint":"#b4c5ff","inverse-surface":"#dae2fd","primary-container":"#2563eb","surface-dim":"#0b1326","on-primary-fixed-variant":"#003ea8","surface-variant":"#2d3449","outline":"#8d90a0","on-error-container":"#ffdad6","outline-variant":"#434655","on-surface-variant":"#c3c6d7","error":"#ffb4ab","primary-fixed-dim":"#b4c5ff","tertiary-fixed":"#6ffbbe","inverse-primary":"#0053db","on-background":"#dae2fd","on-surface":"#dae2fd","on-secondary-fixed-variant":"#004395","secondary-container":"#0566d9","surface-container-lowest":"#060e20","on-secondary-container":"#e6ecff","tertiary-container":"#007d55","on-tertiary-fixed":"#002113","primary":"#b4c5ff","error-container":"#93000a","surface-container-highest":"#2d3449","inverse-on-surface":"#283044","background":"#0b1326","on-secondary":"#002e6a","on-secondary-fixed":"#001a42","secondary":"#adc6ff","primary-fixed":"#dbe1ff","surface":"#0b1326","on-tertiary":"#003824","on-primary-container":"#eeefff","surface-bright":"#31394d","secondary-fixed-dim":"#adc6ff","surface-container":"#171f33","on-tertiary-container":"#bdffdb","secondary-fixed":"#d8e2ff","on-primary-fixed":"#00174b","tertiary-fixed-dim":"#4edea3","surface-container-low":"#131b2e","on-error":"#690005","tertiary":"#4edea3","on-tertiary-fixed-variant":"#005236","on-primary":"#002a78"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xl":"1.5rem","margin-window":"1.25rem",gutter:"0.75rem","space-xs":"0.25rem","space-sm":"0.5rem",margin:"1rem","space-lg":"1rem","gutter-lg":"1rem","space-md":"0.75rem"},fontFamily:{"label-md":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"headline-lg":["Inter"],"display-md":["Inter"],"metric-num":["Inter"],"display-lg":["Inter"],"body-lg":["Inter"],"label-sm":["Inter"],"code-sm":["Inter"]},fontSize:{"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"body-md":["13px",{lineHeight:"18px",fontWeight:"400"}],"headline-md":["16px",{lineHeight:"24px",fontWeight:"600"}],"headline-lg":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"display-md":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"metric-num":["28px",{lineHeight:"32px",letterSpacing:"-0.03em",fontWeight:"700"}],"display-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"body-lg":["14px",{lineHeight:"20px",fontWeight:"500"}],"label-sm":["11px",{lineHeight:"14px",fontWeight:"500"}],"code-sm":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface select-none antialiased"><header class="fixed top-0 left-0 right-0 h-14 z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-14 w-full px-space-md flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 pr-space-xs"><button aria-label="Close" class="w-3 h-3 rounded-full bg-error-container hover:bg-error transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-error text-[8px] opacity-0 hover:opacity-100">close</span></button><button aria-label="Minimize" class="w-3 h-3 rounded-full bg-surface-bright hover:bg-outline transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-surface text-[8px] opacity-0 hover:opacity-100">remove</span></button><button aria-label="Maximize" class="w-3 h-3 rounded-full bg-tertiary-container hover:bg-tertiary transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-tertiary text-[8px] opacity-0 hover:opacity-100">crop_square</span></button></div><div class="flex items-center gap-space-xs"><img alt="VUONGTT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDquUjOYfGosQlucRKlpUr48YdUVfxvv29mcPKgGqct19562Vuz7QUAMfh-yy6ONdJYNFP0rGqM675mAaqiyhgQR-cAjBjTEzJrgXvjZx12J0UGDw640jmF1-WMW-pQ9NNBVM6-5Kz9t5gTQQVmIVdOwleFUzUPIYGXSKva37xBPpqfjSyv_uKgiDVXv6XkmuZi_eLyIjeP-Qp_mAnzZu5MCJZ06D5TWo6QUjhycJ5FZmtESpjaDE1gsg"/><span class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Tool Pro 2026</span><span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5 - Professional</span></div><div class="hidden xl:flex items-center gap-2"><span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">verified_user</span>Admin Privileges [Active]</span><span class="px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">PRO • Lifetime</span></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-xs px-2.5 py-1 rounded bg-surface-container font-code-sm text-code-sm text-on-surface-variant"><span class="material-symbols-outlined text-[14px] text-primary">schedule</span><span id="system-clock">2026-03-31 09:42:15</span></div><button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1.5 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">sync</span><span>Cập nhật</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-72 bg-surface-container-low/95 backdrop-blur-xl z-40 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.2)]"><div class="flex flex-col flex-1 min-h-0"><div class="px-space-md pt-space-md pb-space-sm flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center"><span class="material-symbols-outlined text-secondary text-[16px]">admin_panel_settings</span></div><div><div class="font-label-md text-label-md text-on-surface leading-tight">IT Administrator</div><div class="font-label-sm text-label-sm text-tertiary">Superuser Mode</div></div></div><div class="flex items-center gap-1"><button class="px-1.5 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-primary" type="button">VN</button><button class="px-1.5 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-outline" type="button">EN</button></div></div><div class="px-space-md pb-space-xs"><div class="flex items-center justify-between p-1 rounded-lg bg-surface-container-lowest"><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-on-surface bg-surface-container-high" type="button">Tối</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Sáng</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Hệ thống</button></div></div><nav class="flex-1 px-space-sm py-space-xs overflow-y-auto space-y-1" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-sm"><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="check-cau-hinh-giam-sat" href="#">Check Cấu Hình &amp; Giám Sát</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="cai-win-kho-iso" href="#">Cài Win &amp; Kho ISO</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="tien-ich-ky-thuat-driver" href="#">Tiện Ích Kỹ Thuật &amp; Driver</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="toi-uu-sua-loi-win" href="#">Tối Ưu &amp; Sửa Lỗi Win</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="cai-dat-office-m365" href="#">Cài Đặt Office M365</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="may-in-scan-lan" href="#">Máy In, Scan &amp; LAN</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="phan-vung-o-cung-smart" href="#">Phân Vùng &amp; Ổ Cứng SMART</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="kho-phan-mem-winget" href="#">Kho Phần Mềm &amp; Winget</a><a class="block px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors truncate" data-path="fake-vpn-socks5-proxy" href="#">Fake VPN / SOCKS5 Proxy</a></nav></div><div class="p-space-md bg-surface-container-lowest/60"><div class="font-label-sm text-label-sm text-outline mb-space-xs uppercase tracking-wider">Thao tác khẩn cấp</div><div class="grid grid-cols-2 gap-1.5"><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-tertiary">cleaning_services</span><span>Dọn Dẹp</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-primary">medical_services</span><span>Cứu Hộ IT</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-secondary">restart_alt</span><span>Explorer</span></button><button class="px-2 py-1.5 rounded-lg bg-error-container hover:bg-error hover:text-on-error text-on-error-container font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">power_settings_new</span><span>Thoát</span></button></div></div></aside><div class="pl-72"><main class="w-full pt-14 px-margin-window pb-space-xl bg-background min-h-screen"><div class="flex flex-col w-full space-y-space-md">
+<!-- Top Quick Header & Sub-tabs Switcher -->
+<div class="flex flex-col gap-space-sm bg-surface-container-low/80 backdrop-blur-md p-space-md rounded-xl shadow-md">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container shadow-sm">
+<span class="material-symbols-outlined text-[24px]">print</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight uppercase">Sửa Lỗi Máy In &amp; Chia Sẻ Mạng LAN</h1>
+<span class="px-2 py-0.5 rounded bg-tertiary-container font-code-sm text-code-sm text-on-tertiary-container">SPOOLER: ONLINE</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Bộ công cụ chuyên dụng chẩn đoán, nạp Port, reset dịch vụ và vá triệt để lỗi kết nối máy in nội bộ</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-lg bg-surface-container font-code-sm text-code-sm text-secondary flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+          RPC Host: 192.168.1.100
+        </span>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px] text-tertiary">restart_alt</span>
+<span>Restart Spooler</span>
+</button>
+</div>
+</div>
+<!-- Navigation Sub-tabs -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-2 pt-space-xs">
+<button class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary-container text-on-primary-container font-headline-md text-headline-md shadow-sm transition-all">
+<span class="material-symbols-outlined text-[18px]">print_connect</span>
+<span>Fix Máy In Mạng LAN</span>
+</button>
+<button class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-body-lg text-body-lg transition-colors">
+<span class="material-symbols-outlined text-[18px] text-primary">key</span>
+<span>Add Windows Credentials</span>
+</button>
+<button class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-body-lg text-body-lg transition-colors">
+<span class="material-symbols-outlined text-[18px] text-secondary">group_add</span>
+<span>Tạo User Chia Sẻ Máy In</span>
+</button>
+<button class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-body-lg text-body-lg transition-colors">
+<span class="material-symbols-outlined text-[18px] text-tertiary">folder_shared</span>
+<span>Fix Chia Sẻ &amp; Scan Folder</span>
+</button>
+</div>
+</div>
+<!-- Main Workstation Workspace: 2 Balanced Structural Columns -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
+<!-- LEFT PANEL: Device Management & Printers Table (7 Cols) -->
+<section class="lg:col-span-7 flex flex-col space-y-space-md bg-surface-container-low/70 backdrop-blur-md p-space-md rounded-xl shadow-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">devices</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Danh Sách Máy In &amp; Cổng Đang Chạy (Port)</h2>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest font-code-sm text-code-sm text-outline">7 thiết bị</span>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-primary-container hover:text-on-primary-container text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-all" id="btn-refresh-printers">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Quét Lại Máy In</span>
+</button>
+</div>
+<!-- Printers Table Container -->
+<div class="overflow-hidden rounded-lg bg-surface-container-lowest">
+<div class="overflow-x-auto max-h-[330px]">
+<table class="w-full text-left font-body-md text-body-md" id="printer-table">
+<thead class="sticky top-0 bg-surface-container-high/90 backdrop-blur text-on-surface-variant font-label-md text-label-md select-none">
+<tr>
+<th class="p-2.5 w-10 text-center">Chọn</th>
+<th class="p-2.5">Tên Máy In</th>
+<th class="p-2.5">Cổng (Port)</th>
+<th class="p-2.5">Trạng Thái</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-high/40 text-on-surface">
+<!-- Printer Item 1 (Selected/Default) -->
+<tr class="bg-primary-container/15 hover:bg-primary-container/25 cursor-pointer transition-colors" data-printer="HP LaserJet Pro M404dn (192.168.1.50)">
+<td class="p-2.5 text-center">
+<input checked="" class="w-4 h-4 accent-primary rounded-full cursor-pointer" name="selected_printer" type="radio"/>
+</td>
+<td class="p-2.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+<span class="font-body-lg text-body-lg text-on-surface font-semibold">Canon LBP 2900 (Chia Sẻ Mạng)</span>
+<span class="px-1.5 py-0.2 rounded bg-tertiary-container font-code-sm text-code-sm text-on-tertiary-container">Mặc định</span>
+</div>
+</td>
+<td class="p-2.5 font-code-sm text-code-sm text-secondary">USB001 / \\SERVER\Canon2900</td>
+<td class="p-2.5">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary-container/30 text-tertiary font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Sẵn sàng (Ready)
+                  </span>
+</td>
+</tr>
+<!-- Printer Item 2 -->
+<tr class="hover:bg-surface-container-high/50 cursor-pointer transition-colors" data-printer="HP LaserJet M402dne">
+<td class="p-2.5 text-center">
+<input class="w-4 h-4 accent-primary rounded-full cursor-pointer" name="selected_printer" type="radio"/>
+</td>
+<td class="p-2.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]">print</span>
+<span>HP LaserJet Pro MFP M428fdw</span>
+</div>
+</td>
+<td class="p-2.5 font-code-sm text-code-sm text-secondary">TCP/IP (192.168.1.155)</td>
+<td class="p-2.5">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary-container/30 text-tertiary font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Sẵn sàng (Ready)
+                  </span>
+</td>
+</tr>
+<!-- Printer Item 3 -->
+<tr class="hover:bg-surface-container-high/50 cursor-pointer transition-colors" data-printer="Epson L3110 Series">
+<td class="p-2.5 text-center">
+<input class="w-4 h-4 accent-primary rounded-full cursor-pointer" name="selected_printer" type="radio"/>
+</td>
+<td class="p-2.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]">print</span>
+<span>Epson EcoTank L3210 Series</span>
+</div>
+</td>
+<td class="p-2.5 font-code-sm text-code-sm text-secondary">USB002</td>
+<td class="p-2.5">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary-container/30 text-tertiary font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Sẵn sàng (Ready)
+                  </span>
+</td>
+</tr>
+<!-- Printer Item 4 -->
+<tr class="hover:bg-surface-container-high/50 cursor-pointer transition-colors" data-printer="Microsoft Print to PDF">
+<td class="p-2.5 text-center">
+<input class="w-4 h-4 accent-primary rounded-full cursor-pointer" name="selected_printer" type="radio"/>
+</td>
+<td class="p-2.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]">picture_as_pdf</span>
+<span>Microsoft Print to PDF</span>
+</div>
+</td>
+<td class="p-2.5 font-code-sm text-code-sm text-outline">PORTPROMPT:</td>
+<td class="p-2.5">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary-container/30 text-tertiary font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Sẵn sàng (Ready)
+                  </span>
+</td>
+</tr>
+<!-- Printer Item 5 -->
+<tr class="hover:bg-surface-container-high/50 cursor-pointer transition-colors" data-printer="Brother HL-L2321D (Offline)">
+<td class="p-2.5 text-center">
+<input class="w-4 h-4 accent-primary rounded-full cursor-pointer" name="selected_printer" type="radio"/>
+</td>
+<td class="p-2.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[18px]">error</span>
+<span class="text-on-surface-variant">Brother HL-L2321D series (Phòng Kế Toán)</span>
+</div>
+</td>
+<td class="p-2.5 font-code-sm text-code-sm text-outline">192.168.1.200:9100</td>
+<td class="p-2.5">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-error-container/40 text-error font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                    Ngoại tuyến (Offline)
+                  </span>
+</td>
+</tr>
+<!-- Printer Item 6 -->
+<tr class="hover:bg-surface-container-high/50 cursor-pointer transition-colors" data-printer="OneNote for Windows 10">
+<td class="p-2.5 text-center">
+<input class="w-4 h-4 accent-primary rounded-full cursor-pointer" name="selected_printer" type="radio"/>
+</td>
+<td class="p-2.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]">note_alt</span>
+<span>OneNote (Desktop)</span>
+</div>
+</td>
+<td class="p-2.5 font-code-sm text-code-sm text-outline">Microsoft.OneNote.16001</td>
+<td class="p-2.5">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary-container/30 text-tertiary font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Sẵn sàng (Ready)
+                  </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Action Button Grid for Devices -->
+<div class="grid grid-cols-2 gap-space-xs pt-space-xs">
+<button class="py-2.5 px-3 rounded-lg bg-surface-container-high hover:bg-secondary-container hover:text-on-secondary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 transition-all shadow-sm" id="btn-print-test">
+<span class="material-symbols-outlined text-[18px] text-secondary">receipt_long</span>
+<span>In Trang Test (Print Test Page)</span>
+</button>
+<button class="py-2.5 px-3 rounded-lg bg-surface-container-high hover:bg-tertiary-container hover:text-on-tertiary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 transition-all shadow-sm" id="btn-set-default">
+<span class="material-symbols-outlined text-[18px] text-tertiary">star</span>
+<span>Set Mặc Định (Set as Default)</span>
+</button>
+<button class="py-2.5 px-3 rounded-lg bg-secondary-container hover:bg-primary-container text-on-secondary-container font-label-md text-label-md flex items-center justify-center gap-2 transition-all shadow-sm" id="btn-add-port">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Add Local Port (Standard TCP)</span>
+</button>
+<button class="py-2.5 px-3 rounded-lg bg-tertiary-container hover:bg-tertiary hover:text-on-tertiary text-on-tertiary-container font-label-md text-label-md flex items-center justify-center gap-2 transition-all shadow-sm" id="btn-share-lan">
+<span class="material-symbols-outlined text-[18px]">share</span>
+<span>Share Máy In Lên Mạng LAN</span>
+</button>
+</div>
+<!-- Emergency Destructive Cleaner -->
+<button class="w-full py-2 px-3 rounded-lg bg-error-container/30 hover:bg-error hover:text-on-error text-error font-label-md text-label-md flex items-center justify-center gap-2 transition-colors" id="btn-clear-printers">
+<span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+<span>Xóa Sạch Hàng Đợi In Bị Kẹt &amp; Driver Lỗi (Flush Spool Folder)</span>
+</button>
+</section>
+<!-- RIGHT PANEL: Error Code Matrix & 1-Click Utilities (5 Cols) -->
+<section class="lg:col-span-5 flex flex-col space-y-space-md bg-surface-container-low/70 backdrop-blur-md p-space-md rounded-xl shadow-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">build_circle</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Khắc Phục Mã Lỗi &amp; Tiện Ích Sửa Máy In</h2>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-tertiary">Win 10/11 FIX</span>
+</div>
+<!-- Diagnostic Checkboxes Pod -->
+<div class="bg-surface-container p-space-sm rounded-lg space-y-space-sm">
+<div class="grid grid-cols-3 gap-2">
+<!-- Column 1: Client Machine Codes -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-secondary font-semibold">
+<span class="material-symbols-outlined text-[14px]">desktop_windows</span>
+<span>Máy Trạm (Client)</span>
+</div>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input checked="" class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>0x0000007c</span>
+</label>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input checked="" class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>0x00000bc4</span>
+</label>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>0x00004005</span>
+</label>
+</div>
+<!-- Column 2: Server Host Machine Codes -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-tertiary font-semibold">
+<span class="material-symbols-outlined text-[14px]">dns</span>
+<span>Máy Chủ (Host)</span>
+</div>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input checked="" class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>0x0000011b</span>
+</label>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>0x00000bcb</span>
+</label>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>0x000006d9</span>
+</label>
+</div>
+<!-- Column 3: Both / Dual Machine Policy -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold">
+<span class="material-symbols-outlined text-[14px]">hub</span>
+<span>Cả 2 Máy</span>
+</div>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input checked="" class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>0x00000709</span>
+</label>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>0x00000012</span>
+</label>
+<label class="flex items-center gap-2 p-1.5 rounded hover:bg-surface-container-high cursor-pointer font-code-sm text-code-sm text-on-surface">
+<input checked="" class="error-cb w-3.5 h-3.5 accent-primary rounded" type="checkbox"/>
+<span>Policy Limit</span>
+</label>
+</div>
+</div>
+<!-- Execute Selected Codes Button -->
+<button class="w-full py-2.5 px-3 rounded-lg bg-primary-container hover:bg-inverse-primary text-on-primary-container font-headline-md text-headline-md flex items-center justify-center gap-2 transition-all shadow-sm" id="btn-fix-selected-codes">
+<span class="material-symbols-outlined text-[18px]">handyman</span>
+<span>Sửa Các Mã Lỗi Đã Chọn (Tích ở trên)</span>
+</button>
+</div>
+<!-- Critical Version Notification Callout -->
+<div class="p-2.5 rounded-lg bg-secondary-container/20 flex items-start gap-2 text-on-surface">
+<span class="material-symbols-outlined text-secondary text-[20px] shrink-0 mt-0.5">info</span>
+<div class="font-body-md text-body-md leading-relaxed">
+<span class="font-semibold text-secondary">Lưu ý quan trọng:</span> Kiểm tra kỹ bản Windows (Win 10/11 22H2 trở lên). Tính năng tự động thêm Registry RPC Auth Level = 0 và cấu hình LanmanWorkstation phù hợp cho mạng Workgroup nội bộ.
+        </div>
+</div>
+<!-- Quick 1-Click Utilities Grid -->
+<div class="grid grid-cols-2 gap-space-xs">
+<button class="tool-btn py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" data-action="Fix Spooler Services">
+<span class="material-symbols-outlined text-[16px] text-tertiary">bolt</span>
+<span class="truncate">Fix Spooler Services</span>
+</button>
+<button class="tool-btn py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" data-action="Cài Print to PDF">
+<span class="material-symbols-outlined text-[16px] text-primary">picture_as_pdf</span>
+<span class="truncate">Cài Print to PDF</span>
+</button>
+<button class="tool-btn py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" data-action="Fix Comm Error 2900 - 3000">
+<span class="material-symbols-outlined text-[16px] text-secondary">sync_problem</span>
+<span class="truncate">Fix Lỗi Canon 2900-3000</span>
+</button>
+<button class="tool-btn py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" data-action="Sửa Lỗi Set Mặc Định 0x709">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span class="truncate">Sửa Lỗi Set Default 0x709</span>
+</button>
+<button class="tool-btn py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" data-action="Backup / Restore Driver">
+<span class="material-symbols-outlined text-[16px] text-primary">backup</span>
+<span class="truncate">Backup/Restore Driver</span>
+</button>
+<button class="tool-btn py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" data-action="Download Spooler Fix">
+<span class="material-symbols-outlined text-[16px] text-secondary">cloud_download</span>
+<span class="truncate">Tải DLL Spooler Chuẩn</span>
+</button>
+</div>
+<!-- Mega Fix Master Button -->
+<button class="w-full py-3 px-4 rounded-lg bg-tertiary-container hover:bg-tertiary hover:text-on-tertiary text-on-tertiary-container font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-md transition-all" id="btn-fix-all">
+<span class="material-symbols-outlined text-[20px]">auto_fix_high</span>
+<span>1-Click Fix Toàn Bộ Lỗi Mạng LAN &amp; Chia Sẻ Máy In</span>
+</button>
+</section>
+</div>
+<!-- Realtime Output Console Log -->
+<section class="flex flex-col bg-surface-container-lowest/90 backdrop-blur-md rounded-xl p-space-md shadow-md space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">terminal</span>
+<span class="font-headline-md text-headline-md text-on-surface">Nhật ký xử lý máy in &amp; mạng LAN</span>
+<span class="px-2 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-outline">Realtime Hook</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm flex items-center gap-1 transition-colors" id="btn-copy-log">
+<span class="material-symbols-outlined text-[13px]">content_copy</span>
+<span>Sao chép</span>
+</button>
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-error-container hover:text-on-error-container text-on-surface font-label-sm text-label-sm flex items-center gap-1 transition-colors" id="btn-clear-log">
+<span class="material-symbols-outlined text-[13px]">delete</span>
+<span>Xóa log</span>
+</button>
+</div>
+</div>
+<!-- Terminal Box -->
+<div class="font-code-sm text-code-sm bg-surface-dim p-space-md rounded-lg h-36 overflow-y-auto space-y-1 text-on-surface-variant font-mono" id="console-output">
+<div class="flex items-center gap-2 text-outline">
+<span class="text-tertiary">[09:42:15]</span>
+<span>Hệ thống khởi tạo bộ kiểm soát máy in VUONGTT Print Manager v20.5 thành công.</span>
+</div>
+<div class="flex items-center gap-2 text-secondary">
+<span class="text-tertiary">[09:42:16]</span>
+<span>Dịch vụ Spooler: Đang chạy (PID: 1842). Trạng thái RPC: Hoạt động bình thường.</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface">
+<span class="text-tertiary">[09:42:18]</span>
+<span>Đã tìm thấy 6 máy in cục bộ và chuyển hướng mạng. Sẵn sàng nhận lệnh điều khiển.</span>
+</div>
+</div>
+</section>
+</div>
+<script>
+  (function () {
+    const consoleOutput = document.getElementById('console-output');
+    const clearLogBtn = document.getElementById('btn-clear-log');
+    const copyLogBtn = document.getElementById('btn-copy-log');
+
+    function getTimeStamp() {
+      const now = new Date();
+      return `[${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}]`;
+    }
+
+    function appendLog(text, colorClass = 'text-on-surface') {
+      if (!consoleOutput) return;
+      const logRow = document.createElement('div');
+      logRow.className = `flex items-center gap-2 ${colorClass}`;
+      logRow.innerHTML = `<span class="text-tertiary">${getTimeStamp()}</span><span>${text}</span>`;
+      consoleOutput.appendChild(logRow);
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+
+    // Refresh Printers simulation
+    const refreshBtn = document.getElementById('btn-refresh-printers');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function () {
+        appendLog('Đang gửi truy vấn WMI Win32_Printer để làm mới thiết bị...', 'text-secondary');
+        setTimeout(() => {
+          appendLog('Cập nhật thành công danh sách cổng: 1x USB001, 1x TCP/IP, 4x System Virtual Port.', 'text-tertiary');
+        }, 600);
+      });
+    }
+
+    // Print Test Page
+    const printTestBtn = document.getElementById('btn-print-test');
+    if (printTestBtn) {
+      printTestBtn.addEventListener('click', function () {
+        appendLog('Gửi lệnh in trang kiểm tra (Test Page) tới máy in đã chọn...', 'text-primary');
+        setTimeout(() => {
+          appendLog('Mã trạng thái in: STATUS_PENDING -> SPOOL_SUCCESSFUL. Trang in đã được gửi tới thiết bị.', 'text-tertiary');
+        }, 800);
+      });
+    }
+
+    // Set Default
+    const setDefaultBtn = document.getElementById('btn-set-default');
+    if (setDefaultBtn) {
+      setDefaultBtn.addEventListener('click', function () {
+        appendLog('Cập nhật giá trị Registry: HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows -> Device', 'text-secondary');
+        setTimeout(() => {
+          appendLog('Đã gán thành công máy in được chọn làm máy in mặc định của hệ thống.', 'text-tertiary');
+        }, 500);
+      });
+    }
+
+    // Add Port
+    const addPortBtn = document.getElementById('btn-add-port');
+    if (addPortBtn) {
+      addPortBtn.addEventListener('click', function () {
+        appendLog('Mở wizard tạo Standard TCP/IP Port & Local Port mapping...', 'text-on-surface');
+      });
+    }
+
+    // Share LAN
+    const shareLanBtn = document.getElementById('btn-share-lan');
+    if (shareLanBtn) {
+      shareLanBtn.addEventListener('click', function () {
+        appendLog('Thiết lập chia sẻ SMB máy in: NetShareAdd -> Cấp quyền Everyone: Print', 'text-tertiary');
+      });
+    }
+
+    // Clear Print queue
+    const clearPrintersBtn = document.getElementById('btn-clear-printers');
+    if (clearPrintersBtn) {
+      clearPrintersBtn.addEventListener('click', function () {
+        appendLog('Thực thi dừng Spooler (net stop spooler)...', 'text-secondary');
+        setTimeout(() => {
+          appendLog('Dọn dẹp tệp tin tạm tại C:\\Windows\\System32\\spool\\PRINTERS\\*.*', 'text-error');
+          setTimeout(() => {
+            appendLog('Khởi động lại dịch vụ Spooler (net start spooler). Hàng đợi đã sạch hoàn toàn!', 'text-tertiary');
+          }, 400);
+        }, 400);
+      });
+    }
+
+    // Fix Selected Error Codes
+    const fixSelectedBtn = document.getElementById('btn-fix-selected-codes');
+    if (fixSelectedBtn) {
+      fixSelectedBtn.addEventListener('click', function () {
+        const checkedCodes = Array.from(document.querySelectorAll('.error-cb:checked'))
+          .map(cb => cb.parentElement.textContent.trim());
+        
+        if (checkedCodes.length === 0) {
+          appendLog('Vui lòng tích chọn ít nhất 1 mã lỗi trước khi thực hiện!', 'text-error');
+          return;
+        }
+
+        appendLog(`Bắt đầu xử lý ${checkedCodes.length} mã lỗi: [${checkedCodes.join(', ')}]...`, 'text-primary');
+        setTimeout(() => {
+          appendLog('Đã ghi Registry: RpcAuthnLevelPrivacyEnabled = 0 (Fix 0x11b)', 'text-tertiary');
+          appendLog('Đã áp dụng RestrictDriverInstallationToAdministrators = 0', 'text-tertiary');
+          appendLog('Đã sửa khóa Spooler\\Client\\Settings (Fix 0x07c & 0x709)', 'text-tertiary');
+          appendLog('Khắc phục mã lỗi hoàn tất! Vui lòng khởi động lại ứng dụng Office hoặc kết nối lại máy in.', 'text-tertiary');
+        }, 900);
+      });
+    }
+
+    // 1-Click Mega Fix
+    const fixAllBtn = document.getElementById('btn-fix-all');
+    if (fixAllBtn) {
+      fixAllBtn.addEventListener('click', function () {
+        appendLog('>>> KÍCH HOẠT QUY TRÌNH 1-CLICK TỔNG HỢP VÁ LỖI MÁY IN LAN <<<', 'text-primary');
+        appendLog('1. Tối ưu Registry RPC Protocol & Tắt Point and Print Restriction...', 'text-secondary');
+        setTimeout(() => {
+          appendLog('2. Kích hoạt SMB1/SMB2 Client Guest Authentication (AllowInsecureGuestAuth)...', 'text-secondary');
+          setTimeout(() => {
+            appendLog('3. Mở cổng Firewall: In ấn nội bộ (Port 137, 138, 139, 445, 9100)...', 'text-secondary');
+            setTimeout(() => {
+              appendLog('4. Làm mới dịch vụ Function Discovery Provider Host & Spooler...', 'text-secondary');
+              setTimeout(() => {
+                appendLog('✔ TOÀN BỘ LỖI CHIA SẺ MÁY IN & MẠNG LAN ĐÃ ĐƯỢC KHẮC PHỤC TRIỆT ĐỂ!', 'text-tertiary');
+              }, 400);
+            }, 400);
+          }, 400);
+        }, 400);
+      });
+    }
+
+    // Individual Tool Buttons
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const action = this.getAttribute('data-action');
+        appendLog(`Thực thi tiện ích kỹ thuật: [${action}]...`, 'text-secondary');
+        setTimeout(() => {
+          appendLog(`Hoàn tất tiến trình xử lý [${action}].`, 'text-tertiary');
+        }, 500);
+      });
+    });
+
+    // Console Action: Clear
+    if (clearLogBtn) {
+      clearLogBtn.addEventListener('click', function () {
+        if (consoleOutput) {
+          consoleOutput.innerHTML = '';
+          appendLog('Đã xóa trắng nhật ký hệ thống.', 'text-outline');
+        }
+      });
+    }
+
+    // Console Action: Copy
+    if (copyLogBtn) {
+      copyLogBtn.addEventListener('click', function () {
+        if (consoleOutput) {
+          const text = consoleOutput.innerText;
+          navigator.clipboard.writeText(text).then(() => {
+            appendLog('Đã sao chép nội dung log vào bộ nhớ tạm Clipboard.', 'text-tertiary');
+          });
+        }
+      });
+    }
+
+    // Row selection radio toggle
+    const tableRows = document.querySelectorAll('#printer-table tbody tr');
+    tableRows.forEach(row => {
+      row.addEventListener('click', function () {
+        tableRows.forEach(r => r.classList.remove('bg-primary-container/15'));
+        this.classList.add('bg-primary-container/15');
+        const radio = this.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        const name = this.getAttribute('data-printer');
+        appendLog(`Đã chọn thiết bị: ${name}`, 'text-on-surface');
+      });
+    });
+  })();
+</script></main></div></body></html>

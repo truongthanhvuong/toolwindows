@@ -1,0 +1,436 @@
+<!DOCTYPE html><html lang="vi"><head>
+<meta charset="utf-8">
+<title>VUONGTT Tool Pro 2026 — Product Requirements Document (PRD) &amp; Toàn Bộ UI Hệ Thống</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #060a12;
+      color: #e2e8f0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .page-break {
+        page-break-after: always;
+        break-after: page;
+      }
+      body {
+        background-color: #0b1326 !important;
+      }
+      .pdf-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .screen-card {
+        box-shadow: none !important;
+        border: 1px solid #1e293b !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-100 antialiased selection:bg-blue-600 selection:text-white pb-20">
+<!-- Top Sticky Action Bar (Ẩn khi in / xuất PDF) -->
+<header class="no-print sticky top-0 z-50 bg-[#0b1326]/90 backdrop-blur-md border-b border-slate-800/80 px-6 py-4 shadow-2xl">
+<div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-blue-500/20">
+          V
+        </div>
+<div>
+<h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            VUONGTT Tool Pro 2026 
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">Export Ready</span>
+</h1>
+<p class="text-xs text-slate-400">Product Requirements Document (PRD), Đặc tả Kỹ thuật &amp; Hồ sơ 13 Màn hình Giao diện Fluent OS Utility</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]" onclick="window.print()">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+          In &amp; Lưu thành PDF ngay (Print / Save PDF)
+        </button>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 pt-8 space-y-12 pdf-container">
+<!-- Trang Bìa Tài Liệu Thiết Kế (Cover Page) -->
+<section class="bg-gradient-to-b from-[#111c38] to-[#0b1326] rounded-2xl border border-slate-800 p-8 md:p-12 shadow-2xl relative overflow-hidden page-break mb-12"><div class="absolute -right-20 -top-20 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div><div class="absolute -left-20 -bottom-20 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div><div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8 pb-10 border-b border-slate-800"><div class="space-y-4 max-w-3xl"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> TÀI LIỆU ĐẶC TẢ PRD &amp; PORTFOLIO UI CHÍNH THỨC</div><h2 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">VUONGTT Tool Pro 2026</h2><p class="text-lg text-slate-300 font-medium">Product Requirements Document (PRD) &amp; Hệ Thống Tiện Ích Kỹ Thuật IT Helpdesk Chuẩn Doanh Nghiệp</p><p class="text-sm text-slate-400 leading-relaxed">Tài liệu đặc tả kiến trúc sản phẩm toàn diện tích hợp đồng bộ: phân tích vấn đề cốt lõi, hồ sơ người dùng mục tiêu (Personas), đặc tả kỹ thuật 13 phân hệ, cơ chế bảo mật NT Kernel và trọn bộ 13 màn hình UI hoàn thiện trên chuẩn thiết kế Fluent OS Utility Dark Mode.</p></div><div class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-xl p-5 space-y-2 text-xs text-slate-300 min-w-[260px]"><div class="flex justify-between py-1 border-b border-slate-800/80"><span class="text-slate-400">Phiên bản tài liệu:</span><span class="font-bold text-white">v20.5 - Pro Edition</span></div><div class="flex justify-between py-1 border-b border-slate-800/80"><span class="text-slate-400">Chuẩn thiết kế:</span><span class="font-bold text-blue-400">Fluent OS Utility (Dark)</span></div><div class="flex justify-between py-1 border-b border-slate-800/80"><span class="text-slate-400">Quy mô chức năng:</span><span class="font-bold text-emerald-400">13 Phân Hệ (9 Core + 4 Sub)</span></div><div class="flex justify-between py-1 border-b border-slate-800/80"><span class="text-slate-400">Thời gian phát hành:</span><span class="font-semibold text-slate-200">2026-03-31 09:42</span></div><div class="flex justify-between py-1"><span class="text-slate-400">Đối tượng áp dụng:</span><span class="font-semibold text-cyan-300">IT Helpdesk &amp; Tech Lead</span></div></div></div><div class="mt-8 pt-4"><h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Cấu Trúc Tài Liệu Toàn Diện (Document Master Outline)</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs"><div class="p-3 rounded-lg bg-slate-900/50 border border-slate-800 flex items-center justify-between"><span class="text-blue-300 font-semibold">Chương I. Tổng Quan Dự Án &amp; Product Brief</span><span class="text-slate-400">Phần PRD</span></div><div class="p-3 rounded-lg bg-slate-900/50 border border-slate-800 flex items-center justify-between"><span class="text-blue-300 font-semibold">Chương II. Chân Dung Người Dùng (Personas)</span><span class="text-slate-400">Phần PRD</span></div><div class="p-3 rounded-lg bg-slate-900/50 border border-slate-800 flex items-center justify-between"><span class="text-blue-300 font-semibold">Chương III. Bảng Đặc Tả Kỹ Thuật 13 Phân Hệ</span><span class="text-slate-400">Phần PRD</span></div><div class="p-3 rounded-lg bg-slate-900/50 border border-slate-800 flex items-center justify-between"><span class="text-blue-300 font-semibold">Chương IV. Yêu Cầu Phi Chức Năng (NFR) &amp; Roadmap</span><span class="text-slate-400">Phần PRD</span></div><div class="p-3 rounded-lg bg-slate-900/50 border border-cyan-800/60 flex items-center justify-between md:col-span-2"><span class="text-cyan-300 font-semibold">Chương V. Hồ Sơ 13 Màn Hình Giao Diện Chi Tiết</span><span class="text-cyan-400">13 Screens &amp; Specs</span></div></div></div></section><section class="space-y-12 page-break"><div class="bg-[#0e172a] rounded-2xl border border-slate-800 p-8 md:p-10 shadow-2xl space-y-6"><div class="border-b border-slate-800 pb-4"><span class="text-xs font-bold text-blue-400 uppercase tracking-widest">CHƯƠNG I</span><h3 class="text-2xl font-bold text-white mt-1">Tổng Quan Dự Án &amp; Product Brief</h3><p class="text-xs text-slate-400 mt-1">Bối cảnh, giải pháp công nghệ và tầm nhìn kiến trúc của VUONGTT Tool Pro 2026</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300"><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="flex items-center gap-2 text-rose-400 font-bold text-sm"><span class="w-2 h-2 rounded-full bg-rose-400"></span> 1. Thực Trạng &amp; Bối Cảnh</div><p class="leading-relaxed text-slate-400">Thợ máy tính và IT Helpdesk thường phải mang theo hàng chục công cụ rời rạc (USB cứu hộ, file BAT/CMD, tool bẻ khóa trôi nổi, driver rời rạc, phần mềm benchmark nặng nề). Quy trình cài đặt và sửa lỗi Windows diễn ra thủ công, tiêu tốn 45-90 phút/máy và tiềm ẩn rủi ro mã độc.</p></div><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="flex items-center gap-2 text-blue-400 font-bold text-sm"><span class="w-2 h-2 rounded-full bg-blue-400"></span> 2. Tầm Nhìn Sản Phẩm</div><p class="leading-relaxed text-slate-400">Xây dựng hệ sinh thái tiện ích all-in-one chạy trực tiếp trên Windows hoặc môi trường cứu hộ WinPE. Tự động hóa 85% các thao tác kỹ thuật lặp lại với thời gian xử lý tính bằng giây thông qua Native Windows API, WMI, DISM và Registry Injection.</p></div><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="flex items-center gap-2 text-emerald-400 font-bold text-sm"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> 3. Ngôn Ngữ Fluent OS Utility</div><p class="leading-relaxed text-slate-400">Giao diện Dark Mode tối ưu cho thợ kỹ thuật làm việc liên tục trong môi trường thiếu sáng. Phân cấp typography rõ ràng với font Inter và JetBrains Mono, tương phản màu sắc cao, hiệu ứng Mica/Acrylic nhẹ nhàng nhưng tiết kiệm RAM &lt; 85MB.</p></div></div></div><div class="bg-[#0e172a] rounded-2xl border border-slate-800 p-8 md:p-10 shadow-2xl space-y-6"><div class="border-b border-slate-800 pb-4"><span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">CHƯƠNG II</span><h3 class="text-2xl font-bold text-white mt-1">Chân Dung Người Dùng (User Personas)</h3><p class="text-xs text-slate-400 mt-1">Nghiên cứu nhu cầu và hành vi của 3 nhóm người dùng mục tiêu chính</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs"><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="flex items-center justify-between"><span class="font-bold text-sm text-blue-300">IT Helpdesk Doanh Nghiệp</span><span class="px-2 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-400 font-semibold">Doanh Nghiệp</span></div><p class="text-slate-400 leading-relaxed"><strong class="text-slate-200">Nhiệm vụ:</strong> Quản lý 50-500 máy trạm, triển khai máy mới cho nhân sự, cấp phát Office, kết nối mạng LAN và chia sẻ máy in.<br><strong class="text-slate-200">Pain Point:</strong> Tốn thời gian fix lỗi 0x0000011b của máy in, thiết lập Proxy nội bộ, kích hoạt bản quyền tập trung.<br><strong class="text-slate-200">Màn hình hay dùng:</strong> Máy In &amp; LAN, Office M365, SOCKS5 Proxy, HWID.</p></div><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="flex items-center justify-between"><span class="font-bold text-sm text-emerald-300">Kỹ Thuật Cửa Hàng &amp; Cứu Hộ</span><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-semibold">Dịch Vụ Sửa Chữa</span></div><p class="text-slate-400 leading-relaxed"><strong class="text-slate-200">Nhiệm vụ:</strong> Nhận máy khách hàng để cài lại Win cấp tốc, đóng logo thương hiệu theo yêu cầu, phá pass Windows bị quên, cứu hộ khẩn cấp.<br><strong class="text-slate-200">Pain Point:</strong> Khách hối gấp, máy thiếu driver LAN/Wi-Fi, ổ cứng bị bad sector không rõ nguyên nhân.<br><strong class="text-slate-200">Màn hình hay dùng:</strong> Cài Win Direct, Driver WHQL, OEM Branding, SMART SSD, Cứu Hộ IT.</p></div><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="flex items-center justify-between"><span class="font-bold text-sm text-cyan-300">Power User &amp; Quản Trị Viên</span><span class="px-2 py-0.5 rounded text-[10px] bg-cyan-500/20 text-cyan-400 font-semibold">Chuyên Sâu</span></div><p class="text-slate-400 leading-relaxed"><strong class="text-slate-200">Nhiệm vụ:</strong> Tối ưu hóa hệ thống để chơi game hoặc render, quản lý phân vùng 4K alignment, tự động hóa silent install bằng Winget.<br><strong class="text-slate-200">Pain Point:</strong> Windows 11 ngốn RAM do Telemetry, bloatware mặc định, thao tác DiskPart phức tạp bằng lệnh CMD.<br><strong class="text-slate-200">Màn hình hay dùng:</strong> Tối Ưu Win, Giám Sát Phần Cứng, Kho Winget, Phân Vùng Ổ Đĩa.</p></div></div></div><div class="bg-[#0e172a] rounded-2xl border border-slate-800 p-8 md:p-10 shadow-2xl space-y-6"><div class="border-b border-slate-800 pb-4"><span class="text-xs font-bold text-emerald-400 uppercase tracking-widest">CHƯƠNG III</span><h3 class="text-2xl font-bold text-white mt-1">Bảng Đặc Tả Yêu Cầu Chức Năng 13 Phân Hệ (Functional Specs)</h3><p class="text-xs text-slate-400 mt-1">Danh mục 13 mô-đun nghiệp vụ kèm nền tảng kỹ thuật và API tích hợp</p></div><div class="overflow-hidden rounded-xl border border-slate-800"><table class="w-full text-left text-xs"><thead class="bg-slate-900/80 text-slate-300 uppercase tracking-wider text-[11px] border-b border-slate-800"><tr><th class="p-3">STT</th><th class="p-3">Tên Phân Hệ &amp; Màn Hình</th><th class="p-3">Mục Tiêu Nghiệp Vụ Cốt Lõi</th><th class="p-3">Công Nghệ &amp; Engine Tích Hợp</th><th class="p-3">Chỉ Số SLA/Tốc Độ</th></tr></thead><tbody class="divide-y divide-slate-800/60 text-slate-300"><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">01</td><td class="p-3 font-semibold text-white">Xem Cấu Hình &amp; Giám Sát Hệ Thống</td><td class="p-3">Hiển thị 6 card realtime: CPU, RAM donut, GPU, NVMe, Wi-Fi 6E, Pin</td><td class="p-3 font-mono text-slate-400">WMI, PDH API, D3D12 Query</td><td class="p-3 text-emerald-400">Polling 1000ms &lt; 0.5% CPU</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">02</td><td class="p-3 font-semibold text-white">Cài Win &amp; Bypass Windows 11/10</td><td class="p-3">Bung file ISO trực tiếp từ ổ cứng, tự động bypass TPM 2.0 &amp; MSA OOBE</td><td class="p-3 font-mono text-slate-400">DISM API, wimgapi.dll, Unattend.xml</td><td class="p-3 text-emerald-400">Cài đặt hoàn tất trong 8-12 phút</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">03</td><td class="p-3 font-semibold text-white">Tiện Ích Kỹ Thuật &amp; Driver</td><td class="p-3">Quét chẩn đoán thiếu driver, tích hợp 3DP Net, SDIO và backup driver DISM</td><td class="p-3 font-mono text-slate-400">PnP Manager, MS Update Catalog</td><td class="p-3 text-emerald-400">Quét 200+ bus devices &lt; 3 giây</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">04</td><td class="p-3 font-semibold text-white">Tối Ưu &amp; Sửa Lỗi Win</td><td class="p-3">Dọn WinSxS, nén Compact OS tiết kiệm 3-6GB, tắt Telemetry an toàn</td><td class="p-3 font-mono text-slate-400">SFC, DISM cleanup-image, Registry Tweak</td><td class="p-3 text-emerald-400">Độ trễ Kernel giảm còn 0.12ms</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">05</td><td class="p-3 font-semibold text-white">Cài Đặt Office M365</td><td class="p-3">Trình cài đặt tự động Office 2016-2024 &amp; M365, chọn ngôn ngữ và app lẻ</td><td class="p-3 font-mono text-slate-400">ODT (setup.exe) v16.0 XML Generator</td><td class="p-3 text-emerald-400">Click-to-Run trực tiếp từ CDN MS</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">06</td><td class="p-3 font-semibold text-white">Máy In, Scan &amp; LAN</td><td class="p-3">Sửa lỗi chia sẻ máy in 0x0000011b, 0x00000709, khởi động lại Spooler</td><td class="p-3 font-mono text-slate-400">Spooler API, RestrictDriverInstallationFix</td><td class="p-3 text-emerald-400">1-Click vá lỗi mạng &lt; 2 giây</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">07</td><td class="p-3 font-semibold text-white">Phân Vùng &amp; Ổ Cứng SMART</td><td class="p-3">Đo đạc chuẩn CrystalDiskInfo: nhiệt độ, số giờ chạy, độ mòn chip NAND</td><td class="p-3 font-mono text-slate-400">DeviceIoControl IOCTL_STORAGE_QUERY</td><td class="p-3 text-emerald-400">Độ chính xác SMART 99.9%</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">08</td><td class="p-3 font-semibold text-white">Kho Phần Mềm &amp; Winget</td><td class="p-3">Kho cài đặt phân nhóm: Trình duyệt, Dev, Đồ họa; cài silent hàng loạt</td><td class="p-3 font-mono text-slate-400">Winget CLI v1.8, Direct CDN Mirror</td><td class="p-3 text-emerald-400">Băng thông CDN đạt 1.2 Gbps</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-blue-400 font-bold">09</td><td class="p-3 font-semibold text-white">Fake VPN / SOCKS5 Proxy</td><td class="p-3">Kiểm tra IP WAN, đo tốc độ download, thiết lập proxy nội bộ thủ công</td><td class="p-3 font-mono text-slate-400">WinINet API, WFP Filtering Platform</td><td class="p-3 text-emerald-400">Độ trễ kiểm tra node &lt; 20ms</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-cyan-400 font-bold">10</td><td class="p-3 font-semibold text-white">Tùy Chỉnh OEM &amp; Thương Hiệu</td><td class="p-3">Preset 9 hãng PC (ASUS ROG, Alienware, ThinkPad...), đóng dấu winver</td><td class="p-3 font-mono text-slate-400">HKLM\SOFTWARE\Microsoft\Windows\OEM</td><td class="p-3 text-emerald-400">Cập nhật Settings tức thời</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-cyan-400 font-bold">11</td><td class="p-3 font-semibold text-white">Kích Hoạt Bản Quyền Số HWID</td><td class="p-3">4 phương thức kích hoạt vĩnh viễn theo mainboard: HWID, Ohook, KMS38</td><td class="p-3 font-mono text-slate-400">MAS v2.6 Core Direct, Slmgr Hook</td><td class="p-3 text-emerald-400">Kích hoạt bản quyền trong 10-30s</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-cyan-400 font-bold">12</td><td class="p-3 font-semibold text-white">Quản Lý Phân Vùng Ổ Đĩa</td><td class="p-3">Sơ đồ Sector trực quan, kiểm tra căn chỉnh 4K Alignment, nạp EFI/BCD</td><td class="p-3 font-mono text-slate-400">DiskPart API, Virtual Disk Service (VDS)</td><td class="p-3 text-emerald-400">An toàn không mất dữ liệu</td></tr><tr class="hover:bg-slate-900/40"><td class="p-3 font-mono text-cyan-400 font-bold">13</td><td class="p-3 font-semibold text-white">Cứu Hộ IT Helpdesk &amp; Khẩn Cấp</td><td class="p-3">Phá mật khẩu SAM trong 3s, bật Admin ẩn SID 500, mở khóa Regedit/CMD</td><td class="p-3 font-mono text-slate-400">NT AUTHORITY\SYSTEM, SAM Hive Parser</td><td class="p-3 text-emerald-400">Mở khóa khẩn cấp trong 3 giây</td></tr></tbody></table></div></div><div class="bg-[#0e172a] rounded-2xl border border-slate-800 p-8 md:p-10 shadow-2xl space-y-6"><div class="border-b border-slate-800 pb-4"><span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">CHƯƠNG IV</span><h3 class="text-2xl font-bold text-white mt-1">Yêu Cầu Phi Chức Năng (NFR), Bảo Mật &amp; Lộ Trình Phát Triển</h3><p class="text-xs text-slate-400 mt-1">Độ tin cậy hệ thống, tiêu chuẩn mã hóa và roadmap nâng cấp phiên bản tương lai</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300"><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="font-bold text-sm text-blue-300">Tiêu Chuẩn Hiệu Năng (NFR)</div><ul class="space-y-1.5 text-slate-400 list-disc list-inside"><li class="">Thời gian khởi động ứng dụng &lt; 1.2 giây.</li><li class="">Chiếm dụng bộ nhớ RAM &lt; 85MB ở chế độ nền.</li><li class="">Tương thích ngược từ Windows 7 SP1 đến Windows 11 24H2.</li><li class="">Không để lại registry rác sau khi thoát ứng dụng (Zero-footprint).</li></ul></div><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="font-bold text-sm text-emerald-300">An Toàn Dữ Liệu &amp; Bảo Mật</div><ul class="space-y-1.5 text-slate-400 list-disc list-inside"><li class="">Mọi thao tác can thiệp Registry đều tạo bản sao lưu .reg tự động.</li><li class="">Chữ ký số WHQL và kiểm tra mã băm SHA256 trước khi thực thi file ISO.</li><li class="">Chế độ Safe Mode Prompt cảnh báo khi thao tác xóa phân vùng ổ cứng.</li><li class="">Không gửi dữ liệu telemetry máy khách ra máy chủ bên ngoài.</li></ul></div><div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"><div class="font-bold text-sm text-cyan-300">Lộ Trình Roadmap (v20.5 → v21.0)</div><ul class="space-y-1.5 text-slate-400 list-disc list-inside"><li class=""><strong class="text-white">v20.5 (Hiện tại):</strong> Đóng gói hoàn thiện 13 phân hệ, tích hợp Winget CLI và CrystalDiskInfo SMART.</li><li class=""><strong class="text-white">v20.8 (Q3/2026):</strong> Tích hợp module khôi phục phân vùng bị format nhầm &amp; cứu dữ liệu RAW.</li><li class=""><strong class="text-white">v21.0 WinPE (Q4/2026):</strong> Bản phát hành khởi động trực tiếp từ USB UEFI cứu hộ cứu nạn.</li></ul></div></div></div></section><div class="pt-4 pb-2"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-2"><span class="w-2 h-2 rounded-full bg-blue-400"></span> CHƯƠNG V: HỒ SƠ 13 MÀN HÌNH GIAO DIỆN HỆ THỐNG CHI TIẾT</div><h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Hồ Sơ Thiết Kế Toàn Bộ 13 Màn Hình Giao Diện Fluent OS Utility</h2><p class="text-xs text-slate-400 mt-1">Bao gồm 9 màn hình chức năng cốt lõi (Core Modules) và 4 màn hình chức năng phụ chuyên sâu (Sub-Tab Modules) kèm ảnh chụp thực tế.</p></div>
+<!-- SECTION 1: CÁC MÀN HÌNH CHỨC NĂNG CỐT LÕI (CORE MODULES) -->
+<div class="space-y-16">
+<!-- SCREEN 1 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 01</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Giám Sát Phần Cứng</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Xem Cấu Hình &amp; Giám Sát Hệ Thống</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Realtime Telemetry
+            </span>
+<span class="">Target: Windows 11 Pro 64-bit</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Hiển thị 6 thẻ card theo dõi thời gian thực (CPU 40% &amp; xung nhịp, RAM 9.9/32GB kèm donut chart, GPU RTX 4080, Dung lượng SSD NVMe, Băng thông Wi-Fi 6E và Chu kỳ sạc nguồn AC). Kèm theo danh sách xếp hạng ứng dụng ngốn tài nguyên nhất (Google Chrome, VS Code, Defender...).
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Xem Cấu Hình &amp; Giám Sát Hệ Thống" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_28}}">
+</div>
+</article>
+<!-- SCREEN 2 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 02</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Cài Đặt Hệ Điều Hành</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Cài Win &amp; Bypass Windows 11/10</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-blue-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-blue-400"></span> Direct Deploy (Không Cần USB)
+            </span>
+<span class="">Chuẩn: UEFI / GPT • TPM Auto-Bypassed</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Quy trình cài Windows trực tiếp từ ổ cứng. Bước 1: Chọn gói ISO và kiểm tra SHA256; Bước 2: Chọn chế độ Cài đè giữ dữ liệu hoặc Cài mới Format sạch phân vùng C; Bước 3: Bảng tự động hóa 3 cột kiểm soát Bypass TPM 2.0, Bỏ qua Microsoft Account OOBE, Lưu Driver tĩnh và kích hoạt MAS HWID.
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Cài Win &amp; Bypass Windows 11/10" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_26}}">
+</div>
+</article>
+<!-- SCREEN 3 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 03</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Driver &amp; Phần Cứng</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Tiện Ích Kỹ Thuật &amp; Driver</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-emerald-400"></span> WHQL Signature Enforced
+            </span>
+<span class="">218 Bus Devices Loaded • 0 Lỗi Driver</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Quét tự động chẩn đoán thiếu driver cho bo mạch chủ, card đồ họa và kết nối mạng. Tích hợp nút Cập nhật tự động qua Microsoft Update Catalog, cài driver mạng Offline 3DP Net, liên kết các bộ cài SDIO, 3DP Chip và xuất bản sao lưu driver tĩnh DISM.
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Tiện Ích Kỹ Thuật &amp; Driver" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_24}}">
+</div>
+</article>
+<!-- SCREEN 4 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 04</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Tinh Chỉnh &amp; Tối Ưu Hệ Thống</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Tối Ưu &amp; Sửa Lỗi Win</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-indigo-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-indigo-400"></span> AI Engine v20.5 Tweak
+            </span>
+<span class="">Kernel Latency: 0.12ms • SFC / DISM Ready</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Dọn dẹp bộ nhớ đệm WinSxS, xóa Prefetch, nén Compact OS tiết kiệm 3-6GB, nhóm tùy chọn Cơ bản An toàn (Tắt Telemetry, tắt gợi ý quảng cáo, bật End Task chuột phải) và các Switch tùy biến giao diện Windows Shell (Dark Mode, Hiện đuôi file, Menu Win 10, Căn giữa Taskbar).
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Tối Ưu &amp; Sửa Lỗi Win" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_22}}">
+</div>
+</article>
+<!-- SCREEN 5 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 05</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Phần Mềm Văn Phòng</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Cài Đặt Office M365</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-amber-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-amber-400"></span> Office Deployment Tool (ODT v16.0)
+            </span>
+<span class="">C2R Click-to-Run • Multi-language Support</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Trình cài đặt tự động bộ Office: chọn phiên bản (2016, 2019, 2021, 2024, Microsoft 365 Enterprise), cấu trúc 64-bit/32-bit, chọn ngôn ngữ Anh/Việt và chọn độc lập từng ứng dụng cài đặt (Word, Excel, PPT, Outlook, Access...). Có cửa sổ Console Log ODT giám sát tiến trình.
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Cài Đặt Office M365" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_20}}">
+</div>
+</article>
+<!-- SCREEN 6 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 06</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Thiết Bị Ngoại Vi &amp; Mạng Nội Bộ</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Máy In, Scan &amp; LAN</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Spooler: Online
+            </span>
+<span class="">Fix lỗi kết nối chia sẻ máy in Win 10 &amp; 11</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Quản lý danh sách máy in cục bộ và chia sẻ qua mạng nội bộ. Bảng khắc phục các mã lỗi máy in kinh điển: 0x0000011b, 0x00000709, 0x0000007c, tự động vá lỗi Registry RPC Auth Level, nút 1-Click Fix Toàn Bộ Lỗi Mạng LAN và nút Khởi động lại dịch vụ Print Spooler.
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Máy In, Scan &amp; LAN" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_18}}">
+</div>
+</article>
+<!-- SCREEN 7 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 07</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Chẩn Đoán Lưu Trữ</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Phân Vùng &amp; Ổ Cứng SMART</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-emerald-400"></span> S.M.A.R.T OK: 99% Tốt
+            </span>
+<span class="">Samsung 990 PRO NVMe 1TB • 36°C</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Tích hợp đo đạc theo tiêu chuẩn CrystalDiskInfo: Nhiệt độ 36°C, Giờ bật máy 2,541h, Số lần khởi động 478 lần, Độ mòn chip nhớ NAND 1.2%, Dung lượng phân vùng C và D, cùng bảng tra cứu chi tiết từng mã S.M.A.R.T chuyên sâu (Read Error Rate, Reallocated Sectors, Power Cycle Count...).
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Phân Vùng &amp; Ổ Cứng SMART" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_16}}">
+</div>
+</article>
+<!-- SCREEN 8 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 08</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Kho Ứng Dụng</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Kho Phần Mềm &amp; Winget</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-blue-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-blue-400"></span> Winget CLI &amp; Direct CDN Mirror
+            </span>
+<span class="">Tốc độ CDN: 1.2 Gbps • Hỗ trợ Silent Install</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Kho cài đặt phần mềm tự động phân chia theo phân nhóm: Trình duyệt web (Chrome, Firefox, Brave, Edge...), Liên lạc chat (Zalo, Telegram, Discord, Slack...), Lập trình Dev (VS Code, Git, Docker, Python...), Văn phòng &amp; đồ họa (UniKey, WinRAR, FastStone...). Hỗ trợ chọn hàng loạt để cài im lặng (silent unattended).
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Kho Phần Mềm &amp; Winget" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_14}}">
+</div>
+</article>
+<!-- SCREEN 9 -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-slate-800/90 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">MÀN HÌNH 09</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Mạng &amp; Bảo Mật Proxy</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Fake VPN / SOCKS5 Proxy</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-cyan-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-cyan-400"></span> WinINet API &amp; WFP Engine
+            </span>
+<span class="">Singapore Node #04 • Độ trễ 18ms</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Giám sát địa chỉ IP công cộng (VNPT Broadband), tốc độ tải xuống 45.8 MB/s, nút tròn lớn kết nối neon pulse, bản đồ định tuyến cáp mạng toàn cầu (Global Route Map) và bộ nạp Proxy nội bộ thủ công (SOCKS5/HTTP Host &amp; Port bypass mạng doanh nghiệp).
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Fake VPN / SOCKS5 Proxy" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_12}}">
+</div>
+</article>
+<!-- SCREEN 10 (SUB-TAB) -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-cyan-800/50 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">TAB CHỨC NĂNG PHỤ 01</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Check Cấu Hình &amp; Branding</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Tùy Chỉnh OEM &amp; Thương Hiệu Máy</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Live Registry Injection
+            </span>
+<span class="">Giao diện Live Preview Windows 11 Settings</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Thư viện 9 preset hãng máy tính (ASUS ROG, Alienware, Lenovo Legion, HP Omen, ThinkPad, AORUS...), form thay đổi trực tiếp thông tin Manufacturer, Model, Support Phone, OEM Logo 120x120px và khung Live Preview mô phỏng tức thời giao diện Windows 11 Settings &gt; About. Có chức năng đóng dấu thông tin kỹ thuật viên vào lệnh winver.
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Tùy Chỉnh OEM &amp; Thương Hiệu Máy" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_4}}">
+</div>
+</article>
+<!-- SCREEN 11 (SUB-TAB) -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-cyan-800/50 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">TAB CHỨC NĂNG PHỤ 02</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Kích Hoạt &amp; Bản Quyền Số</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Kích Hoạt Bản Quyền Số HWID</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-emerald-400"></span> MAS v2.6 Core Direct
+            </span>
+<span class="">HWID Vĩnh Viễn • Ohook Office Permanent</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Tự động nhận diện tình trạng bản quyền Windows 11 Pro và Office Enterprise. 4 phương thức kích hoạt: HWID vĩnh viễn theo mainboard, Ohook hook DLL không chạm file hệ thống, KMS38 cho bản LTSC đến 2038, và công cụ dọn sạch license tokens lỗi. Tích hợp chuyển đổi phiên bản Windows (Home lên Pro/Enterprise) trong 30 giây kèm Console output.
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Kích Hoạt Bản Quyền Số HWID" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_10}}">
+</div>
+</article>
+<!-- SCREEN 12 (SUB-TAB) -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-cyan-800/50 p-6 md:p-8 shadow-2xl space-y-5 page-break">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">TAB CHỨC NĂNG PHỤ 03</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Quản Trị Phân Vùng Ổ Cứng</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Quản Lý Phân Vùng Ổ Đĩa</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-blue-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-blue-400"></span> DiskPart &amp; VDS API v2.4
+            </span>
+<span class="">4K Aligned: 1024 KB offset • GPT Partition</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Thanh trực quan hóa sơ đồ phân bố Sector của ổ cứng vật lý (EFI FAT32, Windows System NTFS, Recovery, Data NTFS, Unallocated Free Space). Bảng danh sách Volume chi tiết kiểm tra căn chỉnh 4K Alignment, mã hóa BitLocker, và 5 tác vụ kỹ thuật nâng cao: Mở rộng ổ C, chuyển đổi MBR sang GPT không mất dữ liệu, nạp lại bộ nạp khởi động EFI/BCD.
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Quản Lý Phân Vùng Ổ Đĩa" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_8}}">
+</div>
+</article>
+<!-- SCREEN 13 (SUB-TAB) -->
+<article class="screen-card bg-[#0b1326] rounded-2xl border border-cyan-800/50 p-6 md:p-8 shadow-2xl space-y-5">
+<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">TAB CHỨC NĂNG PHỤ 04</span>
+<span class="text-xs text-slate-400 font-medium">Phân Hệ: Cứu Hộ IT Helpdesk &amp; Khẩn Cấp</span>
+</div>
+<h3 class="text-xl md:text-2xl font-bold text-white">Cứu Hộ IT Helpdesk &amp; Khẩn Cấp</h3>
+</div>
+<div class="text-right text-xs text-slate-400">
+<span class="text-rose-400 font-semibold flex items-center gap-1 justify-end">
+<span class="w-2 h-2 rounded-full bg-rose-400"></span> Quyền NT AUTHORITY\SYSTEM
+            </span>
+<span class="">5 Quick Fixes • Remote Support Hub</span>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+<strong>Mô tả thiết kế:</strong> Bộ công cụ can thiệp sâu: Phá mật khẩu tài khoản trong 3 giây (SAM Flush), Bật Admin ẩn (SID 500), Reset Winsock &amp; IP, Khởi động Safe Mode qua BCD, Mở khóa Task Manager / Regedit / CMD bị virus khóa, diệt mã độc Shortcut lây qua USB. Trung tâm điều khiển từ xa nhận diện nhanh UltraViewer, AnyDesk, TeamViewer, RustDesk và Terminal giám sát cứu hộ.
+        </p>
+<div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
+<img alt="Cứu Hộ IT Helpdesk &amp; Khẩn Cấp" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_6}}">
+</div>
+</article>
+</div>
+<!-- Trang Tổng Kết & Thông Số Kỹ Thuật (Back Cover / Spec Appendix) -->
+<section class="bg-[#0e172a] rounded-2xl border border-slate-800 p-8 space-y-6 text-xs text-slate-400 page-break">
+<h3 class="text-base font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3">
+        Đặc Tả Quy Chuẩn Thiết Kế Hệ Thống (Fluent OS Utility Specifications)
+      </h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="space-y-2">
+<h4 class="font-semibold text-slate-200">1. Màu Sắc Giao Diện (Palette)</h4>
+<ul class="space-y-1 list-disc list-inside">
+<li class="">Nền chính: <code class="text-blue-300">#0b1326</code> (Mica Deep Dark)</li>
+<li class="">Thẻ Card: <code class="text-blue-300">#131b2e</code> • Viền: <code class="text-slate-400">#1e293b</code></li>
+<li class="">Primary Blue: <code class="text-blue-400">#2563eb</code> / Cyan: <code class="text-cyan-400">#06b6d4</code></li>
+<li class="">Status OK: <code class="text-emerald-400">#10b981</code> • Danger: <code class="text-rose-400">#ef4444</code></li>
+</ul>
+</div>
+<div class="space-y-2">
+<h4 class="font-semibold text-slate-200">2. Typography &amp; Phân Cấp</h4>
+<ul class="space-y-1 list-disc list-inside">
+<li class="">Font gia đình: Inter (System UI) + JetBrains Mono (Terminal)</li>
+<li class="">Kích thước tiêu chuẩn: H1 24px, H2 18px, H3 14px, Body 12px, Tag 10px</li>
+<li class="">Trọng số nét: Regular 400, Medium 500, Semibold 600, Bold 700</li>
+</ul>
+</div>
+<div class="space-y-2">
+<h4 class="font-semibold text-slate-200">3. Độ Tương Phản &amp; Trải Nghiệm Thợ IT</h4>
+<ul class="space-y-1 list-disc list-inside">
+<li class="">Đạt chuẩn tiếp cận WCAG AA (Tỷ lệ tương phản ≥ 4.5:1)</li>
+<li class="">Không gây chói mắt khi làm việc ban đêm trong phòng máy chủ</li>
+<li class="">Nút bấm phân biệt rõ ràng giữa thao tác thường và thao tác phá hủy dữ liệu</li>
+</ul>
+</div>
+</div>
+<div class="pt-4 border-t border-slate-800/80 flex flex-wrap justify-between items-center text-slate-400">
+<span class="">© 2026 VUONGTT Tool Pro. Tài liệu thiết kế &amp; bản quyền giao diện.</span>
+<span class="">Generated by Google Stitch AI Designer</span>
+</div>
+</section>
+</main>
+<script>
+    // Tự động gợi ý người dùng cách lưu PDF với cấu hình trang đẹp nhất
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('VUONGTT Tool Pro 2026 PDF Export Document Ready.');
+    });
+  </script>
+
+
+
+
+
+
+</body></html>

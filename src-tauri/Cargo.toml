@@ -1,0 +1,8 @@
+[package]
+name = "vuongtt_toolkit"
+version = "20.5.93"
+description = "VUONGTT Tool Pro 2026 — Rust (Tauri v2) Fluent OS Utility"
+edition = "2021"
+
+[dependencies]
+# Dependencies thuan Rust de bien dich sieu toc ma khong can bo C++ compiler nang 6GB

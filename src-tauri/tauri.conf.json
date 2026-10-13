@@ -1,0 +1,36 @@
+﻿{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "VUONGTT Tool Pro 2026",
+  "version": "20.5.909.93",
+  "identifier": "com.vuongtt.toolkit.pro2026",
+  "build": {
+    "frontendDist": "../src-ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "VUONGTT Tool Pro 2026 — Fluent OS Utility (Rust Tauri v2)",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 680,
+        "decorations": false,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
+  }
+}

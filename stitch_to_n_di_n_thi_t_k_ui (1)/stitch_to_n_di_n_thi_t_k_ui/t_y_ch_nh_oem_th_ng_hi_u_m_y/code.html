@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-high":"#222a3d","surface-tint":"#b4c5ff","inverse-surface":"#dae2fd","primary-container":"#2563eb","surface-dim":"#0b1326","on-primary-fixed-variant":"#003ea8","surface-variant":"#2d3449","outline":"#8d90a0","on-error-container":"#ffdad6","outline-variant":"#434655","on-surface-variant":"#c3c6d7","error":"#ffb4ab","primary-fixed-dim":"#b4c5ff","tertiary-fixed":"#6ffbbe","inverse-primary":"#0053db","on-background":"#dae2fd","on-surface":"#dae2fd","on-secondary-fixed-variant":"#004395","secondary-container":"#0566d9","surface-container-lowest":"#060e20","on-secondary-container":"#e6ecff","tertiary-container":"#007d55","on-tertiary-fixed":"#002113","primary":"#b4c5ff","error-container":"#93000a","surface-container-highest":"#2d3449","inverse-on-surface":"#283044","background":"#0b1326","on-secondary":"#002e6a","on-secondary-fixed":"#001a42","secondary":"#adc6ff","primary-fixed":"#dbe1ff","surface":"#0b1326","on-tertiary":"#003824","on-primary-container":"#eeefff","surface-bright":"#31394d","secondary-fixed-dim":"#adc6ff","surface-container":"#171f33","on-tertiary-container":"#bdffdb","secondary-fixed":"#d8e2ff","on-primary-fixed":"#00174b","tertiary-fixed-dim":"#4edea3","surface-container-low":"#131b2e","on-error":"#690005","tertiary":"#4edea3","on-tertiary-fixed-variant":"#005236","on-primary":"#002a78"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xl":"1.5rem","margin-window":"1.25rem",gutter:"0.75rem","space-xs":"0.25rem","space-sm":"0.5rem",margin:"1rem","space-lg":"1rem","gutter-lg":"1rem","space-md":"0.75rem"},fontFamily:{"label-md":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"headline-lg":["Inter"],"display-md":["Inter"],"metric-num":["Inter"],"display-lg":["Inter"],"body-lg":["Inter"],"label-sm":["Inter"],"code-sm":["Inter"]},fontSize:{"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"body-md":["13px",{lineHeight:"18px",fontWeight:"400"}],"headline-md":["16px",{lineHeight:"24px",fontWeight:"600"}],"headline-lg":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"display-md":["26px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"700"}],"metric-num":["28px",{lineHeight:"32px",letterSpacing:"-0.03em",fontWeight:"700"}],"display-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"body-lg":["14px",{lineHeight:"20px",fontWeight:"500"}],"label-sm":["11px",{lineHeight:"14px",fontWeight:"500"}],"code-sm":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface select-none antialiased"><header class="fixed top-0 left-0 right-0 h-14 z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-14 w-full px-space-md flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 pr-space-xs"><button aria-label="Close" class="w-3 h-3 rounded-full bg-error-container hover:bg-error transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-error text-[8px] opacity-0 hover:opacity-100">close</span></button><button aria-label="Minimize" class="w-3 h-3 rounded-full bg-surface-bright hover:bg-outline transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-surface text-[8px] opacity-0 hover:opacity-100">remove</span></button><button aria-label="Maximize" class="w-3 h-3 rounded-full bg-tertiary-container hover:bg-tertiary transition-colors flex items-center justify-center" type="button"><span class="material-symbols-outlined text-on-tertiary text-[8px] opacity-0 hover:opacity-100">crop_square</span></button></div><div class="flex items-center gap-space-xs"><img alt="VUONGTT Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDquUjOYfGosQlucRKlpUr48YdUVfxvv29mcPKgGqct19562Vuz7QUAMfh-yy6ONdJYNFP0rGqM675mAaqiyhgQR-cAjBjTEzJrgXvjZx12J0UGDw640jmF1-WMW-pQ9NNBVM6-5Kz9t5gTQQVmIVdOwleFUzUPIYGXSKva37xBPpqfjSyv_uKgiDVXv6XkmuZi_eLyIjeP-Qp_mAnzZu5MCJZ06D5TWo6QUjhycJ5FZmtESpjaDE1gsg"/><span class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Tool Pro 2026</span><span class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5 - Professional</span></div><div class="hidden xl:flex items-center gap-2"><span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">verified_user</span>Admin Privileges [Active]</span><span class="px-2 py-0.5 rounded bg-tertiary-container font-label-sm text-label-sm text-on-tertiary-container font-semibold">PRO • Lifetime</span></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-xs px-2.5 py-1 rounded bg-surface-container font-code-sm text-code-sm text-on-surface-variant"><span class="material-symbols-outlined text-[14px] text-primary">schedule</span><span id="system-clock">2026-03-31 09:42:15</span></div><button class="px-2.5 py-1 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1.5 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">sync</span><span>Cập nhật</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><aside class="fixed left-0 top-14 bottom-0 w-72 bg-surface-container-low/95 backdrop-blur-xl z-40 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.2)]"><div class="flex flex-col flex-1 min-h-0"><div class="px-space-md pt-space-md pb-space-sm flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center"><span class="material-symbols-outlined text-secondary text-[16px]">admin_panel_settings</span></div><div><div class="font-label-md text-label-md text-on-surface leading-tight">IT Administrator</div><div class="font-label-sm text-label-sm text-tertiary">Superuser Mode</div></div></div><div class="flex items-center gap-1"><button class="px-1.5 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-primary" type="button">VN</button><button class="px-1.5 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-outline" type="button">EN</button></div></div><div class="px-space-md pb-space-xs"><div class="flex items-center justify-between p-1 rounded-lg bg-surface-container-lowest"><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-on-surface bg-surface-container-high" type="button">Tối</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Sáng</button><button class="flex-1 py-1 rounded font-label-sm text-label-sm text-center text-outline hover:text-on-surface" type="button">Hệ thống</button></div></div><nav class="flex-1 px-space-sm py-space-xs overflow-y-auto space-y-1" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-sm"><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="check-cau-hinh" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-primary">monitor_heart</span><span>Check Cấu Hình &amp; Giám Sát</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="cai-win-kho-iso" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-secondary">install_desktop</span><span>Cài Win &amp; Kho ISO</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="tien-ich-ky-thuat" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-tertiary">build_circle</span><span>Tiện Ích Kỹ Thuật &amp; Driver</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="toi-uu-sua-loi-win" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-primary-fixed">tune</span><span>Tối Ưu &amp; Sửa Lỗi Win</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="cai-dat-office" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-secondary-fixed">description</span><span>Cài Đặt Office M365</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="may-in-scan-lan" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-tertiary-fixed">print</span><span>Máy In, Scan &amp; LAN</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="phan-vung-o-cung" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-primary">hard_drive</span><span>Phân Vùng &amp; Ổ Cứng SMART</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="kho-phan-mem-go-app" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-secondary">apps</span><span>Kho Phần Mềm &amp; Winget</span></a><a class="flex items-center px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="fake-vpn-proxy" href="#"><span class="material-symbols-outlined text-[18px] mr-2.5 text-tertiary">vpn_lock</span><span>Fake VPN / SOCKS5 Proxy</span></a></nav></div><div class="p-space-md bg-surface-container-lowest/60"><div class="font-label-sm text-label-sm text-outline mb-space-xs uppercase tracking-wider">Thao tác khẩn cấp</div><div class="grid grid-cols-2 gap-1.5"><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-tertiary">cleaning_services</span><span>Dọn Dẹp</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-primary">medical_services</span><span>Cứu Hộ IT</span></button><button class="px-2 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px] text-secondary">restart_alt</span><span>Explorer</span></button><button class="px-2 py-1.5 rounded-lg bg-error-container hover:bg-error hover:text-on-error text-on-error-container font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">power_settings_new</span><span>Thoát</span></button></div></div></aside><div class="pl-72"><main class="w-full pt-14 px-margin-window pb-space-xl bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Sub-Navigation Bar -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm pb-space-md">
+<!-- Tab Strip -->
+<div class="flex items-center gap-1.5 p-1 rounded-xl bg-surface-container-low shadow-sm overflow-x-auto">
+<a class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all flex items-center gap-2 whitespace-nowrap" href="#">
+<span class="material-symbols-outlined text-[16px] text-primary">memory</span>
+<span>Cấu Hình Máy</span>
+</a>
+<a class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-primary-container bg-primary-container shadow-sm flex items-center gap-2 whitespace-nowrap" href="#">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">branding_watermark</span>
+<span>★ Tùy Chỉnh OEM</span>
+</a>
+<a class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all flex items-center gap-2 whitespace-nowrap" href="#">
+<span class="material-symbols-outlined text-[16px] text-secondary">database</span>
+<span>Tra Cứu CPU/Main</span>
+</a>
+<a class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all flex items-center gap-2 whitespace-nowrap" href="#">
+<span class="material-symbols-outlined text-[16px] text-tertiary">manage_accounts</span>
+<span>Quản Trị User/PC</span>
+</a>
+</div>
+<!-- Quick Utilities -->
+<div class="flex items-center gap-2 self-end lg:self-auto">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm flex items-center gap-1.5 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[15px] text-primary">ios_share</span>
+<span>Xuất Thông Tin</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm flex items-center gap-1.5 transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[15px] text-error">history</span>
+<span>Khôi Phục Gốc</span>
+</button>
+</div>
+</div>
+<!-- Header Banner -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-space-lg mb-space-lg shadow-sm">
+<div class="absolute -right-8 -top-8 w-44 h-44 bg-primary-container/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div>
+<div class="flex items-center gap-2.5">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">
+            TÙY CHỈNH THÔNG TIN THƯƠNG HIỆU (OEM BRANDING &amp; SYSTEM INFO)
+          </h1>
+<span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+            Live Registry Injection
+          </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 max-w-4xl">
+          Thay đổi trực tiếp logo nhà sản xuất, model thiết bị, hotline hỗ trợ kỹ thuật và thông tin quyền sở hữu hiển thị trong mục Windows Settings &gt; System &gt; About.
+        </p>
+</div>
+<div class="flex items-center gap-3 self-start md:self-auto">
+<div class="px-3 py-1.5 rounded-lg bg-surface-container font-code-sm text-code-sm text-secondary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-secondary">verified</span>
+          Target: Windows 11 23H2+
+        </div>
+</div>
+</div>
+</div>
+<!-- Block 1: Brand Quick Presets -->
+<div class="mb-space-lg">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary">auto_awesome</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">Hồ Sơ Hãng Nhanh (Quick Presets)</span>
+</div>
+<span class="font-code-sm text-code-sm text-outline">9 hồ sơ chuẩn có sẵn</span>
+</div>
+<!-- Presets Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-2">
+<!-- ROG -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all text-center shadow-sm" onclick="applyPreset('asus')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-error">
+<span class="material-symbols-outlined text-[20px]">sports_esports</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate w-full">ASUS ROG</span>
+<span class="font-code-sm text-[10px] text-outline">Gaming Pro</span>
+</button>
+<!-- Alienware -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all text-center shadow-sm" onclick="applyPreset('alienware')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-primary">
+<span class="material-symbols-outlined text-[20px]">rocket_launch</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate w-full">Dell Alienware</span>
+<span class="font-code-sm text-[10px] text-outline">Extreme</span>
+</button>
+<!-- Lenovo Legion -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all text-center shadow-sm" onclick="applyPreset('legion')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-secondary">
+<span class="material-symbols-outlined text-[20px]">shield</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate w-full">Lenovo Legion</span>
+<span class="font-code-sm text-[10px] text-outline">Gen 9 AI</span>
+</button>
+<!-- HP Omen -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all text-center shadow-sm" onclick="applyPreset('omen')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-tertiary">
+<span class="material-symbols-outlined text-[20px]">diamond</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate w-full">HP Omen</span>
+<span class="font-code-sm text-[10px] text-outline">Transcend</span>
+</button>
+<!-- MSI Gaming -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all text-center shadow-sm" onclick="applyPreset('msi')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-error">
+<span class="material-symbols-outlined text-[20px]">whatshot</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate w-full">MSI Gaming</span>
+<span class="font-code-sm text-[10px] text-outline">Titan / Raider</span>
+</button>
+<!-- ThinkPad -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all text-center shadow-sm" onclick="applyPreset('thinkpad')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-error">
+<span class="material-symbols-outlined text-[20px]">business_center</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate w-full">ThinkPad</span>
+<span class="font-code-sm text-[10px] text-outline">X1 Carbon</span>
+</button>
+<!-- Apple Mac-PC -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all text-center shadow-sm" onclick="applyPreset('apple')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-primary-fixed">
+<span class="material-symbols-outlined text-[20px]">laptop_mac</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate w-full">Mac-PC Style</span>
+<span class="font-code-sm text-[10px] text-outline">Hackintosh</span>
+</button>
+<!-- Gigabyte Aorus -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high transition-all text-center shadow-sm" onclick="applyPreset('aorus')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-secondary-fixed">
+<span class="material-symbols-outlined text-[20px]">flight</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate w-full">AORUS Gaming</span>
+<span class="font-code-sm text-[10px] text-outline">Master Edition</span>
+</button>
+<!-- Custom Brand -->
+<button class="group relative flex flex-col items-center justify-center p-2.5 rounded-xl bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container transition-all text-center shadow-sm" onclick="applyPreset('custom')" type="button">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-tertiary">
+<span class="material-symbols-outlined text-[20px]">edit_note</span>
+</div>
+<span class="font-label-sm text-label-sm font-semibold truncate w-full">Custom Brand</span>
+<span class="font-code-sm text-[10px] text-on-surface-variant">Tùy biến tay</span>
+</button>
+</div>
+</div>
+<!-- Block 2: Dual Column Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg mb-space-lg">
+<!-- Left Column: OEM Form Input (7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-space-md">
+<!-- Primary OEM Form -->
+<div class="rounded-xl bg-surface-container-low p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary">edit_document</span>
+<span class="font-headline-md text-headline-md text-on-surface">Thông Số OEM Windows</span>
+</div>
+<span class="font-code-sm text-code-sm px-2 py-0.5 rounded bg-surface-container text-outline">HKLM OEMInformation</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Manufacturer -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant flex items-center justify-between">
+<span>Hãng Sản Xuất (Manufacturer)</span>
+<span class="text-error font-code-sm">*bắt buộc</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">storefront</span>
+<input class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-high transition-colors shadow-inner" id="input-manufacturer" oninput="updatePreview()" placeholder="VD: ASUS, Dell, HP..." type="text" value="ASUSTeK COMPUTER INC."/>
+</div>
+</div>
+<!-- Model -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant flex items-center justify-between">
+<span>Dòng Máy / Model</span>
+<span class="text-error font-code-sm">*bắt buộc</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">devices</span>
+<input class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-high transition-colors shadow-inner" id="input-model" oninput="updatePreview()" placeholder="VD: ROG Strix Scar, ThinkPad X1..." type="text" value="ROG Strix Scar 18 (G834JYR)"/>
+</div>
+</div>
+<!-- Support Phone -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Hotline Kỹ Thuật (Support Phone)</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">call</span>
+<input class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-high transition-colors shadow-inner" id="input-phone" oninput="updatePreview()" placeholder="VD: 1800 xxxx hoặc số kỹ thuật" type="text" value="1800 6588 (Miễn phí 24/7)"/>
+</div>
+</div>
+<!-- Support Hours -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Khung Giờ Hỗ Trợ (Support Hours)</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">schedule</span>
+<input class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-high transition-colors shadow-inner" id="input-hours" oninput="updatePreview()" placeholder="VD: Thứ 2 - Thứ 7 (8:00 - 20:00)" type="text" value="24/7 Priority VIP Support"/>
+</div>
+</div>
+</div>
+<!-- Support URL -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Đường Dẫn Website Hỗ Trợ (Support URL)</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">public</span>
+<input class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-high transition-colors shadow-inner" id="input-url" oninput="updatePreview()" placeholder="VD: https://asus.com/support" type="text" value="https://rog.asus.com/support"/>
+</div>
+</div>
+<!-- Logo Selector Sub-pod -->
+<div class="p-space-md rounded-xl bg-surface-container flex flex-col sm:flex-row items-center gap-space-md">
+<!-- Logo Preview Box -->
+<div class="relative flex-shrink-0 w-28 h-28 rounded-lg bg-surface-container-lowest flex flex-col items-center justify-center p-2 group shadow-inner">
+<div class="w-full h-full flex flex-col items-center justify-center text-center" id="preview-logo-box">
+<span class="material-symbols-outlined text-[36px] text-error mb-1">sports_esports</span>
+<span class="font-code-sm text-[10px] text-outline">120 x 120 px</span>
+<span class="font-code-sm text-[9px] text-secondary">LOGO_OEM.BMP</span>
+</div>
+<div class="absolute inset-0 bg-surface-dim/80 backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+<span class="font-label-sm text-label-sm text-on-surface">BMP/PNG 32bit</span>
+</div>
+</div>
+<!-- Controls -->
+<div class="flex flex-col justify-between flex-1 w-full gap-2">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface">Logo Thương Hiệu OEM (.bmp / .png)</span>
+<span class="px-1.5 py-0.5 rounded font-code-sm text-[10px] bg-tertiary-container text-on-tertiary-container">Tối ưu chuẩn Win 11</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-xs mt-0.5">
+                Kích thước khuyến nghị: 120x120px, định dạng RGB 24/32-bit BMP hoặc PNG không nền. Windows sẽ tự động lưu vào <code class="font-code-sm text-primary">C:\Windows\System32\oemlogo.bmp</code>.
+              </p>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container hover:bg-secondary-container font-label-sm text-label-sm flex items-center gap-1.5 transition-colors shadow-sm" onclick="logAction('Mở hộp thoại chọn tệp hình ảnh logo (.bmp/.png)')" type="button">
+<span class="material-symbols-outlined text-[15px]">file_upload</span>
+<span>Tải Logo Mới...</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-label-sm flex items-center gap-1.5 transition-colors shadow-sm" onclick="logAction('Mở thư viện 45+ logo thương hiệu máy tính bản quyền')" type="button">
+<span class="material-symbols-outlined text-[15px] text-secondary">collections</span>
+<span>Chọn Logo Chuẩn Có Sẵn</span>
+</button>
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-high text-outline hover:text-error font-label-sm text-label-sm flex items-center gap-1 transition-colors" onclick="clearLogo()" type="button">
+<span class="material-symbols-outlined text-[15px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Technician Personalization & Ownership Stamp -->
+<div class="rounded-xl bg-surface-container-low p-space-lg shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-tertiary">badge</span>
+<span class="font-headline-md text-headline-md text-on-surface">Đóng Dấu Bản Quyền Kỹ Thuật Viên (Technician Branding)</span>
+</div>
+<span class="font-code-sm text-code-sm px-2 py-0.5 rounded bg-surface-container text-tertiary">winver / System Info</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-xs">
+          Khắc thông tin người sở hữu và trung tâm bảo hành/kỹ thuật trực tiếp vào lõi Windows NT. Thông tin sẽ xuất hiện khi gõ lệnh <code class="font-code-sm text-primary">winver</code>.
+        </p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md pt-1">
+<!-- Registered Owner -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Tên Khách Hàng / Kỹ Thuật Viên (RegisteredOwner)</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">person_outline</span>
+<input class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-high transition-colors shadow-inner" id="input-owner" oninput="updatePreview()" placeholder="Tên kỹ thuật viên..." type="text" value="VuongTT IT Support VIP"/>
+</div>
+</div>
+<!-- Registered Organization -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Đơn Vị Kỹ Thuật / Shop (RegisteredOrganization)</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">corporate_fare</span>
+<input class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-high transition-colors shadow-inner" id="input-org" oninput="updatePreview()" placeholder="Tên trung tâm kỹ thuật..." type="text" value="VUONGTT Computer System Lab 2026"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Live Preview Windows 11 About & Properties (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<!-- Simulated Windows 11 Settings Box -->
+<div class="rounded-xl bg-surface-container-low p-space-md shadow-md flex flex-col">
+<!-- Window Title Bar -->
+<div class="flex items-center justify-between pb-3 px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">visibility</span>
+<span class="font-label-md text-label-md text-on-surface">Xem Trước Thời Gian Thực (Live Preview)</span>
+</div>
+<span class="font-code-sm text-code-sm text-tertiary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+            Giao diện Settings Windows 11
+          </span>
+</div>
+<!-- Simulated OS Shell Frame -->
+<div class="rounded-xl bg-surface-container-lowest p-4 shadow-inner flex flex-col gap-4">
+<!-- Top Breadcrumb inside simulated OS -->
+<div class="flex items-center justify-between text-on-surface-variant pb-1">
+<div class="flex items-center gap-1.5 text-xs font-label-sm">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+<span>Settings</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span>System</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface font-semibold">About</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-high"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-high"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-error-container"></span>
+</div>
+</div>
+<!-- Simulated Device Hero Card inside Windows Settings -->
+<div class="p-3.5 rounded-xl bg-surface-container flex items-center gap-3.5 shadow-sm">
+<!-- Simulated Laptop / Device Image -->
+<div class="relative w-16 h-16 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[32px] text-error" id="preview-mini-icon">sports_esports</span>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-tertiary rounded-full shadow-sm"></span>
+</div>
+<!-- Device Specs Header -->
+<div class="flex-1 min-w-0">
+<div class="font-headline-md text-headline-md text-on-surface font-semibold truncate leading-tight" id="preview-model-title">
+                ROG Strix Scar 18 (G834JYR)
+              </div>
+<div class="font-body-md text-xs text-primary font-medium truncate mt-0.5" id="preview-mfg-title">
+                ASUSTeK COMPUTER INC.
+              </div>
+<div class="font-code-sm text-[10px] text-outline mt-1 flex items-center gap-2">
+<span>Core i9-14900HX</span>
+<span>•</span>
+<span>64GB RAM</span>
+<span>•</span>
+<span>RTX 4090</span>
+</div>
+</div>
+</div>
+<!-- Windows System OEM Properties Section -->
+<div class="flex flex-col gap-2 rounded-xl bg-surface-container/60 p-3.5">
+<div class="flex items-center justify-between pb-1.5">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold uppercase tracking-wider">Thông Tin Hỗ Trợ Kỹ Thuật (OEM Support)</span>
+<span class="material-symbols-outlined text-[16px] text-outline">contact_support</span>
+</div>
+<!-- Phone Item -->
+<div class="flex items-start justify-between py-1.5 text-xs">
+<span class="text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-primary">headset_mic</span>
+                Tổng đài hỗ trợ:
+              </span>
+<span class="font-label-sm text-label-sm text-on-surface font-medium text-right" id="preview-phone">
+                1800 6588 (Miễn phí 24/7)
+              </span>
+</div>
+<!-- Hours Item -->
+<div class="flex items-start justify-between py-1.5 text-xs">
+<span class="text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-secondary">pace</span>
+                Giờ làm việc:
+              </span>
+<span class="font-label-sm text-label-sm text-on-surface text-right" id="preview-hours">
+                24/7 Priority VIP Support
+              </span>
+</div>
+<!-- URL Item -->
+<div class="flex items-start justify-between py-1.5 text-xs">
+<span class="text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-tertiary">language</span>
+                Trang web hỗ trợ:
+              </span>
+<span class="font-code-sm text-[11px] text-primary underline truncate max-w-[190px] text-right" id="preview-url">
+                https://rog.asus.com/support
+              </span>
+</div>
+</div>
+<!-- Windows winver Card Replica -->
+<div class="flex flex-col gap-2 rounded-xl bg-surface-container/60 p-3.5">
+<div class="flex items-center justify-between pb-1">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold uppercase tracking-wider">Windows Specification &amp; Licensing</span>
+<span class="material-symbols-outlined text-[16px] text-secondary">verified_user</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-xs">
+<div class="p-2 rounded-lg bg-surface-container-high/40">
+<div class="text-outline text-[10px]">Windows Edition</div>
+<div class="font-label-sm text-label-sm text-on-surface font-semibold">Windows 11 Pro</div>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-high/40">
+<div class="text-outline text-[10px]">OS Build</div>
+<div class="font-label-sm text-label-sm text-on-surface font-semibold">22631.3296</div>
+</div>
+</div>
+<div class="pt-1 flex flex-col gap-1 text-xs">
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant">Người đăng ký (Owner):</span>
+<span class="font-label-sm text-label-sm text-tertiary font-semibold" id="preview-owner">VuongTT IT Support VIP</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant">Tổ chức (Organization):</span>
+<span class="font-label-sm text-label-sm text-on-surface truncate max-w-[180px] text-right" id="preview-org">VUONGTT Computer System Lab 2026</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Registry Path Telemetry Pod -->
+<div class="rounded-xl bg-surface-container-low p-space-md shadow-sm flex flex-col gap-2 text-xs">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-sm text-label-sm font-semibold uppercase tracking-wider">Registry Target Keys</span>
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-lowest font-code-sm text-[11px] text-secondary space-y-1">
+<div class="truncate">HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation</div>
+<div class="truncate text-outline">HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion [Owner/Org]</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Block 3: Action Buttons Bar -->
+<div class="rounded-xl bg-surface-container-low p-space-md mb-space-md shadow-sm flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<div class="w-9 h-9 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">Sẵn sàng nạp Registry OEM</div>
+<div class="font-body-md text-xs text-on-surface-variant">Áp dụng trực tiếp vào Windows không cần khởi động lại máy</div>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm w-full sm:w-auto justify-end">
+<!-- Clear button -->
+<button class="px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-outline hover:text-error font-label-md text-label-md flex items-center gap-1.5 transition-colors shadow-sm" onclick="resetDefaults()" type="button">
+<span class="material-symbols-outlined text-[16px]">backspace</span>
+<span>Xóa Sạch OEM</span>
+</button>
+<!-- Backup button -->
+<button class="px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors shadow-sm" onclick="backupRegistry()" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary">save_as</span>
+<span>Sao Lưu Khóa Registry Gốc</span>
+</button>
+<!-- Apply button -->
+<button class="px-5 py-2 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container font-headline-md text-headline-md flex items-center gap-2 transition-all shadow-md active:scale-95" onclick="applyOEMChanges()" type="button">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+<span>Áp Dụng Thay Đổi OEM Ngay</span>
+</button>
+</div>
+</div>
+<!-- Realtime System Console Log Bar -->
+<div class="rounded-xl bg-surface-container-lowest p-3 flex flex-col md:flex-row md:items-center justify-between gap-2 shadow-inner">
+<div class="flex items-center gap-2 font-code-sm text-code-sm min-w-0">
+<span class="px-1.5 py-0.5 rounded bg-tertiary-container text-on-tertiary-container font-semibold flex-shrink-0">[OK]</span>
+<span class="text-tertiary flex-shrink-0">SYSTEM REGISTRY READY:</span>
+<span class="text-on-surface-variant truncate" id="console-log-msg">
+        Khóa HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation sẵn sàng ghi dữ liệu.
+      </span>
+</div>
+<div class="flex items-center gap-3 text-xs font-code-sm text-outline flex-shrink-0 self-end md:self-auto">
+<span class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+        RegEngine: Active
+      </span>
+<span>•</span>
+<span>Encoding: UTF-8 / REG_SZ</span>
+</div>
+</div>
+</div>
+<script>
+  // Presets Database
+  const oemPresets = {
+    asus: {
+      mfg: "ASUSTeK COMPUTER INC.",
+      model: "ROG Strix Scar 18 (G834JYR)",
+      phone: "1800 6588 (Miễn phí 24/7)",
+      hours: "24/7 Priority VIP Support",
+      url: "https://rog.asus.com/support",
+      icon: "sports_esports",
+      iconColor: "text-error",
+      logoName: "ASUS_ROG_LOGO.BMP"
+    },
+    alienware: {
+      mfg: "Alienware / Dell Technologies",
+      model: "Alienware m18 R2 Gaming Laptop",
+      phone: "1800 545455 (Alienware Pro Support)",
+      hours: "24/7 On-Site Service & Diagnostics",
+      url: "https://dell.com/support/alienware",
+      icon: "rocket_launch",
+      iconColor: "text-primary",
+      logoName: "ALIENWARE_LOGO.BMP"
+    },
+    legion: {
+      mfg: "Lenovo",
+      model: "Legion Pro 7 16IRX9H (Gen 9)",
+      phone: "1800 6178 (Lenovo Legion Ultimate Support)",
+      hours: "Thứ 2 - CN (8:00 - 22:00)",
+      url: "https://pcsupport.lenovo.com/legion",
+      icon: "shield",
+      iconColor: "text-secondary",
+      logoName: "LENOVO_LEGION_LOGO.BMP"
+    },
+    omen: {
+      mfg: "HP Inc.",
+      model: "OMEN Transcend 16 Gaming Laptop",
+      phone: "1800 588 875 (HP Omen Gaming Care)",
+      hours: "24/7 Gaming Concierge",
+      url: "https://support.hp.com/omen",
+      icon: "diamond",
+      iconColor: "text-tertiary",
+      logoName: "HP_OMEN_LOGO.BMP"
+    },
+    msi: {
+      mfg: "Micro-Star International Co., Ltd.",
+      model: "Titan 18 HX A14VIG Extreme",
+      phone: "028 7300 1288 (MSI Vietnam Service)",
+      hours: "Thứ 2 - Thứ 6 (8:30 - 17:30)",
+      url: "https://msi.com/support",
+      icon: "whatshot",
+      iconColor: "text-error",
+      logoName: "MSI_DRAGON_LOGO.BMP"
+    },
+    thinkpad: {
+      mfg: "Lenovo",
+      model: "ThinkPad X1 Carbon Gen 12",
+      phone: "1800 6178 (Think Premier Support)",
+      hours: "24/7 Global Business Support",
+      url: "https://pcsupport.lenovo.com/thinkpad",
+      icon: "business_center",
+      iconColor: "text-error",
+      logoName: "THINKPAD_LOGO.BMP"
+    },
+    apple: {
+      mfg: "Apple Computer, Inc.",
+      model: "MacBook Pro (16-inch, M3 Max OpenCore)",
+      phone: "1800 1127 (Apple Care Vietnam)",
+      hours: "Thứ 2 - Thứ 6 (9:00 - 18:00)",
+      url: "https://support.apple.com",
+      icon: "laptop_mac",
+      iconColor: "text-primary-fixed",
+      logoName: "APPLE_LOGO.BMP"
+    },
+    aorus: {
+      mfg: "Giga-Byte Technology Co., Ltd.",
+      model: "AORUS 17X (2026 Master Flagship)",
+      phone: "028 3838 9999 (Gigabyte Care)",
+      hours: "Thứ 2 - Thứ 7 (8:00 - 18:00)",
+      url: "https://aorus.com/support",
+      icon: "flight",
+      iconColor: "text-secondary-fixed",
+      logoName: "AORUS_EAGLE_LOGO.BMP"
+    },
+    custom: {
+      mfg: "VUONGTT CUSTOM PC",
+      model: "VUONGTT Workstation Pro Ultimate",
+      phone: "0908 xxx xxx (Hotline Kỹ Thuật Riêng)",
+      hours: "24/7 Hỗ trợ từ xa qua UltraView/AnyDesk",
+      url: "https://vuongtt.pro/support",
+      icon: "edit_note",
+      iconColor: "text-tertiary",
+      logoName: "CUSTOM_BRAND_LOGO.BMP"
+    }
+  };
+
+  function updatePreview() {
+    const mfg = document.getElementById('input-manufacturer').value || "Chưa cấu hình";
+    const model = document.getElementById('input-model').value || "Standard PC";
+    const phone = document.getElementById('input-phone').value || "(Chưa có)";
+    const hours = document.getElementById('input-hours').value || "(Chưa có)";
+    const url = document.getElementById('input-url').value || "N/A";
+    const owner = document.getElementById('input-owner').value || "User";
+    const org = document.getElementById('input-org').value || "Workgroup";
+
+    document.getElementById('preview-mfg-title').textContent = mfg;
+    document.getElementById('preview-model-title').textContent = model;
+    document.getElementById('preview-phone').textContent = phone;
+    document.getElementById('preview-hours').textContent = hours;
+    document.getElementById('preview-url').textContent = url;
+    document.getElementById('preview-owner').textContent = owner;
+    document.getElementById('preview-org').textContent = org;
+  }
+
+  function applyPreset(presetKey) {
+    const data = oemPresets[presetKey];
+    if (!data) return;
+
+    document.getElementById('input-manufacturer').value = data.mfg;
+    document.getElementById('input-model').value = data.model;
+    document.getElementById('input-phone').value = data.phone;
+    document.getElementById('input-hours').value = data.hours;
+    document.getElementById('input-url').value = data.url;
+
+    // Update mini icon preview
+    const miniIcon = document.getElementById('preview-mini-icon');
+    miniIcon.textContent = data.icon;
+    miniIcon.className = `material-symbols-outlined text-[32px] ${data.iconColor}`;
+
+    // Update logo preview box
+    const logoBox = document.getElementById('preview-logo-box');
+    logoBox.innerHTML = `
+      <span class="material-symbols-outlined text-[36px] ${data.iconColor} mb-1">${data.icon}</span>
+      <span class="font-code-sm text-[10px] text-outline">120 x 120 px</span>
+      <span class="font-code-sm text-[9px] text-secondary truncate w-full px-1">${data.logoName}</span>
+    `;
+
+    updatePreview();
+    logAction(`Đã nạp thành công preset thương hiệu [${data.mfg} - ${data.model}] vào biểu mẫu.`);
+  }
+
+  function clearLogo() {
+    const logoBox = document.getElementById('preview-logo-box');
+    logoBox.innerHTML = `
+      <span class="material-symbols-outlined text-[36px] text-outline mb-1">image_not_supported</span>
+      <span class="font-code-sm text-[10px] text-outline">Không có logo</span>
+    `;
+    const miniIcon = document.getElementById('preview-mini-icon');
+    miniIcon.textContent = "laptop_chromebook";
+    miniIcon.className = "material-symbols-outlined text-[32px] text-outline";
+    logAction("Đã gỡ bỏ tệp Logo OEM. Windows sẽ hiển thị logo mặc định của Microsoft.");
+  }
+
+  function applyOEMChanges() {
+    const mfg = document.getElementById('input-manufacturer').value;
+    const model = document.getElementById('input-model').value;
+    logAction(`ĐÃ GHI THÀNH CÔNG: Manufacturer="${mfg}", Model="${model}" vào Registry. Windows Settings cập nhật tức thì!`);
+  }
+
+  function backupRegistry() {
+    const now = new Date().toISOString().replace(/[:.]/g, '-');
+    logAction(`ĐÃ XUẤT SAO LƯU: C:\\VUONGTT_Tools\\Backups\\OEM_Backup_${now}.reg hoàn tất!`);
+  }
+
+  function resetDefaults() {
+    document.getElementById('input-manufacturer').value = "Microsoft Corporation";
+    document.getElementById('input-model').value = "Standard PC System";
+    document.getElementById('input-phone').value = "";
+    document.getElementById('input-hours').value = "";
+    document.getElementById('input-url').value = "";
+    document.getElementById('input-owner').value = "Windows User";
+    document.getElementById('input-org').value = "WORKGROUP";
+    clearLogo();
+    updatePreview();
+    logAction("ĐÃ XÓA TOÀN BỘ KHÓA OEM: Khôi phục cấu hình mặc định ban đầu của Windows.");
+  }
+
+  function logAction(msg) {
+    const consoleEl = document.getElementById('console-log-msg');
+    if (consoleEl) {
+      consoleEl.textContent = msg;
+    }
+  }
+</script></main></div></body></html>

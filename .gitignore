@@ -11,4 +11,6 @@ obj/
 launcher_info.txt
 *.lic
 *.old*.exe
+src-tauri/target/
+*.zip
 
