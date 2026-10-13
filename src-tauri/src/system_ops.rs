@@ -83,17 +83,20 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     if act == "admin_login" {
         let raw_pass = extract_json_field(params_json, "password").unwrap_or("");
         let trimmed = raw_pass.trim();
+        if trimmed.is_empty() {
+            return (false, "Vui lòng nhập mật khẩu Quản Trị Viên!".to_string());
+        }
         let normalized = strip_accents(&trimmed.to_lowercase());
         let clean = trimmed.to_lowercase();
 
-        // Chấp nhận tất cả biến thể mật khẩu hợp lệ:
-        // - vuongtt (hỗ trợ cả Unikey telex gõ nhầm thành vươngtt, chữ hoa VuongTT, VUONGTT)
-        // - admin (hỗ trợ Admin, ADMIN, Administrator)
-        // - Admin@2026 / admin@2026 / Vuongtt@2026 / vuongtt@2026
-        // - admin2026 / vuongtt2026 / admin123 / vuongtt123
-        // - 123456 / 12345678 / 0328808425
-        // - Bấm Enter trực tiếp / mật khẩu trống nếu người dùng muốn truy cập nhanh
-        let is_ok = normalized == "vuongtt"
+        // Mật khẩu Admin cài đặt mặc định chính thức: Vtt@2403
+        // Hỗ trợ không phân biệt hoa thường (vtt@2403, VTT@2403) và các tài khoản quản trị viên
+        let is_ok = trimmed == "Vtt@2403"
+            || clean == "vtt@2403"
+            || normalized == "vtt@2403"
+            || clean == "vtt2403"
+            || normalized == "vtt2403"
+            || normalized == "vuongtt"
             || normalized == "vươngtt"
             || normalized == "vuong"
             || normalized == "vương"
@@ -111,8 +114,7 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
             || clean == "admin@2026"
             || clean == "vuongtt@2026"
             || clean == "admin"
-            || clean == "vuongtt"
-            || normalized.is_empty();
+            || clean == "vuongtt";
 
         return if is_ok {
             (true, "Đăng nhập Quản Trị Viên thành công!".to_string())
@@ -693,6 +695,10 @@ mod tests {
     #[test]
     fn test_admin_login_variations() {
         let test_passwords = [
+            "Vtt@2403",
+            "vtt@2403",
+            "VTT@2403",
+            "vtt2403",
             "vuongtt",
             "Vuongtt",
             "VUONGTT",
@@ -711,7 +717,6 @@ mod tests {
             "123456",
             "12345678",
             "0328808425",
-            "",
         ];
 
         for pwd in test_passwords {
@@ -723,7 +728,11 @@ mod tests {
             assert!(ok, "Password '{}' should succeed but got: {}", pwd, msg);
         }
 
-        // Test wrong password
+        // Test empty password and wrong password
+        let empty_body = r#"{"command":"admin_login","payload":{"password":""},"password":""}"#;
+        let (empty_ok, _) = execute_system_action("admin_login", empty_body);
+        assert!(!empty_ok, "Empty password should fail");
+
         let wrong_body = r#"{"command":"admin_login","payload":{"password":"wrongpass_xyz"},"password":"wrongpass_xyz"}"#;
         let (wrong_ok, _) = execute_system_action("admin_login", wrong_body);
         assert!(!wrong_ok, "Wrong password should fail");

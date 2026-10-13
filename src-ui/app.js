@@ -734,7 +734,7 @@
       btnUpdate.addEventListener("click", async () => {
         showToast("Kiểm tra cập nhật", "Đang kết nối máy chủ GitHub kiểm tra phiên bản mới...", "info");
         const res = await invokeRust("run_system_action", { actionId: "check_update", params: {} });
-        showToast("Cập nhật hệ thống", (res && res.message) || "Bạn đang sử dụng phiên bản Rust Tauri v2 mới nhất!", "success");
+        showToast("Cập nhật hệ thống", (res && res.message) || "Bạn đang sử dụng phiên bản VUONGTT Toolkit mới nhất!", "success");
       });
     }
 

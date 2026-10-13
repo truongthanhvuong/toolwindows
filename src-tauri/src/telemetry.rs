@@ -102,10 +102,17 @@ fn get_global_snapshot() -> Arc<Mutex<HardwareSnapshot>> {
     arc
 }
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 fn run_telemetry_background_worker(state: Arc<Mutex<HardwareSnapshot>>) {
+    let mut is_first = true;
     loop {
-        // Thực thi script PowerShell lấy telemetry thực tế của chính máy này
-        let ps_cmd = r#"
+        // Thực thi script PowerShell ngầm hoàn toàn không hiện cửa sổ
+        let ps_cmd = if is_first {
+            r#"
 $os = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName
 $build = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuild
 $disp = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').DisplayVersion
@@ -118,20 +125,30 @@ $net = (Get-CimInstance Win32_NetworkAdapter -Filter 'NetConnectionStatus=2' | S
 $bat = (Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty EstimatedChargeRemaining)
 $procs = @(Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 5 Id, ProcessName, @{N='mem_mb';E={[math]::Round($_.WorkingSet64/1MB)}} | ForEach-Object { [PSCustomObject]@{ name=$_.ProcessName; pid=$_.Id; memory_mb=$_.mem_mb; cpu_percent=0.5 } })
 ConvertTo-Json -Compress ([PSCustomObject]@{ os=$os; build=$build; disp=$disp; cpu=$cpu; mhz=$mhz; cores=$cores; gpu=$gpu; disk=$disk; net=$net; bat=$bat; procs=$procs })
-"#;
+"#
+        } else {
+            r#"
+$bat = (Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty EstimatedChargeRemaining)
+$procs = @(Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 5 Id, ProcessName, @{N='mem_mb';E={[math]::Round($_.WorkingSet64/1MB)}} | ForEach-Object { [PSCustomObject]@{ name=$_.ProcessName; pid=$_.Id; memory_mb=$_.mem_mb; cpu_percent=0.5 } })
+ConvertTo-Json -Compress ([PSCustomObject]@{ bat=$bat; procs=$procs })
+"#
+        };
 
-        if let Ok(output) = std::process::Command::new("powershell")
-            .args(&["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd])
-            .output()
-        {
+        let mut cmd = std::process::Command::new("powershell");
+        cmd.args(&["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+        if let Ok(output) = cmd.output() {
             if output.status.success() {
                 let text = String::from_utf8_lossy(&output.stdout);
                 parse_and_update_snapshot(&text, &state);
+                is_first = false;
             }
         }
 
-        // Cập nhật lại sau mỗi 4 giây
-        thread::sleep(Duration::from_secs(4));
+        // Cập nhật lại sau mỗi 6 giây, hoàn toàn ngầm không bao giờ nháy cửa sổ
+        thread::sleep(Duration::from_secs(6));
     }
 }
 

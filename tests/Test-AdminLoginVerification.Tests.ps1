@@ -25,6 +25,10 @@ Write-Host ">>> BẮT ĐẦU CHẠY BỘ TEST XÁC THỰC MẬT KHẨU ADMIN POR
 . "$PSScriptRoot\..\src\Core\LicenseManager.ps1"
 
 $validVariants = @(
+    "Vtt@2403",
+    "vtt@2403",
+    "VTT@2403",
+    "vtt2403",
     "vuongtt",
     "Vuongtt",
     "VUONGTT",
@@ -47,8 +51,9 @@ foreach ($pwd in $validVariants) {
     Assert-Condition -TestName "Mật khẩu '$pwd' phải đăng nhập thành công" -Condition ($res.IsValid -eq $true) -Message "Mật khẩu hợp lệ nhưng bị từ chối"
 }
 
-# Test mật khẩu sai
+# Test mật khẩu sai và chuỗi rỗng
 $invalidVariants = @(
+    "",
     "sai_mat_khau_123",
     "random_pass_xyz",
     "wrong_admin"

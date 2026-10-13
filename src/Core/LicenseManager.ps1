@@ -186,6 +186,7 @@ function Test-VUONGTTAdminAuth {
     $normalized = -join $chars
 
     $masterList = @(
+        "vtt@2403", "vtt2403",
         "vuongtt", "admin", "admin@2026", "vuongtt@2026",
         "admin2026", "vuongtt2026", "admin123", "vuongtt123",
         "123456", "12345678", "0328808425"

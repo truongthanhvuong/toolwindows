@@ -229,13 +229,13 @@ fn main() {
 
     // 1. Smoke test argument
     if args.iter().any(|a| a == "--smoke-test") {
-        println!("VUONGTT Tool Pro 2026 — Rust (Tauri v2) Engine: SMOKE TEST PASS 100%");
+        println!("VUONGTT Toolkit Engine: SMOKE TEST PASS 100%");
         std::process::exit(0);
     }
 
     // 2. Version argument
     if args.iter().any(|a| a == "--version" || a == "-v") {
-        println!("VUONGTT Tool Pro 2026 v20.5.909.101 (Rust Tauri v2)");
+        println!("VUONGTT Toolkit v20.5.909.102");
         std::process::exit(0);
     }
 
