@@ -25,13 +25,41 @@ fn handle_client(
     last_activity: Arc<Mutex<Instant>>,
     has_connected: Arc<AtomicBool>,
 ) {
-    let mut buffer = [0u8; 8192];
-    let bytes_read = match stream.read(&mut buffer) {
-        Ok(n) if n > 0 => n,
-        _ => return,
-    };
+    let mut buffer = Vec::with_capacity(8192);
+    let mut chunk = [0u8; 4096];
+    loop {
+        match stream.read(&mut chunk) {
+            Ok(n) if n > 0 => {
+                buffer.extend_from_slice(&chunk[..n]);
+                let s = String::from_utf8_lossy(&buffer);
+                if let Some(pos) = s.find("\r\n\r\n") {
+                    if s[..pos].to_lowercase().contains("expect: 100-continue") {
+                        let _ = stream.write_all(b"HTTP/1.1 100 Continue\r\n\r\n");
+                        let _ = stream.flush();
+                    }
+                    let cl = s[..pos]
+                        .lines()
+                        .find(|l| l.to_lowercase().starts_with("content-length:"))
+                        .and_then(|l| l.split(':').nth(1))
+                        .and_then(|v| v.trim().parse::<usize>().ok())
+                        .unwrap_or(0);
+                    let body_len = buffer.len() - (pos + 4);
+                    if body_len >= cl {
+                        break;
+                    }
+                } else if buffer.len() > 32768 {
+                    break;
+                }
+            }
+            _ => break,
+        }
+    }
 
-    let req = String::from_utf8_lossy(&buffer[..bytes_read]);
+    if buffer.is_empty() {
+        return;
+    }
+
+    let req = String::from_utf8_lossy(&buffer);
     let first_line = req.lines().next().unwrap_or("");
 
     // 1. CORS Preflight
@@ -122,13 +150,15 @@ fn handle_client(
         // Parse JSON Body
         let body = if let Some(idx) = req.find("\r\n\r\n") {
             &req[idx + 4..]
+        } else if let Some(idx) = req.find("\n\n") {
+            &req[idx + 2..]
         } else {
-            ""
+            &req
         };
 
         let mut json_resp = "{\"success\":true,\"message\":\"OK\"}".to_string();
 
-        if body.contains("get_system_telemetry") {
+        if req.contains("get_system_telemetry") {
             let telem = telemetry::collect_telemetry();
             json_resp = telem.to_json();
         } else if body.contains("get_disk_smart_telemetry") {
@@ -205,7 +235,7 @@ fn main() {
 
     // 2. Version argument
     if args.iter().any(|a| a == "--version" || a == "-v") {
-        println!("VUONGTT Tool Pro 2026 v20.5.909.98 (Rust Tauri v2)");
+        println!("VUONGTT Tool Pro 2026 v20.5.909.99 (Rust Tauri v2)");
         std::process::exit(0);
     }
 

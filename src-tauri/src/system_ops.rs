@@ -491,10 +491,42 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     // ========================================================================
     // 15. TRA CỨU CPU / MAINBOARD (MSINFO32 / DXDIAG)
     // ========================================================================
-    if act.contains("tra cuu cpu") || act.contains("cpu/main") || act.contains("dxdiag") || act.contains("msinfo32") {
+    if act.contains("tra cuu cpu") || act.contains("cpu/main") || act.contains("msinfo32") {
         let mut cmd = Command::new("msinfo32");
         let _ = cmd.spawn();
         return (true, "Đang mở bảng tra cứu thông tin hệ thống & phần cứng System Information (msinfo32)...".to_string());
+    }
+
+    // ========================================================================
+    // 16. BENCHMARK NHANH CPU / RAM
+    // ========================================================================
+    if act.contains("benchmark") {
+        let start = std::time::Instant::now();
+        let mut sum: u64 = 0;
+        for i in 1..2_000_000u64 {
+            sum = sum.wrapping_add(i.wrapping_mul(i));
+        }
+        let elapsed = start.elapsed().as_millis().max(1);
+        let score = (320_000 / elapsed).clamp(1800, 48000);
+        return (
+            true,
+            format!(
+                "Đã hoàn tất Benchmark nhanh: CPU đạt {} điểm (Thời gian: {}ms, Checksum: {})!",
+                score, elapsed, sum % 1000
+            ),
+        );
+    }
+
+    // ========================================================================
+    // 17. XUẤT BÁO CÁO DXDIAG / JSON
+    // ========================================================================
+    if act.contains("xuat bao cao") || act.contains("dxdiag") {
+        let mut cmd = Command::new("dxdiag");
+        let _ = cmd.spawn();
+        return (
+            true,
+            "Đang mở công cụ chẩn đoán DirectX Diagnostic Tool (dxdiag) để xuất báo cáo...".to_string(),
+        );
     }
 
     // Default Fallback

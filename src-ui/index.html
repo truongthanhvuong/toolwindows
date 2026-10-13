@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Tool Pro 2026</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.98 • Rust Tauri v2</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.99 • Rust Tauri v2</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -295,14 +295,14 @@
 </div>
 <div>
 <div class="font-label-md text-label-md text-on-surface">CPU Core Profile</div>
-<div class="font-label-sm text-label-sm text-on-surface-variant">Intel Core i9-13900K</div>
+<div id="mon-cpu-name" class="font-label-sm text-label-sm text-on-surface-variant truncate max-w-[200px]" title="Vi xử lý">Đang nhận diện CPU...</div>
 </div>
 </div>
 <span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">north_east</span>
 </div>
 <div class="flex items-baseline justify-between mt-space-xs">
-<div class="font-metric-num text-metric-num text-on-surface">40<span class="text-headline-md font-body-md text-primary">%</span></div>
-<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-code-sm text-code-sm">5.20 GHz Sync</span>
+<div id="mon-cpu-metric" class="font-metric-num text-metric-num text-on-surface">--<span class="text-headline-md font-body-md text-primary">%</span></div>
+<span id="mon-cpu-badge" class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-code-sm text-code-sm">Hoạt động</span>
 </div>
 <div class="w-full h-9 my-space-sm flex items-end">
 <svg class="w-full h-8 text-primary overflow-visible" preserveaspectratio="none" viewbox="0 0 240 32">
@@ -333,14 +333,14 @@
 </div>
 <div>
 <div class="font-label-md text-label-md text-on-surface">Bộ Nhớ RAM</div>
-<div class="font-label-sm text-label-sm text-on-surface-variant">32 GB DDR5 6000MHz</div>
+<div id="mon-ram-name" class="font-label-sm text-label-sm text-on-surface-variant">Đang đo dung lượng...</div>
 </div>
 </div>
 <span class="px-2 py-0.5 rounded-full bg-tertiary-container/40 text-on-tertiary-container font-code-sm text-code-sm">Normal</span>
 </div>
 <div class="flex items-baseline justify-between mt-space-xs">
-<div class="font-metric-num text-metric-num text-on-surface">9.9 <span class="text-headline-md font-body-md text-outline">/ 32 GB</span></div>
-<span class="font-code-sm text-code-sm text-tertiary">30.9% In Use</span>
+<div id="mon-ram-metric" class="font-metric-num text-metric-num text-on-surface">-- <span class="text-headline-md font-body-md text-outline">/ -- GB</span></div>
+<span id="mon-ram-badge" class="font-code-sm text-code-sm text-tertiary">--% In Use</span>
 </div>
 <div class="w-full bg-surface-container-lowest h-2 rounded-full my-space-sm overflow-hidden flex">
 <div class="h-full bg-primary" style="width: 17%"></div>
@@ -370,14 +370,14 @@
 </div>
 <div>
 <div class="font-label-md text-label-md text-on-surface">GPU Đồ Họa</div>
-<div class="font-label-sm text-label-sm text-on-surface-variant truncate max-w-[150px]">NVIDIA RTX 4080 / Display</div>
+<div id="mon-gpu-name" class="font-label-sm text-label-sm text-on-surface-variant truncate max-w-[150px]">Đang dò tìm GPU...</div>
 </div>
 </div>
 <span class="material-symbols-outlined text-outline group-hover:text-secondary transition-colors text-[18px]">tune</span>
 </div>
 <div class="flex items-baseline justify-between mt-space-xs">
-<div class="font-metric-num text-metric-num text-on-surface">2<span class="text-headline-md font-body-md text-secondary">%</span></div>
-<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-sm text-code-sm">Idle Core</span>
+<div id="mon-gpu-metric" class="font-metric-num text-metric-num text-on-surface">--<span class="text-headline-md font-body-md text-secondary">%</span></div>
+<span id="mon-gpu-badge" class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-sm text-code-sm">Hoạt Động</span>
 </div>
 <div class="w-full h-9 my-space-sm flex items-end">
 <svg class="w-full h-8 text-secondary overflow-visible" preserveaspectratio="none" viewbox="0 0 240 32">
@@ -388,7 +388,7 @@
 <div class="grid grid-cols-3 gap-2 pt-space-xs bg-surface-container-lowest/50 p-2.5 rounded-lg text-center">
 <div>
 <div class="font-label-sm text-label-sm text-outline">VRAM</div>
-<div class="font-label-md text-label-md text-on-surface">2.0 / 16 GB</div>
+<div class="font-label-md text-label-md text-on-surface">Đang đo</div>
 </div>
 <div>
 <div class="font-label-sm text-label-sm text-outline">Average</div>
@@ -408,17 +408,17 @@
 </div>
 <div>
 <div class="font-label-md text-label-md text-on-surface">Ổ Cứng Hệ Thống</div>
-<div class="font-label-sm text-label-sm text-on-surface-variant">NVMe Samsung 990 Pro</div>
+<div id="mon-disk-name" class="font-label-sm text-label-sm text-on-surface-variant truncate max-w-[150px]">Đang đọc ổ đĩa...</div>
 </div>
 </div>
-<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-code-sm text-code-sm">PCIe 4.0</span>
+<span id="mon-disk-badge" class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-code-sm text-code-sm">Fixed</span>
 </div>
 <div class="flex items-baseline justify-between mt-space-xs">
-<div class="font-metric-num text-metric-num text-on-surface">100 <span class="text-headline-md font-body-md text-outline">GB Trống</span></div>
-<span class="font-code-sm text-code-sm text-outline">Tổng 512 GB</span>
+<div id="mon-disk-metric" class="font-metric-num text-metric-num text-on-surface">-- <span class="text-headline-md font-body-md text-outline">GB Trống</span></div>
+<span id="mon-disk-total" class="font-code-sm text-code-sm text-outline">Tổng -- GB</span>
 </div>
 <div class="w-full bg-surface-container-lowest h-2 rounded-full my-space-sm overflow-hidden">
-<div class="h-full bg-primary-fixed" style="width: 80.4%"></div>
+<div id="mon-disk-bar" class="h-full bg-primary-fixed" style="width: 70%"></div>
 </div>
 <div class="grid grid-cols-3 gap-2 pt-space-xs bg-surface-container-lowest/50 p-2.5 rounded-lg text-center">
 <div>
@@ -443,15 +443,15 @@
 </div>
 <div>
 <div class="font-label-md text-label-md text-on-surface">Mạng &amp; Kết Nối</div>
-<div class="font-label-sm text-label-sm text-on-surface-variant">Intel Wi-Fi 6E AX211</div>
+<div id="mon-net-name" class="font-label-sm text-label-sm text-on-surface-variant truncate max-w-[150px]">Đang kiểm tra mạng...</div>
 </div>
 </div>
 <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-tertiary-container/30 text-on-tertiary-container font-code-sm text-code-sm">
-<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>Online
-        </div>
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span><span id="mon-net-badge">Online</span>
+</div>
 </div>
 <div class="flex items-baseline justify-between mt-space-xs">
-<div class="font-metric-num text-metric-num text-on-surface">2.7 <span class="text-headline-md font-body-md text-tertiary-fixed">KB/s</span></div>
+<div id="mon-net-metric" class="font-metric-num text-metric-num text-on-surface">-- <span class="text-headline-md font-body-md text-tertiary-fixed">KB/s</span></div>
 <span class="font-code-sm text-code-sm text-outline">Latency: 12ms</span>
 </div>
 <div class="w-full h-9 my-space-sm flex items-end">
@@ -483,14 +483,14 @@
 </div>
 <div>
 <div class="font-label-md text-label-md text-on-surface">Nguồn Điện &amp; Pin</div>
-<div class="font-label-sm text-label-sm text-on-surface-variant">AC Adapter 240W</div>
+<div id="mon-power-name" class="font-label-sm text-label-sm text-on-surface-variant truncate max-w-[150px]">Đang nhận diện...</div>
 </div>
 </div>
 <span class="material-symbols-outlined text-tertiary text-[20px]">power</span>
 </div>
 <div class="flex items-baseline justify-between mt-space-xs">
-<div class="font-metric-num text-metric-num text-on-surface">100<span class="text-headline-md font-body-md text-tertiary">%</span></div>
-<span class="font-code-sm text-code-sm text-tertiary">Fully Charged</span>
+<div id="mon-power-metric" class="font-metric-num text-metric-num text-on-surface">--<span class="text-headline-md font-body-md text-tertiary">%</span></div>
+<span id="mon-power-badge" class="font-code-sm text-code-sm text-tertiary">Ổn Định</span>
 </div>
 <div class="w-full bg-surface-container-lowest h-2 rounded-full my-space-sm overflow-hidden">
 <div class="h-full bg-tertiary" style="width: 100%"></div>
@@ -502,11 +502,11 @@
 </div>
 <div>
 <div class="font-label-sm text-label-sm text-outline">Độ chai pin</div>
-<div class="font-label-md text-label-md text-tertiary">100% Tốt</div>
+<div id="mon-power-health" class="font-label-md text-label-md text-tertiary">100% Tốt</div>
 </div>
 <div>
 <div class="font-label-sm text-label-sm text-outline">Chu kỳ sạc</div>
-<div class="font-label-md text-label-md text-on-surface">34 lần</div>
+<div class="font-label-md text-label-md text-on-surface">Tiêu Chuẩn</div>
 </div>
 </div>
 </div>
@@ -531,7 +531,7 @@
 <th class="py-2 px-3 text-right rounded-r-lg">Trạng thái</th>
 </tr>
 </thead>
-<tbody class="divide-y divide-transparent font-body-md text-body-md">
+<tbody id="mon-top-procs" class="divide-y divide-transparent font-body-md text-body-md">
 <tr class="hover:bg-surface-container transition-colors">
 <td class="py-2.5 px-3 flex items-center gap-2.5">
 <div class="w-6 h-6 rounded bg-surface-container-highest flex items-center justify-center text-primary">
@@ -1105,7 +1105,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span>Build: v20.5.909.98</span>
+<span>Build: v20.5.909.99</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>

@@ -842,23 +842,123 @@
     const view01 = document.getElementById("view-sys-monitor");
     if (!view01) return;
 
+    // 1. OS Header Subtitle
     const osSubtitle = view01.querySelector("p.font-body-md.text-on-surface-variant");
     if (osSubtitle && data.os_summary) {
       osSubtitle.textContent = data.os_summary;
     }
 
-    const metricEls = view01.querySelectorAll(".font-metric-num.text-metric-num");
-    if (metricEls.length >= 4) {
-      if (data.cpu_percent !== undefined) {
-        metricEls[0].innerHTML = `${Math.round(data.cpu_percent)}<span class="text-headline-md font-body-md text-primary">%</span>`;
-      }
-      if (data.ram_used_gb !== undefined && data.ram_total_gb !== undefined) {
-        metricEls[1].innerHTML = `${data.ram_used_gb.toFixed(1)} <span class="text-headline-md font-body-md text-outline">/ ${Math.round(data.ram_total_gb)} GB</span>`;
-      }
-      if (data.disk_free_gb !== undefined) {
-        metricEls[3].innerHTML = `${Math.round(data.disk_free_gb)} <span class="text-headline-md font-body-md text-outline">GB Trống</span>`;
-      }
+    // 2. CPU Card
+    const cpuNameEl = document.getElementById("mon-cpu-name");
+    if (cpuNameEl && data.cpu_name) {
+      cpuNameEl.textContent = data.cpu_name;
+      cpuNameEl.title = data.cpu_name;
     }
+    const cpuMetricEl = document.getElementById("mon-cpu-metric");
+    if (cpuMetricEl && data.cpu_percent !== undefined) {
+      cpuMetricEl.innerHTML = `${Math.round(data.cpu_percent)}<span class="text-headline-md font-body-md text-primary">%</span>`;
+    }
+    const cpuBadgeEl = document.getElementById("mon-cpu-badge");
+    if (cpuBadgeEl && data.cpu_mhz) {
+      cpuBadgeEl.textContent = `${data.cpu_mhz} MHz (${data.cpu_cores || 4} Cores)`;
+    }
+
+    // 3. RAM Card
+    const ramNameEl = document.getElementById("mon-ram-name");
+    if (ramNameEl && data.ram_total_gb) {
+      ramNameEl.textContent = `${Math.round(data.ram_total_gb)} GB System Memory`;
+    }
+    const ramMetricEl = document.getElementById("mon-ram-metric");
+    if (ramMetricEl && data.ram_used_gb !== undefined && data.ram_total_gb !== undefined) {
+      ramMetricEl.innerHTML = `${data.ram_used_gb.toFixed(1)} <span class="text-headline-md font-body-md text-outline">/ ${Math.round(data.ram_total_gb)} GB</span>`;
+    }
+    const ramBadgeEl = document.getElementById("mon-ram-badge");
+    if (ramBadgeEl && data.ram_percent !== undefined) {
+      ramBadgeEl.textContent = `${Math.round(data.ram_percent)}% In Use`;
+    }
+
+    // 4. GPU Card
+    const gpuNameEl = document.getElementById("mon-gpu-name");
+    if (gpuNameEl && data.gpu_name) {
+      gpuNameEl.textContent = data.gpu_name;
+      gpuNameEl.title = data.gpu_name;
+    }
+    const gpuMetricEl = document.getElementById("mon-gpu-metric");
+    if (gpuMetricEl && data.gpu_percent !== undefined) {
+      gpuMetricEl.innerHTML = `${Math.round(data.gpu_percent)}<span class="text-headline-md font-body-md text-secondary">%</span>`;
+    }
+
+    // 5. Disk Card
+    const diskNameEl = document.getElementById("mon-disk-name");
+    if (diskNameEl && data.disk_name) {
+      diskNameEl.textContent = data.disk_name;
+      diskNameEl.title = data.disk_name;
+    }
+    const diskBadgeEl = document.getElementById("mon-disk-badge");
+    if (diskBadgeEl && data.disk_interface) {
+      diskBadgeEl.textContent = data.disk_interface;
+    }
+    const diskMetricEl = document.getElementById("mon-disk-metric");
+    if (diskMetricEl && data.disk_free_gb !== undefined) {
+      diskMetricEl.innerHTML = `${Math.round(data.disk_free_gb)} <span class="text-headline-md font-body-md text-outline">GB Trống</span>`;
+    }
+    const diskTotalEl = document.getElementById("mon-disk-total");
+    if (diskTotalEl && data.disk_total_gb !== undefined) {
+      diskTotalEl.textContent = `Tổng ${Math.round(data.disk_total_gb)} GB`;
+    }
+
+    // 6. Network Card
+    const netNameEl = document.getElementById("mon-net-name");
+    if (netNameEl && data.net_name) {
+      netNameEl.textContent = data.net_name;
+      netNameEl.title = data.net_name;
+    }
+    const netMetricEl = document.getElementById("mon-net-metric");
+    if (netMetricEl && data.net_down_kb !== undefined) {
+      netMetricEl.innerHTML = `${data.net_down_kb.toFixed(1)} <span class="text-headline-md font-body-md text-tertiary-fixed">KB/s</span>`;
+    }
+
+    // 7. Power / Battery Card
+    const powerNameEl = document.getElementById("mon-power-name");
+    if (powerNameEl && data.power_source) {
+      powerNameEl.textContent = data.power_source;
+      powerNameEl.title = data.power_source;
+    }
+    const powerMetricEl = document.getElementById("mon-power-metric");
+    if (powerMetricEl && data.battery_percent !== undefined) {
+      powerMetricEl.innerHTML = `${data.battery_percent}<span class="text-headline-md font-body-md text-tertiary">%</span>`;
+    }
+    const powerHealthEl = document.getElementById("mon-power-health");
+    if (powerHealthEl && data.battery_health) {
+      powerHealthEl.textContent = data.battery_health;
+    }
+
+    // 8. Top Processes Table
+    const procsTbody = document.getElementById("mon-top-procs");
+    if (procsTbody && Array.isArray(data.top_processes) && data.top_processes.length > 0) {
+      procsTbody.innerHTML = data.top_processes.map((p) => `
+        <tr class="hover:bg-surface-container transition-colors">
+          <td class="py-2.5 px-3 flex items-center gap-2.5">
+            <div class="w-6 h-6 rounded bg-surface-container-highest flex items-center justify-center text-primary">
+              <span class="material-symbols-outlined text-[15px]">terminal</span>
+            </div>
+            <span class="font-label-md text-label-md text-on-surface truncate max-w-[180px]" title="${p.name}">${p.name}</span>
+          </td>
+          <td class="py-2.5 px-3 text-outline font-code-sm text-code-sm">${p.pid}</td>
+          <td class="py-2.5 px-3 text-on-surface">${(p.cpu_percent || 0.5).toFixed(1)}%</td>
+          <td class="py-2.5 px-3 text-primary font-semibold">${p.memory_mb} MB</td>
+          <td class="py-2.5 px-3 text-right">
+            <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-tertiary font-label-sm text-label-sm">Active</span>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    // 9. Update GPU and Disk labels on other screens if present
+    const cardGpuDriver = document.getElementById("card-gpu-driver-name");
+    if (cardGpuDriver && data.gpu_name) cardGpuDriver.textContent = data.gpu_name;
+    const cardPartDisk = document.getElementById("card-partition-disk-name");
+    if (cardPartDisk && data.disk_name) cardPartDisk.textContent = `Disk 0: ${data.disk_name}`;
   }
 
   // --- 9. HEARTBEAT & LIFECYCLE CONTROLLER ---
