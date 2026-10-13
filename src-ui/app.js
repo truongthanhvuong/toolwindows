@@ -99,6 +99,65 @@
 
   window.switchView = switchView;
 
+  // --- 3.1 NATIVE SYSTEM ACTION DISPATCHER ---
+  async function runToolkitAction(actionName, details) {
+    const raw = (actionName || "") + " " + (details || "");
+    const low = raw.toLowerCase();
+
+    let actionId = "";
+    if (low.includes("winsock") || low.includes("mạng") || low.includes("lan") || low.includes("rot mang") || low.includes("mất mạng")) {
+      actionId = "fix_network_freeze";
+    } else if (low.includes("admin ẩn") || low.includes("sid 500") || low.includes("bật / tắt admin") || low.includes("admin_an")) {
+      actionId = "enable_hidden_admin";
+    } else if (low.includes("safe mode") || low.includes("safeboot") || low.includes("bcd")) {
+      actionId = "safe_mode";
+    } else if (low.includes("win update") || low.includes("wuauserv") || low.includes("softwaredistribution")) {
+      actionId = "fix_win_update";
+    } else if (low.includes("prefetch") || low.includes("flush dns") || low.includes("dns")) {
+      actionId = "flush_dns_prefetch";
+    } else if (low.includes("mở khóa") || low.includes("unlock") || low.includes("taskmgr") || low.includes("regedit") || low.includes("cmd")) {
+      actionId = "unlock_system_tools";
+    } else if (low.includes("ram") || low.includes("bộ nhớ")) {
+      actionId = "optimize_ram";
+    } else if (low.includes("temp") || low.includes("rác") || low.includes("dọn dẹp") || low.includes("cache")) {
+      actionId = "don dep he thong";
+    } else if (low.includes("winsxs")) {
+      actionId = "clean_winsxs";
+    } else if (low.includes("compact os")) {
+      actionId = "compact_os";
+    } else if (low.includes("gpu") || low.includes("game mode")) {
+      actionId = "optimize_gpu";
+    } else if (low.includes("services rác") || low.includes("dịch vụ")) {
+      actionId = "disable_junk_services";
+    } else if (low.includes("fast startup")) {
+      actionId = "toggle_fast_startup";
+    } else if (low.includes("sfc") || low.includes("dism")) {
+      actionId = "sfc_dism";
+    } else {
+      actionId = actionName;
+    }
+
+    const consoleEl = document.getElementById("log-console");
+    if (consoleEl && typeof appendLog === "function") {
+      appendLog("EXEC", `Đang thực thi: ${actionName}...`, "text-secondary");
+    }
+
+    showToast("Thực Thi", `Đang thực hiện: ${actionName}...`, "info");
+
+    const res = await invokeRust("run_system_action", { actionId });
+    const msg = (res && res.message) || details || "Đã hoàn tất thao tác!";
+
+    if (consoleEl && typeof appendLog === "function") {
+      appendLog(res && res.success ? "SUCCESS" : "ERROR", msg, res && res.success ? "text-tertiary" : "text-error");
+    }
+
+    showToast(res && res.success ? "Hoàn Tất" : "Lỗi", msg, res && res.success ? "success" : "error");
+  }
+
+  window.runToolkitAction = runToolkitAction;
+  window.triggerAction = runToolkitAction;
+  window.applyAllUnlocks = () => runToolkitAction("unlock_system_tools", "Đã mở khóa toàn bộ Task Manager, Registry Editor và CMD thành công!");
+
   // --- 4. SUB-TAB ROUTE MAPPINGS (MAPPED 100% TO EXACT SECTION IDs) ---
   const subTabRouteMap = [
     { match: "Cấu Hình Máy", target: "view-sys-monitor" },

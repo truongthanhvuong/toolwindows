@@ -251,7 +251,7 @@ fn main() {
 
     // 2. Version argument
     if args.iter().any(|a| a == "--version" || a == "-v") {
-        println!("VUONGTT Toolkit v20.5.909.103");
+        println!("VUONGTT Toolkit v20.5.909.104");
         std::process::exit(0);
     }
 

@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.103</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.104</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -1105,7 +1105,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span>Build: v20.5.909.103</span>
+<span>Build: v20.5.909.104</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -2024,16 +2024,20 @@
 </div>
 <script>
   function triggerAction(message) {
-    const toast = document.getElementById('status-toast');
-    const toastMsg = document.getElementById('toast-message');
-    if (toast && toastMsg) {
-      toastMsg.innerText = message;
-      toast.classList.remove('hidden');
-      toast.classList.add('flex');
-      setTimeout(() => {
-        toast.classList.add('hidden');
-        toast.classList.remove('flex');
-      }, 4000);
+    if (window.runToolkitAction) {
+      window.runToolkitAction(message, message);
+    } else {
+      const toast = document.getElementById('status-toast');
+      const toastMsg = document.getElementById('toast-message');
+      if (toast && toastMsg) {
+        toastMsg.innerText = message;
+        toast.classList.remove('hidden');
+        toast.classList.add('flex');
+        setTimeout(() => {
+          toast.classList.add('hidden');
+          toast.classList.remove('flex');
+        }, 4000);
+      }
     }
   }
 
@@ -7443,10 +7447,14 @@
   }
 
   function triggerAction(actionName, details) {
-    appendLog('EXEC', 'Bắt đầu thao tác: ' + actionName + '...', 'text-secondary');
-    setTimeout(() => {
-      appendLog('SUCCESS', details, 'text-tertiary');
-    }, 450);
+    if (window.runToolkitAction) {
+      window.runToolkitAction(actionName, details);
+    } else {
+      appendLog('EXEC', 'Bắt đầu thao tác: ' + actionName + '...', 'text-secondary');
+      setTimeout(() => {
+        appendLog('SUCCESS', details, 'text-tertiary');
+      }, 450);
+    }
   }
 
   function copyCredentials() {
@@ -7465,10 +7473,14 @@
   }
 
   function applyAllUnlocks() {
-    appendLog('BATCH_UNLOCK', 'Bắt đầu mở khóa toàn bộ chính sách Taskmgr, Regedit, CMD...', 'text-secondary');
-    setTimeout(() => {
-      appendLog('SUCCESS', 'Mở khóa toàn bộ Registry và xóa virus shortcut thành công.', 'text-tertiary');
-    }, 600);
+    if (window.runToolkitAction) {
+      window.runToolkitAction('unlock_system_tools', 'Đã mở khóa toàn bộ Task Manager, Registry Editor và CMD thành công!');
+    } else {
+      appendLog('BATCH_UNLOCK', 'Bắt đầu mở khóa toàn bộ chính sách Taskmgr, Regedit, CMD...', 'text-secondary');
+      setTimeout(() => {
+        appendLog('SUCCESS', 'Mở khóa toàn bộ Registry và xóa virus shortcut thành công.', 'text-tertiary');
+      }, 600);
+    }
   }
 
   function clearLogs() {

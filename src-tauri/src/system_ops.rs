@@ -524,6 +524,84 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     }
 
     // ========================================================================
+    // 9.1 SỬA LỖI WINDOWS UPDATE (PURGE CACHE & RESET SERVICES)
+    // ========================================================================
+    if act.contains("fix_win_update") || act.contains("win update") || act.contains("wuauserv") {
+        let ps_code = r#"
+            Stop-Service wuauserv, bits, cryptsvc -Force -ErrorAction SilentlyContinue
+            Remove-Item 'C:\Windows\SoftwareDistribution\Download\*' -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item 'C:\Windows\System32\catroot2\*' -Recurse -Force -ErrorAction SilentlyContinue
+            Start-Service wuauserv, bits, cryptsvc -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã làm sạch bộ nhớ đệm Windows Update (SoftwareDistribution & Catroot2) và khởi động lại dịch vụ thành công!".to_string());
+    }
+
+    // ========================================================================
+    // 9.2 KHỞI ĐỘNG VÀO SAFE MODE QUA BCD
+    // ========================================================================
+    if act.contains("safe_mode") || act.contains("safeboot") || act.contains("safe mode") {
+        let mut cmd = Command::new("bcdedit");
+        cmd.args(["/set", "{current}", "safeboot", "network"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã cấu hình BCD: Máy sẽ tự động vào chế độ Safe Mode with Networking ở lần khởi động tới!".to_string());
+    }
+
+    // ========================================================================
+    // 9.3 MỞ KHÓA TOÀN BỘ CÔNG CỤ HỆ THỐNG (TASKMGR, REGEDIT, CMD) & DIỆT SHORTCUT
+    // ========================================================================
+    if act.contains("unlock_system_tools") || act.contains("unlock") || act.contains("mo khoa") || act.contains("taskmgr") || act.contains("regedit") {
+        let ps_code = r#"
+            $paths = @(
+                'HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\System',
+                'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System',
+                'HKCU:\Software\Policies\Microsoft\Windows\System'
+            )
+            foreach ($p in $paths) {
+                Remove-ItemProperty -Path $p -Name 'DisableTaskMgr' -Force -ErrorAction SilentlyContinue
+                Remove-ItemProperty -Path $p -Name 'DisableRegistryTools' -Force -ErrorAction SilentlyContinue
+                Remove-ItemProperty -Path $p -Name 'DisableCMD' -Force -ErrorAction SilentlyContinue
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã mở khóa toàn bộ Task Manager, Registry Editor, CMD và gỡ bỏ hạn chế chính sách độc hại thành công!".to_string());
+    }
+
+    // ========================================================================
+    // 9.4 BẬT TÀI KHOẢN ADMINISTRATOR ẨN (SID 500)
+    // ========================================================================
+    if act.contains("admin an") || act.contains("admin_an") || act.contains("sid 500") || act.contains("enable_hidden_admin") {
+        let mut cmd = Command::new("net");
+        cmd.args(["user", "administrator", "/active:yes"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã kích hoạt tài khoản Built-in Administrator tối cao (SID 500) thành công!".to_string());
+    }
+
+    // ========================================================================
+    // 9.5 XÓA FLUSH DNS & PREFETCH
+    // ========================================================================
+    if act.contains("prefetch") || act.contains("flush_dns") || act.contains("thong luong mang") {
+        let mut cmd = Command::new("cmd");
+        cmd.args(["/c", "ipconfig /flushdns & del /f /q C:\\Windows\\Prefetch\\* >nul 2>&1"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã làm sạch bộ nhớ đệm phân giải DNS và xóa tệp Prefetch cũ thành công!".to_string());
+    }
+
+    // ========================================================================
     // 10. QUẢN LÝ DRIVER & THIẾT BỊ PHẦN CỨNG
     // ========================================================================
     if act.contains("driver") || act.contains("thiet bi") {
