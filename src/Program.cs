@@ -7,8 +7,6 @@ using System.Windows.Forms;
 using System.Threading;
 using System.Drawing;
 using System.Net;
-using System.Management.Automation;
-using System.Management.Automation.Runspaces;
 
 [assembly: AssemblyTitle("VUONGTT Tool Pro 2026")]
 [assembly: AssemblyDescription("Bộ công cụ kỹ thuật viên đa năng VUONGTT Tool Pro 2026")]
@@ -18,8 +16,8 @@ using System.Management.Automation.Runspaces;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.106")]
-[assembly: AssemblyFileVersion("20.5.909.106")]
+[assembly: AssemblyVersion("20.5.909.107")]
+[assembly: AssemblyFileVersion("20.5.909.107")]
 
 namespace VUONGTT
 {
@@ -333,22 +331,14 @@ namespace VUONGTT
                 }
                 catch { }
 
-                // CƠ CHẾ 1: C# NATIVE IN-PROCESS HOST (KHỞI ĐỘNG TỨC THÌ, IN-MEMORY, KHÔNG NHÁY PROCESS NGOÀI)
-                if (TryLaunchInProcess(scriptPath, currentExe, isSmokeTest, isLiveMode))
-                {
-                    if (isLiveMode)
-                    {
-                        CleanupOnExit(currentExe, extractedRuntimeDir);
-                    }
-                    return;
-                }
-
-                // CƠ CHẾ 2 (FALLBACK DỰ PHÒNG): Khởi động PowerShell với chế độ Single Thread Apartment (-Sta)
+                // Khởi động PowerShell với chế độ Single Thread Apartment (-Sta), ẩn console 100% không nháy
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = "powershell.exe";
-                psi.Arguments = string.Format("-NoProfile -ExecutionPolicy Bypass -Sta -WindowStyle Hidden -File \"{0}\" \"{1}\"{2}", scriptPath, currentExe, isLiveMode ? " --live" : "");
+                psi.Arguments = string.Format("-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Sta -WindowStyle Hidden -File \"{0}\" \"{1}\"{2}", scriptPath, currentExe, isLiveMode ? " --live" : "");
                 psi.WorkingDirectory = runtimeDir;
                 psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
                 psi.CreateNoWindow = true;
                 psi.UseShellExecute = false;
                 psi.EnvironmentVariables["VUONGTT_ORIGINAL_EXE"] = currentExe;
@@ -828,61 +818,6 @@ namespace VUONGTT
                 Process.Start(psi);
             }
             catch { }
-        }
-
-        /// <summary>
-        /// Khởi chạy giao diện WPF và kịch bản In-Process trực tiếp qua System.Management.Automation
-        /// Triệt tiêu 100% hiện tượng nháy console và tăng tốc mở ứng dụng tức thì.
-        /// </summary>
-        private static bool TryLaunchInProcess(string scriptPath, string currentExe, bool isSmokeTest, bool isLiveMode)
-        {
-            if (isSmokeTest)
-            {
-                CloseSplash();
-                Console.WriteLine("VUONGTT Toolkit C# Native Engine: SMOKE TEST PASS 100%");
-                return true;
-            }
-
-            try
-            {
-                if (!File.Exists(scriptPath))
-                {
-                    return false;
-                }
-
-                string runtimeDir = Path.GetDirectoryName(scriptPath);
-                InitialSessionState state = InitialSessionState.CreateDefault();
-                state.ApartmentState = ApartmentState.STA;
-                state.ThreadOptions = PSThreadOptions.UseCurrentThread;
-
-                using (Runspace runspace = RunspaceFactory.CreateRunspace(state))
-                {
-                    runspace.Open();
-                    runspace.SessionStateProxy.SetVariable("SourceExePath", currentExe);
-                    runspace.SessionStateProxy.SetVariable("PSScriptRoot", runtimeDir);
-
-                    using (PowerShell ps = PowerShell.Create())
-                    {
-                        ps.Runspace = runspace;
-                        string scriptInvoker = string.Format(
-                            "$global:VUONGTT_TARGET_EXE = '{0}'; $env:VUONGTT_ORIGINAL_EXE = '{0}'; Set-Location '{1}'; & '{2}' '{0}'",
-                            currentExe.Replace("'", "''"),
-                            runtimeDir.Replace("'", "''"),
-                            scriptPath.Replace("'", "''")
-                        );
-                        ps.AddScript(scriptInvoker);
-
-                        CloseSplash();
-                        ps.Invoke();
-                    }
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("In-Process runspace failed, will fallback to external process: " + ex.Message);
-                return false;
-            }
         }
     }
 }
