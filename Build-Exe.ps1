@@ -223,13 +223,10 @@ if ($proc.ExitCode -eq 0 -and (Test-Path $outputExe)) {
 
     $size = (Get-Item $outputExe).Length / 1KB
     Write-Host "==========================================================" -ForegroundColor Green
-    Write-Host "[THANH CONG] Da tao thanh cong file: VUONGTT_Toolkit.exe" -ForegroundColor Green
+    Write-Host "[THANH CONG] Da tao thanh cong file C# WPF chinh: VUONGTT_Toolkit.exe" -ForegroundColor Green
     Write-Host "Dung luong: $([math]::Round($size, 2)) KB" -ForegroundColor Green
     Write-Host "Duong dan: $outputExe" -ForegroundColor Green
-    # Dong bo file thuc thi Rust moi
-    try {
-        & "$RootDir\Build-Rust-Exe.ps1"
-    } catch {}
+    Write-Host "Nen tang: Microsoft .NET Framework C# WPF Native (Khong phu thuoc Rust/WebView2)" -ForegroundColor Cyan
     Write-Host "==========================================================" -ForegroundColor Green
 } else {
     Write-Error "Qua trinh bien dich that bai voi ma loi: $($proc.ExitCode)"

@@ -1,4 +1,4 @@
-# Test suite: Kiem thu Telemetry phan cung thuc te (TDD)
+﻿# Test suite: Kiem thu Telemetry phan cung thuc te (TDD)
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host " TEST SUITE: KIEM THU TELEMETRY PHAN CUNG THUC TE TREN MAY" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
