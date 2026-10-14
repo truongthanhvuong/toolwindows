@@ -162,12 +162,29 @@ foreach ($icon in $appIconFiles) {
     $resources += "/resource:`"$($icon.FullName)`",VUONGTT.AppIcons.$($icon.Name)"
 }
 
+$netFwDir = Split-Path $cscPath -Parent
+$wpfDir = Join-Path $netFwDir "WPF"
+
 $references = @(
     "/r:System.dll",
     "/r:System.Core.dll",
     "/r:System.Windows.Forms.dll",
-    "/r:System.Drawing.dll"
+    "/r:System.Drawing.dll",
+    "/r:`"$wpfDir\PresentationFramework.dll`"",
+    "/r:`"$wpfDir\PresentationCore.dll`"",
+    "/r:`"$wpfDir\WindowsBase.dll`"",
+    "/r:`"$netFwDir\System.Xaml.dll`""
 )
+
+# Tu dong tim System.Management.Automation.dll trong GAC hoac PowerShell
+$smaDll = (Get-ChildItem -Path "C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation" -Recurse -Filter "*.dll" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+if (-not $smaDll) {
+    $smaDll = "C:\Windows\System32\WindowsPowerShell\v1.0\System.Management.Automation.dll"
+}
+if (Test-Path $smaDll) {
+    $references += "/r:`"$smaDll`""
+    Write-Host " -> Da nap System.Management.Automation DLL: $smaDll" -ForegroundColor Green
+}
 
 $argsList = @(
     "/target:winexe",
