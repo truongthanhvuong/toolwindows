@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.112</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.113</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -1105,7 +1105,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span>Build: v20.5.909.112</span>
+<span>Build: v20.5.909.113</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -2080,74 +2080,6 @@
 </div>
 </div>
 </div>
-<script>
-  function triggerAction(message) {
-    if (window.runToolkitAction) {
-      window.runToolkitAction(message, message);
-    } else {
-      const toast = document.getElementById('status-toast');
-      const toastMsg = document.getElementById('toast-message');
-      if (toast && toastMsg) {
-        toastMsg.innerText = message;
-        toast.classList.remove('hidden');
-        toast.classList.add('flex');
-        setTimeout(() => {
-          toast.classList.add('hidden');
-          toast.classList.remove('flex');
-        }, 4000);
-      }
-    }
-  }
-
-  function applyPreset(type) {
-    const essentialCheckboxes = document.querySelectorAll('#essential-list input[type="checkbox"]');
-    const advancedCheckboxes = document.querySelectorAll('#advanced-list input[type="checkbox"]');
-    const presetButtons = document.querySelectorAll('#preset-button-bar .preset-btn');
-
-    presetButtons.forEach(btn => {
-      btn.classList.remove('bg-primary-container', 'text-on-primary-container');
-      btn.classList.add('bg-surface-container');
-    });
-
-    if (type === 'standard') {
-      essentialCheckboxes.forEach(cb => cb.checked = true);
-      advancedCheckboxes.forEach((cb, idx) => {
-        cb.checked = (idx === 2 || idx === 3 || idx === 5);
-      });
-      triggerAction('Đã tải cấu hình Chuẩn (Standard): An toàn & Tối ưu hiệu năng cao!');
-    } else if (type === 'minimal') {
-      essentialCheckboxes.forEach((cb, idx) => cb.checked = (idx < 5));
-      advancedCheckboxes.forEach(cb => cb.checked = false);
-      triggerAction('Đã tải cấu hình Tối Giản (Minimal): Chỉ dọn dẹp hệ thống nhẹ nhàng.');
-    } else if (type === 'advanced') {
-      essentialCheckboxes.forEach(cb => cb.checked = true);
-      advancedCheckboxes.forEach(cb => cb.checked = true);
-      triggerAction('Đã tải cấu hình Nâng Cao (Advanced): Toàn bộ tinh chỉnh chuyên sâu được bật!');
-    } else if (type === 'clear') {
-      essentialCheckboxes.forEach(cb => cb.checked = false);
-      advancedCheckboxes.forEach(cb => cb.checked = false);
-      triggerAction('Đã bỏ chọn toàn bộ tùy chọn trên cả hai bảng.');
-    }
-  }
-
-  function selectPowerPlan(element, name) {
-    const buttons = document.querySelectorAll('#power-plans-grid .power-plan-btn');
-    buttons.forEach(btn => {
-      btn.classList.remove('bg-error-container', 'text-on-error-container', 'ring-1', 'ring-error');
-      btn.classList.add('bg-surface-container', 'text-on-surface');
-      const ping = btn.querySelector('.animate-ping');
-      if (ping) ping.remove();
-    });
-
-    element.classList.remove('bg-surface-container', 'text-on-surface');
-    element.classList.add('bg-error-container', 'text-on-error-container', 'ring-1', 'ring-error');
-    triggerAction('Đã kích hoạt nguồn điện: ' + name);
-  }
-
-  function changeDns(val) {
-    triggerAction('Lựa chọn DNS: ' + val.toUpperCase() + '. Nhấn "Gán DNS" để lưu vào card mạng.');
-  }
-</script>
 </section>
 <!-- ==================== SCREEN: view-office-m365 (c_i_t_office_m365) ==================== -->
 <section id="view-office-m365" data-view-path="cai-dat-office" class="stitch-view">

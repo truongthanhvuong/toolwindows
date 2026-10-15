@@ -924,45 +924,51 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     // ========================================================================
     // 9.6 MENU CHUỘT PHẢI CŨ (CLASSIC CONTEXT MENU WIN 10) & HIỆN ĐẠI
     // ========================================================================
-    if act == "classic_context_menu" || act.contains("chuot phai cu") || act.contains("classic context") {
-        let ps_code = r#"
-            $regPath = 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'
-            if (-not (Test-Path $regPath)) {
-                New-Item -Path $regPath -Force | Out-Null
-            }
-            Set-ItemProperty -Path $regPath -Name '(Default)' -Value '' -Force | Out-Null
-            Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
-        "#;
-        let mut cmd = Command::new("powershell");
-        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+    if act == "classic_context_menu" || act.contains("chuot phai cu") || act.contains("classic context") || act.contains("classic_context") {
+        let mut reg_cmd = Command::new("reg");
+        reg_cmd.args(["add", r#"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"#, "/f", "/ve"]);
         #[cfg(windows)]
-        cmd.creation_flags(CREATE_NO_WINDOW);
-        let _ = cmd.output();
+        reg_cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = reg_cmd.output();
+
+        let mut exp_cmd = Command::new("cmd");
+        exp_cmd.args(["/c", "taskkill /f /im explorer.exe & start explorer.exe"]);
+        exp_cmd.stdin(std::process::Stdio::null());
+        exp_cmd.stdout(std::process::Stdio::null());
+        exp_cmd.stderr(std::process::Stdio::null());
+        #[cfg(windows)]
+        exp_cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = exp_cmd.spawn();
+
         return (true, "Đã kích hoạt Menu Chuột Phải Cũ (Windows 10 Classic Context Menu) và khởi động lại Explorer thành công!".to_string());
     }
 
-    if act == "modern_context_menu" || act.contains("chuot phai win 11") || act.contains("modern context") {
-        let ps_code = r#"
-            Remove-Item -Path 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' -Recurse -Force -ErrorAction SilentlyContinue
-            Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
-        "#;
-        let mut cmd = Command::new("powershell");
-        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+    if act == "modern_context_menu" || act.contains("chuot phai win 11") || act.contains("modern context") || act.contains("modern_context") {
+        let mut reg_cmd = Command::new("reg");
+        reg_cmd.args(["delete", r#"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}"#, "/f"]);
         #[cfg(windows)]
-        cmd.creation_flags(CREATE_NO_WINDOW);
-        let _ = cmd.output();
+        reg_cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = reg_cmd.output();
+
+        let mut exp_cmd = Command::new("cmd");
+        exp_cmd.args(["/c", "taskkill /f /im explorer.exe & start explorer.exe"]);
+        exp_cmd.stdin(std::process::Stdio::null());
+        exp_cmd.stdout(std::process::Stdio::null());
+        exp_cmd.stderr(std::process::Stdio::null());
+        #[cfg(windows)]
+        exp_cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = exp_cmd.spawn();
+
         return (true, "Đã khôi phục Menu Chuột Phải hiện đại Windows 11 thành công!".to_string());
     }
 
     if act == "check_classic_context" {
-        let ps_code = r#"Test-Path 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'"#;
-        let mut cmd = Command::new("powershell");
-        cmd.args(["-NoProfile", "-Command", ps_code]);
+        let mut cmd = Command::new("reg");
+        cmd.args(["query", r#"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"#]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         if let Ok(out) = cmd.output() {
-            let s = String::from_utf8_lossy(&out.stdout).trim().to_lowercase();
-            if s == "true" {
+            if out.status.success() {
                 return (true, "active".to_string());
             }
         }
@@ -975,8 +981,9 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     if act == "set_power_plan" || act.contains("power_plan") || act.contains("powerplan") || act.contains("nguon dien") || act.contains("power plan") {
         let plan_arg = extract_json_field(params_json, "plan").unwrap_or("").to_lowercase();
         let plan = if !plan_arg.is_empty() { plan_arg } else { act.clone() };
+        let plan_clean = strip_accents(&plan);
 
-        if plan.contains("ultimate") || plan.contains("cuc dai") {
+        if plan_clean.contains("ultimate") || plan_clean.contains("cuc dai") {
             let ps_code = r#"
                 $u = (powercfg /list | Select-String -Pattern "Ultimate" | ForEach-Object { if ($_ -match "GUID:\s+([a-f0-9\-]+)") { $matches[1] } } | Select-Object -First 1)
                 if (-not $u) {
@@ -995,35 +1002,35 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.output();
             return (true, "Đã kích hoạt gói nguồn Ultimate Performance (Mở khóa xung nhịp tối đa, CPU 100% Core Clock)!".to_string());
-        } else if plan.contains("high") || plan.contains("hieu nang cao") {
+        } else if plan_clean.contains("high") || plan_clean.contains("hieu nang cao") {
             let mut cmd = Command::new("powercfg");
             cmd.args(["/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"]);
             #[cfg(windows)]
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.output();
             return (true, "Đã chuyển sang gói nguồn High Performance (Hiệu năng cao)!".to_string());
-        } else if plan.contains("balanced") || plan.contains("can bang") {
+        } else if plan_clean.contains("balance") || plan_clean.contains("can bang") {
             let mut cmd = Command::new("powercfg");
             cmd.args(["/setactive", "381b4222-f694-41f0-9685-ff5bb260df2e"]);
             #[cfg(windows)]
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.output();
             return (true, "Đã chuyển sang gói nguồn Balanced (Cân bằng tự động)!".to_string());
-        } else if plan.contains("saver") || plan.contains("tiet kiem") {
+        } else if plan_clean.contains("saver") || plan_clean.contains("tiet kiem") {
             let mut cmd = Command::new("powercfg");
             cmd.args(["/setactive", "a1841308-3541-4fab-bc81-f71556f20b4a"]);
             #[cfg(windows)]
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.output();
             return (true, "Đã chuyển sang gói nguồn Power Saver (Tiết kiệm pin Laptop)!".to_string());
-        } else if plan.contains("restore") || plan.contains("khoi phuc") || plan.contains("mac dinh") {
+        } else if plan_clean.contains("restore") || plan_clean.contains("khoi phuc") || plan_clean.contains("mac dinh") {
             let mut cmd = Command::new("powercfg");
             cmd.args(["-restoredefaultschemes"]);
             #[cfg(windows)]
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.output();
             return (true, "Đã khôi phục toàn bộ các cấu hình nguồn điện mặc định của Windows!".to_string());
-        } else if plan.contains("cpl") || plan.contains("mo power") {
+        } else if plan_clean.contains("cpl") || plan_clean.contains("mo power") {
             let mut cmd = Command::new("control");
             cmd.args(["powercfg.cpl"]);
             let _ = cmd.spawn();

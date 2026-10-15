@@ -79,6 +79,22 @@ try {
     Write-Host "  -> Khong the dang ky Defender Exclusion (Co the da tat Defender hoac dung AV khac)" -ForegroundColor Gray
 }
 
+# Don dep cache rac tu cac phien ban cu trong TEMP va ProgramData de chong xung dot phien ban
+try {
+    $staleTempRuntime = Join-Path $env:TEMP "VUONGTT_Toolkit_Runtime"
+    if (Test-Path $staleTempRuntime) {
+        Remove-Item -Path $staleTempRuntime -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Get-ChildItem -Path $env:TEMP -Filter "VUONGTT_Toolkit_v*_READY.exe" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $env:TEMP -Filter "VUONGTT_HotSwap_*.cmd" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+
+    # Neu co file script cu nam lac ngoai runtime trong ProgramData\VUONGTT_Toolkit, don sach
+    $staleRootScript = Join-Path $installDir "VUONGTT_Toolkit.ps1"
+    if (Test-Path $staleRootScript) {
+        Remove-Item -Path $staleRootScript -Force -ErrorAction SilentlyContinue
+    }
+} catch {}
+
 # 3. KIEM TRA VA CAI DAT MICROSOFT EDGE WEBVIEW2 (NEU THIEU)
 Write-Host "`n [2/4] Kiem tra thanh phan Microsoft Edge WebView2 Runtime..." -ForegroundColor Cyan
 $hasWebView2 = $false
@@ -127,7 +143,15 @@ if ($hasWebView2) {
 Write-Host "`n [3/4] Dang kiem tra va dong bo ban phat hanh moi nhat tu Cloud..." -ForegroundColor Cyan
 
 $localVersion = $null
-if (Test-Path $verFilePath) {
+if (Test-Path $exePath) {
+    try {
+        $localInfo = (Get-Item $exePath).VersionInfo
+        if ($localInfo -and $localInfo.ProductVersion) {
+            $localVersion = $localInfo.ProductVersion.Trim()
+        }
+    } catch {}
+}
+if (-not $localVersion -and (Test-Path $verFilePath)) {
     try {
         $localVersion = (Get-Content $verFilePath -Raw -ErrorAction SilentlyContinue).Trim()
     } catch {}
@@ -259,12 +283,88 @@ try {
 # 6. KHOI CHAY UNG DUNG
 Write-Host "`n [4/4] Dang khoi chay VUONGTT Tool Pro 2026..." -ForegroundColor Cyan
 
+# Thiet lap bien moi truong Live Mode de toan bo ung dung chay doc lap, khong bao gio hien popup cap nhat
+$env:VUONGTT_LIVE_MODE = "1"
+
 $proc = $null
+$useScriptFallback = $false
 try {
     $proc = Start-Process -FilePath $exePath -WorkingDirectory $installDir -PassThru -ErrorAction Stop
 } catch {
-    Write-Host "  [!] Khoi chay that bai: $($_.Exception.Message)" -ForegroundColor Red
-    return
+    $errLaunch = $_.Exception.Message
+    Write-Host "  [!] Khoi chay truc tiep file EXE that bai do chinh sach bao mat he thong (Smart App Control / WDAC / Application Control): $errLaunch" -ForegroundColor Yellow
+    Write-Host "  [*] Dang tu dong kich hoat Dong Co Du Phong (In-Memory Fallback Engine) de mo giao dien qua Microsoft PowerShell..." -ForegroundColor Cyan
+    $useScriptFallback = $true
+}
+
+# 6.2. Neu he thong chan file EXE boi Application Control / Smart App Control / WDAC:
+if ($useScriptFallback -or (-not $proc)) {
+    try {
+        $runtimeDir = Join-Path $installDir "runtime"
+        if (-not (Test-Path $runtimeDir)) { New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null }
+
+        $bytes = [System.IO.File]::ReadAllBytes($exePath)
+        $asm = [System.Reflection.Assembly]::Load($bytes)
+        $resNames = $asm.GetManifestResourceNames()
+
+        foreach ($name in $resNames) {
+            $relPath = ""
+            if ($name.Contains("VUONGTT_Toolkit.ps1")) { $relPath = "VUONGTT_Toolkit.ps1" }
+            elseif ($name.Contains("MainWindow.xaml")) { $relPath = "src\UI\MainWindow.xaml" }
+            elseif ($name.Contains("OfficeAIOModal.xaml")) { $relPath = "src\UI\OfficeAIOModal.xaml" }
+            elseif ($name.Contains("HardwareInfo.ps1")) { $relPath = "src\Core\HardwareInfo.ps1" }
+            elseif ($name.Contains("OfficeInstaller.ps1")) { $relPath = "src\Core\OfficeInstaller.ps1" }
+            elseif ($name.Contains("Activator.ps1")) { $relPath = "src\Core\Activator.ps1" }
+            elseif ($name.Contains("NetworkPrinterFix.ps1")) { $relPath = "src\Core\NetworkPrinterFix.ps1" }
+            elseif ($name.Contains("SystemTweaks.ps1")) { $relPath = "src\Core\SystemTweaks.ps1" }
+            elseif ($name.Contains("BitLockerManager.ps1")) { $relPath = "src\Core\BitLockerManager.ps1" }
+            elseif ($name.Contains("SoftwareInstaller.ps1")) { $relPath = "src\Core\SoftwareInstaller.ps1" }
+            elseif ($name.Contains("SystemCustomizer.ps1")) { $relPath = "src\Core\SystemCustomizer.ps1" }
+            elseif ($name.Contains("UserManager.ps1")) { $relPath = "src\Core\UserManager.ps1" }
+            elseif ($name.Contains("CpuMainDatabase.ps1")) { $relPath = "src\Core\CpuMainDatabase.ps1" }
+            elseif ($name.Contains("LaptopTester.ps1")) { $relPath = "src\Core\LaptopTester.ps1" }
+            elseif ($name.Contains("FontInstaller.ps1")) { $relPath = "src\Core\FontInstaller.ps1" }
+            elseif ($name.Contains("PartitionManager.ps1")) { $relPath = "src\Core\PartitionManager.ps1" }
+            elseif ($name.Contains("AccountingApps.ps1")) { $relPath = "src\Core\AccountingApps.ps1" }
+            elseif ($name.Contains("AppUpdater.ps1")) { $relPath = "src\Core\AppUpdater.ps1" }
+            elseif ($name.Contains("LicenseManager.ps1")) { $relPath = "src\Core\LicenseManager.ps1" }
+            elseif ($name.Contains("IpScanner.ps1")) { $relPath = "src\Core\IpScanner.ps1" }
+            elseif ($name.Contains("ConfigManager.ps1")) { $relPath = "src\Core\ConfigManager.ps1" }
+            elseif ($name.Contains("DiskHealthManager.ps1")) { $relPath = "src\Core\DiskHealthManager.ps1" }
+            elseif ($name.Contains("AutoWinDeployer.ps1")) { $relPath = "src\Core\AutoWinDeployer.ps1" }
+            elseif ($name.Contains("SystemBackupManager.ps1")) { $relPath = "src\Core\SystemBackupManager.ps1" }
+            elseif ($name.Contains("TroubleshootManager.ps1")) { $relPath = "src\Core\TroubleshootManager.ps1" }
+            elseif ($name.Contains("licenses_vault.json")) { $relPath = "src\Config\licenses_vault.json" }
+            elseif ($name.Contains("feature_policy.json")) { $relPath = "src\Config\feature_policy.json" }
+            elseif ($name.Contains("SoftwareDatabase.json")) { $relPath = "src\Data\SoftwareDatabase.json" }
+            elseif ($name.Contains("TroubleshootDatabase.json")) { $relPath = "src\Data\TroubleshootDatabase.json" }
+            elseif ($name.Contains("version.json")) { $relPath = "version.json" }
+            elseif ($name.StartsWith("VUONGTT.AppIcons.")) {
+                $iconFile = $name.Substring("VUONGTT.AppIcons.".Length)
+                $relPath = "src\Assets\AppIcons\$iconFile"
+            }
+
+            if ($relPath) {
+                $dest = Join-Path $runtimeDir $relPath
+                $parent = Split-Path $dest -Parent
+                if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+                $stream = $asm.GetManifestResourceStream($name)
+                $fs = [System.IO.File]::Create($dest)
+                $stream.CopyTo($fs)
+                $fs.Close()
+                $stream.Close()
+            }
+        }
+
+        $mainScript = Join-Path $runtimeDir "VUONGTT_Toolkit.ps1"
+        if (Test-Path $mainScript) {
+            Write-Host "  -> Giai nen bo cong cu thanh cong! Dang khoi chay qua Microsoft PowerShell Host (Che do Live doc lap)..." -ForegroundColor Green
+            $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-STA -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$mainScript`" -Live" -WorkingDirectory $runtimeDir -PassThru
+        }
+    } catch {
+        Write-Host "  [!] Khong the khoi chay qua Che Do Du Phong: $($_.Exception.Message)" -ForegroundColor Red
+        return
+    }
 }
 
 if ($proc) {

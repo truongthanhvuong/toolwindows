@@ -140,11 +140,13 @@
       actionId = "set_power_plan";
     } else if (low.includes("power options") || low.includes("powercfg.cpl")) {
       actionId = "set_power_plan";
+    } else if (low.includes("power_plan") || low.includes("power plan") || low.includes("nguồn điện") || low.includes("goi nguon")) {
+      actionId = "set_power_plan";
     } else if (low.includes("appx") || low.includes("dọn app rác")) {
       actionId = "clean_appx_bloatware";
-    } else if (low.includes("chuột phải cũ") || low.includes("classic context") || low.includes("win 10")) {
+    } else if (low.includes("classic_context") || low.includes("chuột phải cũ") || low.includes("classic context") || low.includes("win 10")) {
       actionId = "classic_context_menu";
-    } else if (low.includes("chuột phải mới") || low.includes("modern context") || low.includes("win 11")) {
+    } else if (low.includes("modern_context") || low.includes("chuột phải mới") || low.includes("modern context") || low.includes("win 11")) {
       actionId = "modern_context_menu";
     } else {
       actionId = actionName;
@@ -155,6 +157,12 @@
       payload.plan = "restore_default";
     } else if (low.includes("power options") || low.includes("powercfg.cpl")) {
       payload.plan = "open_cpl";
+    } else if (actionId === "set_power_plan") {
+      if (low.includes("ultimate")) payload.plan = "ultimate";
+      else if (low.includes("high")) payload.plan = "high";
+      else if (low.includes("balance") || low.includes("cân bằng")) payload.plan = "balanced";
+      else if (low.includes("saver") || low.includes("tiết kiệm")) payload.plan = "saver";
+      else payload.plan = actionName;
     }
 
     const consoleEl = document.getElementById("log-console");
