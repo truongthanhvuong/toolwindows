@@ -534,7 +534,7 @@ namespace VUONGTT {
     using System.Collections.Concurrent;
 
     public class ProcessLiveRunner {
-        public static int Run(string filePath, string args, Action<string> onLine, int timeoutSeconds) {
+        public static int Run(string filePath, string args, Action<string> onLine, Action onHeartbeat, int timeoutSeconds) {
             ProcessStartInfo psi = new ProcessStartInfo {
                 FileName = filePath,
                 Arguments = args,
@@ -559,6 +559,9 @@ namespace VUONGTT {
                             try { onLine(line); } catch {}
                         }
                     }
+                    if (onHeartbeat != null) {
+                        try { onHeartbeat(); } catch {}
+                    }
                     System.Threading.Thread.Sleep(50);
                     if (DateTime.UtcNow > limit) {
                         try { proc.Kill(); } catch {}
@@ -572,8 +575,15 @@ namespace VUONGTT {
                         try { onLine(remaining); } catch {}
                     }
                 }
+                if (onHeartbeat != null) {
+                    try { onHeartbeat(); } catch {}
+                }
                 return proc.ExitCode;
             }
+        }
+
+        public static int Run(string filePath, string args, Action<string> onLine, int timeoutSeconds) {
+            return Run(filePath, args, onLine, null, timeoutSeconds);
         }
     }
 }
@@ -594,16 +604,107 @@ function Invoke-VUONGTTProcessWithLiveLog {
                 param($line)
                 try {
                     & $OnOutputLine $line
-                    Invoke-VUONGTTDoEvents
+                    if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
+                        Invoke-VUONGTTDoEvents
+                    }
                 } catch {}
             }
         } else { $null }
 
-        $exitCode = [VUONGTT.ProcessLiveRunner]::Run($FilePath, $ArgumentList, $action, $TimeoutSeconds)
+        $heartbeat = [Action]{
+            try {
+                if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
+                    Invoke-VUONGTTDoEvents
+                }
+            } catch {}
+        }
+
+        $exitCode = [VUONGTT.ProcessLiveRunner]::Run($FilePath, $ArgumentList, $action, $heartbeat, $TimeoutSeconds)
         return $exitCode
     } catch {
         if ($OnOutputLine) { & $OnOutputLine "[LỖI TIẾN TRÌNH] $($_.Exception.Message)" }
         return -999
+    }
+}
+
+if (-not (Get-Command Start-VUONGTTResponsiveDownload -ErrorAction SilentlyContinue)) {
+    function global:Start-VUONGTTResponsiveDownload {
+        param(
+            [string]$Uri,
+            [string]$OutFile,
+            [scriptblock]$OnProgress = $null,
+            [int]$TimeoutSeconds = 300
+        )
+
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+
+            $req = [System.Net.HttpWebRequest]::Create($Uri)
+            $req.Timeout = 15000
+            $req.ReadWriteTimeout = 30000
+            $req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+            $req.AllowAutoRedirect = $true
+
+            $resp = $req.GetResponse()
+            $totalBytes = $resp.ContentLength
+            $stream = $resp.GetResponseStream()
+
+            $parentDir = Split-Path -Parent $OutFile
+            if ($parentDir -and -not (Test-Path $parentDir)) {
+                New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+            }
+
+            $fs = New-Object System.IO.FileStream($OutFile, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+            $buffer = New-Object byte[] 65536
+            $totalRead = 0
+            $lastLogTime = [DateTime]::UtcNow
+
+            try {
+                while ($true) {
+                    $bytesRead = $stream.Read($buffer, 0, $buffer.Length)
+                    if ($bytesRead -le 0) { break }
+                    $fs.Write($buffer, 0, $bytesRead)
+                    $totalRead += $bytesRead
+
+                    $now = [DateTime]::UtcNow
+                    if (($now - $lastLogTime).TotalMilliseconds -ge 200) {
+                        $lastLogTime = $now
+                        if ($OnProgress) {
+                            if ($totalBytes -gt 0) {
+                                $pct = [math]::Min(100, [int](($totalRead / $totalBytes) * 100))
+                                $curMB = [math]::Round($totalRead / 1MB, 1)
+                                $totMB = [math]::Round($totalBytes / 1MB, 1)
+                                & $OnProgress "  -> Đang tải: $curMB MB / $totMB MB ($pct%)..."
+                            } else {
+                                $curMB = [math]::Round($totalRead / 1MB, 1)
+                                & $OnProgress "  -> Đang tải: $curMB MB..."
+                            }
+                        }
+                        if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
+                            Invoke-VUONGTTDoEvents
+                        }
+                    }
+                }
+            } finally {
+                $fs.Close()
+                $stream.Close()
+                $resp.Close()
+            }
+
+            if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
+                Invoke-VUONGTTDoEvents
+            }
+
+            if ((Test-Path $OutFile) -and (Get-Item $OutFile).Length -gt 1024) {
+                try { Unblock-File -Path $OutFile -ErrorAction SilentlyContinue } catch {}
+                return $true
+            }
+            return $false
+        } catch {
+            if ($OnProgress) { & $OnProgress "  -> [LỖI TẢI XUỐNG]: $($_.Exception.Message)" }
+            return $false
+        }
     }
 }
 
@@ -776,11 +877,9 @@ function Install-VUONGTTCustomApp {
         $destFile = Join-Path $tempDir $fileName
 
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        try {
-            Invoke-WebRequest -Uri $inputClean -OutFile $destFile -UseBasicParsing
-            try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
-        } catch {
-            return "Lỗi khi tải file: $($_.Exception.Message)"
+        $dlOk = Start-VUONGTTResponsiveDownload -Uri $inputClean -OutFile $destFile -OnProgress $OnProgress
+        if (-not $dlOk) {
+            return "Lỗi khi tải file: Không thể tải tệp từ $inputClean"
         }
 
         if ($OnProgress) { & $OnProgress "Đang thực thi tệp cài đặt $fileName (Real-time log)..." }
@@ -798,8 +897,11 @@ function Install-VUONGTTCustomApp {
             if ($exitCode -ne 0 -and $exitCode -ne 3010) {
                 if ($OnProgress) { & $OnProgress "  -> LiveRunner mã $exitCode. Thử khởi chạy trực tiếp với Start-Process..." }
                 try {
-                    $p = Start-Process -FilePath $runExe -ArgumentList $runArgs -Wait -PassThru -ErrorAction Stop
-                    $exitCode = $p.ExitCode
+                    $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                        Start-VUONGTTProcessResponsive -FilePath $runExe -ArgumentList $runArgs -TimeoutSeconds 300 -NoNewWindow $false
+                    } else {
+                        (Start-Process -FilePath $runExe -ArgumentList $runArgs -Wait -PassThru -ErrorAction Stop).ExitCode
+                    }
                 } catch {}
             }
             if ($AutoLaunch) {
@@ -1037,29 +1139,10 @@ function Install-VUONGTTApp {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
         [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
-        $dlSuccess = $false
-        try {
-            $wc = New-Object System.Net.WebClient
-            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
-            $wc.DownloadFile($directUrl, $destFile)
-            if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) {
-                $dlSuccess = $true
-                try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
-            }
-        } catch {
-            if ($OnProgress) { & $OnProgress "  -> WebClient tải tệp không hoàn tất, chuyển sang Invoke-WebRequest..." }
-        }
-
-        if (-not $dlSuccess) {
-            try {
-                Invoke-WebRequest -Uri $directUrl -OutFile $destFile -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" -TimeoutSec 120
-                if ((Test-Path $destFile) -and (Get-Item $destFile).Length -gt 1024) {
-                    $dlSuccess = $true
-                    try { Unblock-File -Path $destFile -ErrorAction SilentlyContinue } catch {}
-                }
-            } catch {
-                if ($OnProgress) { & $OnProgress "  -> Lỗi kết nối tải tệp: $($_.Exception.Message)" }
-            }
+        $dlSuccess = Start-VUONGTTResponsiveDownload -Uri $directUrl -OutFile $destFile -OnProgress $OnProgress
+        if (-not $dlSuccess -and $app.BackupUrl) {
+            if ($OnProgress) { & $OnProgress "  -> Thử tải từ máy chủ phụ (Backup CDN)..." }
+            $dlSuccess = Start-VUONGTTResponsiveDownload -Uri $app.BackupUrl -OutFile $destFile -OnProgress $OnProgress
         }
 
         if (-not (Test-Path $destFile) -or (Get-Item $destFile).Length -le 1024) {
@@ -1122,8 +1205,11 @@ function Install-VUONGTTApp {
                 # Vì vậy, Zalo bắt buộc phải chạy qua Start-Process trực tiếp để hoàn tất trong ~15 giây.
                 if ($OnProgress) { & $OnProgress "Đang cài đặt tự động $($app.Name) (thực thi an toàn độc lập)..." }
                 try {
-                    $p = Start-Process -FilePath $destFile -ArgumentList $app.Silent -Wait -PassThru -ErrorAction Stop
-                    $exitCode = $p.ExitCode
+                    $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                        Start-VUONGTTProcessResponsive -FilePath $destFile -ArgumentList $app.Silent -TimeoutSeconds 300 -NoNewWindow $false
+                    } else {
+                        (Start-Process -FilePath $destFile -ArgumentList $app.Silent -Wait -PassThru -ErrorAction Stop).ExitCode
+                    }
                 } catch {
                     $exitCode = -999
                 }
@@ -1144,7 +1230,12 @@ function Install-VUONGTTApp {
             if ($app.Id -eq "zalo") {
                 $maxWait = 15
                 while (-not (Test-VUONGTTZaloIntegrity) -and $maxWait -gt 0) {
-                    Start-Sleep -Seconds 1
+                    for ($z = 0; $z -lt 10; $z++) {
+                        [System.Threading.Thread]::Sleep(100)
+                        if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
+                            Invoke-VUONGTTDoEvents
+                        }
+                    }
                     $maxWait--
                 }
             }
@@ -1152,14 +1243,17 @@ function Install-VUONGTTApp {
             # Kiểm tra xem ứng dụng đã thực sự có mặt trên máy chưa bằng hàm kiểm tra chuẩn
             $isAppActuallyInstalled = Test-VUONGTTAppActuallyInstalled -AppId $app.Id
 
-            # Nếu LiveRunner gặp hạn chế pipe hoặc access denied trên Domain, thử fallback bằng Start-Process
+            # Nếu LiveRunner gặp hạn chế pipe hoặc access denied trên Domain, thử fallback bằng Start-Process responsive
             if (-not $isAppActuallyInstalled -and $exitCode -ne 0 -and $exitCode -ne 3010) {
                 if ($OnProgress) { & $OnProgress "  -> LiveRunner mã $exitCode. Thử phương án dự phòng Start-Process..." }
                 try {
                     $fallbackExe = if ($runExe) { $runExe } else { $destFile }
                     $fallbackArgs = if ($runArgs) { $runArgs } else { $app.Silent }
-                    $p = Start-Process -FilePath $fallbackExe -ArgumentList $fallbackArgs -Wait -PassThru -ErrorAction Stop
-                    $exitCode = $p.ExitCode
+                    $exitCode = if (Get-Command Start-VUONGTTProcessResponsive -ErrorAction SilentlyContinue) {
+                        Start-VUONGTTProcessResponsive -FilePath $fallbackExe -ArgumentList $fallbackArgs -TimeoutSeconds 300 -NoNewWindow $false
+                    } else {
+                        (Start-Process -FilePath $fallbackExe -ArgumentList $fallbackArgs -Wait -PassThru -ErrorAction Stop).ExitCode
+                    }
                 } catch {
                     if ($OnProgress) { & $OnProgress "  -> Start-Process lỗi: $($_.Exception.Message)" }
                 }

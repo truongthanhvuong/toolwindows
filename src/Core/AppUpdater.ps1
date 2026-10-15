@@ -1,7 +1,7 @@
 ﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.909.108"
+$script:APP_CURRENT_VERSION = "20.5.909.109"
 
 # Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {
@@ -371,7 +371,11 @@ function Start-VUONGTTBackgroundPreDownload {
         }
 
         if ($OnProgress) { & $OnProgress "Đang tự động tải ngầm bản cập nhật v$NewVersion..." }
-        $dlClient.DownloadFile($dlUrlWithCacheBust, $tempPart)
+        if (Get-Command Start-VUONGTTResponsiveDownload -ErrorAction SilentlyContinue) {
+            Start-VUONGTTResponsiveDownload -Uri $dlUrlWithCacheBust -OutFile $tempPart -OnProgress $OnProgress | Out-Null
+        } else {
+            $dlClient.DownloadFile($dlUrlWithCacheBust, $tempPart)
+        }
 
         if ((Test-Path $tempPart) -and (Get-Item $tempPart).Length -gt 1000000) {
             Move-Item -Path $tempPart -Destination $stagedReadyExe -Force -ErrorAction SilentlyContinue
@@ -455,7 +459,11 @@ function Invoke-VUONGTTAppSelfUpdate {
             }
 
             if ($OnProgress) { & $OnProgress "Đang kết nối máy chủ và tải bản cập nhật mới nhất: $DownloadUrl..." }
-            $client.DownloadFile($dlUrlWithCacheBust, $tempDownloadExe)
+            if (Get-Command Start-VUONGTTResponsiveDownload -ErrorAction SilentlyContinue) {
+                Start-VUONGTTResponsiveDownload -Uri $dlUrlWithCacheBust -OutFile $tempDownloadExe -OnProgress $OnProgress | Out-Null
+            } else {
+                $client.DownloadFile($dlUrlWithCacheBust, $tempDownloadExe)
+            }
         }
 
     if (-not (Test-Path $tempDownloadExe) -or (Get-Item $tempDownloadExe).Length -lt 500000) {

@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.108
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.109
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.108"
+$Script:AppVersion = "v20.5.909.109"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -94,6 +94,85 @@ function global:Start-VUONGTTProcessResponsive {
         return $proc.ExitCode
     } catch {
         return -1
+    }
+}
+
+function global:Start-VUONGTTResponsiveDownload {
+    param(
+        [string]$Uri,
+        [string]$OutFile,
+        [scriptblock]$OnProgress = $null,
+        [int]$TimeoutSeconds = 300
+    )
+
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+
+        $req = [System.Net.HttpWebRequest]::Create($Uri)
+        $req.Timeout = 15000
+        $req.ReadWriteTimeout = 30000
+        $req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        $req.AllowAutoRedirect = $true
+
+        $resp = $req.GetResponse()
+        $totalBytes = $resp.ContentLength
+        $stream = $resp.GetResponseStream()
+
+        $parentDir = Split-Path -Parent $OutFile
+        if ($parentDir -and -not (Test-Path $parentDir)) {
+            New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+        }
+
+        $fs = New-Object System.IO.FileStream($OutFile, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+        $buffer = New-Object byte[] 65536
+        $totalRead = 0
+        $lastLogTime = [DateTime]::UtcNow
+
+        try {
+            while ($true) {
+                $bytesRead = $stream.Read($buffer, 0, $buffer.Length)
+                if ($bytesRead -le 0) { break }
+                $fs.Write($buffer, 0, $bytesRead)
+                $totalRead += $bytesRead
+
+                $now = [DateTime]::UtcNow
+                if (($now - $lastLogTime).TotalMilliseconds -ge 200) {
+                    $lastLogTime = $now
+                    if ($OnProgress) {
+                        if ($totalBytes -gt 0) {
+                            $pct = [math]::Min(100, [int](($totalRead / $totalBytes) * 100))
+                            $curMB = [math]::Round($totalRead / 1MB, 1)
+                            $totMB = [math]::Round($totalBytes / 1MB, 1)
+                            & $OnProgress "  -> Đang tải: $curMB MB / $totMB MB ($pct%)..."
+                        } else {
+                            $curMB = [math]::Round($totalRead / 1MB, 1)
+                            & $OnProgress "  -> Đang tải: $curMB MB..."
+                        }
+                    }
+                    if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
+                        Invoke-VUONGTTDoEvents
+                    }
+                }
+            }
+        } finally {
+            $fs.Close()
+            $stream.Close()
+            $resp.Close()
+        }
+
+        if (Get-Command Invoke-VUONGTTDoEvents -ErrorAction SilentlyContinue) {
+            Invoke-VUONGTTDoEvents
+        }
+
+        if ((Test-Path $OutFile) -and (Get-Item $OutFile).Length -gt 1024) {
+            try { Unblock-File -Path $OutFile -ErrorAction SilentlyContinue } catch {}
+            return $true
+        }
+        return $false
+    } catch {
+        if ($OnProgress) { & $OnProgress "  -> [LỖI TẢI XUỐNG]: $($_.Exception.Message)" }
+        return $false
     }
 }
 
@@ -9924,7 +10003,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.107" }
+                if (-not $currentVer) { $currentVer = "20.5.909.109" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

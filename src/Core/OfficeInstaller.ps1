@@ -174,11 +174,15 @@ function Get-VUONGTTOfficeDeploymentTool {
     foreach ($url in $candidateUrls) {
         try {
             if ($OnProgress) { & $OnProgress "Đang tải công cụ ODT từ máy chủ Microsoft ($url)..." }
-            $wc = New-Object System.Net.WebClient
-            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
-            $wc.DownloadFile($url, $installer)
-            if ((Test-Path $installer) -and (Get-Item $installer).Length -gt 1000000) {
-                $downloadSuccess = $true
+            if (Get-Command Start-VUONGTTResponsiveDownload -ErrorAction SilentlyContinue) {
+                $downloadSuccess = Start-VUONGTTResponsiveDownload -Uri $url -OutFile $installer -OnProgress $OnProgress
+            } else {
+                $wc = New-Object System.Net.WebClient
+                $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+                $wc.DownloadFile($url, $installer)
+                $downloadSuccess = ((Test-Path $installer) -and (Get-Item $installer).Length -gt 1000000)
+            }
+            if ($downloadSuccess) {
                 break
             }
         } catch {
@@ -228,10 +232,13 @@ function Get-VUONGTTOfficeDeploymentTool {
     if (-not (Test-Path $setupExe)) {
         try {
             if ($OnProgress) { & $OnProgress "Đang tải file setup.exe dự phòng từ CDN GitHub..." }
-            $ghUrl = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/src/Assets/setup.exe"
-            $wc = New-Object System.Net.WebClient
-            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-            $wc.DownloadFile($ghUrl, $setupExe)
+            if (Get-Command Start-VUONGTTResponsiveDownload -ErrorAction SilentlyContinue) {
+                Start-VUONGTTResponsiveDownload -Uri $ghUrl -OutFile $setupExe -OnProgress $OnProgress | Out-Null
+            } else {
+                $wc = New-Object System.Net.WebClient
+                $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                $wc.DownloadFile($ghUrl, $setupExe)
+            }
         } catch {}
     }
 
