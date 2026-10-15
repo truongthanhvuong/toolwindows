@@ -6,5 +6,4 @@
   - **Quy trình lặp lại (Iterative Fix)**: Nếu phát hiện lỗi trong quá trình kiểm thử, tiếp tục fix trực tiếp và nâng tiếp 1 version cho đến khi hoàn chỉnh.
 
 - **QUY TẮC PHÁT HÀNH (PUBLISH & GIT PUSH)**:
-  - **TUYỆT ĐỐI KHÔNG TỰ Ý `git push` LÊN GITHUB**: Sau khi chỉnh sửa mã nguồn, kiểm tra lỗi và biên dịch xong file `VUONGTT_Toolkit.exe` tại local, chỉ lưu commit tại máy cục bộ.
-  - **KHÔNG CHẠY LỆNH `git push`**: Đợi người dùng kiểm thử (test) hoàn tất. Khi thấy ổn định, người dùng sẽ tự chủ động phát hành cho các máy còn lại bằng file script `Publish-Update.ps1`.
+  - **TỰ ĐỘNG `git push` SAU KHI HOÀN TẤT**: Sau khi chỉnh sửa mã nguồn, kiểm tra lỗi, chạy bộ kiểm thử tự động đạt 100% PASS và biên dịch xong file thực thi `VUONGTT_Toolkit.exe` tại local, tự động lưu commit và thực hiện `git push origin main` luôn mà không cần phải hỏi lại người dùng.

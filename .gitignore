@@ -13,4 +13,5 @@ launcher_info.txt
 *.old*.exe
 src-tauri/target/
 *.zip
-
+VUONGTT_Toolkit_WPF.exe
+.agents/
