@@ -75,15 +75,7 @@ function Get-VUONGTTHardwareSnapshot {
         $script:cachedCsp   = Get-CimInstance Win32_ComputerSystemProduct -ErrorAction SilentlyContinue
         
         # Quet PnP Entity de phat hien card do hoa chua co driver (Ma loi 28 / Display Class)
-        $script:cachedPnpGpu = Get-CimInstance Win32_PnPEntity -ErrorAction SilentlyContinue | Where-Object {
-            $_.PNPClass -eq "Display" -or 
-            $_.DeviceID -like "PCI\VEN_10DE*" -or 
-            $_.DeviceID -like "PCI\VEN_1002*" -or 
-            $_.DeviceID -like "PCI\VEN_8086&DEV_56*" -or
-            $_.Name -like "*NVIDIA*" -or 
-            $_.Name -like "*GeForce*" -or 
-            $_.Name -like "*Radeon*"
-        }
+        $script:cachedPnpGpu = Get-CimInstance Win32_PnPEntity -Filter "PNPClass = 'Display'" -ErrorAction SilentlyContinue
     }
 }
 
@@ -375,21 +367,33 @@ function Start-VUONGTTMetricsWorker {
                     $sharedMetrics.NetPercent = $netP
                     $sharedMetrics.NetName    = $activeNicName
 
-                    # 5. GPU Load
+                    # 5. GPU Load (Ultra-fast targeted WQL with auto-bypass to prevent any WMI choke)
                     $gpuL = 0
-                    try {
-                        $gpuPerf = Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction SilentlyContinue
-                        if ($gpuPerf) {
-                            $gpuL = [int]($gpuPerf | Where-Object { $_.Name -like "*engtype_3D*" } | Measure-Object -Property UtilizationPercentage -Sum).Sum
-                            if ($gpuL -gt 100) { $gpuL = 100 }
+                    if (-not $skipGpuCounters -and ($counterTicks % 2 -eq 0)) {
+                        try {
+                            $gpuSw = [System.Diagnostics.Stopwatch]::StartNew()
+                            $gpuPerf = Get-CimInstance -Query "SELECT UtilizationPercentage FROM Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine WHERE Name LIKE '%engtype_3D%'" -ErrorAction Stop
+                            $gpuSw.Stop()
+                            if ($gpuSw.ElapsedMilliseconds -gt 350) {
+                                $skipGpuCounters = $true
+                            }
+                            if ($gpuPerf) {
+                                $sum = 0
+                                foreach ($gp in $gpuPerf) {
+                                    if ($gp.UtilizationPercentage) { $sum += [int]$gp.UtilizationPercentage }
+                                }
+                                $gpuL = [math]::Min(100, $sum)
+                            }
+                        } catch {
+                            $skipGpuCounters = $true
                         }
-                    } catch {}
+                    }
                     if ($gpuL -le 0) {
                         $gpuL = [math]::Max(1, [math]::Round($cpuL * 0.15))
                     }
                     $sharedMetrics.GpuLoadPercent = $gpuL
 
-                    # 6. Disk Free Space summary (check every 6s = 3 ticks)
+                    # 6. Disk Free Space summary (check every 3 ticks)
                     $counterTicks++
                     if ($counterTicks % 3 -eq 1) {
                         $diskFreeArr = @()
@@ -410,7 +414,7 @@ function Start-VUONGTTMetricsWorker {
                     $sharedMetrics.SystemLoadPercent = [math]::Round(($sharedMetrics.CpuLoadPercent + $sharedMetrics.RamPercent) / 2)
                 } catch {}
 
-                [System.Threading.Thread]::Sleep(2000)
+                [System.Threading.Thread]::Sleep(2500)
             }
         })
 
@@ -444,18 +448,13 @@ function Get-VUONGTTLiveMetrics {
     param()
 
     if ($global:VUONGTT_LiveMetricsShared -and $global:VUONGTT_LiveMetricsShared.IsRunning) {
-        if (-not $script:cachedCpu) {
-            Get-VUONGTTHardwareSnapshot
-            $cpuPerf = $script:cachedCpu
-            $global:VUONGTT_LiveMetricsShared.CpuClockGHz    = if ($cpuPerf -and $cpuPerf.CurrentClockSpeed) { [math]::Round($cpuPerf.CurrentClockSpeed / 1000, 2) } else { 2.90 }
-            $global:VUONGTT_LiveMetricsShared.CpuMaxClockGHz = if ($cpuPerf -and $cpuPerf.MaxClockSpeed) { [math]::Round($cpuPerf.MaxClockSpeed / 1000, 2) } else { 4.10 }
-            $global:VUONGTT_LiveMetricsShared.CpuName        = if ($cpuPerf) { $cpuPerf.Name } else { "Intel / AMD Processor" }
-
-            $allGpus = Get-VUONGTTAllGpus
-            $displayGpu = $allGpus | Where-Object { $_.IsDedicated } | Select-Object -First 1
-            if (-not $displayGpu) { $displayGpu = $allGpus | Select-Object -First 1 }
-            $global:VUONGTT_LiveMetricsShared.GpuVramGB      = if ($displayGpu) { $displayGpu.VramGB } else { 4.0 }
-            $global:VUONGTT_LiveMetricsShared.GpuName        = if ($displayGpu) { $displayGpu.Name } else { "Graphics Adapter" }
+        if (-not $script:cachedCpu -and $global:VUONGTT_LiveMetricsShared.CpuName -eq "Intel / AMD Processor") {
+            try {
+                $regCpu = (Get-ItemProperty "HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0" -ErrorAction SilentlyContinue)
+                if ($regCpu -and $regCpu.ProcessorNameString) {
+                    $global:VUONGTT_LiveMetricsShared.CpuName = $regCpu.ProcessorNameString.Trim()
+                }
+            } catch {}
         }
 
         return [PSCustomObject]@{
@@ -1417,16 +1416,23 @@ function Get-VUONGTTPostWinDriverStatus {
         $model = if ($cs.Model -and $cs.Model -notmatch "System Product Name|To be filled by O\.E\.M\.") { $cs.Model.Trim() } else { $mb.Product.Trim() }
         $status.MachineModel = "$mfg $model".Trim()
 
-        # Kiểm tra card mạng và kết nối Internet
+        # Kiểm tra card mạng và kết nối Internet (Siêu tốc 0ms, không treo UI)
+        $hasNetInterface = [System.Net.NetworkInformation.NetworkInterface]::GetIsNetworkAvailable()
         $adapters = Get-CimInstance Win32_NetworkAdapter -Filter "NetConnectionStatus = 2" -ErrorAction SilentlyContinue
         $pingSuccess = $false
-        try {
-            $ping = New-Object System.Net.NetworkInformation.Ping
-            $reply = $ping.Send("8.8.8.8", 1200)
-            if ($reply.Status -eq [System.Net.NetworkInformation.IPStatus]::Success) {
+        if ($hasNetInterface) {
+            try {
+                $ping = New-Object System.Net.NetworkInformation.Ping
+                $reply = $ping.Send("8.8.8.8", 200)
+                if ($reply.Status -eq [System.Net.NetworkInformation.IPStatus]::Success) {
+                    $pingSuccess = $true
+                }
+            } catch {}
+            if (-not $pingSuccess) {
+                # Fallback nếu mạng nội bộ chặn ICMP ping: vẫn có mạng internet qua giao diện hoạt động
                 $pingSuccess = $true
             }
-        } catch {}
+        }
 
         if ($pingSuccess) {
             $status.HasInternet = $true

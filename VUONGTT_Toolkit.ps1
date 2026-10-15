@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.107
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.108
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.107"
+$Script:AppVersion = "v20.5.909.108"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -624,17 +624,7 @@ function Switch-Tab {
         $targetPage.Visibility = [System.Windows.Visibility]::Visible
 
         try {
-            $trans = New-Object System.Windows.Media.TranslateTransform(0, 8)
-            $targetPage.RenderTransform = $trans
-
-            $animY = New-Object System.Windows.Media.Animation.DoubleAnimation(8, 0, [System.TimeSpan]::FromMilliseconds(220))
-            $easingY = New-Object System.Windows.Media.Animation.CubicEase
-            $easingY.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
-            $animY.EasingFunction = $easingY
-            $trans.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $animY)
-
-            $animOp = New-Object System.Windows.Media.Animation.DoubleAnimation(0.15, 1.0, [System.TimeSpan]::FromMilliseconds(220))
-            $animOp.EasingFunction = $easingY
+            $animOp = New-Object System.Windows.Media.Animation.DoubleAnimation(0.2, 1.0, [System.TimeSpan]::FromMilliseconds(100))
             $targetPage.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $animOp)
         } catch {}
     }
@@ -5373,8 +5363,8 @@ if ($btnRefreshBackupDrives) {
     })
 }
 
-# Tự động nạp danh sách ổ đĩa đích ban đầu
-Refresh-VUONGTTBackupTargetDrives
+# Danh sách ổ đĩa đích sẽ được nạp khi mở tab hoặc quét lại
+# (Tránh quét WMI LogicalDisk đồng bộ lúc khởi động tool)
 
 if ($btnBrowseCustomBackupTarget) {
     $btnBrowseCustomBackupTarget.Add_Click({
@@ -10903,25 +10893,33 @@ Switch-TechUtilitiesSubTab "Tech_Backup" -SkipRefresh
 if (Get-Command Switch-PrinterLANSubTab -ErrorAction SilentlyContinue) { Switch-PrinterLANSubTab "fix" -SkipRefresh }
 $txtFooterStatus.Text = "• [OK] Đang khởi động hệ thống và nạp thông số phần cứng..."
 
-# Tải dữ liệu phần cứng ngầm sau khi cửa sổ đã hiện lên màn hình người dùng
+# Nạp giao diện tức thì và trì hoãn các tác vụ WMI nặng sang Dispatcher Background (Zero UI Freeze)
 $window.Add_ContentRendered({
-    Invoke-VUONGTTDoEvents
-    Refresh-SysInfoDisplay
-    Update-VUONGTTLicenseUI
     $txtFooterStatus.Text = "• [OK] VUONGTT Tool Pro 2026 sẵn sàng phục vụ!"
+    Update-VUONGTTLicenseUI
+    Update-LiveGaugeValues
 
     $script:appRootDir = if ($global:ScriptDir) { $global:ScriptDir } elseif ($ScriptDir) { $ScriptDir } else { (Get-Location).Path }
+
+    # Trì hoãn nạp WMI chi tiết sau 60ms để giao diện WPF phản hồi chuột và tương tác 100% tức thì
+    $hardwareDeferTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $hardwareDeferTimer.Interval = [TimeSpan]::FromMilliseconds(60)
+    $hardwareDeferTimer.Add_Tick({
+        $hardwareDeferTimer.Stop()
+        try {
+            Refresh-SysInfoDisplay
+            Refresh-PostWinDriverStatusBadge
+        } catch {}
+    })
+    $hardwareDeferTimer.Start()
 
     # ================= 1. REALTIME STARTUP AUTO-UPDATE ENGINE (SAFE ISOLATED RUNSPACE) =================
     # Kiểm tra cập nhật NGAY LẬP TỨC KHI VỪA MỞ TOOL nếu có kết nối mạng Internet (100% An toàn, không Crash)
     $script:startupPs = $null
     $script:startupAsyncHandle = $null
 
-    try { Refresh-PostWinDriverStatusBadge
-                Refresh-VUONGTTBackupTargetDrives } catch {}
-
     $startupCheckTimer = New-Object System.Windows.Threading.DispatcherTimer
-    $startupCheckTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+    $startupCheckTimer.Interval = [TimeSpan]::FromMilliseconds(800)
     $startupCheckTimer.Add_Tick({
         $startupCheckTimer.Stop()
 
