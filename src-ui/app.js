@@ -97,6 +97,10 @@
       }
     });
 
+    if (targetId === "view-win-optimize") {
+      setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 50);
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1699,9 +1703,34 @@
         if (res && res.success) {
           appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
           showToast("Thành Công", res.message, "success");
+          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 300);
         } else {
           appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể kích hoạt gói nguồn"}`, "error");
           showToast("Lỗi", (res && res.message) || "Không thể chuyển nguồn điện", "error");
+        }
+      } catch (err) {
+        appendTweakLog(`[LỖI] ✗ ${err}`, "error");
+        showToast("Lỗi", String(err), "error");
+      }
+    };
+
+    // --- CHẾ ĐỘ 24/7 (NEVER SLEEP) CONTROLLER ---
+    window.toggleNeverSleep = async function() {
+      appendTweakLog("[CHẾ ĐỘ 24/7] Đang thiết lập chế độ Không Ngủ (Never Sleep / 24/7 Non-stop)...", "progress");
+      showToast("Nguồn Điện 24/7", "Đang tắt Sleep, Hibernate và tắt đĩa để máy tính chạy 24/7...", "info");
+      try {
+        const res = await invokeRust("run_system_action", {
+          actionId: "set_never_sleep",
+          plan: "never_sleep",
+          params: { plan: "never_sleep" }
+        });
+        if (res && res.success) {
+          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+          showToast("Thành Công 24/7", res.message, "success");
+          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 300);
+        } else {
+          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể kích hoạt chế độ 24/7"}`, "error");
+          showToast("Lỗi", (res && res.message) || "Không thể kích hoạt chế độ 24/7", "error");
         }
       } catch (err) {
         appendTweakLog(`[LỖI] ✗ ${err}`, "error");
@@ -1723,6 +1752,7 @@
         if (res && res.success) {
           appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
           showToast("Thành Công", res.message, "success");
+          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);
         } else {
           appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể đổi DNS"}`, "error");
           showToast("Lỗi", (res && res.message) || "Lỗi khi cấu hình DNS", "error");
@@ -1730,6 +1760,116 @@
       } catch (err) {
         appendTweakLog(`[LỖI] ✗ ${err}`, "error");
         showToast("Lỗi", String(err), "error");
+      }
+    };
+
+    // --- SYNC REAL WIN OPTIMIZE & POWER STATE ---
+    window.syncRealWinOptimizeState = async function() {
+      try {
+        const res = await invokeRust("get_win_optimize_state", {});
+        if (!res || !res.success || !res.data) return;
+        const data = res.data;
+
+        // 1. Đồng bộ Gói Nguồn Điện (Power Plans) thực tế
+        const powerGrid = document.getElementById("power-plans-grid");
+        const powerBadge = document.getElementById("active-power-badge");
+        if (powerGrid) {
+          powerGrid.querySelectorAll(".power-plan-btn").forEach((b) => {
+            b.className = "power-plan-btn p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex flex-col gap-1 text-left transition-all cursor-pointer";
+            const ping = b.querySelector(".animate-ping");
+            if (ping) ping.remove();
+          });
+
+          const schemeLower = (data.scheme || "").toLowerCase();
+          let activeKey = "balanced";
+          let badgeText = "BALANCED ACTIVE";
+          let badgeColor = "bg-primary-container text-on-primary-container";
+
+          if (data.sleep_seconds === 0 && (schemeLower.includes("high") || schemeLower.includes("never"))) {
+            activeKey = "never_sleep";
+            badgeText = "24/7 NON-STOP ACTIVE";
+            badgeColor = "bg-amber-500/20 text-amber-500 ring-1 ring-amber-500";
+          } else if (schemeLower.includes("ultimate") || schemeLower.includes("cuc dai") || schemeLower.includes("cực đại")) {
+            activeKey = "ultimate";
+            badgeText = "ULTIMATE ACTIVE";
+            badgeColor = "bg-error-container text-on-error-container";
+          } else if (schemeLower.includes("high") || schemeLower.includes("hieu nang cao") || schemeLower.includes("hiệu năng cao")) {
+            activeKey = "high";
+            badgeText = "HIGH PERF ACTIVE";
+            badgeColor = "bg-secondary-container text-on-secondary-container";
+          } else if (schemeLower.includes("saver") || schemeLower.includes("tiet kiem") || schemeLower.includes("tiết kiệm")) {
+            activeKey = "saver";
+            badgeText = "SAVER ACTIVE";
+            badgeColor = "bg-surface-container-high text-outline";
+          } else {
+            activeKey = "balanced";
+            badgeText = "BALANCED ACTIVE";
+            badgeColor = "bg-tertiary-container text-on-tertiary-container";
+          }
+
+          const activeBtn = powerGrid.querySelector(`button[data-plan="${activeKey}"]`);
+          if (activeBtn) {
+            const is247 = activeKey === "never_sleep";
+            activeBtn.className = is247
+              ? "power-plan-btn p-3 rounded-xl bg-amber-500/15 text-amber-400 flex flex-col gap-1 text-left shadow-sm transition-all ring-1 ring-amber-500 cursor-pointer col-span-2 md:col-span-2"
+              : "power-plan-btn p-3 rounded-xl bg-error-container text-on-error-container flex flex-col gap-1 text-left shadow-sm transition-all ring-1 ring-error cursor-pointer";
+            const topRow = activeBtn.querySelector(".flex.items-center.justify-between");
+            if (topRow && !topRow.querySelector(".animate-ping")) {
+              const pingEl = document.createElement("span");
+              pingEl.className = is247 ? "w-2 h-2 rounded-full bg-amber-500 animate-ping" : "w-2 h-2 rounded-full bg-error animate-ping";
+              topRow.appendChild(pingEl);
+            }
+          }
+
+          if (powerBadge) {
+            powerBadge.textContent = badgeText;
+            powerBadge.className = `px-2 py-0.5 rounded font-code-sm text-code-sm font-bold uppercase ${badgeColor}`;
+          }
+        }
+
+        // 2. Đồng bộ DNS thực tế của card mạng
+        const dnsSelector = document.getElementById("dns-selector");
+        const dnsBadge = document.getElementById("active-dns-badge");
+        const primaryText = document.getElementById("dns-primary-text");
+        const secondaryText = document.getElementById("dns-secondary-text");
+        const adapterText = document.getElementById("dns-adapter-text");
+
+        const dnsList = data.dns || [];
+        const primaryDns = dnsList[0] || "";
+        const secondaryDns = dnsList[1] || "";
+        const adapter = data.adapter || "Active LAN";
+
+        if (primaryText) primaryText.textContent = `Primary: ${primaryDns || "DHCP Tự Nhận"}`;
+        if (secondaryText) secondaryText.textContent = `Secondary: ${secondaryDns || "(Không có)"}`;
+        if (adapterText) adapterText.textContent = `Card: ${adapter}`;
+
+        if (dnsSelector) {
+          if (primaryDns === "1.1.1.1") dnsSelector.value = "cloudflare";
+          else if (primaryDns === "8.8.8.8") dnsSelector.value = "google";
+          else if (primaryDns === "9.9.9.9") dnsSelector.value = "quad9";
+          else if (primaryDns.startsWith("94.140.")) dnsSelector.value = "adguard";
+          else dnsSelector.value = "dhcp";
+        }
+
+        if (dnsBadge) {
+          dnsBadge.textContent = primaryDns ? `${primaryDns} Active` : "DHCP Router";
+        }
+
+        // 3. Đồng bộ Toggles cài đặt hệ thống thực tế
+        const toggleDark = document.getElementById("toggle-dark-theme");
+        if (toggleDark) toggleDark.checked = !!data.dark_theme;
+
+        const toggleLong = document.getElementById("toggle-long-paths");
+        if (toggleLong) toggleLong.checked = !!data.long_paths;
+
+        const toggleExt = document.getElementById("toggle-show-ext");
+        if (toggleExt) toggleExt.checked = !!data.show_ext;
+
+        const toggleHidden = document.getElementById("toggle-show-hidden");
+        if (toggleHidden) toggleHidden.checked = !!data.show_hidden;
+
+      } catch (e) {
+        console.warn("syncRealWinOptimizeState error:", e);
       }
     };
 
@@ -1788,6 +1928,7 @@
     initDiskSmartController();
     initCpuMainController();
     initUserMgmtController();
+    if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState();
     updateClock();
     setInterval(updateClock, 1000);
     pollSystemTelemetry();

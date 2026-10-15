@@ -985,12 +985,28 @@ fn restart_explorer_safely() {}
     // ========================================================================
     // 9.7 GÓI NGUỒN ĐIỆN (POWER PLANS: ULTIMATE, HIGH, BALANCED, SAVER)
     // ========================================================================
-    if act == "set_power_plan" || act.contains("power_plan") || act.contains("powerplan") || act.contains("nguon dien") || act.contains("power plan") {
+    if act == "set_power_plan" || act == "set_never_sleep" || act == "disable_sleep" || act.contains("power_plan") || act.contains("powerplan") || act.contains("nguon dien") || act.contains("power plan") || act.contains("never_sleep") {
         let plan_arg = extract_json_field(params_json, "plan").unwrap_or("").to_lowercase();
         let plan = if !plan_arg.is_empty() { plan_arg } else { act.clone() };
         let plan_clean = strip_accents(&plan);
 
-        if plan_clean.contains("ultimate") || plan_clean.contains("cuc dai") {
+        if plan_clean.contains("never_sleep") || plan_clean.contains("24/7") || plan_clean.contains("chay 24") || plan_clean.contains("tat sleep") || plan_clean.contains("khong tat") {
+            let ps_code = r#"
+                powercfg /change standby-timeout-ac 0
+                powercfg /change standby-timeout-dc 0
+                powercfg /change hibernate-timeout-ac 0
+                powercfg /change hibernate-timeout-dc 0
+                powercfg /change disk-timeout-ac 0
+                powercfg /change disk-timeout-dc 0
+                powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+            "#;
+            let mut cmd = Command::new("powershell");
+            cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            return (true, "Đã kích hoạt chế độ Nguồn 24/7 (Never Sleep): Tắt hoàn toàn chế độ Sleep, Hibernate và tắt đĩa, máy tính sẵn sàng hoạt động 24/7 liên tục không bị gián đoạn!".to_string());
+        } else if plan_clean.contains("ultimate") || plan_clean.contains("cuc dai") {
             let ps_code = r#"
                 $u = (powercfg /list | Select-String -Pattern "Ultimate" | ForEach-Object { if ($_ -match "GUID:\s+([a-f0-9\-]+)") { $matches[1] } } | Select-Object -First 1)
                 if (-not $u) {
@@ -1640,6 +1656,52 @@ pub fn collect_local_users() -> String {
     "[]".to_string()
 }
 
+pub fn collect_win_optimize_state() -> String {
+    let mut cmd = Command::new("powershell");
+    cmd.args([
+        "-NoProfile",
+        "-Command",
+        r#"
+        $scheme = (powercfg /getactivescheme 2>$null | Out-String).Trim()
+        $q = (powercfg /q SCHEME_CURRENT SUB_SLEEP STANDBYIDLE 2>$null | Out-String)
+        $sleepAc = -1
+        if ($q -match 'Current AC Power Setting Index:\s+(0x[0-9a-fA-F]+)') {
+            $sleepAc = [convert]::ToInt32($matches[1], 16)
+        }
+        $dnsObj = (Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -First 1)
+        $dark = (Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'AppsUseLightTheme' -ErrorAction SilentlyContinue).AppsUseLightTheme
+        $ext = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt' -ErrorAction SilentlyContinue).HideFileExt
+        $hidden = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'Hidden' -ErrorAction SilentlyContinue).Hidden
+        $classic = (Test-Path 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32')
+
+        $dnsArr = @()
+        if ($dnsObj -and $dnsObj.ServerAddresses) { $dnsArr = $dnsObj.ServerAddresses }
+        $adapter = ''
+        if ($dnsObj -and $dnsObj.InterfaceAlias) { $adapter = $dnsObj.InterfaceAlias }
+
+        ConvertTo-Json -Compress ([PSCustomObject]@{
+            scheme = $scheme
+            sleep_seconds = $sleepAc
+            dns = $dnsArr
+            adapter = $adapter
+            dark_theme = ($dark -eq 0)
+            show_ext = ($ext -eq 0)
+            show_hidden = ($hidden -eq 1)
+            classic_context = $classic
+        })
+        "#,
+    ]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    if let Ok(output) = cmd.output() {
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() && text.starts_with('{') {
+            return text;
+        }
+    }
+    r#"{"scheme":"","sleep_seconds":-1,"dns":[],"adapter":"","dark_theme":false,"show_ext":false,"show_hidden":false,"classic_context":false}"#.to_string()
+}
+
 pub fn manage_local_user(sub_action: &str, username: &str, value: &str) -> (bool, String) {
     if username.trim().is_empty() {
         return (false, "Tên tài khoản người dùng không được để trống!".to_string());
@@ -1950,6 +2012,21 @@ mod tests {
         let (ok2, msg2) = execute_system_action("disable_activity_history", "{}");
         assert!(ok2, "disable_activity_history failed: {}", msg2);
         assert!(msg2.contains("Lịch Sử Hoạt Động"), "Expected Activity History confirmation: {}", msg2);
+    }
+
+    #[test]
+    fn test_set_power_plan_never_sleep() {
+        let (ok, msg) = execute_system_action("set_power_plan", r#"{"plan":"never_sleep"}"#);
+        assert!(ok, "set_power_plan never_sleep failed: {}", msg);
+        assert!(msg.contains("Never Sleep"), "Expected Never Sleep in message: {}", msg);
+    }
+
+    #[test]
+    fn test_collect_win_optimize_state() {
+        let json_str = collect_win_optimize_state();
+        assert!(!json_str.is_empty(), "Win optimize state JSON should not be empty");
+        assert!(json_str.contains("scheme"), "JSON should contain scheme");
+        assert!(json_str.contains("dns"), "JSON should contain dns");
     }
 }
 

@@ -18,7 +18,7 @@ use std::time::Instant;
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-const APP_VERSION: &str = "20.5.909.116";
+const APP_VERSION: &str = "20.5.909.117";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -168,6 +168,9 @@ fn handle_client(
         } else if body.contains("get_cpu_main_details") {
             let details = system_ops::collect_cpu_main_details();
             json_resp = format!(r#"{{"success":true,"data":{}}}"#, details);
+        } else if body.contains("get_win_optimize_state") {
+            let state_json = system_ops::collect_win_optimize_state();
+            json_resp = format!(r#"{{"success":true,"data":{}}}"#, state_json);
         } else if body.contains("get_local_users") {
             let users = system_ops::collect_local_users();
             json_resp = format!(r#"{{"success":true,"data":{}}}"#, users);
