@@ -86,6 +86,20 @@ if (-not $NoBump) {
         $txt = $txt -replace '\$currentVer\s*=\s*"\d+\.\d+\.\d+\.\d+"', "`$currentVer = `"$newVer`""
         [System.IO.File]::WriteAllText($mainPs1, $txt, (New-Object System.Text.UTF8Encoding($true)))
     }
+
+    # 6. src-tauri/Cargo.toml & src-tauri/src/main.rs
+    $cargoPath = Join-Path $RootDir "src-tauri\Cargo.toml"
+    if (Test-Path $cargoPath) {
+        $cTxt = [System.IO.File]::ReadAllText($cargoPath, [System.Text.Encoding]::UTF8)
+        $cTxt = $cTxt -replace 'version\s*=\s*"[^"]+"', "version = `"$newVer`""
+        [System.IO.File]::WriteAllText($cargoPath, $cTxt, (New-Object System.Text.UTF8Encoding($false)))
+    }
+    $mainRsPath = Join-Path $RootDir "src-tauri\src\main.rs"
+    if (Test-Path $mainRsPath) {
+        $rTxt = [System.IO.File]::ReadAllText($mainRsPath, [System.Text.Encoding]::UTF8)
+        $rTxt = $rTxt -replace 'APP_VERSION:\s*&str\s*=\s*"[^"]+"', "APP_VERSION: &str = `"$newVer`""
+        [System.IO.File]::WriteAllText($mainRsPath, $rTxt, (New-Object System.Text.UTF8Encoding($false)))
+    }
 }
 
 $cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"

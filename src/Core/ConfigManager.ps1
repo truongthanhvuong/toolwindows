@@ -316,6 +316,7 @@ function Invoke-VUONGTTFixHostsFile {
         $hostsPath = $TargetPath
         $log += "[1/2] Sao lưu file hosts hiện tại..."
         if (Test-Path $hostsPath) {
+            try { (Get-Item $hostsPath).Attributes = 'Normal' } catch {}
             Copy-Item -Path $hostsPath -Destination "$hostsPath.bak_$(Get-Date -Format 'yyyyMMddHHmm')" -Force -ErrorAction Stop
         }
 

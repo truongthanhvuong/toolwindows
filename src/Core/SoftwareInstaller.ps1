@@ -636,6 +636,15 @@ if (-not (Get-Command Start-VUONGTTResponsiveDownload -ErrorAction SilentlyConti
             [int]$TimeoutSeconds = 300
         )
 
+        # Nếu tệp cục bộ đã tồn tại và hợp lệ (> 1MB), tái sử dụng ngay để tối ưu tốc độ và chống nghẽn mạng
+        if (Test-Path $OutFile) {
+            $existingLen = (Get-Item $OutFile).Length
+            if ($existingLen -gt 1048576) {
+                if ($OnProgress) { & $OnProgress "  -> Đã có sẵn tệp tải về trong bộ nhớ đệm ($([math]::Round($existingLen / 1MB, 1)) MB), bỏ qua tải lại." }
+                return $true
+            }
+        }
+
         try {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
             [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
@@ -1122,6 +1131,8 @@ function Install-VUONGTTApp {
     $hasWinget = Test-VUONGTTWinget
     $wingetOkCodes = @(0, 3010, 1641)
     $directUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) { $app.Url } else { $app.DirectUrl }
+    $cleanId = $app.Id.Trim().ToLower()
+    $map = if ($script:APP_EXEC_MAP -and $script:APP_EXEC_MAP.ContainsKey($cleanId)) { $script:APP_EXEC_MAP[$cleanId] } else { $null }
 
     # Scriptblock thực thi Tải Trực Tiếp & Cài Đặt
     $runDirectInstall = {
