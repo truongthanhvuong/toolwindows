@@ -112,7 +112,23 @@
     const low = raw.toLowerCase();
 
     let actionId = "";
-    if (low.includes("winsock") || low.includes("mạng") || low.includes("lan") || low.includes("rot mang") || low.includes("mất mạng")) {
+    if (low.includes("bypass pass") || low.includes("phá mật khẩu") || low.includes("reset pass") || low.includes("sam flush") || low.includes("xóa trắng mật khẩu")) {
+      actionId = "bypass_pass";
+    } else if (low.includes("hiện file") || low.includes("unhide") || low.includes("attrib")) {
+      actionId = "unhide_files";
+    } else if (low.includes("dọn virus shortcut") || low.includes("shortcut giả") || low.includes("clean_shortcut") || low.includes("diệt shortcut")) {
+      actionId = "clean_shortcut_virus";
+    } else if (low.includes("ultraviewer")) {
+      actionId = "open_ultraviewer";
+    } else if (low.includes("anydesk")) {
+      actionId = "open_anydesk";
+    } else if (low.includes("rustdesk")) {
+      actionId = "open_rustdesk";
+    } else if (low.includes("teamviewer")) {
+      actionId = "open_teamviewer";
+    } else if (low.includes("device manager") || low.includes("devmgmt")) {
+      actionId = "open_devmgmt";
+    } else if (low.includes("winsock") || low.includes("mạng") || low.includes("lan") || low.includes("rot mang") || low.includes("mất mạng")) {
       actionId = "fix_network_freeze";
     } else if (low.includes("admin ẩn") || low.includes("sid 500") || low.includes("bật / tắt admin") || low.includes("admin_an")) {
       actionId = "enable_hidden_admin";
@@ -192,6 +208,10 @@
 
   // --- 4. SUB-TAB ROUTE MAPPINGS (MAPPED 100% TO EXACT SECTION IDs) ---
   const subTabRouteMap = [
+    { match: "Cấu Hình & Sửa Lỗi", target: "view-tech-driver" },
+    { match: "Tối Ưu & Tweaks", target: "view-win-optimize" },
+    { match: "Cứu Hộ IT Helpdesk", target: "view-it-helpdesk" },
+    { match: "Quét Driver & Sao Lưu", target: "view-tech-driver" },
     { match: "Cấu Hình Máy", target: "view-sys-monitor" },
     { match: "Tùy Chỉnh OEM", target: "view-oem-brand" },
     { match: "OEM", target: "view-oem-brand" },
@@ -908,7 +928,9 @@
       if (!text) return;
 
       // Skip elements handled by dedicated controllers
-      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select")) return;
+      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select" || btn.id === "btn-run-deploy" || btn.id.startsWith("tab-soft-") || btn.id.startsWith("btn-scan-") || btn.id.startsWith("btn-export-") || btn.id.startsWith("btn-restore-"))) return;
+      if (btn.hasAttribute("onclick")) return;
+      if (btn.closest("#subview-soft-custom") || btn.closest("#subview-soft-uninstall") || btn.closest("#subview-soft-fonts") || btn.closest("#view-oem-brand")) return;
       if (btn.closest("#view-soft-winget") && btn.closest(".mb-space-lg")) return; // Category Filter Pills
       if (btn.closest("#sidebar-nav")) return;
 
@@ -956,7 +978,7 @@
       // Only attach to buttons (skip random links)
       if (btn.tagName === "BUTTON") {
         btn.addEventListener("click", async (e) => {
-          if (btn.closest("#view-soft-winget")) return; // Safe guard
+          if (btn.closest("#view-soft-winget") || btn.closest("#view-oem-brand") || btn.id === "btn-run-deploy" || btn.hasAttribute("onclick")) return; // Safe guard
 
           e.preventDefault();
           const label = text.replace(/\s+/g, " ").trim();
@@ -1938,6 +1960,236 @@
 
     updateTweakCount();
   }
+
+  // --- 12. SOFTWARE HUB CONTROLLERS (SUB-TABS, UNINSTALLER, FONTS, CUSTOM) ---
+  let cachedInstalledApps = [];
+
+  window.switchSoftSubTab = function(tabName) {
+    const tabs = ["store", "custom", "uninstall", "fonts"];
+    tabs.forEach((t) => {
+      const el = document.getElementById(`subview-soft-${t}`);
+      const btn = document.getElementById(`tab-soft-${t}`);
+      if (el) {
+        if (t === tabName) {
+          el.classList.remove("hidden");
+        } else {
+          el.classList.add("hidden");
+        }
+      }
+      if (btn) {
+        if (t === tabName) {
+          btn.className = "px-3.5 py-1.5 rounded-md font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm flex items-center gap-1.5 transition-all";
+        } else {
+          btn.className = "px-3.5 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-1.5";
+        }
+      }
+    });
+
+    if (tabName === "uninstall" && cachedInstalledApps.length === 0) {
+      window.refreshInstalledApps();
+    }
+  };
+
+  window.refreshInstalledApps = async function() {
+    const tbody = document.getElementById("tbodyInstalledApps");
+    const badge = document.getElementById("badgeInstalledCount");
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-secondary font-body-md animate-pulse">Đang quét toàn bộ Registry Uninstall...</td></tr>`;
+    }
+
+    try {
+      const res = await invokeRust("get_installed_apps", {});
+      let apps = [];
+      if (res && res.data) {
+        try {
+          apps = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+        } catch (_) {
+          apps = [];
+        }
+      }
+      cachedInstalledApps = Array.isArray(apps) ? apps : [];
+      if (badge) badge.textContent = `${cachedInstalledApps.length} Ứng Dụng`;
+      window.renderInstalledApps(cachedInstalledApps);
+    } catch (e) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-error font-body-md">Lỗi khi quét ứng dụng: ${e}</td></tr>`;
+    }
+  };
+
+  window.renderInstalledApps = function(apps) {
+    const tbody = document.getElementById("tbodyInstalledApps");
+    if (!tbody) return;
+    if (!apps || apps.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-on-surface-variant font-body-md">Không tìm thấy ứng dụng phù hợp.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = apps.map((app) => {
+      const name = (app.name || "").replace(/"/g, '&quot;');
+      const pub = (app.publisher || "Chưa rõ").replace(/"/g, '&quot;');
+      const ver = (app.version || "1.0").replace(/"/g, '&quot;');
+      const uninst = (app.uninstall_string || "").replace(/"/g, '&quot;');
+      return `
+        <tr class="hover:bg-surface-container transition-colors">
+          <td class="p-3 font-semibold text-on-surface">${name}</td>
+          <td class="p-3 text-on-surface-variant">${pub}</td>
+          <td class="p-3 font-code-sm text-code-sm text-outline">${ver}</td>
+          <td class="p-3 text-right">
+            <button onclick="window.uninstallSpecificApp('${name.replace(/'/g, "\\'")}', '${uninst.replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded bg-error-container hover:bg-error text-on-error font-label-sm text-label-sm transition-colors">
+              Gỡ Cài Đặt
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  };
+
+  window.filterInstalledApps = function(query) {
+    const q = (query || "").toLowerCase().trim();
+    if (!q) {
+      window.renderInstalledApps(cachedInstalledApps);
+      return;
+    }
+    const filtered = cachedInstalledApps.filter((a) =>
+      (a.name || "").toLowerCase().includes(q) ||
+      (a.publisher || "").toLowerCase().includes(q)
+    );
+    window.renderInstalledApps(filtered);
+  };
+
+  window.uninstallSpecificApp = async function(name, uninstStr) {
+    if (!confirm(`Bạn có chắc chắn muốn gỡ bỏ ứng dụng: ${name}?`)) return;
+    showToast("Gỡ Cài Đặt", `Đang khởi chạy trình gỡ cho ${name}...`, "info");
+    const res = await invokeRust("run_system_action", {
+      actionId: "uninstall_app",
+      params: { name, uninstall_string: uninstStr },
+    });
+    showToast(res && res.success ? "Thành Công" : "Thông Báo", (res && res.message) || `Đã kích hoạt lệnh gỡ ${name}`, res && res.success ? "success" : "info");
+    setTimeout(() => window.refreshInstalledApps(), 2000);
+  };
+
+  window.openUninstallerTool = async function(tool) {
+    const res = await invokeRust("run_system_action", {
+      actionId: "open_uninstaller_tool",
+      params: { tool },
+    });
+    showToast("Công Cụ Gỡ", (res && res.message) || `Đang mở ${tool}...`, "info");
+  };
+
+  window.installFontPack = async function(pack) {
+    showToast("Cài Font Chữ", `Đang triển khai bộ font ${pack.toUpperCase()}...`, "info");
+    const res = await invokeRust("run_system_action", {
+      actionId: "install_font_pack",
+      params: { pack },
+    });
+    showToast(res && res.success ? "Thành Công" : "Lỗi", (res && res.message) || `Cài đặt font ${pack} hoàn tất!`, res && res.success ? "success" : "error");
+  };
+
+  window.openWindowsFontsFolder = function() {
+    invokeRust("run_system_action", { actionId: "open_fonts_folder" });
+    showToast("Windows Fonts", "Đang mở thư mục C:\\Windows\\Fonts", "info");
+  };
+
+  window.browseCustomInstaller = async function() {
+    const res = await invokeRust("run_system_action", { actionId: "browse_file" });
+    if (res && res.message && res.message.includes("\\")) {
+      const input = document.getElementById("txtCustomInstallerPath");
+      if (input) input.value = res.message;
+    }
+  };
+
+  window.setSilentArg = function(arg) {
+    const input = document.getElementById("txtCustomInstallerArgs");
+    if (input) input.value = arg;
+  };
+
+  window.clearCustomLog = function() {
+    const term = document.getElementById("custom-install-terminal-body");
+    if (term) term.innerHTML = `<div class="text-outline/70">[Ready] Sẵn sàng thực thi. Chọn tệp cài đặt và bấm "Bắt Đầu Cài Đặt Ngay".</div>`;
+  };
+
+  window.executeCustomInstall = async function() {
+    const path = document.getElementById("txtCustomInstallerPath")?.value?.trim();
+    const args = document.getElementById("txtCustomInstallerArgs")?.value?.trim() || "";
+    const term = document.getElementById("custom-install-terminal-body");
+
+    if (!path) {
+      showToast("Lỗi", "Vui lòng nhập đường dẫn tệp cài đặt!", "error");
+      return;
+    }
+
+    if (term) {
+      term.innerHTML += `<div class="text-primary font-bold">[EXEC] Bắt đầu cài đặt: ${path} với tham số: ${args}</div>`;
+      term.scrollTop = term.scrollHeight;
+    }
+
+    showToast("Cài Đặt Tùy Chỉnh", `Đang cài đặt: ${path}...`, "info");
+    const res = await invokeRust("run_system_action", {
+      actionId: "custom_install",
+      params: { path, args },
+    });
+
+    if (term) {
+      term.innerHTML += `<div class="${res && res.success ? 'text-tertiary' : 'text-error'}">[KẾT QUẢ] ${(res && res.message) || 'Đã gửi lệnh cài đặt'}</div>`;
+      term.scrollTop = term.scrollHeight;
+    }
+    showToast(res && res.success ? "Thành Công" : "Lỗi", (res && res.message) || "Hoàn tất cài đặt tùy chỉnh!", res && res.success ? "success" : "error");
+  };
+
+  // --- 13. OEM BRANDING REAL REGISTRY CONTROLLERS ---
+  window.applyOEMChanges = async function() {
+    const mfg = document.getElementById('input-manufacturer')?.value || "";
+    const model = document.getElementById('input-model')?.value || "";
+    const phone = document.getElementById('input-phone')?.value || "";
+    const hours = document.getElementById('input-hours')?.value || "";
+    const url = document.getElementById('input-url')?.value || "";
+    const owner = document.getElementById('input-owner')?.value || "";
+    const org = document.getElementById('input-org')?.value || "";
+
+    const consoleEl = document.getElementById('console-log-msg');
+    if (consoleEl) {
+      consoleEl.textContent = `Đang ghi Registry: Manufacturer="${mfg}", Model="${model}"...`;
+    }
+
+    showToast("OEM Branding", `Đang áp dụng thông tin thương hiệu ${mfg}...`, "info");
+
+    const res = await invokeRust("run_system_action", {
+      actionId: "set_oem_branding",
+      params: { manufacturer: mfg, model, phone, hours, url, owner, org }
+    });
+
+    const msg = (res && res.message) || `Đã ghi thành công thông tin thương hiệu [${mfg}] vào Windows Registry!`;
+    if (consoleEl) {
+      consoleEl.textContent = msg;
+    }
+    showToast(res && res.success ? "Thành Công" : "Thông Báo", msg, res && res.success ? "success" : "info");
+  };
+
+  window.backupRegistry = async function() {
+    showToast("Sao Lưu", "Đang sao lưu khóa Registry OEM...", "info");
+    const res = await invokeRust("run_system_action", { actionId: "backup_oem" });
+    const msg = (res && res.message) || "Đã xuất sao lưu Registry OEM hoàn tất!";
+    const consoleEl = document.getElementById('console-log-msg');
+    if (consoleEl) consoleEl.textContent = msg;
+    showToast("Sao Lưu", msg, "success");
+  };
+
+  window.resetDefaults = async function() {
+    if (document.getElementById('input-manufacturer')) document.getElementById('input-manufacturer').value = "Microsoft Corporation";
+    if (document.getElementById('input-model')) document.getElementById('input-model').value = "Standard PC System";
+    if (document.getElementById('input-phone')) document.getElementById('input-phone').value = "";
+    if (document.getElementById('input-hours')) document.getElementById('input-hours').value = "";
+    if (document.getElementById('input-url')) document.getElementById('input-url').value = "";
+    if (document.getElementById('input-owner')) document.getElementById('input-owner').value = "Windows User";
+    if (document.getElementById('input-org')) document.getElementById('input-org').value = "WORKGROUP";
+    if (typeof clearLogo === "function") clearLogo();
+    if (typeof updatePreview === "function") updatePreview();
+
+    const res = await invokeRust("run_system_action", { actionId: "reset_oem_branding" });
+    const msg = (res && res.message) || "Đã khôi phục cấu hình OEM mặc định của Windows.";
+    const consoleEl = document.getElementById('console-log-msg');
+    if (consoleEl) consoleEl.textContent = msg;
+    showToast("OEM Reset", msg, "success");
+  };
 
   // --- 10. HEARTBEAT & LIFECYCLE CONTROLLER ---
   function sendHeartbeat() {

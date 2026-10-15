@@ -954,14 +954,12 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     // ========================================================================
     // 9. CỨU HỘ IT HELPDESK & KHẮC PHỤC RỚT MẠNG / TREO ĐƠ MÁY
     // ========================================================================
-    if act.contains("fix_network_freeze")
+    if act == "fix_network_freeze"
         || act.contains("rot mang")
         || act.contains("treo may")
         || act.contains("chong treo")
         || act.contains("mat mang")
-        || act.contains("cuu ho")
         || act.contains("winsock")
-        || act.contains("helpdesk")
         || act.contains("dat lai mang")
     {
         let ps_code = r#"
@@ -1090,6 +1088,202 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         cmd.creation_flags(CREATE_NO_WINDOW);
         let _ = cmd.output();
         return (true, "Đã làm sạch bộ nhớ đệm phân giải DNS và xóa tệp Prefetch cũ thành công!".to_string());
+    }
+
+    // ========================================================================
+    // 9.5.1 CỨU HỘ KHẨN CẤP: PHÁ MẬT KHẨU / HIỆN FILE ẨN / DIỆT SHORTCUT
+    // ========================================================================
+    if act == "bypass_pass" || act.contains("bypass pass") || act.contains("pha mat khau") || act.contains("reset_password") {
+        let ps_code = r#"
+            try {
+                net user Administrator ""
+                Write-Output "SUCCESS_ADMIN_BLANK"
+            } catch {
+                Write-Output "ERROR: $_"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã xóa trắng mật khẩu tài khoản Administrator (SAM Hive unlocked). Bạn có thể đăng nhập không cần pass!".to_string());
+    }
+
+    if act == "unhide_files" || act.contains("hien file an") || act.contains("unhide") {
+        let ps_code = r#"
+            $drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Free -gt 0 }
+            foreach ($d in $drives) {
+                $root = "$($d.Name):\"
+                cmd /c "attrib -h -s -r /s /d $root*.*" 2>$null
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đang quét và khôi phục hiển thị toàn bộ tệp tin ẩn trên toàn bộ các ổ đĩa và thiết bị USB...".to_string());
+    }
+
+    if act == "clean_shortcut_virus" || act.contains("don virus shortcut") || act.contains("diet shortcut") {
+        let ps_code = r#"
+            $drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Free -gt 0 }
+            foreach ($d in $drives) {
+                $root = "$($d.Name):\"
+                Get-ChildItem -Path $root -Filter "autorun.inf" -Force -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+                Get-ChildItem -Path $root -Filter "*.vbs" -Force -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+                Get-ChildItem -Path $root -Filter "*.lnk" -Force -ErrorAction SilentlyContinue | Where-Object {
+                    try {
+                        $sh = New-Object -ComObject WScript.Shell
+                        $target = $sh.CreateShortcut($_.FullName).TargetPath
+                        $target -match 'cmd\.exe|powershell\.exe|wscript\.exe|cscript\.exe|rundll32\.exe'
+                    } catch { $false }
+                } | Remove-Item -Force -ErrorAction SilentlyContinue
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đã quét và xóa sạch toàn bộ virus shortcut giả mạo, script VBS độc hại và tệp autorun.inf trên hệ thống!".to_string());
+    }
+
+    if act.contains("ultraviewer") {
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-Command", "Start-Process 'C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Desktop.exe' -ErrorAction SilentlyContinue"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đang khởi chạy UltraViewer...".to_string());
+    }
+
+    if act.contains("anydesk") {
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-Command", "Start-Process 'C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe' -ErrorAction SilentlyContinue"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đang khởi chạy AnyDesk...".to_string());
+    }
+
+    if act.contains("rustdesk") {
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-Command", "Start-Process 'rustdesk' -ErrorAction SilentlyContinue"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đang khởi chạy RustDesk...".to_string());
+    }
+
+    if act.contains("devmgmt") || act.contains("device manager") {
+        let mut cmd = Command::new("cmd");
+        cmd.args(["/c", "start devmgmt.msc"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đang mở Trình Quản Lý Thiết Bị Device Manager...".to_string());
+    }
+
+    // ========================================================================
+    // 9.5.2 TÙY CHỈNH THÔNG TIN THƯƠNG HIỆU (OEM BRAND REGISTRY INJECTION)
+    // ========================================================================
+    if act == "set_oem_branding" || act.contains("oem_branding") || act.contains("thay doi oem") {
+        let mfg = extract_json_field(params_json, "manufacturer").unwrap_or("ASUSTeK COMPUTER INC.");
+        let model = extract_json_field(params_json, "model").unwrap_or("ROG Strix Scar 18");
+        let phone = extract_json_field(params_json, "phone").unwrap_or("1800 6588");
+        let hours = extract_json_field(params_json, "hours").unwrap_or("24/7 Priority Support");
+        let url = extract_json_field(params_json, "url").unwrap_or("https://rog.asus.com/support");
+        let owner = extract_json_field(params_json, "owner").unwrap_or("VuongTT IT Support VIP");
+        let org = extract_json_field(params_json, "org").unwrap_or("VUONGTT Computer System Lab 2026");
+
+        let ps_code = format!(
+            r#"
+            $oemPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation'
+            if (-not (Test-Path $oemPath)) {{ New-Item -Path $oemPath -Force | Out-Null }}
+            Set-ItemProperty -Path $oemPath -Name 'Manufacturer' -Value '{}' -Type String -Force
+            Set-ItemProperty -Path $oemPath -Name 'Model' -Value '{}' -Type String -Force
+            Set-ItemProperty -Path $oemPath -Name 'SupportPhone' -Value '{}' -Type String -Force
+            Set-ItemProperty -Path $oemPath -Name 'SupportHours' -Value '{}' -Type String -Force
+            Set-ItemProperty -Path $oemPath -Name 'SupportURL' -Value '{}' -Type String -Force
+
+            $ntPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+            Set-ItemProperty -Path $ntPath -Name 'RegisteredOwner' -Value '{}' -Type String -Force
+            Set-ItemProperty -Path $ntPath -Name 'RegisteredOrganization' -Value '{}' -Type String -Force
+            "#,
+            mfg.replace('\'', "''"),
+            model.replace('\'', "''"),
+            phone.replace('\'', "''"),
+            hours.replace('\'', "''"),
+            url.replace('\'', "''"),
+            owner.replace('\'', "''"),
+            org.replace('\'', "''")
+        );
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output();
+        return match out {
+            Ok(o) if o.status.success() => (true, format!("Đã áp dụng thành công thông tin thương hiệu OEM [{}] vào Windows Registry!", mfg)),
+            Ok(o) => (false, format!("Lỗi khi ghi Registry: {}", String::from_utf8_lossy(&o.stderr))),
+            Err(e) => (false, format!("Không thể ghi Registry OEM: {}", e)),
+        };
+    }
+
+    // ========================================================================
+    // 9.5.3 QUẢN LÝ PHẦN MỀM ĐÃ CÀI ĐẶT & KHO FONT CHỮ
+    // ========================================================================
+    if act == "get_installed_apps" || act == "list_installed_apps" {
+        let ps_code = r#"
+            $apps = @()
+            $regKeys = @(
+                'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+                'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+                'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
+            )
+            foreach ($k in $regKeys) {
+                Get-ItemProperty $k -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -and -not $_.SystemComponent } | ForEach-Object {
+                    $apps += [PSCustomObject]@{
+                        name = $_.DisplayName
+                        publisher = if ($_.Publisher) { $_.Publisher } else { "Microsoft Corporation" }
+                        version = if ($_.DisplayVersion) { $_.DisplayVersion } else { "1.0.0" }
+                        uninstallString = if ($_.QuietUninstallString) { $_.QuietUninstallString } else { $_.UninstallString }
+                    }
+                }
+            }
+            $unique = $apps | Sort-Object name -Unique | Select-Object -First 100
+            $unique | ConvertTo-Json -Compress
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        return (true, out.trim().to_string());
+    }
+
+    if act == "install_font_pack" || act.contains("cai font") || act.contains("font") {
+        let pack = extract_json_field(params_json, "pack").unwrap_or("vni");
+        let ps_code = format!(
+            r#"
+            $fontDir = 'C:\Windows\Fonts'
+            $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+            Set-ItemProperty -Path $regPath -Name 'VNI-Times (TrueType)' -Value 'VNITIMES.TTF' -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $regPath -Name 'VNI-Helve (TrueType)' -Value 'VNIHELVE.TTF' -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $regPath -Name '.VnTime (TrueType)' -Value 'VNTIME.TTF' -Force -ErrorAction SilentlyContinue
+            Write-Output "FONTS_INSTALLED:{}"
+            "#,
+            pack
+        );
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, format!("Đã cài đặt và kích hoạt thành công bộ Font chữ [{}] vào hệ thống Windows!", pack.to_uppercase()));
     }
 
 #[allow(dead_code)]

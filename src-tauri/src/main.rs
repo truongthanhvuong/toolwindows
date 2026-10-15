@@ -18,7 +18,7 @@ use std::time::Instant;
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-const APP_VERSION: &str = "20.5.909.119";
+const APP_VERSION: &str = "20.5.909.120";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -233,6 +233,9 @@ fn handle_client(
         } else if body.contains("clear_install_logs") {
             system_ops::clear_logs();
             json_resp = r#"{"success":true,"message":"[]"}"#.to_string();
+        } else if body.contains("get_installed_apps") {
+            let (success, msg) = system_ops::execute_system_action("get_installed_apps", body);
+            json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, if msg.is_empty() { "[]" } else { &msg });
         } else if body.contains("run_system_action") {
             let act_id = system_ops::extract_json_field(body, "actionId")
                 .or_else(|| system_ops::extract_json_field(body, "command"))

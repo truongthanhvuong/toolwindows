@@ -1237,11 +1237,11 @@
 <span class="material-symbols-outlined text-[18px]">radar</span>
 <span>Quét Driver Toàn Bộ</span>
 </button>
-<button class="px-3.5 py-2.5 rounded-lg bg-error-container/40 text-error hover:bg-error-container hover:text-on-error-container font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm transition-all">
+<button class="px-3.5 py-2.5 rounded-lg bg-error-container/40 text-error hover:bg-error-container hover:text-on-error-container font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm transition-all" onclick="triggerAction('Device Manager', 'Đang mở Device Manager kiểm tra thiết bị lỗi...')" type="button">
 <span class="material-symbols-outlined text-[18px]">warning</span>
 <span>Xem Thiết Bị Lỗi (0)</span>
 </button>
-<button class="px-3.5 py-2.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm transition-all">
+<button class="px-3.5 py-2.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm transition-all" onclick="triggerAction('Device Manager', 'Đang mở Trình Quản Lý Thiết Bị Device Manager...')" type="button">
 <span class="material-symbols-outlined text-[18px] text-secondary">terminal</span>
 <span>Device Manager</span>
 </button>
@@ -1295,7 +1295,7 @@
 </div>
 <!-- Major Priority CTA Buttons -->
 <div class="flex flex-col gap-2.5">
-<button class="w-full p-3.5 rounded-lg bg-primary-container text-on-primary-container hover:brightness-110 shadow-lg flex items-center justify-between transition-all group active:scale-[0.99]">
+<button class="w-full p-3.5 rounded-lg bg-primary-container text-on-primary-container hover:brightness-110 shadow-lg flex items-center justify-between transition-all group active:scale-[0.99]" onclick="triggerAction('Cập nhật Driver Windows Update', 'Kích hoạt Windows Update quét Driver...')" type="button">
 <div class="flex items-center gap-3">
 <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
 <span class="material-symbols-outlined text-[20px]">system_update</span>
@@ -1307,7 +1307,7 @@
 </div>
 <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
 </button>
-<button class="w-full p-3.5 rounded-lg bg-surface-container-highest text-on-surface hover:bg-surface-bright shadow-md flex items-center justify-between transition-all group">
+<button class="w-full p-3.5 rounded-lg bg-surface-container-highest text-on-surface hover:bg-surface-bright shadow-md flex items-center justify-between transition-all group" onclick="triggerAction('Cài Driver Mạng 3DP Net', 'Tìm kiếm và mở bộ cài 3DP Net...')" type="button">
 <div class="flex items-center gap-3">
 <div class="w-9 h-9 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
 <span class="material-symbols-outlined text-[20px]">wifi_tethering</span>
@@ -1325,7 +1325,7 @@
 <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Công cụ Offline &amp; Hãng sản xuất</span>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 <!-- SDIO Button -->
-<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm">
+<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm" onclick="triggerAction('Bộ Cài SDIO Offline', 'Khởi chạy Snappy Driver Installer...')" type="button">
 <span class="material-symbols-outlined text-[18px] text-primary">hard_drive</span>
 <div class="min-w-0">
 <div class="font-label-md text-label-md font-semibold truncate">Bộ Cài SDIO Offline</div>
@@ -1333,7 +1333,7 @@
 </div>
 </button>
 <!-- 3DP Chip Button -->
-<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm">
+<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm" onclick="triggerAction('3DP Chip Driver', 'Khởi chạy 3DP Chip...')" type="button">
 <span class="material-symbols-outlined text-[18px] text-secondary">memory</span>
 <div class="min-w-0">
 <div class="font-label-md text-label-md font-semibold truncate">3DP Chip Driver</div>
@@ -1341,7 +1341,7 @@
 </div>
 </button>
 <!-- NVIDIA Button -->
-<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm">
+<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm" onclick="triggerAction('NVIDIA GeForce Driver', 'Mở trang tải Driver NVIDIA...')" type="button">
 <span class="material-symbols-outlined text-[18px] text-tertiary">sports_esports</span>
 <div class="min-w-0">
 <div class="font-label-md text-label-md font-semibold truncate">NVIDIA GeForce / RTX</div>
@@ -1349,7 +1349,7 @@
 </div>
 </button>
 <!-- AMD Radeon Button -->
-<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm">
+<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm" onclick="triggerAction('AMD Radeon Driver', 'Mở trang tải Driver AMD...')" type="button">
 <span class="material-symbols-outlined text-[18px] text-error">tune</span>
 <div class="min-w-0">
 <div class="font-label-md text-label-md font-semibold truncate">AMD Radeon / Adrenalin</div>
@@ -1357,7 +1357,7 @@
 </div>
 </button>
 <!-- Intel Arc Button -->
-<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm">
+<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm" onclick="triggerAction('Intel Arc Driver', 'Mở trang tải Driver Intel...')" type="button">
 <span class="material-symbols-outlined text-[18px] text-secondary">files</span>
 <div class="min-w-0">
 <div class="font-label-md text-label-md font-semibold truncate">Intel Arc &amp; Iris Xe</div>
@@ -1365,7 +1365,7 @@
 </div>
 </button>
 <!-- OEM Assistant Button -->
-<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm">
+<button class="p-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface text-left flex items-center gap-2.5 transition-colors shadow-sm" onclick="triggerAction('OEM Driver Assistant', 'Mở cổng hỗ trợ hãng OEM...')" type="button">
 <span class="material-symbols-outlined text-[18px] text-primary">laptop_chromebook</span>
 <div class="min-w-0">
 <div class="font-label-md text-label-md font-semibold truncate">OEM Driver Assistant</div>
@@ -1374,7 +1374,7 @@
 </button>
 </div>
 <!-- Web Support Button -->
-<button class="w-full mt-1 py-2 px-3 rounded-lg bg-surface-container-high/50 hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors">
+<button class="w-full mt-1 py-2 px-3 rounded-lg bg-surface-container-high/50 hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors" onclick="triggerAction('Driver Web Support', 'Mở trang hỗ trợ driver...')" type="button">
 <span class="material-symbols-outlined text-[16px] text-secondary">open_in_browser</span>
 <span>Trang Tải Driver Chính Hãng (Web Support Matrix)</span>
 </button>
@@ -1489,15 +1489,15 @@
 </div>
 <!-- Sub-nav Tabs -->
 <div class="flex items-center gap-1.5 p-1 rounded-xl bg-surface-container-lowest">
-<button class="px-3.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-1.5 shadow-sm transition-all" type="button">
+<button class="px-3.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-1.5 shadow-sm transition-all" onclick="switchView('view-win-optimize')" type="button">
 <span class="material-symbols-outlined text-[16px]">bolt</span>
 <span>Tối Ưu &amp; Tweaks</span>
 </button>
-<button class="px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-1.5 transition-all" type="button">
+<button class="px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-1.5 transition-all" onclick="switchView('view-tech-driver')" type="button">
 <span class="material-symbols-outlined text-[16px]">build_circle</span>
 <span>Cấu Hình &amp; Sửa Lỗi</span>
 </button>
-<button class="px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-1.5 transition-all" type="button">
+<button class="px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-1.5 transition-all" onclick="switchView('view-it-helpdesk')" type="button">
 <span class="material-symbols-outlined text-[16px]">support_agent</span>
 <span>Cứu Hộ IT Helpdesk</span>
 </button>
@@ -7515,15 +7515,15 @@
 <!-- Sub-Navigation Bar -->
 <div class="flex items-center justify-between p-1.5 rounded-xl bg-surface-container-low shadow-sm">
 <div class="flex items-center gap-1.5">
-<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1.5" type="button">
+<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1.5" onclick="switchView('view-win-optimize')" type="button">
 <span class="material-symbols-outlined text-[16px]">tune</span>
 <span>Tối Ưu &amp; Tweaks</span>
 </button>
-<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1.5" type="button">
+<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1.5" onclick="switchView('view-tech-driver')" type="button">
 <span class="material-symbols-outlined text-[16px]">build_circle</span>
 <span>Cấu Hình &amp; Sửa Lỗi</span>
 </button>
-<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-primary-container bg-primary-container shadow-sm flex items-center gap-1.5" type="button">
+<button class="px-3.5 py-1.5 rounded-lg font-label-md text-label-md text-on-primary-container bg-primary-container shadow-sm flex items-center gap-1.5" onclick="switchView('view-it-helpdesk')" type="button">
 <span class="material-symbols-outlined text-[16px] text-tertiary">emergency</span>
 <span>★ Cứu Hộ IT Helpdesk</span>
 <span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse ml-0.5"></span>
