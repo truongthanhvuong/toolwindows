@@ -12,7 +12,7 @@ Write-Host ">>> BAT DAU BIEN DICH VUONGTT TOOL PRO 2026 (RUST NATIVE)..." -Foreg
 
 # 1. Doc phien ban tu version.json
 $verJsonPath = Join-Path $projectRoot "version.json"
-$appVersion = "20.5.909.113"
+$appVersion = "20.5.909.114"
 if (Test-Path $verJsonPath) {
     try {
         $vObj = Get-Content -Path $verJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json

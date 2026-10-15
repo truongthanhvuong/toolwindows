@@ -921,6 +921,25 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         return (true, "Đã làm sạch bộ nhớ đệm phân giải DNS và xóa tệp Prefetch cũ thành công!".to_string());
     }
 
+#[allow(dead_code)]
+#[cfg(windows)]
+fn restart_explorer_safely() {
+    let ps_code = r#"
+        Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 600
+        if (-not (Get-Process -Name explorer -ErrorAction SilentlyContinue)) {
+            Start-Process "$env:SystemRoot\explorer.exe"
+        }
+    "#;
+    let mut cmd = Command::new("powershell");
+    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let _ = cmd.output();
+}
+
+#[cfg(not(windows))]
+fn restart_explorer_safely() {}
+
     // ========================================================================
     // 9.6 MENU CHUỘT PHẢI CŨ (CLASSIC CONTEXT MENU WIN 10) & HIỆN ĐẠI
     // ========================================================================
@@ -931,14 +950,8 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         reg_cmd.creation_flags(CREATE_NO_WINDOW);
         let _ = reg_cmd.output();
 
-        let mut exp_cmd = Command::new("cmd");
-        exp_cmd.args(["/c", "taskkill /f /im explorer.exe & start explorer.exe"]);
-        exp_cmd.stdin(std::process::Stdio::null());
-        exp_cmd.stdout(std::process::Stdio::null());
-        exp_cmd.stderr(std::process::Stdio::null());
-        #[cfg(windows)]
-        exp_cmd.creation_flags(CREATE_NO_WINDOW);
-        let _ = exp_cmd.spawn();
+        #[cfg(not(test))]
+        restart_explorer_safely();
 
         return (true, "Đã kích hoạt Menu Chuột Phải Cũ (Windows 10 Classic Context Menu) và khởi động lại Explorer thành công!".to_string());
     }
@@ -950,14 +963,8 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         reg_cmd.creation_flags(CREATE_NO_WINDOW);
         let _ = reg_cmd.output();
 
-        let mut exp_cmd = Command::new("cmd");
-        exp_cmd.args(["/c", "taskkill /f /im explorer.exe & start explorer.exe"]);
-        exp_cmd.stdin(std::process::Stdio::null());
-        exp_cmd.stdout(std::process::Stdio::null());
-        exp_cmd.stderr(std::process::Stdio::null());
-        #[cfg(windows)]
-        exp_cmd.creation_flags(CREATE_NO_WINDOW);
-        let _ = exp_cmd.spawn();
+        #[cfg(not(test))]
+        restart_explorer_safely();
 
         return (true, "Đã khôi phục Menu Chuột Phải hiện đại Windows 11 thành công!".to_string());
     }
