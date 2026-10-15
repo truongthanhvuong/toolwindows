@@ -49,7 +49,7 @@ function Set-VUONGTTClassicContextMenu {
     $subKey = "Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"
     if ($Enable) {
         if (Get-Command "Set-VUONGTTAdminRegistry" -ErrorAction SilentlyContinue) {
-            Set-VUONGTTAdminRegistry -SubKey $subKey -Name "(Default)" -Value "" -Type "String" -TargetScopes @("HKLM", "ActiveUsers")
+            Set-VUONGTTAdminRegistry -SubKey $subKey -Name "(Default)" -Value "" -Type "String" -TargetScopes @("HKLM", "ActiveUsers") | Out-Null
         } else {
             $keyPath = "HKCU:\$subKey"
             if (-not (Test-Path $keyPath)) { New-Item -Path $keyPath -Force | Out-Null }
@@ -79,8 +79,8 @@ Set-Alias -Name Set-ClassicContextMenu -Value Set-VUONGTTClassicContextMenu -Err
 function Set-VUONGTTShowFileExtensions {
     $advKey = "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
     if (Get-Command "Set-VUONGTTAdminRegistry" -ErrorAction SilentlyContinue) {
-        Set-VUONGTTAdminRegistry -SubKey $advKey -Name "HideFileExt" -Value 0 -Type "DWord"
-        Set-VUONGTTAdminRegistry -SubKey $advKey -Name "Hidden" -Value 1 -Type "DWord"
+        Set-VUONGTTAdminRegistry -SubKey $advKey -Name "HideFileExt" -Value 0 -Type "DWord" | Out-Null
+        Set-VUONGTTAdminRegistry -SubKey $advKey -Name "Hidden" -Value 1 -Type "DWord" | Out-Null
     } else {
         $adv = "HKCU:\$advKey"
         Set-ItemProperty -Path $adv -Name "HideFileExt" -Value 0 -Force

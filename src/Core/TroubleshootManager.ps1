@@ -1011,10 +1011,10 @@ function Invoke-VUONGTTRoutineUniversalTelemetry {
                     }
                     $logLines += "   -> Lưu ý IT Helpdesk: Đây là sự kiện từ các dịch vụ/ứng dụng trên máy tính (như Cốc Cốc, DCOM, v.v.). Bấm 'Tự Động Sửa' để tối ưu hóa & dọn dẹp hệ thống."
                 } else {
-                    $logLines += "• Nhật ký Windows Event Log: Không phát hiện lỗi nghiêm trọng trên máy trong 24h qua."
+                    $logLines += "  Nhật ký Windows Event Log (Ghi nhận từ hệ điều hành máy tính - KHÔNG PHẢI lỗi phần mềm tool): Không phát hiện lỗi nghiêm trọng trên máy trong 24h qua."
                 }
             } catch {
-                $logLines += "• Nhật ký Windows Event Log: Không có cảnh báo bất thường."
+                $logLines += "  Nhật ký Windows Event Log (Ghi nhận từ hệ điều hành máy tính - KHÔNG PHẢI lỗi phần mềm tool): Không có cảnh báo bất thường."
             }
 
             $logLines += ""

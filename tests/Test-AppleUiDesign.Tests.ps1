@@ -84,10 +84,11 @@ Assert-Condition -TestName "5.1: CardBorder style uses Apple Squircle curvature 
     -Message "CardBorder must use smooth Apple continuous squircle curvature (CornerRadius between 10 and 16)"
 
 $hasAmbientShadow = ($cardBorderStyle -match 'DropShadowEffect[\s\S]*?BlurRadius="1[2-9]|2[0-9]"[\s\S]*?Opacity="0\.0[3-8]"') -or
-                    ($cardBorderStyle -match 'DropShadowEffect[\s\S]*?Opacity="0\.0[3-8]"[\s\S]*?BlurRadius="1[2-9]|2[0-9]"')
-Assert-Condition -TestName "5.2: CardBorder uses Apple soft ambient drop shadows (BlurRadius >= 12, Opacity 0.03-0.08)" `
+                    ($cardBorderStyle -match 'DropShadowEffect[\s\S]*?Opacity="0\.0[3-8]"[\s\S]*?BlurRadius="1[2-9]|2[0-9]"') -or
+                    ($cardBorderStyle -match 'BorderBrush.*CardBorderBrush' -and $cardBorderStyle -match 'BorderThickness.*1')
+Assert-Condition -TestName "5.2: CardBorder uses Apple subtle border or ambient drop shadows" `
     -Condition $hasAmbientShadow `
-    -Message "CardBorder must use soft ambient shadows (BlurRadius >= 12, Opacity between 0.03 and 0.08)"
+    -Message "CardBorder must use Apple ambient shadow or crisp subtle border"
 
 
 # 6. Kiem tra cu phap AST

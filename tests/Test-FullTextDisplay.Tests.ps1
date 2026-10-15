@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # BỘ TEST TỰ ĐỘNG: KIỂM THỬ HIỂN THỊ ĐẦY ĐỦ TÊN ỨNG DỤNG, VERSION VÀ CÁC THÔNG TIN DÀI
 # ==============================================================================
 
@@ -29,7 +29,7 @@ $xamlContent = [System.IO.File]::ReadAllText($xamlPath, [System.Text.Encoding]::
 # 1. KIỂM THỬ STYLE AppStoreCard CHO KHO ỨNG DỤNG
 # ------------------------------------------------------------------------------
 # Trích xuất Style AppStoreCard
-$appStoreCardRegex = [regex]::Match($xamlContent, '<Style x:Key="AppStoreCard" TargetType="CheckBox">(?s)(.+?)</Style>')
+$appStoreCardRegex = [regex]::Match($xamlContent, '<Style\s+[^>]*x:Key="AppStoreCard"[^>]*>(?s)(.+?)</Style>')
 $appStoreCardXml = if ($appStoreCardRegex.Success) { $appStoreCardRegex.Groups[1].Value } else { "" }
 
 Assert-Condition -TestName "1.1: Style AppStoreCard phải tồn tại trong MainWindow.xaml" `

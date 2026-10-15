@@ -1,6 +1,6 @@
-<#
+﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.111
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.112
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -330,6 +330,7 @@ $txtLicenseBadge            = Get-Control "txtLicenseBadge"
 $btnActivateLicense         = Get-Control "btnActivateLicense"
 $btnHeaderAdmin             = Get-Control "btnHeaderAdmin"
 $btnMenuAdmin               = Get-Control "btnMenuAdmin"
+$btnMenuAutoWin             = Get-Control "btnMenuAutoWin"
 
 $pageAdminPortal            = Get-Control "pageAdminPortal"
 $btnAdminPushGit            = Get-Control "btnAdminPushGit"
@@ -10003,7 +10004,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.111" }
+                if (-not $currentVer) { $currentVer = "20.5.909.112" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

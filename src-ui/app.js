@@ -136,8 +136,25 @@
       actionId = "toggle_fast_startup";
     } else if (low.includes("sfc") || low.includes("dism")) {
       actionId = "sfc_dism";
+    } else if (low.includes("cấu hình nguồn mặc định") || low.includes("restoredefaultschemes")) {
+      actionId = "set_power_plan";
+    } else if (low.includes("power options") || low.includes("powercfg.cpl")) {
+      actionId = "set_power_plan";
+    } else if (low.includes("appx") || low.includes("dọn app rác")) {
+      actionId = "clean_appx_bloatware";
+    } else if (low.includes("chuột phải cũ") || low.includes("classic context") || low.includes("win 10")) {
+      actionId = "classic_context_menu";
+    } else if (low.includes("chuột phải mới") || low.includes("modern context") || low.includes("win 11")) {
+      actionId = "modern_context_menu";
     } else {
       actionId = actionName;
+    }
+
+    let payload = { actionId };
+    if (low.includes("cấu hình nguồn mặc định")) {
+      payload.plan = "restore_default";
+    } else if (low.includes("power options") || low.includes("powercfg.cpl")) {
+      payload.plan = "open_cpl";
     }
 
     const consoleEl = document.getElementById("log-console");
@@ -147,7 +164,7 @@
 
     showToast("Thực Thi", `Đang thực hiện: ${actionName}...`, "info");
 
-    const res = await invokeRust("run_system_action", { actionId });
+    const res = await invokeRust("run_system_action", payload);
     const msg = (res && res.message) || details || "Đã hoàn tất thao tác!";
 
     if (consoleEl && typeof appendLog === "function") {
@@ -1506,6 +1523,44 @@
       updateTweakCount();
     };
 
+    window.restoreWinDefaults = async function() {
+      if (!confirm("Bạn có chắc chắn muốn khôi phục toàn bộ tinh chỉnh về trạng thái mặc định ban đầu của Windows?")) return;
+      window.applyPreset("clear");
+      appendTweakLog("[KHÔI PHỤC] Đang khôi phục cài đặt gốc của hệ thống...", "info");
+      showToast("Khôi Phục Gốc", "Đang khôi phục các thiết lập Windows về mặc định...", "info");
+      await invokeRust("run_system_action", { actionId: "modern_context_menu" });
+      await invokeRust("run_system_action", { actionId: "set_power_plan", plan: "restore_default" });
+      appendTweakLog("[THÀNH CÔNG] ✓ Đã khôi phục Menu Chuột Phải hiện đại và Gói Nguồn điện mặc định!", "success");
+      showToast("Hoàn Tất", "Đã khôi phục cài đặt gốc thành công!", "success");
+    };
+
+    window.cleanAppxBloatware = async function() {
+      if (!confirm("Bạn có chắc muốn gỡ bỏ các ứng dụng rác AppX ngầm (BingNews, Weather, Solitaire, v.v.)?")) return;
+      appendTweakLog("[DỌN RÁC] Đang tiến hành gỡ bỏ các gói AppX Bloatware ngầm...", "progress");
+      showToast("Dọn App Rác", "Đang gỡ bỏ AppX Bloatware...", "info");
+      const res = await invokeRust("run_system_action", { actionId: "clean_appx_bloatware" });
+      if (res && res.success) {
+        appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+        showToast("Thành Công", res.message, "success");
+      } else {
+        appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể dọn AppX"}`, "error");
+        showToast("Lỗi", (res && res.message) || "Không thể dọn AppX", "error");
+      }
+    };
+
+    window.detectCurrentTweaks = async function() {
+      appendTweakLog("[QUÉT REGISTRY] Đang kiểm tra trạng thái tinh chỉnh thực tế trên máy...", "progress");
+      showToast("Quét Tinh Chỉnh", "Đang đối chiếu trạng thái Registry...", "info");
+      const res = await invokeRust("run_system_action", { actionId: "check_classic_context" });
+      const classicInput = optimizeView.querySelector('input[data-tweak="classic_context_menu"]');
+      if (classicInput && res) {
+        classicInput.checked = (res.success && res.message && res.message.includes("active"));
+      }
+      updateTweakCount();
+      appendTweakLog("[HOÀN TẤT] Đã đồng bộ trạng thái thực tế từ Windows Registry!", "success");
+      showToast("Hoàn Tất", "Đã cập nhật danh sách tùy chọn đang áp dụng!", "success");
+    };
+
     // Apply Tweaks Button (2-Step Execution)
     if (btnApply) {
       btnApply.addEventListener("click", async () => {
@@ -1600,6 +1655,111 @@
         navigator.clipboard.writeText(terminal.innerText).then(() => {
           showToast("Đã Sao Chép", "Đã sao chép toàn bộ nhật ký terminal vào clipboard!", "success");
         });
+      });
+    }
+
+    // --- POWER PLANS CONTROLLER ---
+    window.selectPowerPlan = async function(btn, planName) {
+      const container = document.getElementById("power-plans-grid");
+      if (container) {
+        container.querySelectorAll(".power-plan-btn").forEach((b) => {
+          b.className = "power-plan-btn p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex flex-col gap-1 text-left transition-all cursor-pointer";
+          const ping = b.querySelector(".animate-ping");
+          if (ping) ping.remove();
+        });
+      }
+
+      if (btn) {
+        btn.className = "power-plan-btn p-3 rounded-xl bg-error-container text-on-error-container flex flex-col gap-1 text-left shadow-sm transition-all ring-1 ring-error cursor-pointer";
+        const topRow = btn.querySelector(".flex.items-center.justify-between");
+        if (topRow && !topRow.querySelector(".animate-ping")) {
+          const pingEl = document.createElement("span");
+          pingEl.className = "w-2 h-2 rounded-full bg-error animate-ping";
+          topRow.appendChild(pingEl);
+        }
+      }
+
+      appendTweakLog(`[NGUỒN ĐIỆN] Đang áp dụng cấu hình: ${planName}...`, "progress");
+      showToast("Gói Nguồn Điện", `Đang chuyển sang gói ${planName}...`, "info");
+
+      try {
+        const res = await invokeRust("run_system_action", {
+          actionId: "set_power_plan",
+          plan: planName,
+          params: { plan: planName }
+        });
+        if (res && res.success) {
+          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+          showToast("Thành Công", res.message, "success");
+        } else {
+          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể kích hoạt gói nguồn"}`, "error");
+          showToast("Lỗi", (res && res.message) || "Không thể chuyển nguồn điện", "error");
+        }
+      } catch (err) {
+        appendTweakLog(`[LỖI] ✗ ${err}`, "error");
+        showToast("Lỗi", String(err), "error");
+      }
+    };
+
+    // --- DNS CONTROLLER ---
+    window.changeDns = async function(dnsVal) {
+      appendTweakLog(`[DNS] Đang chuyển máy chủ DNS sang [${dnsVal}]...`, "progress");
+      showToast("Đổi DNS", `Đang thiết lập máy chủ DNS [${dnsVal}]...`, "info");
+
+      try {
+        const res = await invokeRust("run_system_action", {
+          actionId: "change_dns",
+          dns: dnsVal,
+          params: { dns: dnsVal }
+        });
+        if (res && res.success) {
+          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+          showToast("Thành Công", res.message, "success");
+        } else {
+          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể đổi DNS"}`, "error");
+          showToast("Lỗi", (res && res.message) || "Lỗi khi cấu hình DNS", "error");
+        }
+      } catch (err) {
+        appendTweakLog(`[LỖI] ✗ ${err}`, "error");
+        showToast("Lỗi", String(err), "error");
+      }
+    };
+
+    // --- CUSTOMIZE PREFERENCES TOGGLES BINDING ---
+    const toggleList = document.getElementById("toggle-list");
+    if (toggleList) {
+      const toggleItems = toggleList.querySelectorAll(".flex.items-center.justify-between");
+      toggleItems.forEach((item) => {
+        const cb = item.querySelector("input[type='checkbox']");
+        const titleEl = item.querySelector(".font-body-md");
+        if (!cb || !titleEl) return;
+
+        const title = titleEl.textContent.trim().toLowerCase();
+        let actionId = "";
+        if (title.includes("giao diện tối") || title.includes("dark theme")) actionId = "toggle_dark_theme";
+        else if (title.includes("đường dẫn dài") || title.includes("long path")) actionId = "toggle_long_paths";
+        else if (title.includes("đuôi file") || title.includes("extension")) actionId = "toggle_show_file_ext";
+        else if (title.includes("tệp ẩn") || title.includes("hidden")) actionId = "toggle_show_hidden_files";
+        else if (title.includes("phím số") || title.includes("numlock")) actionId = "toggle_numlock_boot";
+        else if (title.includes("căn giữa") || title.includes("taskbar")) actionId = "toggle_taskbar_align";
+        else if (title.includes("tìm kiếm taskbar") || title.includes("search")) actionId = "toggle_taskbar_search";
+        else if (title.includes("tìm kiếm web") || title.includes("bing")) actionId = "toggle_bing_search_start";
+        else if (title.includes("chia cửa sổ") || title.includes("snapping")) actionId = "toggle_window_snapping";
+
+        if (actionId) {
+          cb.addEventListener("change", async () => {
+            appendTweakLog(`[TÙY CHỈNH] Đang thay đổi: ${titleEl.textContent.trim()}...`, "progress");
+            showToast("Tùy Chỉnh", `Đang áp dụng: ${titleEl.textContent.trim()}...`, "info");
+            const res = await invokeRust("run_system_action", { actionId });
+            if (res && res.success) {
+              appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+              showToast("Thành Công", res.message, "success");
+            } else {
+              appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể lưu thiết lập"}`, "error");
+              showToast("Lỗi", (res && res.message) || "Không thể lưu thiết lập", "error");
+            }
+          });
+        }
       });
     }
 

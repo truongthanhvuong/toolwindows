@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.111</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.112</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -1105,7 +1105,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span>Build: v20.5.909.111</span>
+<span>Build: v20.5.909.112</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -1638,15 +1638,15 @@
 <button class="preset-btn px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md transition-all" onclick="applyPreset('clear')" type="button">
 <span>Bỏ Chọn (Clear: 0 mục)</span>
 </button>
-<button class="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all flex items-center gap-1" onclick="triggerAction('Đã tải lại trạng thái mặc định ban đầu của Windows!')" type="button">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all flex items-center gap-1" onclick="restoreWinDefaults()" type="button">
 <span class="material-symbols-outlined text-[14px]">history</span>
 <span>Khôi Phục Gốc</span>
 </button>
-<button class="px-3 py-1.5 rounded-lg bg-surface-container-high text-tertiary hover:bg-surface-container font-label-md text-label-md transition-all flex items-center gap-1" onclick="triggerAction('Đã quét toàn bộ Registry và cập nhật danh sách tùy chọn hiện tại!')" type="button">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high text-tertiary hover:bg-surface-container font-label-md text-label-md transition-all flex items-center gap-1" onclick="detectCurrentTweaks()" type="button">
 <span class="material-symbols-outlined text-[14px]">sync</span>
 <span>Lấy Tweak Đang Dùng</span>
 </button>
-<button class="px-3 py-1.5 rounded-lg bg-error-container text-on-error-container hover:bg-error hover:text-on-error font-label-md text-label-md transition-all flex items-center gap-1" onclick="triggerAction('Mở trình gỡ bỏ AppX Bloatware nâng cao...')" type="button">
+<button class="px-3 py-1.5 rounded-lg bg-error-container text-on-error-container hover:bg-error hover:text-on-error font-label-md text-label-md transition-all flex items-center gap-1" onclick="cleanAppxBloatware()" type="button">
 <span class="material-symbols-outlined text-[14px]">delete_sweep</span>
 <span>Dọn App Rác (AppX)</span>
 </button>
@@ -1678,7 +1678,7 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-space-md gap-y-2" id="essential-list">
 <!-- Checkbox Item 1 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_activity_history" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Lịch Sử Hoạt Động</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Activity History - Disable</div>
@@ -1686,7 +1686,7 @@
 </label>
 <!-- Checkbox Item 2 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_bitlocker_auto" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Mã Hóa Ổ C Tự Động</div>
 <div class="font-label-sm text-label-sm text-outline truncate">BitLocker Auto Device - Disable</div>
@@ -1694,7 +1694,7 @@
 </label>
 <!-- Checkbox Item 3 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_consumer_features" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Chặn Tự Cài App Rác</div>
 <div class="font-label-sm text-label-sm text-outline truncate">ConsumerFeatures - Disable</div>
@@ -1702,7 +1702,7 @@
 </label>
 <!-- Checkbox Item 4 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_delivery_optimization" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Tải Ngang Hàng Update</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Delivery Optimization - Off</div>
@@ -1710,7 +1710,7 @@
 </label>
 <!-- Checkbox Item 5 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="enable_end_task" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Bật End Task Chuột Phải</div>
 <div class="font-label-sm text-label-sm text-tertiary truncate">Taskbar Right Click End Task</div>
@@ -1718,7 +1718,7 @@
 </label>
 <!-- Checkbox Item 6 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_folder_discovery" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Tự Dò Thư Mục Chậm</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Folder Discovery - Disable</div>
@@ -1726,7 +1726,7 @@
 </label>
 <!-- Checkbox Item 7 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_hibernation" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Chế Độ Ngủ Đông</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Hibernation - Giải phóng RAM disk</div>
@@ -1734,7 +1734,7 @@
 </label>
 <!-- Checkbox Item 8 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_location_tracking" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Theo Dõi Vị Trí OS</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Location Tracking - Disable</div>
@@ -1742,7 +1742,7 @@
 </label>
 <!-- Checkbox Item 9 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_store_ads" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Gợi Ý Quảng Cáo MS Store</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Store Recommendations - Off</div>
@@ -1750,7 +1750,7 @@
 </label>
 <!-- Checkbox Item 10 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="disable_telemetry" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Thu Thập Dữ Liệu</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Telemetry &amp; DiagTrack - Disable</div>
@@ -1758,7 +1758,7 @@
 </label>
 <!-- Checkbox Item 11 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="create_restore_point" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tạo Điểm Khôi Phục (Restore)</div>
 <div class="font-label-sm text-label-sm text-tertiary truncate">Create Safety Restore Point</div>
@@ -1766,7 +1766,7 @@
 </label>
 <!-- Checkbox Item 12 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="essential" data-tweak="remove_widgets" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Gỡ Widgets Tin Tức &amp; Thời Tiết</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Taskbar Widgets Service - Remove</div>
@@ -1786,7 +1786,7 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-space-md gap-y-2" id="advanced-list">
 <!-- Advanced 1 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" data-tweak="disable_background_apps" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt App Chạy Ngầm Toàn Bộ</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Background Apps - Global Off</div>
@@ -1794,7 +1794,7 @@
 </label>
 <!-- Advanced 2 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" data-tweak="disable_reserved_storage" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tắt Bộ Nhớ Dự Phòng (7GB)</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Disable Reserved Storage</div>
@@ -1802,23 +1802,26 @@
 </label>
 <!-- Advanced 3 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" data-tweak="prefer_ipv4" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Ưu Tiên IPv4 Hơn IPv6</div>
 <div class="font-label-sm text-label-sm text-outline truncate">IPv4 as Preferred Protocol</div>
 </div>
 </label>
-<!-- Advanced 4 -->
+<!-- Advanced 4 (Classic Right-Click Context Menu Win 10) -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
-<div class="min-w-0">
-<div class="font-body-md text-body-md text-on-surface truncate">Menu Chuột Phải Cũ (Win 10)</div>
-<div class="font-label-sm text-label-sm text-outline truncate">Classic Full Context Menu</div>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" data-tweak="classic_context_menu" type="checkbox"/>
+<div class="min-w-0 flex-1">
+<div class="flex items-center justify-between">
+  <div class="font-body-md text-body-md text-on-surface truncate font-semibold">Menu Chuột Phải Cũ (Win 10)</div>
+  <button type="button" class="px-2 py-0.5 rounded bg-primary-container hover:bg-primary text-on-primary font-code-sm text-[11px] font-bold shadow-xs transition-colors" onclick="event.preventDefault(); event.stopPropagation(); triggerAction('classic_context_menu', 'Bật Menu Chuột Phải Cũ');">Bật Ngay</button>
+</div>
+<div class="font-label-sm text-label-sm text-outline truncate">Classic Full Context Menu (Win 10)</div>
 </div>
 </label>
 <!-- Advanced 5 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" data-tweak="best_performance" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tối Ưu Hiệu Năng Tối Đa</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Visual Effects - Best Performance</div>
@@ -1826,7 +1829,7 @@
 </label>
 <!-- Advanced 6 -->
 <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-surface-container cursor-pointer transition-colors">
-<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" type="checkbox"/>
+<input class="mt-0.5 w-4 h-4 rounded text-primary-container focus:ring-0 bg-surface-container-high border-0 accent-primary-container cursor-pointer" data-preset="advanced" data-tweak="optimize_game_mode" type="checkbox"/>
 <div class="min-w-0">
 <div class="font-body-md text-body-md text-on-surface truncate">Tối Ưu Game (Game DVR Off)</div>
 <div class="font-label-sm text-label-sm text-outline truncate">Tắt Game Bar DVR Background Rec</div>
@@ -2063,7 +2066,7 @@
 <span class="material-symbols-outlined text-[18px]">expand_more</span>
 </div>
 </div>
-<button class="px-3.5 py-2 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-1 shadow-sm transition-all" onclick="triggerAction('Đã áp dụng DNS mới và xóa cache bộ định tuyến!')" type="button">
+<button class="px-3.5 py-2 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-1 shadow-sm transition-all" onclick="changeDns(document.getElementById('dns-selector').value)" type="button">
 <span class="material-symbols-outlined text-[16px]">check</span>
 <span>Gán DNS</span>
 </button>

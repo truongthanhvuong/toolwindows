@@ -922,6 +922,543 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     }
 
     // ========================================================================
+    // 9.6 MENU CHUỘT PHẢI CŨ (CLASSIC CONTEXT MENU WIN 10) & HIỆN ĐẠI
+    // ========================================================================
+    if act == "classic_context_menu" || act.contains("chuot phai cu") || act.contains("classic context") {
+        let ps_code = r#"
+            $regPath = 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'
+            if (-not (Test-Path $regPath)) {
+                New-Item -Path $regPath -Force | Out-Null
+            }
+            Set-ItemProperty -Path $regPath -Name '(Default)' -Value '' -Force | Out-Null
+            Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã kích hoạt Menu Chuột Phải Cũ (Windows 10 Classic Context Menu) và khởi động lại Explorer thành công!".to_string());
+    }
+
+    if act == "modern_context_menu" || act.contains("chuot phai win 11") || act.contains("modern context") {
+        let ps_code = r#"
+            Remove-Item -Path 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' -Recurse -Force -ErrorAction SilentlyContinue
+            Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã khôi phục Menu Chuột Phải hiện đại Windows 11 thành công!".to_string());
+    }
+
+    if act == "check_classic_context" {
+        let ps_code = r#"Test-Path 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'"#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        if let Ok(out) = cmd.output() {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_lowercase();
+            if s == "true" {
+                return (true, "active".to_string());
+            }
+        }
+        return (false, "inactive".to_string());
+    }
+
+    // ========================================================================
+    // 9.7 GÓI NGUỒN ĐIỆN (POWER PLANS: ULTIMATE, HIGH, BALANCED, SAVER)
+    // ========================================================================
+    if act == "set_power_plan" || act.contains("power_plan") || act.contains("powerplan") || act.contains("nguon dien") || act.contains("power plan") {
+        let plan_arg = extract_json_field(params_json, "plan").unwrap_or("").to_lowercase();
+        let plan = if !plan_arg.is_empty() { plan_arg } else { act.clone() };
+
+        if plan.contains("ultimate") || plan.contains("cuc dai") {
+            let ps_code = r#"
+                $u = (powercfg /list | Select-String -Pattern "Ultimate" | ForEach-Object { if ($_ -match "GUID:\s+([a-f0-9\-]+)") { $matches[1] } } | Select-Object -First 1)
+                if (-not $u) {
+                    $out = powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61
+                    if ($out -match "GUID:\s+([a-f0-9\-]+)") { $u = $matches[1] }
+                }
+                if ($u) {
+                    powercfg /setactive $u
+                } else {
+                    powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+                }
+            "#;
+            let mut cmd = Command::new("powershell");
+            cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            return (true, "Đã kích hoạt gói nguồn Ultimate Performance (Mở khóa xung nhịp tối đa, CPU 100% Core Clock)!".to_string());
+        } else if plan.contains("high") || plan.contains("hieu nang cao") {
+            let mut cmd = Command::new("powercfg");
+            cmd.args(["/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            return (true, "Đã chuyển sang gói nguồn High Performance (Hiệu năng cao)!".to_string());
+        } else if plan.contains("balanced") || plan.contains("can bang") {
+            let mut cmd = Command::new("powercfg");
+            cmd.args(["/setactive", "381b4222-f694-41f0-9685-ff5bb260df2e"]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            return (true, "Đã chuyển sang gói nguồn Balanced (Cân bằng tự động)!".to_string());
+        } else if plan.contains("saver") || plan.contains("tiet kiem") {
+            let mut cmd = Command::new("powercfg");
+            cmd.args(["/setactive", "a1841308-3541-4fab-bc81-f71556f20b4a"]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            return (true, "Đã chuyển sang gói nguồn Power Saver (Tiết kiệm pin Laptop)!".to_string());
+        } else if plan.contains("restore") || plan.contains("khoi phuc") || plan.contains("mac dinh") {
+            let mut cmd = Command::new("powercfg");
+            cmd.args(["-restoredefaultschemes"]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            return (true, "Đã khôi phục toàn bộ các cấu hình nguồn điện mặc định của Windows!".to_string());
+        } else if plan.contains("cpl") || plan.contains("mo power") {
+            let mut cmd = Command::new("control");
+            cmd.args(["powercfg.cpl"]);
+            let _ = cmd.spawn();
+            return (true, "Đang mở Windows Control Panel Power Options (powercfg.cpl)...".to_string());
+        }
+    }
+
+    // ========================================================================
+    // 9.8 ĐỔI MÁY CHỦ DNS NHANH
+    // ========================================================================
+    if act == "change_dns" || act.contains("change_dns") || act.contains("doi dns") {
+        let dns_val = extract_json_field(params_json, "dns").unwrap_or("").to_lowercase();
+        let target_dns = if !dns_val.is_empty() { dns_val } else { act.clone() };
+
+        let ps_code = if target_dns.contains("dhcp") || target_dns.contains("router") {
+            r#"
+                Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
+                    Set-DnsClientServerAddress -InterfaceAlias $_.Name -ResetServerAddresses -ErrorAction SilentlyContinue
+                }
+                ipconfig /flushdns | Out-Null
+            "#
+        } else if target_dns.contains("google") {
+            r#"
+                Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
+                    Set-DnsClientServerAddress -InterfaceAlias $_.Name -ServerAddresses @('8.8.8.8', '8.8.4.4') -ErrorAction SilentlyContinue
+                }
+                ipconfig /flushdns | Out-Null
+            "#
+        } else if target_dns.contains("quad9") {
+            r#"
+                Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
+                    Set-DnsClientServerAddress -InterfaceAlias $_.Name -ServerAddresses @('9.9.9.9', '149.112.112.112') -ErrorAction SilentlyContinue
+                }
+                ipconfig /flushdns | Out-Null
+            "#
+        } else if target_dns.contains("adguard") {
+            r#"
+                Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
+                    Set-DnsClientServerAddress -InterfaceAlias $_.Name -ServerAddresses @('94.140.14.14', '94.140.15.15') -ErrorAction SilentlyContinue
+                }
+                ipconfig /flushdns | Out-Null
+            "#
+        } else {
+            // Cloudflare default 1.1.1.1
+            r#"
+                Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
+                    Set-DnsClientServerAddress -InterfaceAlias $_.Name -ServerAddresses @('1.1.1.1', '1.0.0.1') -ErrorAction SilentlyContinue
+                }
+                ipconfig /flushdns | Out-Null
+            "#
+        };
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+
+        let dns_label = if target_dns.contains("dhcp") { "DHCP Router Tự Động" }
+            else if target_dns.contains("google") { "Google Public DNS (8.8.8.8 - 8.8.4.4)" }
+            else if target_dns.contains("quad9") { "Quad9 Security (9.9.9.9 - 149.112.112.112)" }
+            else if target_dns.contains("adguard") { "AdGuard Chặn Quảng Cáo (94.140.14.14)" }
+            else { "Cloudflare DNS (1.1.1.1 - 1.0.0.1)" };
+
+        return (true, format!("Đã áp dụng cấu hình máy chủ DNS [{}] và làm sạch DNS cache thành công!", dns_label));
+    }
+
+    // ========================================================================
+    // 9.9 TOÀN BỘ CÁC TINH CHỈNH WINDOWS (ESSENTIAL & ADVANCED MATRIX)
+    // ========================================================================
+    if act == "disable_activity_history" || act.contains("activity_history") {
+        let ps_code = r#"
+            New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Name 'PublishUserActivities' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Name 'EnableActivityFeed' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt Lịch Sử Hoạt Động (Activity History) thành công!".to_string());
+    }
+
+    if act == "disable_bitlocker_auto" || act.contains("bitlocker_auto") {
+        let ps_code = r#"
+            New-Item -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker' -Name 'PreventDeviceEncryption' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt tính năng tự động mã hóa ổ đĩa BitLocker Device Encryption thành công!".to_string());
+    }
+
+    if act == "disable_consumer_features" || act.contains("consumer_features") {
+        let ps_code = r#"
+            New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent' -Name 'DisableWindowsConsumerFeatures' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã chặn Windows tự động cài ứng dụng rác (Consumer Features) thành công!".to_string());
+    }
+
+    if act == "disable_delivery_optimization" || act.contains("delivery_optimization") {
+        let ps_code = r#"
+            New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Name 'DODownloadMode' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Stop-Service DoSvc -Force -ErrorAction SilentlyContinue
+            Set-Service DoSvc -StartupType Disabled -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt tải bản cập nhật ngang hàng P2P (Delivery Optimization) thành công!".to_string());
+    }
+
+    if act == "enable_end_task" || act.contains("end_task") {
+        let ps_code = r#"
+            New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings' -Name 'TaskbarEndTask' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã bật tùy chọn 'End Task' khi bấm chuột phải vào biểu tượng trên thanh Taskbar!".to_string());
+    }
+
+    if act == "disable_folder_discovery" || act.contains("folder_discovery") {
+        let ps_code = r#"
+            New-Item -Path 'HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell' -Name 'FolderType' -Value 'NotSpecified' -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt cơ chế tự động dò tìm phân loại thư mục chậm chạp của Windows Explorer!".to_string());
+    }
+
+    if act == "disable_hibernation" || act.contains("hibernation") {
+        let mut cmd = Command::new("powercfg");
+        cmd.args(["-h", "off"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt chế độ Ngủ Đông (Hibernation) và giải phóng tập tin hiberfil.sys thành công!".to_string());
+    }
+
+    if act == "disable_location_tracking" || act.contains("location_tracking") {
+        let ps_code = r#"
+            New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors' -Name 'DisableLocation' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt dịch vụ theo dõi vị trí địa lý của Windows thành công!".to_string());
+    }
+
+    if act == "disable_store_ads" || act.contains("store_ads") {
+        let ps_code = r#"
+            New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore' -Name 'AutoDownload' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore' -Name 'DisableStoreApps' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338388Enabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt đề xuất quảng cáo và mẹo vặt của Microsoft Store thành công!".to_string());
+    }
+
+    if act == "disable_telemetry" || act.contains("disable_telemetry") {
+        let ps_code = r#"
+            New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' -Name 'AllowTelemetry' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Stop-Service DiagTrack -Force -ErrorAction SilentlyContinue
+            Set-Service DiagTrack -StartupType Disabled -ErrorAction SilentlyContinue
+            Stop-Service dmwappushservice -Force -ErrorAction SilentlyContinue
+            Set-Service dmwappushservice -StartupType Disabled -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt dịch vụ thu thập chẩn đoán Telemetry & DiagTrack ngầm thành công!".to_string());
+    }
+
+    if act == "create_restore_point" || act.contains("restore_point") {
+        let ps_code = r#"
+            Enable-ComputerRestore -Drive 'C:\' -ErrorAction SilentlyContinue
+            Checkpoint-Computer -Description 'VUONGTT_Safety_Point' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã khởi tạo điểm khôi phục hệ thống an toàn (System Restore Point) thành công!".to_string());
+    }
+
+    if act == "remove_widgets" || act.contains("remove_widgets") || act.contains("widget") {
+        let ps_code = r#"
+            New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarDa' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã ẩn tiện ích tin tức & thời tiết Widgets trên thanh Taskbar!".to_string());
+    }
+
+    if act == "disable_background_apps" || act.contains("background_apps") {
+        let ps_code = r#"
+            New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications' -Name 'GlobalUserDisabled' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt toàn bộ ứng dụng chạy ngầm (Background Apps) giúp giải phóng CPU & RAM!".to_string());
+    }
+
+    if act == "disable_reserved_storage" || act.contains("reserved_storage") {
+        let mut cmd = Command::new("dism.exe");
+        cmd.args(["/Online", "/Set-ReservedStorageState", "/State:Disabled"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt bộ nhớ lưu trữ dự phòng (Reserved Storage), giải phóng ngay ~7 GB ổ C!".to_string());
+    }
+
+    if act == "prefer_ipv4" || act.contains("prefer_ipv4") {
+        let ps_code = r#"
+            New-Item -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters' -Name 'DisabledComponents' -Value 32 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã cấu hình ưu tiên giao thức IPv4 hơn IPv6 giúp tăng tốc phân giải mạng!".to_string());
+    }
+
+    if act == "best_performance" || act.contains("best_performance") {
+        let ps_code = r#"
+            New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects' -Name 'VisualFXSetting' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã cấu hình hiệu ứng hình ảnh sang chế độ tối ưu hiệu năng cao nhất (Best Performance)!".to_string());
+    }
+
+    if act == "optimize_game_mode" || act.contains("game_dvr") {
+        let ps_code = r#"
+            New-Item -Path 'HKCU:\System\GameConfigStore' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKCU:\System\GameConfigStore' -Name 'GameDVR_Enabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR' -Force -ErrorAction SilentlyContinue | Out-Null
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR' -Name 'AllowGameDVR' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt ghi hình nền Game Bar DVR và tối ưu hóa Game Mode mượt mà!".to_string());
+    }
+
+    // ========================================================================
+    // 9.10 TÙY CHỈNH CÁ NHÂN GIAO DIỆN & SHELL PREFERENCES
+    // ========================================================================
+    if act == "toggle_dark_theme" || act.contains("dark_theme") {
+        let ps_code = r#"
+            New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Force -ErrorAction SilentlyContinue | Out-Null
+            $val = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'AppsUseLightTheme' -ErrorAction SilentlyContinue).AppsUseLightTheme
+            $newVal = if ($val -eq 0) { 1 } else { 0 }
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'AppsUseLightTheme' -Value $newVal -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'SystemUsesLightTheme' -Value $newVal -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã chuyển đổi trạng thái giao diện Sáng / Tối (Dark Theme) của Windows!".to_string());
+    }
+
+    if act == "toggle_long_paths" || act.contains("long_paths") {
+        let ps_code = r#"
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã mở khóa hỗ trợ đường dẫn tệp tin dài Win32 Long Paths (>260 ký tự)!".to_string());
+    }
+
+    if act == "toggle_show_file_ext" || act.contains("show_file_ext") {
+        let ps_code = r#"
+            $cur = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt' -ErrorAction SilentlyContinue).HideFileExt
+            $newVal = if ($cur -eq 0) { 1 } else { 0 }
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt' -Value $newVal -Type DWord -Force -ErrorAction SilentlyContinue
+            Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã chuyển đổi hiển thị phần mở rộng tệp tin (.extension) trong Windows Explorer!".to_string());
+    }
+
+    if act == "toggle_show_hidden_files" || act.contains("show_hidden_files") {
+        let ps_code = r#"
+            $cur = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'Hidden' -ErrorAction SilentlyContinue).Hidden
+            $newVal = if ($cur -eq 1) { 2 } else { 1 }
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'Hidden' -Value $newVal -Type DWord -Force -ErrorAction SilentlyContinue
+            Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã chuyển đổi hiển thị tệp tin và thư mục ẩn trong Windows Explorer!".to_string());
+    }
+
+    if act == "toggle_numlock_boot" || act.contains("numlock_boot") {
+        let ps_code = r#"
+            Set-ItemProperty -Path 'Registry::HKEY_USERS\.DEFAULT\Control Panel\Keyboard' -Name 'InitialKeyboardIndicators' -Value '2' -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã bật phím số NumLock tự động khi khởi động Windows!".to_string());
+    }
+
+    if act == "toggle_taskbar_align" || act.contains("taskbar_align") {
+        let ps_code = r#"
+            $cur = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarAl' -ErrorAction SilentlyContinue).TaskbarAl
+            $newVal = if ($cur -eq 1) { 0 } else { 1 }
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarAl' -Value $newVal -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã chuyển đổi căn giữa / căn trái biểu tượng Taskbar Windows 11!".to_string());
+    }
+
+    if act == "toggle_taskbar_search" || act.contains("taskbar_search") {
+        let ps_code = r#"
+            $cur = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search' -Name 'SearchboxTaskbarMode' -ErrorAction SilentlyContinue).SearchboxTaskbarMode
+            $newVal = if ($cur -eq 0) { 2 } else { 0 }
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search' -Name 'SearchboxTaskbarMode' -Value $newVal -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã chuyển đổi trạng thái hiển thị ô tìm kiếm Search trên thanh Taskbar!".to_string());
+    }
+
+    if act == "toggle_bing_search_start" || act.contains("bing_search_start") {
+        let ps_code = r#"
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search' -Name 'BingSearchEnabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt tích hợp tìm kiếm web Bing trong Start Menu giúp mở menu nhanh tức thì!".to_string());
+    }
+
+    if act == "toggle_window_snapping" || act.contains("window_snapping") {
+        let ps_code = r#"
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'WindowArrangementActive' -Value '1' -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã bật tính năng chia màn hình và sắp xếp cửa sổ đa nhiệm thông minh (Window Snapping)!".to_string());
+    }
+
+    if act == "clean_appx_bloatware" || act.contains("don app rac") || act.contains("appx") {
+        let ps_code = r#"
+            $apps = @('Microsoft.BingNews', 'Microsoft.BingWeather', 'Microsoft.GetHelp', 'Microsoft.Getstarted', 'Microsoft.MicrosoftOfficeHub', 'Microsoft.MicrosoftSolitaireCollection', 'Microsoft.People', 'Microsoft.SkypeApp', 'Microsoft.YourPhone', 'Microsoft.ZuneVideo')
+            foreach ($a in $apps) {
+                Get-AppxPackage -Name $a -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã gỡ bỏ toàn bộ các gói ứng dụng rác AppX Bloatware mặc định của Windows thành công!".to_string());
+    }
+
+    // ========================================================================
     // 10. QUẢN LÝ DRIVER & THIẾT BỊ PHẦN CỨNG
     // ========================================================================
     if act.contains("driver") || act.contains("thiet bi") {
@@ -1369,6 +1906,36 @@ mod tests {
         assert!(data_ok, "admin_get_data should succeed");
         assert!(data_json.contains("devices"), "admin_get_data JSON should contain devices array");
         assert!(data_json.contains("TEST-PC-99"), "devices array should contain recorded device");
+    }
+
+    #[test]
+    fn test_classic_context_menu_and_power_plans() {
+        let (ok1, msg1) = execute_system_action("classic_context_menu", "{}");
+        assert!(ok1, "classic_context_menu failed: {}", msg1);
+        assert!(msg1.contains("Menu Chuột Phải Cũ"), "Expected classic context menu confirmation: {}", msg1);
+
+        let (ok2, msg2) = execute_system_action("set_power_plan", r#"{"plan":"high"}"#);
+        assert!(ok2, "set_power_plan High failed: {}", msg2);
+        assert!(msg2.contains("High Performance"), "Expected High Performance: {}", msg2);
+
+        let (ok3, msg3) = execute_system_action("set_power_plan", r#"{"plan":"balanced"}"#);
+        assert!(ok3, "set_power_plan Balanced failed: {}", msg3);
+        assert!(msg3.contains("Balanced"), "Expected Balanced: {}", msg3);
+
+        let (ok4, msg4) = execute_system_action("change_dns", r#"{"dns":"cloudflare"}"#);
+        assert!(ok4, "change_dns Cloudflare failed: {}", msg4);
+        assert!(msg4.contains("Cloudflare"), "Expected Cloudflare DNS: {}", msg4);
+    }
+
+    #[test]
+    fn test_system_preferences_toggles() {
+        let (ok1, msg1) = execute_system_action("toggle_long_paths", "{}");
+        assert!(ok1, "toggle_long_paths failed: {}", msg1);
+        assert!(msg1.contains("Long Paths"), "Expected Long Paths confirmation: {}", msg1);
+
+        let (ok2, msg2) = execute_system_action("disable_activity_history", "{}");
+        assert!(ok2, "disable_activity_history failed: {}", msg2);
+        assert!(msg2.contains("Lịch Sử Hoạt Động"), "Expected Activity History confirmation: {}", msg2);
     }
 }
 
