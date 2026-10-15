@@ -18,6 +18,7 @@ use std::time::Instant;
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
+const APP_VERSION: &str = "20.5.909.110";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -251,7 +252,7 @@ fn main() {
 
     // 2. Version argument
     if args.iter().any(|a| a == "--version" || a == "-v") {
-        println!("VUONGTT Toolkit v20.5.909.104");
+        println!("VUONGTT Toolkit v{}", APP_VERSION);
         std::process::exit(0);
     }
 

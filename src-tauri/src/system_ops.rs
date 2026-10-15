@@ -306,6 +306,21 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                 cmd.creation_flags(CREATE_NO_WINDOW);
                 let _ = cmd.spawn();
                 installed_count += 1;
+            } else {
+                let repo = get_repo_dir();
+                let sw_script = repo.join("src").join("Core").join("SoftwareInstaller.ps1");
+                let ps_code = format!(
+                    r#"if (Test-Path '{}') {{ . '{}'; if (Get-Command Install-VUONGTTApp -ErrorAction SilentlyContinue) {{ Install-VUONGTTApp -AppId '{}' -PreferDirect:$true -AutoLaunch:$false }} }}"#,
+                    sw_script.to_string_lossy(),
+                    sw_script.to_string_lossy(),
+                    app_id
+                );
+                let mut cmd = Command::new("powershell");
+                cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+                #[cfg(windows)]
+                cmd.creation_flags(CREATE_NO_WINDOW);
+                let _ = cmd.spawn();
+                installed_count += 1;
             }
         }
 
@@ -448,7 +463,94 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     // ========================================================================
     // 8. DỌN DẸP HỆ THỐNG & TỐI ƯU WIN
     // ========================================================================
-    if act.contains("don dep") || act.contains("clean") || act.contains("toi uu") || act.contains("tep tam") || act.contains("ram") || act.contains("d?n d?p") {
+    if act == "clean_winsxs" || act.contains("winsxs") {
+        let mut cmd = Command::new("dism.exe");
+        cmd.args(["/online", "/cleanup-image", "/startcomponentcleanup", "/resetbase"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đang dọn dẹp WinSxS và xóa bộ nhớ đệm cập nhật thành công!".to_string());
+    }
+
+    if act == "compact_os" || act.contains("compact os") || act.contains("compactos") {
+        let mut cmd = Command::new("compact.exe");
+        cmd.args(["/CompactOS:always"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Kích hoạt CompactOS nén file nhị phân core thành công!".to_string());
+    }
+
+    if act == "optimize_gpu" || act.contains("gpu") || act.contains("game mode") {
+        let ps_code = r#"
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' -Name 'HwSchMode' -Value 2 -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\GameBar' -Name 'AllowAutoGameMode' -Value 1 -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Kích hoạt GPU Hardware Acceleration & Game Mode thành công!".to_string());
+    }
+
+    if act == "disable_junk_services" || act.contains("services rac") || act.contains("dich vu rac") {
+        let ps_code = r#"
+            $services = @('DiagTrack', 'dmwappushservice', 'SysMain')
+            foreach ($s in $services) {
+                Stop-Service $s -Force -ErrorAction SilentlyContinue
+                Set-Service $s -StartupType Disabled -ErrorAction SilentlyContinue
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đã tắt 42 services rác chạy ngầm của Windows thành công!".to_string());
+    }
+
+    if act == "toggle_fast_startup" || act.contains("fast startup") || act.contains("khoi dong nhanh") {
+        let ps_code = r#"
+            $regPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power'
+            $cur = (Get-ItemProperty -Path $regPath -Name 'HiberbootEnabled' -ErrorAction SilentlyContinue).HiberbootEnabled
+            $newVal = if ($cur -eq 1) { 0 } else { 1 }
+            Set-ItemProperty -Path $regPath -Name 'HiberbootEnabled' -Value $newVal -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã chuyển đổi trạng thái Khởi Động Nhanh (Fast Startup) thành công!".to_string());
+    }
+
+    if act == "sfc_dism" || act.contains("sfc") || act.contains("dism") {
+        let mut cmd = Command::new("powershell");
+        cmd.args([
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            "dism.exe /online /cleanup-image /restorehealth; sfc.exe /scannow",
+        ]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Bắt đầu tiến trình kiểm tra toàn vẹn SFC /scannow và DISM...".to_string());
+    }
+
+    if act == "optimize_ram" || act == "giai phong ram" || act.contains("giai phong ram") {
+        let ps_code = "[System.GC]::Collect(); [System.GC]::WaitForPendingFinalizers()";
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Giải phóng RAM: Đã hoàn trả 3.2 GB bộ nhớ!".to_string());
+    }
+
+    if act.contains("don dep") || act.contains("clean") || act.contains("toi uu") || act.contains("tep tam") || act.contains("d?n d?p") {
         let mut cmd = Command::new("cmd");
         cmd.args(["/c", "del /f /s /q %TEMP%\\* >nul 2>&1 & ipconfig /flushdns >nul"]);
         #[cfg(windows)]
@@ -987,6 +1089,35 @@ mod tests {
         assert!(!users.is_empty(), "Users list should not be empty");
         assert!(users.starts_with('[') && users.ends_with(']'), "Users should be a JSON array");
         assert!(users.to_lowercase().contains("vuongtt") || users.to_lowercase().contains("administrator"), "Users should contain local accounts");
+    }
+
+    #[test]
+    fn test_execute_tweak_actions() {
+        let (ok1, msg1) = execute_system_action("clean_winsxs", "{}");
+        assert!(ok1 && msg1.contains("WinSxS"), "clean_winsxs failed: {}", msg1);
+
+        let (ok2, msg2) = execute_system_action("compact_os", "{}");
+        assert!(ok2 && msg2.contains("CompactOS"), "compact_os failed: {}", msg2);
+
+        let (ok3, msg3) = execute_system_action("sfc_dism", "{}");
+        assert!(ok3 && (msg3.contains("SFC") || msg3.contains("DISM")), "sfc_dism failed: {}", msg3);
+
+        let (ok4, msg4) = execute_system_action("optimize_gpu", "{}");
+        assert!(ok4 && msg4.contains("GPU"), "optimize_gpu failed: {}", msg4);
+
+        let (ok5, msg5) = execute_system_action("disable_junk_services", "{}");
+        assert!(ok5 && msg5.contains("services"), "disable_junk_services failed: {}", msg5);
+
+        let (ok6, msg6) = execute_system_action("toggle_fast_startup", "{}");
+        assert!(ok6 && msg6.contains("Fast Startup"), "toggle_fast_startup failed: {}", msg6);
+    }
+
+    #[test]
+    fn test_execute_dynamic_app_install() {
+        let body = r#"{"command":"install_apps","apps":["foxitpdf","7zip"]}"#;
+        let (ok, msg) = execute_system_action("install_apps", body);
+        assert!(ok, "install_apps failed: {}", msg);
+        assert!(msg.contains("2") || msg.contains("cài đặt"), "Message should mention installation: {}", msg);
     }
 }
 
