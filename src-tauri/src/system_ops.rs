@@ -6,11 +6,181 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Mutex;
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
+
+#[repr(C)]
+#[derive(Default)]
+struct Win32SystemTime {
+    w_year: u16,
+    w_month: u16,
+    w_day_of_week: u16,
+    w_day: u16,
+    w_hour: u16,
+    w_minute: u16,
+    w_second: u16,
+    w_milliseconds: u16,
+}
+
+#[cfg(windows)]
+#[link(name = "kernel32")]
+extern "system" {
+    fn GetLocalTime(lpSystemTime: *mut Win32SystemTime);
+}
+
+#[cfg(windows)]
+#[link(name = "shell32")]
+extern "system" {
+    fn IsUserAnAdmin() -> i32;
+}
+
+pub fn is_admin_elevated() -> bool {
+    #[cfg(windows)]
+    unsafe {
+        IsUserAnAdmin() != 0
+    }
+    #[cfg(not(windows))]
+    true
+}
+
+pub fn get_now_timestamp() -> String {
+    #[cfg(windows)]
+    unsafe {
+        let mut st = Win32SystemTime::default();
+        GetLocalTime(&mut st);
+        format!(
+            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+            st.w_year, st.w_month, st.w_day, st.w_hour, st.w_minute, st.w_second
+        )
+    }
+    #[cfg(not(windows))]
+    "2026-10-15 10:00:00".to_string()
+}
+
+static EXECUTION_LOGS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+pub fn append_log(msg: &str) {
+    let now = get_now_timestamp();
+    let line = format!("[{}] {}", now, msg);
+    if let Ok(mut logs) = EXECUTION_LOGS.lock() {
+        if logs.len() > 1000 {
+            logs.drain(0..200);
+        }
+        logs.push(line);
+    }
+}
+
+pub fn get_logs_json() -> String {
+    if let Ok(logs) = EXECUTION_LOGS.lock() {
+        let items: Vec<String> = logs
+            .iter()
+            .map(|l| format!("\"{}\"", l.replace('\\', "\\\\").replace('"', "\\\"")))
+            .collect();
+        format!("[{}]", items.join(","))
+    } else {
+        "[]".to_string()
+    }
+}
+
+pub fn clear_logs() {
+    if let Ok(mut logs) = EXECUTION_LOGS.lock() {
+        logs.clear();
+    }
+}
+
+pub fn record_device_heartbeat(
+    hostname: &str,
+    serial: &str,
+    ip: &str,
+    os: &str,
+    hwid: &str,
+) -> bool {
+    let repo = get_repo_dir();
+    let dev_dir = repo.join("src").join("Config");
+    let dev_path = dev_dir.join("client_devices.json");
+    let alt_dir = Path::new(r"C:\ProgramData\VUONGTT_Toolkit");
+    let alt_path = alt_dir.join("client_devices.json");
+
+    let h_name = if !hostname.trim().is_empty() {
+        hostname.trim().to_string()
+    } else {
+        std::env::var("COMPUTERNAME").unwrap_or_else(|_| "VUONGTT-HOST".to_string())
+    };
+
+    let s_num = if !serial.trim().is_empty() {
+        serial.trim().to_string()
+    } else {
+        "BIOS-PRIMARY-001".to_string()
+    };
+
+    let ip_addr = if !ip.trim().is_empty() {
+        ip.trim().to_string()
+    } else {
+        "127.0.0.1".to_string()
+    };
+
+    let os_cap = if !os.trim().is_empty() {
+        os.trim().to_string()
+    } else {
+        "Windows 11 Pro 64-bit".to_string()
+    };
+
+    let m_hwid = if !hwid.trim().is_empty() {
+        hwid.trim().to_string()
+    } else {
+        format!("HWID-{}", s_num.replace(' ', "-"))
+    };
+
+    let now = get_now_timestamp();
+
+    let mut content = read_clean_file(&dev_path);
+    if content.trim() == "[]" || content.trim().is_empty() {
+        content = read_clean_file(&alt_path);
+    }
+    if content.trim() == "[]" || content.trim().is_empty() {
+        content = "[]".to_string();
+    }
+
+    let new_entry = format!(
+        r#"{{"hostname":"{}","serialNumber":"{}","ipAddress":"{}","osCaption":"{}","lastSeen":"{}","hwid":"{}","status":"Active"}}"#,
+        h_name.replace('"', ""),
+        s_num.replace('"', ""),
+        ip_addr.replace('"', ""),
+        os_cap.replace('"', ""),
+        now,
+        m_hwid.replace('"', "")
+    );
+
+    let updated_json = if content.contains(&h_name) || content.contains(&s_num) {
+        let mut items = Vec::new();
+        let trimmed = content.trim_start_matches('[').trim_end_matches(']').trim();
+        for chunk in trimmed.split("},") {
+            let item = format!("{}}}", chunk.trim_end_matches('}'));
+            if !item.contains(&h_name) && !item.contains(&s_num) && item.contains("hostname") {
+                items.push(item);
+            }
+        }
+        items.insert(0, new_entry);
+        format!("[\n  {}\n]", items.join(",\n  "))
+    } else {
+        let trimmed = content.trim_start_matches('[').trim_end_matches(']').trim();
+        if trimmed.is_empty() {
+            format!("[\n  {}\n]", new_entry)
+        } else {
+            format!("[\n  {},\n  {}\n]", new_entry, trimmed)
+        }
+    };
+
+    let _ = fs::create_dir_all(&dev_dir);
+    let _ = fs::write(&dev_path, &updated_json);
+    let _ = fs::create_dir_all(alt_dir);
+    let _ = fs::write(&alt_path, &updated_json);
+    true
+}
 
 fn get_repo_dir() -> PathBuf {
     if Path::new(r"E:\toolwindows").exists() {
@@ -127,6 +297,7 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         let repo = get_repo_dir();
         let policy_path = repo.join("src").join("Config").join("feature_policy.json");
         let vault_path = repo.join("src").join("Config").join("licenses_vault.json");
+        let dev_path = repo.join("src").join("Config").join("client_devices.json");
 
         let mut policy_json = read_clean_file(&policy_path);
         if policy_json.trim() == "[]" || policy_json.trim().is_empty() {
@@ -140,10 +311,20 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
             vault_json = read_clean_file(alt);
         }
 
+        let mut devices_json = read_clean_file(&dev_path);
+        if devices_json.trim() == "[]" || devices_json.trim().is_empty() {
+            let alt = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\client_devices.json");
+            devices_json = read_clean_file(alt);
+        }
+        if devices_json.trim().is_empty() {
+            devices_json = "[]".to_string();
+        }
+
         let out = format!(
-            r#"{{"policies":{},"vault":{}}}"#,
+            r#"{{"policies":{},"vault":{},"devices":{}}}"#,
             policy_json.trim(),
-            vault_json.trim()
+            vault_json.trim(),
+            devices_json.trim()
         );
         return (true, out);
     }
@@ -272,17 +453,51 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         };
     }
 
+    if act == "get_install_logs" || act == "get_execution_logs" || act == "get_logs" {
+        return (true, get_logs_json());
+    }
+
+    if act == "clear_install_logs" || act == "clear_execution_logs" || act == "clear_logs" {
+        clear_logs();
+        return (true, "Đã xóa sạch nhật ký!".to_string());
+    }
+
+    if act == "check_admin_elevation" {
+        let elevated = is_admin_elevated();
+        return (true, format!(r#"{{"elevated":{}}}"#, elevated));
+    }
+
+    if act == "record_device_heartbeat" {
+        let h = extract_json_field(params_json, "hostname").unwrap_or("");
+        let s = extract_json_field(params_json, "serialNumber").unwrap_or("");
+        let ip = extract_json_field(params_json, "ipAddress").unwrap_or("");
+        let os = extract_json_field(params_json, "osCaption").unwrap_or("");
+        let hwid = extract_json_field(params_json, "hwid").unwrap_or("");
+        record_device_heartbeat(h, s, ip, os, hwid);
+        return (true, "Heartbeat đã ghi nhận thành công!".to_string());
+    }
+
     // ========================================================================
     // 2. KHO PHẦN MỀM & WINGET ENGINE (CÀI ĐẶT THỰC TẾ)
     // ========================================================================
     if act.contains("cai dat / update") || act.contains("cai dat") || act == "install_apps" {
         let app_ids = parse_selected_apps(params_json);
         if app_ids.is_empty() {
+            append_log("[CẢNH BÁO] Không có ứng dụng nào được chọn để cài đặt.");
             return (false, "Vui lòng tích chọn ít nhất 1 ứng dụng trong danh sách để cài đặt!".to_string());
         }
 
+        clear_logs();
+        append_log(&format!("[BẮT ĐẦU] Khởi tạo phiên cài đặt tự động cho {} ứng dụng...", app_ids.len()));
+        let is_elevated = is_admin_elevated();
+        append_log(&format!(
+            "[QUYỀN HẠN] Administrator Token: {} (UAC Elevation)",
+            if is_elevated { "ACTIVE [HOẠT ĐỘNG]" } else { "STANDARD [CHẠY NÂNG CAO]" }
+        ));
+
         let mut installed_count = 0;
         for app_id in &app_ids {
+            append_log(&format!("[TIẾN TRÌNH] Đang tải và cài đặt: {}...", app_id));
             let win_cmd = match app_id.as_str() {
                 "google-chrome" => "winget install --id Google.Chrome -e --silent --accept-package-agreements --accept-source-agreements",
                 "zalo" => "powershell -Command \"$dl = '$env:TEMP\\ZaloSetup.exe'; (New-Object System.Net.WebClient).DownloadFile('https://res-download-pc-te-vncdn.zadn.vn/pc/ZaloSetup-26.9.10.exe', $dl); Start-Process $dl -ArgumentList '/S' -Wait; Remove-Item $dl -Force\"",
@@ -306,6 +521,7 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                 cmd.creation_flags(CREATE_NO_WINDOW);
                 let _ = cmd.spawn();
                 installed_count += 1;
+                append_log(&format!("[THÀNH CÔNG] Đã kích hoạt cài đặt: {}", app_id));
             } else {
                 let repo = get_repo_dir();
                 let sw_script = repo.join("src").join("Core").join("SoftwareInstaller.ps1");
@@ -321,9 +537,11 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                 cmd.creation_flags(CREATE_NO_WINDOW);
                 let _ = cmd.spawn();
                 installed_count += 1;
+                append_log(&format!("[THÀNH CÔNG] Đã gửi lệnh cài đặt ngầm qua Core Bridge: {}", app_id));
             }
         }
 
+        append_log(&format!("[HOÀN TẤT] Quá trình hoàn tất! Đã xử lý {} ứng dụng.", installed_count));
         return (
             true,
             format!("Đang tiến hành cài đặt tự động ngầm {} ứng dụng đã chọn trong danh sách!", installed_count),
@@ -1119,5 +1337,39 @@ mod tests {
         assert!(ok, "install_apps failed: {}", msg);
         assert!(msg.contains("2") || msg.contains("cài đặt"), "Message should mention installation: {}", msg);
     }
+
+    #[test]
+    fn test_admin_elevation_and_timestamp() {
+        let elevated = is_admin_elevated();
+        println!("Process admin elevation status: {}", elevated);
+        let ts = get_now_timestamp();
+        assert!(!ts.is_empty(), "Timestamp should not be empty");
+        assert!(ts.contains('-') && ts.contains(':'), "Timestamp should be YYYY-MM-DD HH:MM:SS format");
+    }
+
+    #[test]
+    fn test_execution_log_buffer() {
+        clear_logs();
+        append_log("Test log entry 1");
+        append_log("Test log entry 2");
+        let logs_json = get_logs_json();
+        assert!(logs_json.contains("Test log entry 1"), "Logs JSON should contain entry 1");
+        assert!(logs_json.contains("Test log entry 2"), "Logs JSON should contain entry 2");
+        clear_logs();
+        let cleared = get_logs_json();
+        assert_eq!(cleared, "[]", "Cleared logs should be empty JSON array");
+    }
+
+    #[test]
+    fn test_record_device_heartbeat() {
+        let ok = record_device_heartbeat("TEST-PC-99", "TEST-BIOS-SN-99", "192.168.1.99", "Windows 11 Test", "HWID-TEST-99");
+        assert!(ok, "record_device_heartbeat should succeed");
+
+        let (data_ok, data_json) = execute_system_action("admin_get_data", "{}");
+        assert!(data_ok, "admin_get_data should succeed");
+        assert!(data_json.contains("devices"), "admin_get_data JSON should contain devices array");
+        assert!(data_json.contains("TEST-PC-99"), "devices array should contain recorded device");
+    }
 }
+
 

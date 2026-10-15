@@ -34,6 +34,7 @@
     }
     return null;
   }
+  window.invokeRust = invokeRust;
 
   // --- 2. TOAST NOTIFICATION SYSTEM ---
   function showToast(title, message, type = "info") {
@@ -65,6 +66,8 @@
       setTimeout(() => toast.remove(), 260);
     }, 3800);
   }
+  window.showRustToast = showToast;
+  window.showToast = showToast;
 
   // --- 3. SPA VIEW ROUTER ---
   function switchView(targetId) {
@@ -357,13 +360,16 @@
     }
   }
 
+  let currentDevices = [];
+
   async function loadAdminData() {
     const res = await invokeRust("admin_get_data", {});
     if (!res || !res.success || !res.data) return;
 
-    const { policies, vault } = res.data;
+    const { policies, vault, devices } = res.data;
     currentPolicies = Array.isArray(policies) ? policies : [];
     currentVault = Array.isArray(vault) ? vault : [];
+    currentDevices = Array.isArray(devices) ? devices : [];
 
     // 1. Render Policies
     const policyListEl = document.getElementById("admin-policy-list");
@@ -453,6 +459,55 @@
           });
         });
       }
+    }
+
+    // 3. Render Fleet Monitor Devices
+    const devicesTbodyEl = document.getElementById("admin-devices-tbody");
+    const fleetBadgeEl = document.getElementById("admin-fleet-badge");
+    const fleetTotalEl = document.getElementById("fleet-total-machines");
+
+    if (fleetBadgeEl) {
+      fleetBadgeEl.textContent = `Tổng: ${currentDevices.length} máy đã kết nối`;
+    }
+    if (fleetTotalEl) {
+      fleetTotalEl.textContent = `${currentDevices.length < 10 ? '0' + currentDevices.length : currentDevices.length} Máy`;
+    }
+
+    if (devicesTbodyEl) {
+      if (currentDevices.length === 0) {
+        devicesTbodyEl.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-on-surface-variant font-label-sm">Chưa có máy trạm nào được ghi nhận.</td></tr>';
+      } else {
+        devicesTbodyEl.innerHTML = currentDevices
+          .map(
+            (dev, idx) => `
+          <tr class="hover:bg-surface-container-high/50 transition-colors">
+            <td class="py-2.5 px-3 font-code-sm text-outline">${idx + 1}</td>
+            <td class="py-2.5 px-3 font-semibold text-primary flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-tertiary">desktop_windows</span>
+              <span>${dev.hostname || "UNKNOWN"}</span>
+            </td>
+            <td class="py-2.5 px-3 font-code-sm text-secondary select-all">${dev.serialNumber || "N/A"}</td>
+            <td class="py-2.5 px-3 font-code-sm text-on-surface-variant select-all">${dev.ipAddress || "127.0.0.1"}</td>
+            <td class="py-2.5 px-3 text-on-surface text-label-sm max-w-[200px] truncate" title="${dev.osCaption || ""}">${dev.osCaption || "Windows 11"}</td>
+            <td class="py-2.5 px-3 font-code-sm text-tertiary text-[11px]">${dev.lastSeen || "Vừa xong"}</td>
+            <td class="py-2.5 px-3">
+              <span class="px-2 py-0.5 rounded-full font-code-sm text-[10px] font-bold ${dev.status === "Active" || dev.status === "Online" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-surface-container-high text-outline"}">
+                ${dev.status || "Active"}
+              </span>
+            </td>
+          </tr>`
+          )
+          .join("");
+      }
+    }
+
+    const btnRefreshDevs = document.getElementById("btn-admin-refresh-devices");
+    if (btnRefreshDevs && !btnRefreshDevs._hasListener) {
+      btnRefreshDevs._hasListener = true;
+      btnRefreshDevs.addEventListener("click", async () => {
+        await loadAdminData();
+        showToast("Fleet Monitor", "Đã cập nhật danh sách máy trạm mới nhất!", "success");
+      });
     }
   }
 
@@ -1358,6 +1413,199 @@
     }
   }
 
+  // --- 9.5 WIN OPTIMIZE TWO-STEP CONTROLLER & LIVE TERMINAL ---
+  function initWinOptimizeTwoStep() {
+    const optimizeView = document.getElementById("view-win-optimize");
+    if (!optimizeView) return;
+
+    const badge = document.getElementById("tweak-selected-badge");
+    const terminal = document.getElementById("tweak-terminal-body");
+    const btnApply = document.getElementById("btn-apply-tweaks");
+    const btnClearLog = document.getElementById("btn-clear-tweak-log");
+    const btnCopyLog = document.getElementById("btn-copy-tweak-log");
+
+    function appendTweakLog(text, type = "normal") {
+      if (!terminal) return;
+      const el = document.createElement("div");
+      if (type === "success") el.className = "text-tertiary font-semibold";
+      else if (type === "error") el.className = "text-error font-semibold";
+      else if (type === "info") el.className = "text-primary font-semibold";
+      else if (type === "progress") el.className = "text-secondary";
+      else el.className = "text-on-surface-variant";
+      el.textContent = text;
+      terminal.appendChild(el);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function updateTweakCount() {
+      const checkedBoxes = optimizeView.querySelectorAll("input[type='checkbox']:checked");
+      const count = checkedBoxes.length;
+      if (badge) {
+        badge.textContent = `Đã chọn: ${count} mục`;
+        if (count > 0) {
+          badge.className = "px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary-container font-code-sm text-code-sm font-bold animate-pulse";
+        } else {
+          badge.className = "px-2.5 py-0.5 rounded-full bg-surface-container-high text-amber-300 font-code-sm text-code-sm font-semibold";
+        }
+      }
+      return count;
+    }
+
+    // Attach change listener to all tweak checkboxes
+    optimizeView.querySelectorAll("input[type='checkbox']").forEach((cb) => {
+      cb.addEventListener("change", updateTweakCount);
+    });
+
+    // Preset profile handler
+    window.applyPreset = function(preset) {
+      const allCheckboxes = optimizeView.querySelectorAll("input[type='checkbox']");
+      const essentialBoxes = optimizeView.querySelectorAll("#essential-list input[type='checkbox']");
+      const advancedBoxes = optimizeView.querySelectorAll("#advanced-list input[type='checkbox']");
+      const quickBoxes = optimizeView.querySelectorAll(".quick-tweak-cb");
+
+      if (preset === "clear") {
+        allCheckboxes.forEach((cb) => (cb.checked = false));
+        showToast("Tinh Chỉnh Windows", "Đã xóa toàn bộ lựa chọn tinh chỉnh.", "info");
+      } else if (preset === "minimal") {
+        allCheckboxes.forEach((cb) => (cb.checked = false));
+        essentialBoxes.forEach((cb, idx) => {
+          if (idx < 5) cb.checked = true;
+        });
+        showToast("Preset Minimal", "Đã chọn bộ tinh chỉnh tối giản (5 mục an toàn).", "info");
+      } else if (preset === "standard") {
+        allCheckboxes.forEach((cb) => (cb.checked = false));
+        essentialBoxes.forEach((cb) => (cb.checked = true));
+        quickBoxes.forEach((cb) => {
+          const tw = cb.getAttribute("data-tweak");
+          if (["clean_temp", "flush_dns", "optimize_ram"].includes(tw)) {
+            cb.checked = true;
+          }
+        });
+        showToast("Preset Chuẩn", "Đã chọn bộ tinh chỉnh chuẩn (toàn bộ mục cơ bản).", "info");
+      } else if (preset === "advanced") {
+        essentialBoxes.forEach((cb) => (cb.checked = true));
+        advancedBoxes.forEach((cb) => (cb.checked = true));
+        quickBoxes.forEach((cb) => (cb.checked = true));
+        showToast("Preset Nâng Cao", "Đã chọn toàn bộ tinh chỉnh nâng cao và dọn dẹp.", "warning");
+      }
+
+      // Update button styling in preset bar
+      const presetBtns = optimizeView.querySelectorAll(".preset-btn");
+      presetBtns.forEach((btn) => {
+        const text = btn.innerText.toLowerCase();
+        if ((preset === "clear" && text.includes("bỏ chọn")) ||
+            (preset === "minimal" && text.includes("tối giản")) ||
+            (preset === "standard" && text.includes("chuẩn")) ||
+            (preset === "advanced" && text.includes("nâng cao"))) {
+          btn.className = "preset-btn px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md transition-all font-bold shadow-sm";
+        } else {
+          btn.className = "preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-all";
+        }
+      });
+
+      updateTweakCount();
+    };
+
+    // Apply Tweaks Button (2-Step Execution)
+    if (btnApply) {
+      btnApply.addEventListener("click", async () => {
+        const checkedBoxes = Array.from(optimizeView.querySelectorAll("input[type='checkbox']:checked"));
+        const count = checkedBoxes.length;
+
+        if (count === 0) {
+          showToast("Tinh Chỉnh Windows", "Vui lòng tích chọn ít nhất 1 mục để áp dụng!", "warning");
+          appendTweakLog("[CẢNH BÁO] Chưa có mục nào được chọn. Vui lòng tick chọn ít nhất 1 tinh chỉnh bên trên.", "error");
+          return;
+        }
+
+        btnApply.disabled = true;
+        btnApply.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>Đang áp dụng (${count} mục)...</span>`;
+
+        const now = new Date().toLocaleTimeString();
+        appendTweakLog(`\n==================================================`);
+        appendTweakLog(`[${now}] [BẮT ĐẦU] Tiến hành thực thi ${count} tinh chỉnh Windows với quyền Administrator...`, "info");
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const cb of checkedBoxes) {
+          let actionId = cb.getAttribute("data-tweak");
+          let title = "";
+
+          const card = cb.closest("label") || cb.closest("div");
+          if (card) {
+            const titleEl = card.querySelector(".font-body-md, .font-label-md, .text-on-surface");
+            title = titleEl ? titleEl.textContent.trim() : "Tinh chỉnh Windows";
+          }
+
+          if (!actionId) {
+            const low = title.toLowerCase();
+            if (low.includes("lịch sử hoạt động")) actionId = "disable_activity_history";
+            else if (low.includes("bitlocker")) actionId = "disable_bitlocker_auto";
+            else if (low.includes("app rác") || low.includes("consumer")) actionId = "disable_consumer_features";
+            else if (low.includes("ngang hàng") || low.includes("delivery")) actionId = "disable_delivery_optimization";
+            else if (low.includes("end task")) actionId = "enable_end_task";
+            else if (low.includes("thư mục")) actionId = "disable_folder_discovery";
+            else if (low.includes("ngủ đông")) actionId = "disable_hibernation";
+            else if (low.includes("vị trí")) actionId = "disable_location_tracking";
+            else if (low.includes("quảng cáo") || low.includes("store")) actionId = "disable_store_ads";
+            else if (low.includes("thu thập") || low.includes("telemetry")) actionId = "disable_telemetry";
+            else if (low.includes("khôi phục") || low.includes("restore")) actionId = "create_restore_point";
+            else if (low.includes("widget")) actionId = "remove_widgets";
+            else if (low.includes("chạy ngầm")) actionId = "disable_background_apps";
+            else if (low.includes("dự phòng") || low.includes("reserved")) actionId = "disable_reserved_storage";
+            else if (low.includes("ipv4")) actionId = "prefer_ipv4";
+            else if (low.includes("chuột phải") || low.includes("classic")) actionId = "classic_context_menu";
+            else if (low.includes("hiệu năng")) actionId = "best_performance";
+            else if (low.includes("game") || low.includes("dvr")) actionId = "optimize_game_mode";
+            else actionId = "tune_system";
+          }
+
+          appendTweakLog(`[TIẾN TRÌNH] Đang cấu hình: ${title}...`, "progress");
+
+          try {
+            const res = await invokeRust("run_system_action", { actionId: actionId, tweakName: title });
+            if (res && res.success) {
+              successCount++;
+              appendTweakLog(`[THÀNH CÔNG] ✓ ${title} -> ${res.message || "Hoàn tất."}`, "success");
+            } else {
+              failCount++;
+              appendTweakLog(`[LỖI] ✗ ${title} -> ${(res && res.message) || "Không thể áp dụng"}`, "error");
+            }
+          } catch (err) {
+            failCount++;
+            appendTweakLog(`[LỖI NGOẠI LỆ] ✗ ${title} -> ${err}`, "error");
+          }
+        }
+
+        const endTime = new Date().toLocaleTimeString();
+        appendTweakLog(`[${endTime}] [HOÀN TẤT] Tổng kết: ${successCount} thành công, ${failCount} thất bại.`, successCount > 0 ? "success" : "error");
+        appendTweakLog(`==================================================\n`);
+
+        btnApply.disabled = false;
+        btnApply.innerHTML = `<span class="material-symbols-outlined text-[18px]">done_all</span><span>Áp Dụng Tweaks Đã Chọn</span>`;
+
+        showToast("Hoàn Tất Tinh Chỉnh", `Đã xử lý xong ${count} mục (${successCount} thành công, ${failCount} lỗi).`, successCount > 0 ? "success" : "warning");
+      });
+    }
+
+    if (btnClearLog && terminal) {
+      btnClearLog.addEventListener("click", () => {
+        terminal.innerHTML = '<div class="text-outline/70">[Ready] Hệ thống sẵn sàng. Đã xóa nhật ký.</div>';
+      });
+    }
+
+    if (btnCopyLog && terminal) {
+      btnCopyLog.addEventListener("click", () => {
+        navigator.clipboard.writeText(terminal.innerText).then(() => {
+          showToast("Đã Sao Chép", "Đã sao chép toàn bộ nhật ký terminal vào clipboard!", "success");
+        });
+      });
+    }
+
+    updateTweakCount();
+  }
+
   // --- 10. HEARTBEAT & LIFECYCLE CONTROLLER ---
   function sendHeartbeat() {
     fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
@@ -1368,6 +1616,7 @@
     bindNavigationAndActions();
     initAdminPortal();
     initAppStoreController();
+    initWinOptimizeTwoStep();
     initDiskSmartController();
     initCpuMainController();
     initUserMgmtController();

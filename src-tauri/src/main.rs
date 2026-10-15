@@ -18,7 +18,7 @@ use std::time::Instant;
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-const APP_VERSION: &str = "20.5.909.110";
+const APP_VERSION: &str = "20.5.909.111";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -298,7 +298,10 @@ fn main() {
         }
     });
 
-    // 5. Open Edge App Mode Window
+    // 5. Ghi nhận máy trạm hiện tại vào hệ thống Admin Fleet Monitor
+    let _ = system_ops::record_device_heartbeat("", "", "", "", "");
+
+    // 6. Open Edge App Mode Window
     let url = format!("http://127.0.0.1:{}", port);
     let profile_dir = std::env::temp_dir().join("vuongtt_toolkit_edge_profile");
 
