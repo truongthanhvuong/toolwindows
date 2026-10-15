@@ -260,19 +260,21 @@ if (Test-Path $xamlPath) {
     }
 
     # Kiem tra cac nut Sidebar Navigation Chuan Apple HIG
-    $hasMenuSysInfo       = $xamlContent -match 'x:Name="btnMenuSysInfo"'
-    $hasMenuSystemFix     = $xamlContent -match 'x:Name="btnMenuSystemFix"'
-    $hasMenuNetworkLAN    = $xamlContent -match 'x:Name="btnMenuNetworkLAN"'
-    $hasMenuPrinterLAN    = $xamlContent -match 'x:Name="btnMenuPrinterLAN"'
-    $hasMenuOffice        = $xamlContent -match 'x:Name="btnMenuOffice"'
-    $hasMenuSoftware      = $xamlContent -match 'x:Name="btnMenuSoftware"'
-    $hasMenuHardwareDisk  = $xamlContent -match 'x:Name="btnMenuHardwareDisk"'
-    $hasMenuAutoWin       = $xamlContent -match 'x:Name="btnMenuAutoWin"'
-    $hasMenuTechUtilities = $xamlContent -match 'x:Name="btnMenuTechUtilities"'
+    $hasMenuSysInfo         = $xamlContent -match 'x:Name="btnMenuSysInfo"'
+    $hasMenuAutoWin         = $xamlContent -match 'x:Name="btnMenuAutoWin"'
+    $hasMenuBackupRestore   = $xamlContent -match 'x:Name="btnMenuBackupRestore"'
+    $hasMenuOffice          = $xamlContent -match 'x:Name="btnMenuOffice"'
+    $hasMenuActivator       = $xamlContent -match 'x:Name="btnMenuActivator"'
+    $hasMenuSystemFix       = $xamlContent -match 'x:Name="btnMenuSystemFix"'
+    $hasMenuPrinterLAN      = $xamlContent -match 'x:Name="btnMenuPrinterLAN"'
+    $hasMenuHardwareDisk    = $xamlContent -match 'x:Name="btnMenuHardwareDisk"'
+    $hasMenuSoftwareStore   = $xamlContent -match 'x:Name="btnMenuSoftwareStore"'
+    $hasMenuFakeVpnProxy    = $xamlContent -match 'x:Name="btnMenuFakeVpnProxy"'
 
-    $allMenus = ($hasMenuSysInfo -and $hasMenuSystemFix -and $hasMenuNetworkLAN -and $hasMenuPrinterLAN -and
-                 $hasMenuOffice -and $hasMenuSoftware -and $hasMenuHardwareDisk -and $hasMenuAutoWin -and $hasMenuTechUtilities)
-    Assert-Audit "UI-WPF" "Day du cac nut Sidebar Chuan Apple HIG (8 Hubs + AutoWin)" $allMenus
+    $allMenus = ($hasMenuSysInfo -and $hasMenuAutoWin -and $hasMenuBackupRestore -and $hasMenuOffice -and
+                 $hasMenuActivator -and $hasMenuSystemFix -and $hasMenuPrinterLAN -and $hasMenuHardwareDisk -and
+                 $hasMenuSoftwareStore -and $hasMenuFakeVpnProxy)
+    Assert-Audit "UI-WPF" "Day du cac nut Sidebar Chuan Apple HIG (10 Streamlined Hubs)" $allMenus
 }
 
 if (Test-Path $toolkitPath) {
