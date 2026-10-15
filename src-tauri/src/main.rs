@@ -18,7 +18,7 @@ use std::time::Instant;
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-const APP_VERSION: &str = "20.5.909.125";
+const APP_VERSION: &str = "20.5.909.126";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -244,11 +244,21 @@ fn handle_client(
                 .unwrap_or("general");
 
             let (success, msg) = system_ops::execute_system_action(act_id, body);
-            json_resp = format!(
-                r#"{{"success":{},"message":"{}"}}"#,
-                success,
-                msg.replace('"', "\\\"")
-            );
+            if act_id == "browse_iso" || act_id.contains("browse_iso") {
+                let escaped_path = msg.replace('\\', "\\\\").replace('"', "\\\"");
+                json_resp = format!(
+                    r#"{{"success":{},"file_path":"{}","message":"{}"}}"#,
+                    success,
+                    escaped_path,
+                    escaped_path
+                );
+            } else {
+                json_resp = format!(
+                    r#"{{"success":{},"message":"{}"}}"#,
+                    success,
+                    msg.replace('"', "\\\"")
+                );
+            }
         }
 
         let resp = format!(

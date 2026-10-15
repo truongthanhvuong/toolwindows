@@ -676,18 +676,25 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     if act == "browse_iso" || act.contains("browse_iso") || act.contains("duyet iso") {
         let ps_code = r#"
             Add-Type -AssemblyName System.Windows.Forms
+            $form = New-Object System.Windows.Forms.Form
+            $form.TopMost = $true
+            $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+            $form.WindowState = [System.Windows.Forms.FormWindowState]::Minimized
+            $form.ShowInTaskbar = $false
             $f = New-Object System.Windows.Forms.OpenFileDialog
             $f.Title = "Chọn Tệp Tin Cài Đặt Windows (.ISO)"
-            $f.Filter = "Windows ISO Image (*.iso)|*.iso|All Files (*.*)|*.*"
+            $f.Filter = "Tệp Tin Cài Đặt Windows (*.iso)|*.iso|Tất Cả Tệp Tin (*.*)|*.*"
             $f.InitialDirectory = [Environment]::GetFolderPath("UserProfile")
-            if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            $res = $f.ShowDialog($form)
+            if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
                 Write-Output "FILE:$($f.FileName)"
             } else {
                 Write-Output "CANCEL"
             }
+            $form.Dispose()
         "#;
         let mut cmd = Command::new("powershell");
-        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Sta", "-Command", ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();

@@ -929,7 +929,7 @@
       if (!text) return;
 
       // Skip elements handled by dedicated controllers
-      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select" || btn.id === "btn-run-deploy" || btn.id === "btn-start-deploy" || btn.id === "btn-browse-iso" || btn.id === "btn-pre-check" || btn.id.startsWith("tab-soft-") || btn.id.startsWith("btn-scan-") || btn.id.startsWith("btn-export-") || btn.id.startsWith("btn-restore-"))) return;
+      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select" || btn.id === "btn-run-deploy" || btn.id === "btn-start-deploy" || btn.id === "btn-browse-iso" || btn.id === "btn-pre-check" || btn.id === "btn-copy-iso-path" || btn.id === "card-mode-upgrade" || btn.id === "card-mode-clean" || btn.id.startsWith("tab-soft-") || btn.id.startsWith("btn-scan-") || btn.id.startsWith("btn-export-") || btn.id.startsWith("btn-restore-"))) return;
       if (btn.hasAttribute("onclick")) return;
       if (btn.closest("#subview-soft-custom") || btn.closest("#subview-soft-uninstall") || btn.closest("#subview-soft-fonts") || btn.closest("#view-oem-brand")) return;
       if (btn.closest("#view-soft-winget") && btn.closest(".mb-space-lg")) return; // Category Filter Pills
@@ -2195,21 +2195,109 @@
   // --- 9.5. WINDOWS DEPLOY CONTROLLER ---
   async function browseIsoFile() {
     try {
+      showToast("Duyệt File ISO", "Đang mở hộp thoại chọn tệp ISO từ máy...", "info");
       const res = await invokeRust("run_system_action", { actionId: "browse_iso" });
-      if (res && res.success && res.file_path) {
+      const selectedPath = (res && res.file_path) || (res && res.success && res.message && (res.message.includes(":\\") || res.message.toLowerCase().endsWith(".iso")) ? res.message : null);
+
+      if (selectedPath) {
         const isoPathEl = document.getElementById("iso-path-text");
-        if (isoPathEl) isoPathEl.innerText = res.file_path;
+        if (isoPathEl) isoPathEl.innerText = selectedPath;
         const osSelector = document.getElementById("os-selector");
         if (osSelector) osSelector.value = "custom-iso";
-        showToast("Chọn File ISO", res.message || ("Đã chọn: " + res.file_path), "success");
-      } else if (res && res.message) {
+        showToast("Chọn File ISO", "Đã nạp file: " + selectedPath, "success");
+      } else if (res && res.message && res.message.includes("hủy")) {
         showToast("Chọn File ISO", res.message, "info");
+      } else {
+        showToast("Chọn File ISO", (res && res.message) || "Chưa chọn file ISO", "warning");
       }
     } catch (e) {
       showToast("Lỗi", "Không thể mở hộp thoại chọn file: " + e, "error");
     }
   }
   window.browseIsoFile = browseIsoFile;
+
+  function copyIsoPath() {
+    const isoPathEl = document.getElementById("iso-path-text");
+    const path = (isoPathEl ? isoPathEl.innerText : "").trim();
+    if (!path) {
+      showToast("Copy Đường Dẫn", "Chưa có đường dẫn file ISO nào!", "warning");
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(path).then(() => {
+        showToast("Đã Copy", "Đã sao chép đường dẫn ISO vào bộ nhớ tạm!", "success");
+      }).catch(() => {
+        fallbackCopy(path);
+      });
+    } else {
+      fallbackCopy(path);
+    }
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      showToast("Đã Copy", "Đã sao chép đường dẫn ISO vào bộ nhớ tạm!", "success");
+    } catch (_) {
+      showToast("Lỗi", "Không thể truy cập Clipboard", "error");
+    }
+    document.body.removeChild(ta);
+  }
+  window.copyIsoPath = copyIsoPath;
+
+  function selectDeployMode(mode) {
+    const targetMode = mode === "clean" ? "clean" : "upgrade";
+    const radio = document.querySelector(`input[name="deploy-mode"][value="${targetMode}"]`);
+    if (radio) radio.checked = true;
+
+    const cardUpgrade = document.getElementById("card-mode-upgrade");
+    const cardClean = document.getElementById("card-mode-clean");
+    const dotUpgrade = document.getElementById("dot-mode-upgrade");
+    const dotClean = document.getElementById("dot-mode-clean");
+
+    if (targetMode === "upgrade") {
+      if (cardUpgrade) {
+        cardUpgrade.classList.add("border-2", "border-primary", "bg-primary-container/15", "shadow-md");
+        cardUpgrade.classList.remove("border-transparent", "bg-surface-container");
+      }
+      if (cardClean) {
+        cardClean.classList.remove("border-2", "border-secondary", "bg-secondary-container/15", "shadow-md");
+        cardClean.classList.add("border-transparent", "bg-surface-container");
+      }
+      if (dotUpgrade) dotUpgrade.classList.add("bg-primary-container");
+      if (dotClean) dotClean.classList.remove("bg-secondary-container");
+      showToast("Chế Độ Cài Đặt", "Đã chọn: Cài Đè / Nâng Cấp Hệ Điều Hành (Giữ nguyên 100% dữ liệu)", "info");
+    } else {
+      if (cardClean) {
+        cardClean.classList.add("border-2", "border-secondary", "bg-secondary-container/15", "shadow-md");
+        cardClean.classList.remove("border-transparent", "bg-surface-container");
+      }
+      if (cardUpgrade) {
+        cardUpgrade.classList.remove("border-2", "border-primary", "bg-primary-container/15", "shadow-md");
+        cardUpgrade.classList.add("border-transparent", "bg-surface-container");
+      }
+      if (dotClean) dotClean.classList.add("bg-secondary-container");
+      if (dotUpgrade) dotUpgrade.classList.remove("bg-primary-container");
+      showToast("Chế Độ Cài Đặt", "Đã chọn: Cài Mới Hoàn Toàn (Format sạch phân vùng ổ C:)", "warning");
+    }
+  }
+  window.selectDeployMode = selectDeployMode;
+
+  function initDeployModeSwitcher() {
+    selectDeployMode("upgrade");
+    const osSelector = document.getElementById("os-selector");
+    if (osSelector) {
+      osSelector.addEventListener("change", (e) => {
+        if (e.target.value === "custom-iso") {
+          browseIsoFile();
+        }
+      });
+    }
+  }
+  window.initDeployModeSwitcher = initDeployModeSwitcher;
 
   async function checkDiskPartitions() {
     try {
@@ -2298,6 +2386,7 @@
     initDiskSmartController();
     initCpuMainController();
     initUserMgmtController();
+    initDeployModeSwitcher();
     if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState();
     updateClock();
     setInterval(updateClock, 1000);

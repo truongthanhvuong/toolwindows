@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.125</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.126</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -679,20 +679,20 @@
 <!-- Breadcrumb & Sub-tab Bar -->
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm p-1.5 rounded-xl bg-surface-container-low shadow-sm">
 <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-<button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-2 shadow-sm transition-all" type="button">
+<button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-2 shadow-sm transition-all" onclick="switchView('view-win-deploy')" type="button">
 <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
 <span>Cài Win Bypass</span>
 <span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
 </button>
-<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" type="button">
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" onclick="switchView('view-win-activate')" type="button">
 <span class="material-symbols-outlined text-[16px] text-tertiary">verified</span>
 <span>Kích Hoạt HWID</span>
 </button>
-<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" type="button">
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" onclick="switchView('view-disk-bitlocker')" type="button">
 <span class="material-symbols-outlined text-[16px] text-secondary">lock_open</span>
 <span>Tắt BitLocker</span>
 </button>
-<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" type="button">
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-label-md text-label-md flex items-center gap-2 transition-colors" onclick="switchView('view-tech-driver')" type="button">
 <span class="material-symbols-outlined text-[16px] text-primary">cloud_sync</span>
 <span>Sao Lưu Win / Driver</span>
 </button>
@@ -794,7 +794,7 @@
 <div class="font-code-sm text-code-sm text-secondary truncate flex-1" id="iso-path-text">
         C:\VUONGTT_Tools\Cache\Win11_24H2_Pro_x64_Optimized_2026.iso
       </div>
-<button class="font-label-sm text-label-sm text-primary hover:underline shrink-0 flex items-center gap-1" type="button">
+<button class="font-label-sm text-label-sm text-primary hover:underline shrink-0 flex items-center gap-1 cursor-pointer" id="btn-copy-iso-path" onclick="copyIsoPath()" type="button">
 <span class="material-symbols-outlined text-[13px]">content_copy</span>
         Copy
       </button>
@@ -816,7 +816,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
 <!-- Option 1: Cài Đè / Nâng Cấp -->
-<label class="group relative flex flex-col justify-between p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all cursor-pointer">
+<label class="group relative flex flex-col justify-between p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all cursor-pointer border-2 border-transparent" id="card-mode-upgrade" onclick="selectDeployMode('upgrade')">
 <input checked="" class="peer sr-only" name="deploy-mode" type="radio" value="upgrade"/>
 <div class="flex items-start gap-3">
 <div class="w-10 h-10 rounded-lg bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
@@ -825,8 +825,8 @@
 <div class="min-w-0 flex-1 space-y-1">
 <div class="flex items-center justify-between">
 <span class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Cài Đè / Nâng Cấp Hệ Điều Hành</span>
-<div class="w-5 h-5 rounded-full bg-surface-container-highest peer-checked:bg-primary-container flex items-center justify-center transition-colors">
-<div class="w-2.5 h-2.5 rounded-full bg-primary-container peer-checked:bg-on-primary-container"></div>
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-primary-container" id="dot-mode-upgrade"></div>
 </div>
 </div>
 <p class="font-body-md text-body-md text-on-surface-variant leading-snug">
@@ -841,11 +841,9 @@
           </span>
 <span class="font-code-sm text-code-sm">Thời gian: ~12-15 phút</span>
 </div>
-<!-- Highlight Overlay for Active State -->
-<div class="absolute inset-0 rounded-xl bg-primary-container/5 pointer-events-none opacity-100 transition-opacity"></div>
 </label>
 <!-- Option 2: Cài Mới Hoàn Toàn (Clean Install) -->
-<label class="group relative flex flex-col justify-between p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all cursor-pointer">
+<label class="group relative flex flex-col justify-between p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all cursor-pointer border-2 border-transparent" id="card-mode-clean" onclick="selectDeployMode('clean')">
 <input class="peer sr-only" name="deploy-mode" type="radio" value="clean"/>
 <div class="flex items-start gap-3">
 <div class="w-10 h-10 rounded-lg bg-surface-variant text-secondary flex items-center justify-center shrink-0">
@@ -854,8 +852,8 @@
 <div class="min-w-0 flex-1 space-y-1">
 <div class="flex items-center justify-between">
 <span class="font-headline-md text-headline-md text-on-surface group-hover:text-secondary transition-colors">Cài Mới Hoàn Toàn (Clean Install)</span>
-<div class="w-5 h-5 rounded-full bg-surface-container-highest peer-checked:bg-secondary-container flex items-center justify-center transition-colors">
-<div class="w-2.5 h-2.5 rounded-full bg-surface-bright"></div>
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-surface-bright" id="dot-mode-clean"></div>
 </div>
 </div>
 <p class="font-body-md text-body-md text-on-surface-variant leading-snug">
@@ -1089,7 +1087,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span id="tech-driver-build-badge">Build: v20.5.909.125</span>
+<span id="tech-driver-build-badge">Build: v20.5.909.126</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
