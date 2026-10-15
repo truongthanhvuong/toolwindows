@@ -1357,20 +1357,41 @@ fn restart_explorer_safely() {}
 
         if plan_clean.contains("never_sleep") || plan_clean.contains("24/7") || plan_clean.contains("chay 24") || plan_clean.contains("tat sleep") || plan_clean.contains("khong tat") {
             let ps_code = r#"
+                # 1. Kich hoat High Performance de mo khoa hieu nang may ban
+                powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+
+                # 2. Tat triet de moi timeout cho man hinh, o cung, sleep, hibernate
+                powercfg /change monitor-timeout-ac 0
+                powercfg /change monitor-timeout-dc 0
+                powercfg /change disk-timeout-ac 0
+                powercfg /change disk-timeout-dc 0
                 powercfg /change standby-timeout-ac 0
                 powercfg /change standby-timeout-dc 0
                 powercfg /change hibernate-timeout-ac 0
                 powercfg /change hibernate-timeout-dc 0
-                powercfg /change disk-timeout-ac 0
-                powercfg /change disk-timeout-dc 0
-                powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+
+                # 3. Ghi de chi so Subgroup Value Index xuong truc tiep Registry Windows Power Manager
+                $schemes = @('SCHEME_CURRENT', '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', '381b4222-f694-41f0-9685-ff5bb260df2e')
+                foreach ($s in $schemes) {
+                    powercfg -setacvalueindex $s SUB_DISK DISKIDLE 0
+                    powercfg -setdcvalueindex $s SUB_DISK DISKIDLE 0
+                    powercfg -setacvalueindex $s SUB_VIDEO VIDEOIDLE 0
+                    powercfg -setdcvalueindex $s SUB_VIDEO VIDEOIDLE 0
+                    powercfg -setacvalueindex $s SUB_SLEEP STANDBYIDLE 0
+                    powercfg -setdcvalueindex $s SUB_SLEEP STANDBYIDLE 0
+                    powercfg -setacvalueindex $s SUB_SLEEP HIBERNATEIDLE 0
+                    powercfg -setdcvalueindex $s SUB_SLEEP HIBERNATEIDLE 0
+                }
+
+                # 4. Commit va kich hoat thoi gian thuc tren Windows Kernel
+                powercfg -setactive SCHEME_CURRENT
             "#;
             let mut cmd = Command::new("powershell");
             cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
             #[cfg(windows)]
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.output();
-            return (true, "Đã kích hoạt chế độ Nguồn 24/7 (Never Sleep): Tắt hoàn toàn chế độ Sleep, Hibernate và tắt đĩa, máy tính sẵn sàng hoạt động 24/7 liên tục không bị gián đoạn!".to_string());
+            return (true, "Đã kích hoạt chế độ Nguồn 24/7 (Never Sleep): Tắt hoàn toàn chế độ Sleep, Hibernate, tắt đĩa và tắt màn hình, máy tính sẵn sàng hoạt động 24/7 liên tục không bị gián đoạn!".to_string());
         } else if plan_clean.contains("ultimate") || plan_clean.contains("cuc dai") {
             let ps_code = r#"
                 $u = (powercfg /list | Select-String -Pattern "Ultimate" | ForEach-Object { if ($_ -match "GUID:\s+([a-f0-9\-]+)") { $matches[1] } } | Select-Object -First 1)
@@ -2033,6 +2054,16 @@ pub fn collect_win_optimize_state() -> String {
         if ($q -match 'Current AC Power Setting Index:\s+(0x[0-9a-fA-F]+)') {
             $sleepAc = [convert]::ToInt32($matches[1], 16)
         }
+        $qDisk = (powercfg /q SCHEME_CURRENT SUB_DISK DISKIDLE 2>$null | Out-String)
+        $diskAc = -1
+        if ($qDisk -match 'Current AC Power Setting Index:\s+(0x[0-9a-fA-F]+)') {
+            $diskAc = [convert]::ToInt32($matches[1], 16)
+        }
+        $qVideo = (powercfg /q SCHEME_CURRENT SUB_VIDEO VIDEOIDLE 2>$null | Out-String)
+        $videoAc = -1
+        if ($qVideo -match 'Current AC Power Setting Index:\s+(0x[0-9a-fA-F]+)') {
+            $videoAc = [convert]::ToInt32($matches[1], 16)
+        }
         $dnsObj = (Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -First 1)
         $dark = (Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'AppsUseLightTheme' -ErrorAction SilentlyContinue).AppsUseLightTheme
         $ext = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt' -ErrorAction SilentlyContinue).HideFileExt
@@ -2047,6 +2078,8 @@ pub fn collect_win_optimize_state() -> String {
         ConvertTo-Json -Compress ([PSCustomObject]@{
             scheme = $scheme
             sleep_seconds = $sleepAc
+            disk_seconds = $diskAc
+            video_seconds = $videoAc
             dns = $dnsArr
             adapter = $adapter
             dark_theme = ($dark -eq 0)
@@ -2064,7 +2097,7 @@ pub fn collect_win_optimize_state() -> String {
             return text;
         }
     }
-    r#"{"scheme":"","sleep_seconds":-1,"dns":[],"adapter":"","dark_theme":false,"show_ext":false,"show_hidden":false,"classic_context":false}"#.to_string()
+    r#"{"scheme":"","sleep_seconds":-1,"disk_seconds":-1,"video_seconds":-1,"dns":[],"adapter":"","dark_theme":false,"show_ext":false,"show_hidden":false,"classic_context":false}"#.to_string()
 }
 
 pub fn manage_local_user(sub_action: &str, username: &str, value: &str) -> (bool, String) {

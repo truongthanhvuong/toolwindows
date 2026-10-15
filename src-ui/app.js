@@ -177,8 +177,9 @@
       payload.plan = "restore_default";
     } else if (low.includes("power options") || low.includes("powercfg.cpl")) {
       payload.plan = "open_cpl";
-    } else if (actionId === "set_power_plan") {
-      if (low.includes("ultimate")) payload.plan = "ultimate";
+    } else if (actionId === "set_power_plan" || actionId === "set_never_sleep") {
+      if (low.includes("24/7") || low.includes("never") || low.includes("không ngủ") || low.includes("không tắt")) payload.plan = "never_sleep";
+      else if (low.includes("ultimate")) payload.plan = "ultimate";
       else if (low.includes("high")) payload.plan = "high";
       else if (low.includes("balance") || low.includes("cân bằng")) payload.plan = "balanced";
       else if (low.includes("saver") || low.includes("tiết kiệm")) payload.plan = "saver";
@@ -1832,7 +1833,7 @@
           let badgeText = "BALANCED ACTIVE";
           let badgeColor = "bg-primary-container text-on-primary-container";
 
-          if (data.sleep_seconds === 0 && (schemeLower.includes("high") || schemeLower.includes("never"))) {
+          if (data.sleep_seconds === 0 && (data.disk_seconds === 0 || data.disk_seconds === undefined) && (schemeLower.includes("high") || schemeLower.includes("never"))) {
             activeKey = "never_sleep";
             badgeText = "24/7 NON-STOP ACTIVE";
             badgeColor = "bg-amber-500/20 text-amber-500 ring-1 ring-amber-500";
