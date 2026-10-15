@@ -373,7 +373,9 @@ function Start-VUONGTTAdminProcess {
         $psi.WindowStyle = $WindowStyle
         $psi.UseShellExecute = $true
 
-        $useRunAs = (-not $NoElevation) -and ((-not (Test-VUONGTTIsAdmin)) -or $ForceHighestPrivilege)
+        $isAdmin = Test-VUONGTTIsAdmin
+        # Khi đã là Administrator, tiến trình con mặc nhiên kế thừa quyền High Integrity mà không cần Verb RunAs gây treo UAC
+        $useRunAs = (-not $NoElevation) -and (-not $isAdmin)
         if ($useRunAs) {
             $psi.Verb = "RunAs"
         }

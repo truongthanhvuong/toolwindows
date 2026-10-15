@@ -1485,22 +1485,35 @@
       cb.addEventListener("change", updateTweakCount);
     });
 
-    // Preset profile handler
-    window.applyPreset = function(preset) {
+    // Preset profile handler (Chọn trước - Chỉ áp dụng khi bấm nút "Áp Dụng Tweaks Đã Chọn")
+    window.selectPreset = function(preset) {
       const allCheckboxes = optimizeView.querySelectorAll("input[type='checkbox']");
       const essentialBoxes = optimizeView.querySelectorAll("#essential-list input[type='checkbox']");
       const advancedBoxes = optimizeView.querySelectorAll("#advanced-list input[type='checkbox']");
       const quickBoxes = optimizeView.querySelectorAll(".quick-tweak-cb");
+      const activePresetBadge = document.getElementById("active-preset-label");
+
+      let presetTitle = "Tùy Biến";
 
       if (preset === "clear") {
         allCheckboxes.forEach((cb) => (cb.checked = false));
-        showToast("Tinh Chỉnh Windows", "Đã xóa toàn bộ lựa chọn tinh chỉnh.", "info");
+        presetTitle = "Chưa Chọn (0 mục)";
+        if (activePresetBadge) {
+          activePresetBadge.textContent = `[${presetTitle}]`;
+          activePresetBadge.className = "px-2.5 py-0.5 rounded-full bg-surface-container-high text-outline font-code-sm text-code-sm font-semibold";
+        }
+        showToast("Tinh Chỉnh Windows", "Đã bỏ chọn toàn bộ mục. Bấm 'Áp Dụng' để thực thi nếu muốn xóa sạch.", "info");
       } else if (preset === "minimal") {
         allCheckboxes.forEach((cb) => (cb.checked = false));
         essentialBoxes.forEach((cb, idx) => {
           if (idx < 5) cb.checked = true;
         });
-        showToast("Preset Minimal", "Đã chọn bộ tinh chỉnh tối giản (5 mục an toàn).", "info");
+        presetTitle = "Đang Chọn: Tối Giản (Minimal - Chưa Áp Dụng)";
+        if (activePresetBadge) {
+          activePresetBadge.textContent = `[${presetTitle}]`;
+          activePresetBadge.className = "px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-code-sm text-code-sm font-bold animate-pulse";
+        }
+        showToast("Preset Minimal", "Đã đánh dấu 5 mục an toàn. Vui lòng bấm 'Áp Dụng Tweaks Đã Chọn' bên dưới để bắt đầu!", "info");
       } else if (preset === "standard") {
         allCheckboxes.forEach((cb) => (cb.checked = false));
         essentialBoxes.forEach((cb) => (cb.checked = true));
@@ -1510,12 +1523,22 @@
             cb.checked = true;
           }
         });
-        showToast("Preset Chuẩn", "Đã chọn bộ tinh chỉnh chuẩn (toàn bộ mục cơ bản).", "info");
+        presetTitle = "Đang Chọn: Chuẩn (Standard - Chưa Áp Dụng)";
+        if (activePresetBadge) {
+          activePresetBadge.textContent = `[${presetTitle}]`;
+          activePresetBadge.className = "px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary-container font-code-sm text-code-sm font-bold animate-pulse";
+        }
+        showToast("Preset Chuẩn", "Đã đánh dấu bộ tinh chỉnh chuẩn. Vui lòng bấm 'Áp Dụng Tweaks Đã Chọn' bên dưới để thực thi!", "info");
       } else if (preset === "advanced") {
         essentialBoxes.forEach((cb) => (cb.checked = true));
         advancedBoxes.forEach((cb) => (cb.checked = true));
         quickBoxes.forEach((cb) => (cb.checked = true));
-        showToast("Preset Nâng Cao", "Đã chọn toàn bộ tinh chỉnh nâng cao và dọn dẹp.", "warning");
+        presetTitle = "Đang Chọn: Nâng Cao (Advanced - Chưa Áp Dụng)";
+        if (activePresetBadge) {
+          activePresetBadge.textContent = `[${presetTitle}]`;
+          activePresetBadge.className = "px-2.5 py-0.5 rounded-full bg-error-container text-on-error-container font-code-sm text-code-sm font-bold animate-pulse";
+        }
+        showToast("Preset Nâng Cao", "Đã đánh dấu toàn bộ tinh chỉnh nâng cao. Vui lòng bấm 'Áp Dụng Tweaks Đã Chọn' để thực thi!", "warning");
       }
 
       // Update button styling in preset bar
@@ -1534,6 +1557,8 @@
 
       updateTweakCount();
     };
+
+    window.applyPreset = window.selectPreset;
 
     window.restoreWinDefaults = async function() {
       if (!confirm("Bạn có chắc chắn muốn khôi phục toàn bộ tinh chỉnh về trạng thái mặc định ban đầu của Windows?")) return;

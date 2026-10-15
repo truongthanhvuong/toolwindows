@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.114</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.118</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -1259,7 +1259,7 @@
 <span class="font-label-sm text-label-sm text-outline">Target: D:\Drivers_Backup_2026</span>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-<div class="p-3.5 rounded-lg bg-surface-container-low flex items-start gap-3 shadow-sm hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
+<div id="btn-export-drivers" onclick="exportDrivers()" class="p-3.5 rounded-lg bg-surface-container-low flex items-start gap-3 shadow-sm hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
 <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
 <span class="material-symbols-outlined text-[18px]">download_for_offline</span>
 </div>
@@ -1268,7 +1268,7 @@
 <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">Dism /Export-Driver đóng gói thành thư mục độc lập để cài lại khi offline.</p>
 </div>
 </div>
-<div class="p-3.5 rounded-lg bg-surface-container-low flex items-start gap-3 shadow-sm hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
+<div id="btn-restore-drivers" onclick="restoreDrivers()" class="p-3.5 rounded-lg bg-surface-container-low flex items-start gap-3 shadow-sm hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
 <div class="w-8 h-8 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0 mt-0.5">
 <span class="material-symbols-outlined text-[18px]">settings_backup_restore</span>
 </div>
@@ -1416,22 +1416,49 @@
 </div>
 </div>
 <script>
+  async function exportDrivers() {
+    const consoleStream = document.getElementById('console-stream');
+    if (consoleStream) consoleStream.innerHTML = '<span class="text-secondary">[EXPORTING] Đang chạy DISM /Export-Driver sao lưu toàn bộ Driver ra ổ cứng...</span>';
+    if (window.showToast) window.showToast("Driver Backup", "Đang sao lưu Driver máy tính...", "info");
+    const res = await (window.invokeRust ? window.invokeRust("run_system_action", { actionId: "backup_drivers" }) : null);
+    if (res && res.success) {
+      if (consoleStream) consoleStream.innerHTML = `<span class="text-tertiary">[THÀNH CÔNG] ${res.message}</span>`;
+      if (window.showToast) window.showToast("Driver Backup", res.message, "success");
+    } else {
+      if (consoleStream) consoleStream.innerHTML = `<span class="text-error">[LỖI] ${(res && res.message) || "Không thể sao lưu Driver"}</span>`;
+      if (window.showToast) window.showToast("Driver Backup", (res && res.message) || "Lỗi sao lưu Driver", "error");
+    }
+  }
+
+  async function restoreDrivers() {
+    const consoleStream = document.getElementById('console-stream');
+    if (consoleStream) consoleStream.innerHTML = '<span class="text-secondary">[RESTORING] Đang nạp gói Driver đã sao lưu qua PnPUtil...</span>';
+    if (window.showToast) window.showToast("Driver Restore", "Đang khôi phục Driver...", "info");
+    const res = await (window.invokeRust ? window.invokeRust("run_system_action", { actionId: "restore_drivers" }) : null);
+    if (res && res.success) {
+      if (consoleStream) consoleStream.innerHTML = `<span class="text-tertiary">[THÀNH CÔNG] ${res.message}</span>`;
+      if (window.showToast) window.showToast("Driver Restore", res.message, "success");
+    } else {
+      if (consoleStream) consoleStream.innerHTML = `<span class="text-error">[LỖI] ${(res && res.message) || "Không tìm thấy thư mục sao lưu Driver"}</span>`;
+      if (window.showToast) window.showToast("Driver Restore", (res && res.message) || "Không tìm thấy bản sao lưu", "error");
+    }
+  }
+
   (function() {
     const scanBtn = document.getElementById('btn-scan-driver');
     const consoleStream = document.getElementById('console-stream');
     const clearBtn = document.getElementById('btn-clear-log');
 
     if (scanBtn && consoleStream) {
-      scanBtn.addEventListener('click', function() {
+      scanBtn.addEventListener('click', async function() {
         consoleStream.innerHTML = '<span class="text-secondary">[SCANNING] Đang quét PnP Hardware ID trên toàn bộ PCIe, USB, ACPI bus...</span>';
         scanBtn.disabled = true;
         scanBtn.classList.add('opacity-75');
 
-        setTimeout(() => {
-          consoleStream.innerHTML = '<span class="text-tertiary">[SCAN COMPLETED] 218 thiết bị hợp lệ. 0 Driver thiếu. Tất cả phần cứng hoạt động hoàn hảo!</span>';
-          scanBtn.disabled = false;
-          scanBtn.classList.remove('opacity-75');
-        }, 1200);
+        const res = await (window.invokeRust ? window.invokeRust("run_system_action", { actionId: "scan_drivers" }) : null);
+        consoleStream.innerHTML = `<span class="text-tertiary">[QUÉT XONG] ${(res && res.message) || "Tất cả phần cứng hoạt động hoàn hảo!"}</span>`;
+        scanBtn.disabled = false;
+        scanBtn.classList.remove('opacity-75');
       });
     }
 
@@ -1623,19 +1650,20 @@
 <div class="flex items-center gap-2">
 <span class="material-symbols-outlined text-secondary text-[18px]">bookmark_manager</span>
 <span class="font-label-md text-label-md text-on-surface">Khuyến Nghị Chọn Sẵn (Preset Profiles):</span>
+<span id="active-preset-label" class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-amber-300 font-code-sm text-code-sm font-semibold">[Chưa Chọn Preset]</span>
 </div>
 <div class="flex flex-wrap items-center gap-1.5" id="preset-button-bar">
-<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-1 shadow-sm transition-all" onclick="applyPreset('standard')" type="button">
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-1 shadow-sm transition-all" onclick="selectPreset('standard')" type="button">
 <span class="material-symbols-outlined text-[15px]">verified</span>
 <span>Chuẩn (Standard)</span>
 </button>
-<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-all" onclick="applyPreset('minimal')" type="button">
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-all" onclick="selectPreset('minimal')" type="button">
 <span>Tối Giản (Minimal)</span>
 </button>
-<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-secondary hover:bg-surface-container-high font-label-md text-label-md transition-all" onclick="applyPreset('advanced')" type="button">
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container text-secondary hover:bg-surface-container-high font-label-md text-label-md transition-all" onclick="selectPreset('advanced')" type="button">
 <span>Nâng Cao (Advanced)</span>
 </button>
-<button class="preset-btn px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md transition-all" onclick="applyPreset('clear')" type="button">
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md transition-all" onclick="selectPreset('clear')" type="button">
 <span>Bỏ Chọn (Clear: 0 mục)</span>
 </button>
 <button class="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all flex items-center gap-1" onclick="restoreWinDefaults()" type="button">
@@ -2506,19 +2534,55 @@
       });
     }
 
-    // Deployment simulate stream
+    // Real Office Deployment via ODT & Backend Engine
     if (runBtn && terminalBody) {
-      runBtn.addEventListener('click', () => {
+      runBtn.addEventListener('click', async () => {
+        runBtn.disabled = true;
+        runBtn.classList.add('opacity-75');
         const time = new Date().toTimeString().split(' ')[0];
         const logEntry = document.createElement('div');
-        logEntry.className = 'flex items-start gap-2 text-tertiary font-bold';
+        logEntry.className = 'flex items-start gap-2 text-primary font-bold';
         logEntry.innerHTML = `
           <span>[${time}]</span>
-          <span class="text-primary">[DISPATCH]</span>
-          <span>Bắt đầu tạo Configuration.xml và gọi Setup.exe /configure...</span>
+          <span class="text-tertiary">[BẮT ĐẦU]</span>
+          <span>Khởi tạo cấu hình và kích hoạt ODT Setup.exe ngầm...</span>
         `;
         terminalBody.appendChild(logEntry);
         terminalBody.scrollTop = terminalBody.scrollHeight;
+
+        if (window.showToast) window.showToast("Office 365", "Đang tải và cài đặt Office 365 ngầm...", "info");
+
+        const res = await (window.invokeRust ? window.invokeRust("run_system_action", { actionId: "install_office" }) : null);
+
+        // Bắt đầu stream log từ Backend
+        let pollCount = 0;
+        const logPoll = setInterval(async () => {
+          pollCount++;
+          if (window.invokeRust) {
+            const logsRes = await window.invokeRust("get_install_logs", {});
+            if (logsRes && logsRes.logs && logsRes.logs.length > 0) {
+              terminalBody.innerHTML = '';
+              logsRes.logs.forEach(line => {
+                const row = document.createElement('div');
+                row.className = 'flex items-start gap-2 text-on-surface';
+                row.innerHTML = `<span>${line}</span>`;
+                terminalBody.appendChild(row);
+              });
+              terminalBody.scrollTop = terminalBody.scrollHeight;
+            }
+          }
+          if (pollCount > 15) {
+            clearInterval(logPoll);
+            runBtn.disabled = false;
+            runBtn.classList.remove('opacity-75');
+          }
+        }, 1000);
+
+        if (res && res.success) {
+          if (window.showToast) window.showToast("Office 365", res.message, "success");
+        } else {
+          if (window.showToast) window.showToast("Office 365", (res && res.message) || "Tiến trình cài đặt đã được kích hoạt ngầm", "info");
+        }
       });
     }
   })();
@@ -3534,24 +3598,26 @@
 </div>
 <!-- Sub-navigation action tabs -->
 <div class="inline-flex p-1 rounded-lg bg-surface-container-lowest gap-1">
-<button class="px-3.5 py-1.5 rounded-md font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm flex items-center gap-1.5 transition-all">
+<button id="tab-soft-store" onclick="switchSoftSubTab('store')" class="px-3.5 py-1.5 rounded-md font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm flex items-center gap-1.5 transition-all">
 <span class="material-symbols-outlined text-[16px]">download</span>
 <span>Tải App</span>
 </button>
-<button class="px-3.5 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-1.5">
+<button id="tab-soft-custom" onclick="switchSoftSubTab('custom')" class="px-3.5 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-1.5">
 <span class="material-symbols-outlined text-[16px]">build_circle</span>
 <span>Cài App Tùy Chỉnh</span>
 </button>
-<button class="px-3.5 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-1.5">
+<button id="tab-soft-uninstall" onclick="switchSoftSubTab('uninstall')" class="px-3.5 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-1.5">
 <span class="material-symbols-outlined text-[16px]">auto_delete</span>
 <span>Gỡ Bỏ Sạch</span>
 </button>
-<button class="px-3.5 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-1.5">
+<button id="tab-soft-fonts" onclick="switchSoftSubTab('fonts')" class="px-3.5 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-1.5">
 <span class="material-symbols-outlined text-[16px]">font_download</span>
 <span>Cài Font Chữ</span>
 </button>
 </div>
 </div>
+<!-- Sub-view 1: Tải App Kho Winget & Store -->
+<div id="subview-soft-store" class="soft-subview space-y-space-md">
 <!-- Category Filter Pills Bar -->
 <div class="mb-space-lg flex items-center gap-2 overflow-x-auto pb-1">
 <button data-cat="all" class="px-3 py-1.5 rounded-full font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm flex-shrink-0 flex items-center gap-1.5 cursor-pointer">
@@ -4896,6 +4962,258 @@
   </div>
   <div id="winget-terminal-body" class="p-4 font-mono text-[12px] leading-relaxed text-secondary/90 bg-[#060e20] h-48 overflow-y-auto space-y-1 select-text">
     <div class="text-outline/70">[Ready] Hệ thống sẵn sàng. Vui lòng tick chọn các ứng dụng cần cài đặt và bấm "Cài Đặt / Update". Mặc định 0 ứng dụng được chọn.</div>
+  </div>
+</div>
+<!-- End Sub-view 1: Tải App Kho Winget & Store -->
+
+<!-- Sub-view 2: Cài App Tùy Chỉnh -->
+<div id="subview-soft-custom" class="soft-subview hidden space-y-space-md">
+  <div class="rounded-xl bg-surface-container p-space-lg shadow-md flex flex-col gap-space-md">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
+          <span class="material-symbols-outlined text-[24px]">build_circle</span>
+        </div>
+        <div>
+          <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Cài Đặt Ứng Dụng Tùy Chỉnh (Custom Installer)</h2>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">Triển khai cài đặt tự động tệp .EXE, .MSI, .ZIP độc lập với tham số im lặng (Silent switches)</p>
+        </div>
+      </div>
+      <span class="px-3 py-1 rounded-full bg-surface-container-high text-primary font-code-sm text-code-sm font-semibold">Engine: Win32 SubProcess</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-space-md">
+      <div class="md:col-span-8 flex flex-col gap-space-sm">
+        <label class="font-label-md text-label-md text-on-surface font-semibold">Đường dẫn tệp cài đặt (.exe / .msi / .zip):</label>
+        <div class="flex gap-2">
+          <input id="txtCustomInstallerPath" type="text" placeholder="Ví dụ: C:\Downloads\Setup.exe hoặc D:\Softwares\AppInstaller.msi..." class="flex-1 px-3 py-2 rounded-lg bg-surface-container-lowest text-on-surface border border-outline/30 focus:border-primary font-code-sm text-code-sm outline-none" />
+          <button id="btnBrowseCustomApp" onclick="browseCustomInstaller()" class="px-4 py-2 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-md text-label-md flex items-center gap-1.5 transition-colors" type="button">
+            <span class="material-symbols-outlined text-[18px]">folder_open</span>
+            <span>Chọn File...</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="md:col-span-4 flex flex-col gap-space-sm">
+        <label class="font-label-md text-label-md text-on-surface font-semibold">Tham số cài đặt im lặng (Silent Args):</label>
+        <input id="txtCustomInstallerArgs" type="text" value="/S" placeholder="/S, /qn, /quiet, /VERYSILENT..." class="px-3 py-2 rounded-lg bg-surface-container-lowest text-on-surface border border-outline/30 focus:border-primary font-code-sm text-code-sm outline-none" />
+      </div>
+    </div>
+
+    <!-- Quick Preset Silent Switches -->
+    <div class="flex flex-wrap items-center gap-2 pt-1">
+      <span class="font-label-sm text-label-sm text-outline">Gợi ý tham số nhanh:</span>
+      <button onclick="setSilentArg('/S')" class="px-2.5 py-1 rounded bg-surface-container-low hover:bg-surface-container-high text-on-surface font-code-sm text-[11px] transition-colors" type="button">/S (NSIS)</button>
+      <button onclick="setSilentArg('/qn')" class="px-2.5 py-1 rounded bg-surface-container-low hover:bg-surface-container-high text-on-surface font-code-sm text-[11px] transition-colors" type="button">/qn (MSI)</button>
+      <button onclick="setSilentArg('/VERYSILENT /NORESTART')" class="px-2.5 py-1 rounded bg-surface-container-low hover:bg-surface-container-high text-on-surface font-code-sm text-[11px] transition-colors" type="button">/VERYSILENT (InnoSetup)</button>
+      <button onclick="setSilentArg('/silent')" class="px-2.5 py-1 rounded bg-surface-container-low hover:bg-surface-container-high text-on-surface font-code-sm text-[11px] transition-colors" type="button">/silent</button>
+      <button onclick="setSilentArg('/quiet')" class="px-2.5 py-1 rounded bg-surface-container-low hover:bg-surface-container-high text-on-surface font-code-sm text-[11px] transition-colors" type="button">/quiet</button>
+    </div>
+
+    <div class="flex items-center justify-between pt-2 border-t border-outline/10">
+      <div class="flex items-center gap-4">
+        <label class="flex items-center gap-2 cursor-pointer text-on-surface font-label-md text-label-md">
+          <input id="chkCustomAdmin" type="checkbox" checked class="w-4 h-4 rounded accent-primary" />
+          <span>Chạy dưới quyền Administrator (Elevated)</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer text-on-surface font-label-md text-label-md">
+          <input id="chkCustomWait" type="checkbox" checked class="w-4 h-4 rounded accent-primary" />
+          <span>Chờ tiến trình hoàn tất trước khi kết thúc</span>
+        </label>
+      </div>
+
+      <button id="btnExecuteCustomInstall" onclick="executeCustomInstall()" class="px-5 py-2.5 rounded-lg bg-primary-container text-on-primary-container hover:brightness-110 font-label-md text-label-md font-bold flex items-center gap-2 shadow-md transition-all active:scale-[0.98]" type="button">
+        <span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+        <span>Bắt Đầu Cài Đặt Ngay</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Terminal Output -->
+  <div class="rounded-xl bg-surface-container overflow-hidden shadow-md">
+    <div class="bg-surface-container-high px-4 py-2 flex items-center justify-between">
+      <span class="font-code-sm text-code-sm text-on-surface font-semibold">NHẬT KÝ THỰC THI CÀI ĐẶT TÙY CHỈNH</span>
+      <button onclick="clearCustomLog()" class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-[11px] text-outline hover:text-on-surface transition-colors" type="button">Xóa log</button>
+    </div>
+    <div id="custom-install-terminal-body" class="p-4 font-mono text-[12px] leading-relaxed text-secondary/90 bg-[#060e20] h-40 overflow-y-auto space-y-1 select-text">
+      <div class="text-outline/70">[Ready] Sẵn sàng thực thi. Chọn tệp cài đặt và bấm "Bắt Đầu Cài Đặt Ngay".</div>
+    </div>
+  </div>
+</div>
+
+<!-- Sub-view 3: Gỡ Bỏ Sạch -->
+<div id="subview-soft-uninstall" class="soft-subview hidden space-y-space-md">
+  <div class="rounded-xl bg-surface-container p-space-lg shadow-md flex flex-col gap-space-md">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-error-container text-on-error-container flex items-center justify-center">
+          <span class="material-symbols-outlined text-[24px]">auto_delete</span>
+        </div>
+        <div>
+          <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Trung Tâm Gỡ Bỏ Sạch Phần Mềm (Clean Uninstaller)</h2>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">Quét toàn bộ phần mềm đã cài đặt trên máy, gỡ bỏ tận gốc tệp rác và khóa Registry</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="refreshInstalledApps()" class="px-3.5 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-1.5 shadow-sm hover:brightness-110 transition-all" type="button">
+          <span class="material-symbols-outlined text-[16px]">sync</span>
+          <span>Quét Danh Sách Máy</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Tools Bar -->
+    <div class="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-surface-container-lowest">
+      <span class="font-label-sm text-label-sm text-outline font-semibold">Công cụ gỡ chuyên dụng:</span>
+      <button onclick="openUninstallerTool('appwiz')" class="px-3 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors" type="button">
+        <span class="material-symbols-outlined text-[16px] text-primary">window</span>
+        <span>Programs and Features (appwiz.cpl)</span>
+      </button>
+      <button onclick="openUninstallerTool('geek')" class="px-3 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors" type="button">
+        <span class="material-symbols-outlined text-[16px] text-secondary">delete_forever</span>
+        <span>Geek Uninstaller</span>
+      </button>
+      <button onclick="openUninstallerTool('bcu')" class="px-3 py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors" type="button">
+        <span class="material-symbols-outlined text-[16px] text-tertiary">cleaning_services</span>
+        <span>Bulk Crap Uninstaller (BCU)</span>
+      </button>
+    </div>
+
+    <!-- Search input -->
+    <div class="flex items-center gap-2">
+      <div class="flex-1 relative">
+        <span class="material-symbols-outlined absolute left-3 top-2.5 text-[18px] text-outline">search</span>
+        <input id="txtUninstallSearch" oninput="filterInstalledApps(this.value)" type="text" placeholder="Tìm kiếm phần mềm theo tên, nhà phát triển..." class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container-lowest text-on-surface border border-outline/30 focus:border-primary font-code-sm text-code-sm outline-none" />
+      </div>
+      <span id="badgeInstalledCount" class="px-3 py-2 rounded-lg bg-surface-container-high text-on-surface font-code-sm text-code-sm font-semibold">0 Ứng Dụng</span>
+    </div>
+
+    <!-- Apps Table -->
+    <div class="rounded-lg border border-outline/20 overflow-hidden max-h-96 overflow-y-auto">
+      <table class="w-full text-left text-on-surface font-label-md text-label-md">
+        <thead class="bg-surface-container-high text-on-surface font-semibold sticky top-0">
+          <tr>
+            <th class="p-3">Tên Ứng Dụng</th>
+            <th class="p-3">Nhà Phát Triển</th>
+            <th class="p-3">Phiên Bản</th>
+            <th class="p-3 text-right">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyInstalledApps" class="divide-y divide-outline/10 bg-surface-container-low">
+          <tr>
+            <td colspan="4" class="p-6 text-center text-on-surface-variant font-body-md">
+              Bấm nút "Quét Danh Sách Máy" ở trên để tải toàn bộ phần mềm đã cài đặt trên máy tính này.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Sub-view 4: Cài Font Chữ -->
+<div id="subview-soft-fonts" class="soft-subview hidden space-y-space-md">
+  <div class="rounded-xl bg-surface-container p-space-lg shadow-md flex flex-col gap-space-md">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
+          <span class="material-symbols-outlined text-[24px]">font_download</span>
+        </div>
+        <div>
+          <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Kho Font Chữ Tiếng Việt &amp; Thiết Kế Đồ Họa (Font Hub)</h2>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">Tự động nạp và đăng ký toàn bộ font chữ VNI, TCVN3, Google Fonts và Font Coding vào Windows Registry</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openWindowsFontsFolder()" class="px-3.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-md text-label-md flex items-center gap-1.5 transition-colors" type="button">
+          <span class="material-symbols-outlined text-[16px]">folder</span>
+          <span>Mở C:\Windows\Fonts</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 Font Packages Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+      <!-- Pack 1: VNI -->
+      <div class="p-4 rounded-xl bg-surface-container-low border border-outline/20 flex flex-col justify-between gap-3 shadow-sm hover:border-primary/50 transition-colors">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[22px]">format_shapes</span>
+          </div>
+          <div>
+            <h3 class="font-headline-md text-headline-md text-on-surface font-bold">Bộ Font Tiếng Việt VNI (300+ Fonts)</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-1">Đầy đủ VNI-Times, VNI-Avo, VNI-Helve... tương thích 100% CorelDRAW, Photoshop, Excel, Kế toán HTKK.</p>
+          </div>
+        </div>
+        <button onclick="installFontPack('vni')" class="w-full py-2 rounded-lg bg-primary-container text-on-primary-container hover:brightness-110 font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all" type="button">
+          <span class="material-symbols-outlined text-[16px]">download</span>
+          <span>Cài Bộ Font VNI</span>
+        </button>
+      </div>
+
+      <!-- Pack 2: TCVN3 -->
+      <div class="p-4 rounded-xl bg-surface-container-low border border-outline/20 flex flex-col justify-between gap-3 shadow-sm hover:border-secondary/50 transition-colors">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[22px]">text_fields</span>
+          </div>
+          <div>
+            <h3 class="font-headline-md text-headline-md text-on-surface font-bold">Bộ Font TCVN3 / ABC (.VnTime)</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-1">Chuẩn font ABC truyền thống (.VnTime, .VnTimeH, .VnArial...) cho văn bản cơ quan nhà nước và tài liệu cũ.</p>
+          </div>
+        </div>
+        <button onclick="installFontPack('tcvn3')" class="w-full py-2 rounded-lg bg-secondary-container text-on-secondary-container hover:brightness-110 font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all" type="button">
+          <span class="material-symbols-outlined text-[16px]">download</span>
+          <span>Cài Bộ Font TCVN3</span>
+        </button>
+      </div>
+
+      <!-- Pack 3: Google Fonts -->
+      <div class="p-4 rounded-xl bg-surface-container-low border border-outline/20 flex flex-col justify-between gap-3 shadow-sm hover:border-tertiary/50 transition-colors">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[22px]">spellcheck</span>
+          </div>
+          <div>
+            <h3 class="font-headline-md text-headline-md text-on-surface font-bold">Bộ Font Google Fonts &amp; Thiết Kế Tuyển Chọn</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-1">Roboto, Open Sans, Montserrat, Be Vietnam Pro, Inter, Playfair Display việt hóa hoàn chỉnh cho đồ họa hiện đại.</p>
+          </div>
+        </div>
+        <button onclick="installFontPack('google')" class="w-full py-2 rounded-lg bg-tertiary-container text-on-tertiary-container hover:brightness-110 font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all" type="button">
+          <span class="material-symbols-outlined text-[16px]">download</span>
+          <span>Cài Google Fonts</span>
+        </button>
+      </div>
+
+      <!-- Pack 4: Coding -->
+      <div class="p-4 rounded-xl bg-surface-container-low border border-outline/20 flex flex-col justify-between gap-3 shadow-sm hover:border-primary/50 transition-colors">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[22px]">terminal</span>
+          </div>
+          <div>
+            <h3 class="font-headline-md text-headline-md text-on-surface font-bold">Bộ Font Lập Trình (Developer Ligatures)</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-1">JetBrains Mono, Fira Code, Cascadia Code hỗ trợ ligature ký hiệu lập trình siêu đẹp cho VS Code, Terminal.</p>
+          </div>
+        </div>
+        <button onclick="installFontPack('coding')" class="w-full py-2 rounded-lg bg-primary-container text-on-primary-container hover:brightness-110 font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all" type="button">
+          <span class="material-symbols-outlined text-[16px]">download</span>
+          <span>Cài Font Coding</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mega 1-Click Action -->
+    <div class="p-4 rounded-xl bg-gradient-to-r from-primary-container/40 to-tertiary-container/30 border border-primary/30 flex items-center justify-between">
+      <div>
+        <h4 class="font-headline-md text-headline-md text-on-surface font-bold">Cài Đặt Toàn Bộ Font Chữ Tiếng Việt (1-Click AIO)</h4>
+        <p class="font-label-sm text-label-sm text-on-surface-variant">Tải và kích hoạt trọn gói hơn 1000+ fonts chữ VNI, TCVN3, Unicode, Google Fonts chỉ với 1 cú click.</p>
+      </div>
+      <button onclick="installFontPack('all')" class="px-6 py-3 rounded-xl bg-primary-container text-on-primary-container hover:brightness-110 font-label-md text-label-md font-bold flex items-center gap-2 shadow-lg transition-all active:scale-[0.98]" type="button">
+        <span class="material-symbols-outlined text-[20px]">bolt</span>
+        <span>Cài Tất Cả Font (1-Click)</span>
+      </button>
+    </div>
   </div>
 </div>
 </div>

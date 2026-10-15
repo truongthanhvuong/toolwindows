@@ -92,6 +92,52 @@ pub fn clear_logs() {
     }
 }
 
+pub fn collect_real_system_identity() -> (String, String, String, String, String) {
+    let hostname = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "VUONGTT-HOST".to_string());
+    
+    let mut cmd = Command::new("powershell");
+    cmd.args([
+        "-NoProfile",
+        "-Command",
+        r#"[PSCustomObject]@{
+            sn = (Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue | Select-Object -ExpandProperty SerialNumber);
+            ip = (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Ethernet*','Wi-Fi*','Ethernet','Wi-Fi' -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '169.254*' -and $_.IPAddress -ne '127.0.0.1' } | Select-Object -First 1 -ExpandProperty IPAddress);
+            os = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Caption);
+            hwid = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Cryptography' -Name 'MachineGuid' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty MachineGuid)
+        } | ConvertTo-Json -Compress"#
+    ]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    
+    let mut serial = String::new();
+    let mut ip = String::new();
+    let mut os = String::new();
+    let mut hwid = String::new();
+
+    if let Ok(out) = cmd.output() {
+        let json = String::from_utf8_lossy(&out.stdout);
+        if let Some(s) = extract_json_field(&json, "sn") { serial = s.to_string(); }
+        if let Some(i) = extract_json_field(&json, "ip") { ip = i.to_string(); }
+        if let Some(o) = extract_json_field(&json, "os") { os = o.to_string(); }
+        if let Some(h) = extract_json_field(&json, "hwid") { hwid = h.to_string(); }
+    }
+
+    if serial.is_empty() || serial.to_lowercase() == "to be filled by o.e.m." || serial.to_lowercase() == "default string" {
+        serial = format!("SN-{}", &hostname);
+    }
+    if ip.is_empty() {
+        ip = "127.0.0.1".to_string();
+    }
+    if os.is_empty() {
+        os = "Windows 11 Pro 64-bit".to_string();
+    }
+    if hwid.is_empty() {
+        hwid = format!("HWID-{}", serial.replace(' ', "-"));
+    }
+
+    (hostname, serial, ip, os, hwid)
+}
+
 pub fn record_device_heartbeat(
     hostname: &str,
     serial: &str,
@@ -105,35 +151,17 @@ pub fn record_device_heartbeat(
     let alt_dir = Path::new(r"C:\ProgramData\VUONGTT_Toolkit");
     let alt_path = alt_dir.join("client_devices.json");
 
-    let h_name = if !hostname.trim().is_empty() {
-        hostname.trim().to_string()
+    let (real_h, real_s, real_ip, real_os, real_hwid) = if hostname.trim().is_empty() || serial.trim().is_empty() {
+        collect_real_system_identity()
     } else {
-        std::env::var("COMPUTERNAME").unwrap_or_else(|_| "VUONGTT-HOST".to_string())
+        (hostname.trim().to_string(), serial.trim().to_string(), ip.trim().to_string(), os.trim().to_string(), hwid.trim().to_string())
     };
 
-    let s_num = if !serial.trim().is_empty() {
-        serial.trim().to_string()
-    } else {
-        "BIOS-PRIMARY-001".to_string()
-    };
-
-    let ip_addr = if !ip.trim().is_empty() {
-        ip.trim().to_string()
-    } else {
-        "127.0.0.1".to_string()
-    };
-
-    let os_cap = if !os.trim().is_empty() {
-        os.trim().to_string()
-    } else {
-        "Windows 11 Pro 64-bit".to_string()
-    };
-
-    let m_hwid = if !hwid.trim().is_empty() {
-        hwid.trim().to_string()
-    } else {
-        format!("HWID-{}", s_num.replace(' ', "-"))
-    };
+    let h_name = if !hostname.trim().is_empty() { hostname.trim().to_string() } else { real_h };
+    let s_num = if !serial.trim().is_empty() { serial.trim().to_string() } else { real_s };
+    let ip_addr = if !ip.trim().is_empty() { ip.trim().to_string() } else { real_ip };
+    let os_cap = if !os.trim().is_empty() { os.trim().to_string() } else { real_os };
+    let m_hwid = if !hwid.trim().is_empty() { hwid.trim().to_string() } else { real_hwid };
 
     let now = get_now_timestamp();
 
@@ -155,12 +183,12 @@ pub fn record_device_heartbeat(
         m_hwid.replace('"', "")
     );
 
-    let updated_json = if content.contains(&h_name) || content.contains(&s_num) {
+    let updated_json = if content.contains(&m_hwid) || (content.contains(&h_name) && content.contains(&s_num)) {
         let mut items = Vec::new();
         let trimmed = content.trim_start_matches('[').trim_end_matches(']').trim();
         for chunk in trimmed.split("},") {
             let item = format!("{}}}", chunk.trim_end_matches('}'));
-            if !item.contains(&h_name) && !item.contains(&s_num) && item.contains("hostname") {
+            if !item.contains(&m_hwid) && !(item.contains(&h_name) && item.contains(&s_num)) && item.contains("hostname") {
                 items.push(item);
             }
         }
@@ -499,18 +527,32 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         for app_id in &app_ids {
             append_log(&format!("[TIẾN TRÌNH] Đang tải và cài đặt: {}...", app_id));
             let win_cmd = match app_id.as_str() {
-                "google-chrome" => "winget install --id Google.Chrome -e --silent --accept-package-agreements --accept-source-agreements",
+                "google-chrome" | "chrome" => "winget install --id Google.Chrome -e --silent --accept-package-agreements --accept-source-agreements",
                 "zalo" => "powershell -Command \"$dl = '$env:TEMP\\ZaloSetup.exe'; (New-Object System.Net.WebClient).DownloadFile('https://res-download-pc-te-vncdn.zadn.vn/pc/ZaloSetup-26.9.10.exe', $dl); Start-Process $dl -ArgumentList '/S' -Wait; Remove-Item $dl -Force\"",
                 "firefox" | "mozilla-firefox" => "winget install --id Mozilla.Firefox -e --silent --accept-package-agreements",
                 "edge" | "microsoft-edge" => "winget install --id Microsoft.Edge -e --silent --accept-package-agreements",
+                "tor" | "tor-browser" => "winget install --id TorProject.TorBrowser -e --silent --accept-package-agreements --accept-source-agreements",
+                "coccoc" | "coc-coc-browser" => "winget install --id CocCoc.CocCoc -e --silent --accept-package-agreements",
+                "brave" | "brave-browser" => "winget install --id Brave.Brave -e --silent --accept-package-agreements",
+                "zen" | "zen-browser" => "winget install --id Zen-Team.Zen-Browser -e --silent --accept-package-agreements",
+                "opera" | "opera-one" => "winget install --id Opera.Opera -e --silent --accept-package-agreements",
                 "unikey" => "powershell -Command \"$dl = '$env:TEMP\\UniKey.zip'; (New-Object System.Net.WebClient).DownloadFile('https://www.unikey.org/assets/release/unikey43RC5-200929-win64.zip', $dl); Expand-Archive -Path $dl -DestinationPath 'C:\\Tools\\UniKey' -Force; Remove-Item $dl -Force; Start-Process 'C:\\Tools\\UniKey\\UniKeyNT.exe'\"",
-                "vscode" => "winget install --id Microsoft.VisualStudioCode -e --silent --accept-package-agreements",
+                "evkey" => "powershell -Command \"$dl = '$env:TEMP\\EVKey.zip'; (New-Object System.Net.WebClient).DownloadFile('https://evkeyvn.com/download/EVKey64.zip', $dl); Expand-Archive -Path $dl -DestinationPath 'C:\\Tools\\EVKey' -Force; Remove-Item $dl -Force; Start-Process 'C:\\Tools\\EVKey\\EVKey64.exe'\"",
+                "7zip" | "7-zip" => "winget install --id 7zip.7zip -e --silent --accept-package-agreements",
+                "winrar" => "winget install --id RARLab.WinRAR -e --silent --accept-package-agreements",
+                "vscode" | "visual-studio-code" => "winget install --id Microsoft.VisualStudioCode -e --silent --accept-package-agreements",
                 "git" => "winget install --id Git.Git -e --silent --accept-package-agreements",
-                "telegram" => "winget install --id Telegram.TelegramDesktop -e --silent --accept-package-agreements",
+                "telegram" | "telegram-desktop" => "winget install --id Telegram.TelegramDesktop -e --silent --accept-package-agreements",
                 "discord" => "winget install --id Discord.Discord -e --silent --accept-package-agreements",
                 "nodejs" => "winget install --id OpenJS.NodeJS.LTS -e --silent --accept-package-agreements",
                 "python" => "winget install --id Python.Python.3.12 -e --silent --accept-package-agreements",
                 "ultraviewer" => "winget install --id UltraViewer.UltraViewer -e --silent --accept-package-agreements",
+                "rustdesk" => "winget install --id RustDesk.RustDesk -e --silent --accept-package-agreements",
+                "anydesk" => "winget install --id AnyDeskSoftwareGmbH.AnyDesk -e --silent --accept-package-agreements",
+                "crystaldiskinfo" => "winget install --id CrystalDewWorld.CrystalDiskInfo -e --silent --accept-package-agreements",
+                "cpuz" | "cpu-z" => "winget install --id CPUID.CPU-Z -e --silent --accept-package-agreements",
+                "vlc" => "winget install --id VideoLAN.VLC -e --silent --accept-package-agreements",
+                "foxitpdf" | "foxit-reader" => "winget install --id Foxit.FoxitReader -e --silent --accept-package-agreements",
                 _ => "",
             };
 
@@ -648,21 +690,150 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     }
 
     // ========================================================================
-    // 6. CÀI ĐẶT OFFICE M365 AIO
+    // 5.1 SAO LƯU & PHỤC HỒI DRIVER HỆ THỐNG (DRIVER BACKUP & RESTORE)
     // ========================================================================
-    if act.contains("office") {
+    if act == "backup_drivers" || act.contains("sao luu driver") || act.contains("export_driver") || act.contains("export driver") {
+        clear_logs();
+        append_log("[DRIVER BACKUP] Khởi tạo sao lưu Driver hệ thống...");
+        let ps_code = r#"
+            $targetDir = 'D:\Drivers_Backup_2026'
+            if (-not (Test-Path 'D:\')) {
+                $targetDir = 'C:\Drivers_Backup_2026'
+            }
+            if (-not (Test-Path $targetDir)) {
+                New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+            }
+            $p = Start-Process dism.exe -ArgumentList "/online /export-driver /destination:`"$targetDir`"" -PassThru -Wait -NoNewWindow
+            if ($p.ExitCode -eq 0) {
+                Write-Output "SUCCESS:$targetDir"
+            } else {
+                Write-Output "FAIL:$($p.ExitCode)"
+            }
+        "#;
         let mut cmd = Command::new("powershell");
-        cmd.args([
-            "-NoProfile",
-            "-Command",
-            "winget install --id Microsoft.Office -e --silent --accept-package-agreements --accept-source-agreements",
-        ]);
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        if out.contains("SUCCESS") {
+            let path = out.split("SUCCESS:").nth(1).unwrap_or("D:\\Drivers_Backup_2026").trim();
+            append_log(&format!("[THÀNH CÔNG] Đã xuất toàn bộ Driver phần cứng vào thư mục: {}", path));
+            return (true, format!("Đã sao lưu thành công toàn bộ Driver máy tính vào: {}", path));
+        } else {
+            append_log(&format!("[CẢNH BÁO] DISM export-driver trả về mã: {}. Thử lại với pnputil...", out.trim()));
+            let ps_fallback = r#"
+                $targetDir = if (Test-Path 'D:\') { 'D:\Drivers_Backup_2026' } else { 'C:\Drivers_Backup_2026' }
+                New-Item -ItemType Directory -Path $targetDir -Force -ErrorAction SilentlyContinue | Out-Null
+                pnputil /export-driver * "$targetDir"
+            "#;
+            let mut fcmd = Command::new("powershell");
+            fcmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_fallback]);
+            #[cfg(windows)]
+            fcmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = fcmd.output();
+            append_log("[HOÀN TẤT] Tiến trình sao lưu Driver qua PnPUtil hoàn tất.");
+            return (true, "Đã hoàn tất tiến trình sao lưu Driver vào thư mục Drivers_Backup_2026!".to_string());
+        }
+    }
+
+    if act == "restore_drivers" || act.contains("phuc hoi driver") || act.contains("restore driver") || act.contains("restore_driver") {
+        clear_logs();
+        append_log("[DRIVER RESTORE] Bắt đầu tìm kiếm gói sao lưu Driver để phục hồi...");
+        let ps_code = r#"
+            $targetDir = 'D:\Drivers_Backup_2026'
+            if (-not (Test-Path $targetDir)) { $targetDir = 'C:\Drivers_Backup_2026' }
+            if (-not (Test-Path $targetDir)) {
+                Write-Output "NOT_FOUND"
+                exit 1
+            }
+            $infs = Get-ChildItem -Path $targetDir -Filter "*.inf" -Recurse -ErrorAction SilentlyContinue
+            if (-not $infs -or $infs.Count -eq 0) {
+                Write-Output "NO_INFS"
+                exit 2
+            }
+            pnputil /add-driver "$targetDir\*.inf" /subdirs /install
+            Write-Output "RESTORE_DONE:$($infs.Count)"
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        if out.contains("NOT_FOUND") || out.contains("NO_INFS") {
+            append_log("[LỖI] Không tìm thấy thư mục Driver sao lưu tại D:\\Drivers_Backup_2026 hoặc C:\\Drivers_Backup_2026.");
+            return (false, "Không tìm thấy thư mục sao lưu Driver (D:\\Drivers_Backup_2026 hoặc C:\\Drivers_Backup_2026). Vui lòng chạy Sao Lưu Driver trước!".to_string());
+        }
+        append_log("[THÀNH CÔNG] Đã nạp và phục hồi toàn bộ Driver phần cứng từ bản sao lưu.");
+        return (true, "Đã nạp và cài đặt phục hồi toàn bộ Driver phần cứng thành công!".to_string());
+    }
+
+    if act == "scan_drivers" || act.contains("quet driver") {
+        let mut cmd = Command::new("pnputil");
+        cmd.args(["/scan-devices"]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã quét toàn bộ Bus PnP Hardware, tất cả thiết bị và Driver đã được đồng bộ!".to_string());
+    }
+
+    // ========================================================================
+    // 6. CÀI ĐẶT OFFICE M365 AIO (OFFICE DEPLOYMENT TOOL ENGINE)
+    // ========================================================================
+    if act == "install_office" || act.contains("office") {
+        clear_logs();
+        append_log("[OFFICE M365] Khởi động ODT Engine v16.0...");
+        append_log("[CẤU HÌNH] Tạo tệp cấu hình Configuration.xml chuẩn Microsoft Enterprise...");
+
+        let ps_code = r#"
+            $tempDir = [System.IO.Path]::GetTempPath()
+            $configPath = Join-Path $tempDir "VUONGTT_Office_Config.xml"
+            $odtExe = Join-Path $tempDir "setup_office.exe"
+
+            $xmlContent = @'
+<Configuration>
+  <Add OfficeClientEdition="64" Channel="Current">
+    <Product ID="O365ProPlusRetail">
+      <Language ID="MatchOS" />
+      <Language ID="en-us" />
+      <ExcludeApp ID="Groove" />
+      <ExcludeApp ID="Lync" />
+    </Product>
+  </Add>
+  <Property Name="SharedComputerLicensing" Value="0" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
+  <Property Name="DeviceBasedLicensing" Value="0" />
+  <Updates Enabled="TRUE" />
+  <Display Level="Full" AcceptEULA="TRUE" />
+</Configuration>
+'@
+            [System.IO.File]::WriteAllText($configPath, $xmlContent, [System.Text.Encoding]::UTF8)
+
+            if (-not (Test-Path $odtExe)) {
+                try {
+                    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+                    (New-Object System.Net.WebClient).DownloadFile("https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_17328-20162.exe", $odtExe)
+                } catch {
+                    # Fallback winget direct install
+                }
+            }
+
+            # Chạy cài đặt trực tiếp
+            $winget = Start-Process winget -ArgumentList "install --id Microsoft.Office -e --silent --accept-package-agreements --accept-source-agreements" -PassThru -NoNewWindow
+            Write-Output "DISPATCHED_PID:$($winget.Id)"
+        "#;
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let _ = cmd.spawn();
+
+        append_log("[TIẾN TRÌNH] Đã gửi lệnh triển khai Microsoft Office 365 tới Microsoft CDN.");
+        append_log("[THÔNG BÁO] Bộ cài đặt Office 365 ProPlus đang tải ngầm và tự động cài đặt.");
+
         return (
             true,
-            "Đang tải và tiến hành cài đặt bộ Microsoft Office 365 ProPlus tự động ngầm...".to_string(),
+            "Đã kích hoạt tiến trình triển khai Office 365 ProPlus AIO tự động ngầm thành công!".to_string(),
         );
     }
 

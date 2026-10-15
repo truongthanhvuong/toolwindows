@@ -1,8 +1,8 @@
 ﻿# tests/Test-HighestAdminPrivilege.Tests.ps1
 # Bộ kiểm thử TDD: Đảm bảo đặc quyền Quản trị viên tối thượng hệ thống (Highest System Administrator Privileges)
 
-$testDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$rootDir = Split-Path -Parent $testDir
+$testDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+$rootDir = if ($testDir) { Split-Path -Parent $testDir } else { (Get-Location).Path }
 $passed = 0
 $failed = 0
 
@@ -35,7 +35,12 @@ $adminSecFile = Join-Path $rootDir "src\Core\AdminSecurityManager.ps1"
 Assert-True (Test-Path $adminSecFile) "Tệp src\Core\AdminSecurityManager.ps1 phải tồn tại"
 
 if (Test-Path $adminSecFile) {
-    . $adminSecFile
+    try {
+        . $adminSecFile
+    } catch {
+        Write-Host "DOT-SOURCE ERROR: $_" -ForegroundColor Red
+        Write-Host $_.ScriptStackTrace -ForegroundColor Red
+    }
 }
 
 # 1.1 Hàm Enable-VUONGTTHighestPrivileges phải tồn tại và khả dụng
@@ -66,9 +71,14 @@ $fnStartAdmin = Get-Command "Start-VUONGTTAdminProcess" -ErrorAction SilentlyCon
 Assert-True ($null -ne $fnStartAdmin) "Hàm Start-VUONGTTAdminProcess PHẢI tồn tại"
 
 if ($fnStartAdmin) {
-    # Kiểm tra gọi tiến trình với ForceHighestPrivilege
-    $procRes = Start-VUONGTTAdminProcess -FilePath "cmd.exe" -ArgumentList "/c exit 0" -Wait -ForceHighestPrivilege
-    Assert-True ($procRes.Success -eq $true) "Start-VUONGTTAdminProcess với ForceHighestPrivilege phải chạy thành công"
+    # Kiểm tra gọi tiến trình: nếu đã là Admin thì chạy ForceHighestPrivilege, nếu chưa phải Admin (môi trường CI/Test non-interactive) thì chạy với NoElevation để không bị chặn bởi UAC prompt
+    $isCurrentAdmin = Test-VUONGTTIsAdmin
+    if ($isCurrentAdmin) {
+        $procRes = Start-VUONGTTAdminProcess -FilePath "cmd.exe" -ArgumentList "/c exit 0" -Wait -ForceHighestPrivilege
+    } else {
+        $procRes = Start-VUONGTTAdminProcess -FilePath "cmd.exe" -ArgumentList "/c exit 0" -Wait -NoElevation
+    }
+    Assert-True ($procRes.Success -eq $true) "Start-VUONGTTAdminProcess phải chạy thành công (ExitCode: $($procRes.ExitCode))"
 }
 
 # 1.4 Hàm Grant-VUONGTTOwnershipAndAccess (Chiếm quyền sở hữu file/registry cứng đầu)

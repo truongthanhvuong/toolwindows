@@ -1,4 +1,4 @@
-param()
+﻿param()
 
 $script:TotalTests = 0
 $script:PassedTests = 0
