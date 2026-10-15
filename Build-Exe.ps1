@@ -90,8 +90,11 @@ if (-not $NoBump) {
     # 6. src-tauri/Cargo.toml & src-tauri/src/main.rs
     $cargoPath = Join-Path $RootDir "src-tauri\Cargo.toml"
     if (Test-Path $cargoPath) {
+        $semVer = "20.5.110"
+        $parts = $newVer.Split('.')
+        if ($parts.Count -ge 4) { $semVer = "$($parts[0]).$($parts[1]).$($parts[3])" } else { $semVer = $newVer }
         $cTxt = [System.IO.File]::ReadAllText($cargoPath, [System.Text.Encoding]::UTF8)
-        $cTxt = $cTxt -replace 'version\s*=\s*"[^"]+"', "version = `"$newVer`""
+        $cTxt = $cTxt -replace 'version\s*=\s*"[^"]+"', "version = `"$semVer`""
         [System.IO.File]::WriteAllText($cargoPath, $cTxt, (New-Object System.Text.UTF8Encoding($false)))
     }
     $mainRsPath = Join-Path $RootDir "src-tauri\src\main.rs"
@@ -127,7 +130,7 @@ foreach ($tf in $textFilesToEnforce) {
     } catch {}
 }
 
-$outputExe = Join-Path $RootDir "VUONGTT_Toolkit.exe"
+$outputExe = Join-Path $RootDir "VUONGTT_Toolkit_WPF.exe"
 $programCs = Join-Path $RootDir "src\Program.cs"
 $iconPath  = Join-Path $RootDir "src\Assets\AppIcon.ico"
 
@@ -237,11 +240,18 @@ if ($proc.ExitCode -eq 0 -and (Test-Path $outputExe)) {
 
     $size = (Get-Item $outputExe).Length / 1KB
     Write-Host "==========================================================" -ForegroundColor Green
-    Write-Host "[THANH CONG] Da tao thanh cong file C# WPF chinh: VUONGTT_Toolkit.exe" -ForegroundColor Green
+    Write-Host "[THANH CONG] Da tao thanh cong file C# WPF du phong: VUONGTT_Toolkit_WPF.exe" -ForegroundColor Green
     Write-Host "Dung luong: $([math]::Round($size, 2)) KB" -ForegroundColor Green
     Write-Host "Duong dan: $outputExe" -ForegroundColor Green
-    Write-Host "Nen tang: Microsoft .NET Framework C# WPF Native (Khong phu thuoc Rust/WebView2)" -ForegroundColor Cyan
+    Write-Host "Nen tang: Microsoft .NET Framework C# WPF Fallback" -ForegroundColor Cyan
     Write-Host "==========================================================" -ForegroundColor Green
+
+    # Tu dong goi Build-Rust-Exe.ps1 de file chinh VUONGTT_Toolkit.exe luon la Rust Native
+    $rustBuildScript = Join-Path $RootDir "Build-Rust-Exe.ps1"
+    if (Test-Path $rustBuildScript) {
+        Write-Host "`n>>> [RUST HOST] Dang bien dich file thuc thi chinh VUONGTT_Toolkit.exe (Rust Native)..." -ForegroundColor Cyan
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $rustBuildScript
+    }
 } else {
     Write-Error "Qua trinh bien dich that bai voi ma loi: $($proc.ExitCode)"
     Exit 1
