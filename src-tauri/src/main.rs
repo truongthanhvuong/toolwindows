@@ -18,7 +18,7 @@ use std::time::Instant;
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-const APP_VERSION: &str = "20.5.909.121";
+const APP_VERSION: &str = "20.5.909.123";
 
 fn handle_client(
     mut stream: TcpStream,

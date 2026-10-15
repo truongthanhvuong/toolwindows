@@ -774,7 +774,7 @@
 <span class="material-symbols-outlined text-outline text-[18px]">expand_more</span>
 </div>
 </div>
-<button class="px-4 py-2.5 rounded-lg bg-surface-container-highest hover:bg-secondary-container hover:text-on-secondary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 transition-colors shrink-0" id="btn-browse-iso" type="button">
+<button class="px-4 py-2.5 rounded-lg bg-surface-container-highest hover:bg-secondary-container hover:text-on-secondary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 transition-colors shrink-0" id="btn-browse-iso" onclick="browseIsoFile()" type="button">
 <span class="material-symbols-outlined text-[18px]">folder_open</span>
 <span>Duyệt File ISO...</span>
 </button>
@@ -1023,11 +1023,11 @@
 </div>
 <!-- Big Action Trigger Button -->
 <div class="w-full md:w-auto flex flex-col sm:flex-row items-center gap-space-sm">
-<button class="w-full sm:w-auto px-4 py-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 transition-colors" id="btn-pre-check" type="button">
+<button class="w-full sm:w-auto px-4 py-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 transition-colors" id="btn-pre-check" onclick="checkDiskPartitions()" type="button">
 <span class="material-symbols-outlined text-[18px] text-outline">tune</span>
 <span>Kiểm Tra Phân Vùng</span>
 </button>
-<button class="w-full sm:w-auto px-7 py-3 rounded-xl bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-headline-md text-headline-md shadow-lg shadow-primary-container/25 flex items-center justify-center gap-2.5 transition-all transform active:scale-95 group" id="btn-start-deploy" type="button">
+<button class="w-full sm:w-auto px-7 py-3 rounded-xl bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-headline-md text-headline-md shadow-lg shadow-primary-container/25 flex items-center justify-center gap-2.5 transition-all transform active:scale-95 group" id="btn-start-deploy" onclick="startWinDeploy()" type="button">
 <span class="material-symbols-outlined text-[20px] transition-transform group-hover:scale-125">rocket_launch</span>
 <span>BẮT ĐẦU CÀI WIN TỰ ĐỘNG</span>
 </button>
@@ -1047,7 +1047,6 @@
   // Dynamic handling of dropdown ISO choices
   const osSelector = document.getElementById('os-selector');
   const isoPathText = document.getElementById('iso-path-text');
-  const btnBrowse = document.getElementById('btn-browse-iso');
 
   const isoPaths = {
     'win11-pro-24h2': 'C:\\VUONGTT_Tools\\Cache\\Win11_24H2_Pro_x64_Optimized_2026.iso',
@@ -1064,29 +1063,14 @@
     }
   });
 
-  btnBrowse?.addEventListener('click', () => {
-    isoPathText.innerText = 'D:\\Downloads\\Windows_11_Insider_Preview_Build_26100.iso';
-    osSelector.value = 'custom-iso';
-  });
-
   // Select all toggles
   document.getElementById('btn-select-all')?.addEventListener('click', () => {
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    document.querySelectorAll('#view-win-deploy input[type="checkbox"]').forEach(cb => cb.checked = true);
   });
 
   // Reset to default
   document.getElementById('btn-reset-default')?.addEventListener('click', () => {
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-  });
-
-  // Action feedback
-  document.getElementById('btn-start-deploy')?.addEventListener('click', () => {
-    const btn = document.getElementById('btn-start-deploy');
-    btn.innerHTML = `<span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span><span>ĐANG KHỞI TẠO TIẾN TRÌNH WINPE...</span>`;
-    setTimeout(() => {
-      alert('Đã chuẩn bị hoàn tất phân vùng DirectEFI! Máy tính sẽ tự khởi động vào quá trình tự động cài đặt sau 10 giây.');
-      btn.innerHTML = `<span class="material-symbols-outlined text-[20px]">check</span><span>ĐÃ KÍCH HOẠT THÀNH CÔNG</span>`;
-    }, 1200);
+    document.querySelectorAll('#view-win-deploy input[type="checkbox"]').forEach(cb => cb.checked = true);
   });
 </script>
 </section>

@@ -929,7 +929,7 @@
       if (!text) return;
 
       // Skip elements handled by dedicated controllers
-      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select" || btn.id === "btn-run-deploy" || btn.id.startsWith("tab-soft-") || btn.id.startsWith("btn-scan-") || btn.id.startsWith("btn-export-") || btn.id.startsWith("btn-restore-"))) return;
+      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select" || btn.id === "btn-run-deploy" || btn.id === "btn-start-deploy" || btn.id === "btn-browse-iso" || btn.id === "btn-pre-check" || btn.id.startsWith("tab-soft-") || btn.id.startsWith("btn-scan-") || btn.id.startsWith("btn-export-") || btn.id.startsWith("btn-restore-"))) return;
       if (btn.hasAttribute("onclick")) return;
       if (btn.closest("#subview-soft-custom") || btn.closest("#subview-soft-uninstall") || btn.closest("#subview-soft-fonts") || btn.closest("#view-oem-brand")) return;
       if (btn.closest("#view-soft-winget") && btn.closest(".mb-space-lg")) return; // Category Filter Pills
@@ -2191,6 +2191,83 @@
     if (consoleEl) consoleEl.textContent = msg;
     showToast("OEM Reset", msg, "success");
   };
+
+  // --- 9.5. WINDOWS DEPLOY CONTROLLER ---
+  async function browseIsoFile() {
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "browse_iso" });
+      if (res && res.success && res.file_path) {
+        const isoPathEl = document.getElementById("iso-path-text");
+        if (isoPathEl) isoPathEl.innerText = res.file_path;
+        const osSelector = document.getElementById("os-selector");
+        if (osSelector) osSelector.value = "custom-iso";
+        showToast("Chọn File ISO", res.message || ("Đã chọn: " + res.file_path), "success");
+      } else if (res && res.message) {
+        showToast("Chọn File ISO", res.message, "info");
+      }
+    } catch (e) {
+      showToast("Lỗi", "Không thể mở hộp thoại chọn file: " + e, "error");
+    }
+  }
+  window.browseIsoFile = browseIsoFile;
+
+  async function checkDiskPartitions() {
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "check_disk_partitions" });
+      if (res && res.message) {
+        showToast("Kiểm Tra Phân Vùng", res.message, res.success ? "success" : "warning");
+      }
+    } catch (e) {
+      showToast("Lỗi", "Không thể mở Disk Management: " + e, "error");
+    }
+  }
+  window.checkDiskPartitions = checkDiskPartitions;
+
+  async function startWinDeploy() {
+    const btn = document.getElementById("btn-start-deploy");
+    const isoPathEl = document.getElementById("iso-path-text");
+    const isoPath = (isoPathEl ? isoPathEl.innerText : "").trim();
+    const modeEl = document.querySelector('input[name="deploy-mode"]:checked');
+    const deployMode = modeEl ? modeEl.value : "upgrade";
+
+    if (!isoPath) {
+      showToast("Cài Đặt Windows", "Vui lòng chọn hoặc nhập đường dẫn file ISO trước khi bắt đầu!", "warning");
+      return;
+    }
+
+    const originalHtml = btn ? btn.innerHTML : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span><span>ĐANG NẠP ISO VÀ KÍCH HOẠT SETUP...</span>`;
+    }
+
+    try {
+      const res = await invokeRust("run_system_action", {
+        actionId: "start_win_deploy",
+        isoPath: isoPath,
+        deployMode: deployMode
+      });
+      if (res && res.success) {
+        showToast("Cài Đặt Windows", res.message || "Đã kích hoạt Windows Setup thành công!", "success");
+        if (btn) {
+          btn.innerHTML = `<span class="material-symbols-outlined text-[20px]">check</span><span>ĐÃ KÍCH HOẠT THÀNH CÔNG</span>`;
+        }
+      } else {
+        showToast("Lỗi Cài Đặt", (res && res.message) ? res.message : "Không thể khởi chạy bộ cài Windows", "error");
+        if (btn) {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+        }
+      }
+    } catch (e) {
+      showToast("Lỗi Hệ Thống", "Gặp lỗi ngoại lệ khi kích hoạt: " + e, "error");
+      if (btn) {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }
+    }
+  }
+  window.startWinDeploy = startWinDeploy;
 
   // --- 10. HEARTBEAT & LIFECYCLE CONTROLLER ---
   function sendHeartbeat() {

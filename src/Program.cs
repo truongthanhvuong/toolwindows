@@ -16,8 +16,8 @@ using System.Net;
 [assembly: AssemblyCopyright("Copyright © 2026 VUONGTT. All rights reserved.")]
 [assembly: AssemblyTrademark("VUONGTT")]
 [assembly: AssemblyCulture("")]
-[assembly: AssemblyVersion("20.5.909.121")]
-[assembly: AssemblyFileVersion("20.5.909.121")]
+[assembly: AssemblyVersion("20.5.909.123")]
+[assembly: AssemblyFileVersion("20.5.909.123")]
 
 namespace VUONGTT
 {

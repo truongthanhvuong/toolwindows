@@ -673,6 +673,169 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     // ========================================================================
     // 5. CÀI WIN & BYPASS TPM 2.0 / SECUREBOOT 11/10
     // ========================================================================
+    if act == "browse_iso" || act.contains("browse_iso") || act.contains("duyet iso") {
+        let ps_code = r#"
+            Add-Type -AssemblyName System.Windows.Forms
+            $f = New-Object System.Windows.Forms.OpenFileDialog
+            $f.Title = "Chọn Tệp Tin Cài Đặt Windows (.ISO)"
+            $f.Filter = "Windows ISO Image (*.iso)|*.iso|All Files (*.*)|*.*"
+            $f.InitialDirectory = [Environment]::GetFolderPath("UserProfile")
+            if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                Write-Output "FILE:$($f.FileName)"
+            } else {
+                Write-Output "CANCEL"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        if out.contains("FILE:") {
+            let path = out.split("FILE:").nth(1).unwrap_or("").trim();
+            return (true, path.to_string());
+        } else {
+            return (false, "Người dùng đã hủy chọn tệp tin ISO.".to_string());
+        }
+    }
+
+    if act == "check_disk_partitions" || act.contains("kiem tra phan vung") || act.contains("pre_check_disk") {
+        let mut cmd = Command::new("diskmgmt.msc");
+        let _ = cmd.spawn();
+        return (true, "Đang mở trình quản lý phân vùng ổ đĩa Disk Management (diskmgmt.msc)...".to_string());
+    }
+
+    if act == "start_win_deploy" || act.contains("start_win_deploy") || act.contains("cai_win_deploy") || act.contains("bat dau cai win") {
+        let iso_path = extract_json_field(params_json, "iso_path").unwrap_or("").trim();
+        let mode = extract_json_field(params_json, "mode").unwrap_or("upgrade").trim().to_lowercase();
+        let bypass_tpm = extract_json_field(params_json, "bypass_tpm").unwrap_or("true").to_lowercase() == "true";
+        let disable_bitlocker = extract_json_field(params_json, "disable_bitlocker").unwrap_or("true").to_lowercase() == "true";
+        let backup_drivers = extract_json_field(params_json, "backup_drivers").unwrap_or("false").to_lowercase() == "true";
+
+        clear_logs();
+        append_log("[CÀI WIN TỰ ĐỘNG] Khởi tạo môi trường triển khai Windows Setup...");
+
+        // 1. Tiêm cờ Registry Bypass TPM 2.0 / CPU / SecureBoot / RAM
+        if bypass_tpm {
+            let ps_bypass = r#"
+                New-Item -Path 'HKLM:\SYSTEM\Setup\MoSetup' -Force -ErrorAction SilentlyContinue | Out-Null
+                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\MoSetup' -Name 'AllowUpgradesWithUnsupportedTPMOrCPU' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                New-Item -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Force -ErrorAction SilentlyContinue | Out-Null
+                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassTPMCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassSecureBootCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassRAMCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassStorageCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassCPUCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            "#;
+            let mut cmd = Command::new("powershell");
+            cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_bypass]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            append_log("[OK] Đã cấu hình Registry Bypass TPM 2.0, SecureBoot, CPU, RAM vào LabConfig & MoSetup.");
+        }
+
+        if disable_bitlocker {
+            let ps_bit = r#"
+                New-Item -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker' -Force -ErrorAction SilentlyContinue | Out-Null
+                Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker' -Name 'PreventDeviceEncryption' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            "#;
+            let mut cmd = Command::new("powershell");
+            cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_bit]);
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            append_log("[OK] Đã chặn tính năng tự động mã hóa đĩa BitLocker ngoài ý muốn.");
+        }
+
+        if backup_drivers {
+            append_log("[OK] Khởi chạy tác vụ sao lưu toàn bộ Driver phần cứng ra đĩa...");
+            let _ = Command::new("powershell")
+                .args(["-NoProfile", "-Command", "Start-Process dism.exe -ArgumentList '/online /export-driver /destination:C:\\Drivers_Backup_2026' -NoNewWindow"])
+                .spawn();
+        }
+
+        // 2. Kiểm tra tệp tin ISO và Mount ổ ảo
+        if iso_path.is_empty() {
+            append_log("[LỖI] Đường dẫn tệp tin ISO trống!");
+            return (false, "Vui lòng chọn hoặc nhập đường dẫn tệp tin ISO Windows hợp lệ trước khi bấm Bắt Đầu Cài Win!".to_string());
+        }
+
+        let safe_iso = iso_path.replace('\'', "''");
+        let ps_mount = format!(
+            r#"
+            $iso = '{}'
+            if (-not (Test-Path $iso)) {{
+                Write-Output "ERR_NOT_FOUND"
+                exit 1
+            }}
+            try {{
+                $m = Mount-DiskImage -ImagePath $iso -PassThru -ErrorAction Stop
+                $vol = ($m | Get-Volume)
+                $drv = if ($vol -and $vol.DriveLetter) {{ "$($vol.DriveLetter):" }} else {{ "" }}
+                if (-not $drv) {{
+                    $drv = (Get-DiskImage -ImagePath $iso | Get-Volume | Select-Object -First 1).DriveLetter + ":"
+                }}
+                $setup = Join-Path $drv "setup.exe"
+                if (Test-Path $setup) {{
+                    Write-Output "MOUNTED:$drv"
+                }} else {{
+                    Write-Output "ERR_NO_SETUP:$drv"
+                }}
+            }} catch {{
+                Write-Output "ERR_MOUNT:$($_.Exception.Message)"
+            }}
+            "#,
+            safe_iso
+        );
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_mount]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+
+        if out.contains("ERR_NOT_FOUND") {
+            append_log(&format!("[LỖI] Không tìm thấy tệp ISO tại: {}", iso_path));
+            return (false, format!("Không tìm thấy tệp ISO tại: {}. Vui lòng kiểm tra lại đường dẫn!", iso_path));
+        }
+
+        if out.contains("MOUNTED:") {
+            let drv = out.split("MOUNTED:").nth(1).unwrap_or("").lines().next().unwrap_or("").trim();
+            append_log(&format!("[THÀNH CÔNG] Đã nạp ảnh ISO vào ổ đĩa ảo [{}]", drv));
+
+            let setup_args = if mode == "clean" {
+                "/auto clean /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none"
+            } else {
+                "/auto upgrade /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none"
+            };
+
+            let ps_run = format!(
+                r#"
+                Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}"
+                "#,
+                drv, setup_args
+            );
+
+            let mut run_cmd = Command::new("powershell");
+            run_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_run]);
+            #[cfg(windows)]
+            run_cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = run_cmd.spawn();
+
+            let mode_label = if mode == "clean" { "Cài Mới (Clean Install)" } else { "Cài Đè / Nâng Cấp (In-Place Upgrade)" };
+            append_log(&format!("[SETUP ACTIVATED] Trình cài đặt Windows Setup đã được khởi chạy chế độ [{}] từ ổ [{}]!", mode_label, drv));
+
+            return (
+                true,
+                format!("Đã nạp ảnh ISO vào ổ ảo [{}] và khởi chạy trình cài đặt Windows Setup chế độ [{}] thành công! Quá trình nâng cấp/cài đè đã bắt đầu.", drv, mode_label),
+            );
+        } else {
+            append_log(&format!("[LỖI MOUNT] {}", out.trim()));
+            return (false, format!("Không thể nạp tệp ISO: {}. Chi tiết: {}", iso_path, out.trim()));
+        }
+    }
+
     if act.contains("bypass") || act.contains("tpm") || act.contains("cai win") {
         let mut cmd = Command::new("powershell");
         cmd.args([
