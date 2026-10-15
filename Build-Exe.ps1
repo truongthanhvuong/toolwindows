@@ -103,6 +103,15 @@ if (-not $NoBump) {
         $rTxt = $rTxt -replace 'APP_VERSION:\s*&str\s*=\s*"[^"]+"', "APP_VERSION: &str = `"$newVer`""
         [System.IO.File]::WriteAllText($mainRsPath, $rTxt, (New-Object System.Text.UTF8Encoding($false)))
     }
+
+    # 7. src-ui/index.html
+    $htmlFile = Join-Path $RootDir "src-ui\index.html"
+    if (Test-Path $htmlFile) {
+        $hTxt = [System.IO.File]::ReadAllText($htmlFile, [System.Text.Encoding]::UTF8)
+        $hTxt = $hTxt -replace 'id="app-version-badge"[^>]*>v[^<]+<', "id=`"app-version-badge`" class=`"px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary`">v$newVer<"
+        $hTxt = $hTxt -replace 'id="tech-driver-build-badge"[^>]*>Build:\s*v[^<]+<', "id=`"tech-driver-build-badge`">Build: v$newVer<"
+        [System.IO.File]::WriteAllText($htmlFile, $hTxt, (New-Object System.Text.UTF8Encoding($false)))
+    }
 }
 
 $cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"

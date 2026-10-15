@@ -2274,8 +2274,23 @@
     fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
   }
 
+  async function syncAppVersion() {
+    try {
+      const res = await invokeRust("get_app_version");
+      if (res && res.version) {
+        const vText = "v" + res.version;
+        const badge = document.getElementById("app-version-badge");
+        if (badge) badge.innerText = vText;
+        const techBadge = document.getElementById("tech-driver-build-badge");
+        if (techBadge) techBadge.innerText = "Build: " + vText;
+        document.title = "VUONGTT Toolkit " + vText;
+      }
+    } catch (_) {}
+  }
+
   // --- 11. INITIALIZATION ---
   document.addEventListener("DOMContentLoaded", () => {
+    syncAppVersion();
     bindNavigationAndActions();
     initAdminPortal();
     initAppStoreController();

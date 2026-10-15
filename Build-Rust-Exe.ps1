@@ -39,6 +39,14 @@ if (Test-Path $mainRsPath) {
     [System.IO.File]::WriteAllText($mainRsPath, $mainContent, (New-Object System.Text.UTF8Encoding($false)))
 }
 
+$htmlFile = Join-Path $projectRoot "src-ui\index.html"
+if (Test-Path $htmlFile) {
+    $hTxt = [System.IO.File]::ReadAllText($htmlFile, [System.Text.Encoding]::UTF8)
+    $hTxt = $hTxt -replace 'id="app-version-badge"[^>]*>v[^<]+<', "id=`"app-version-badge`" class=`"px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary`">v$appVersion<"
+    $hTxt = $hTxt -replace 'id="tech-driver-build-badge"[^>]*>Build:\s*v[^<]+<', "id=`"tech-driver-build-badge`">Build: v$appVersion<"
+    [System.IO.File]::WriteAllText($htmlFile, $hTxt, (New-Object System.Text.UTF8Encoding($false)))
+}
+
 # 3. Bien dich bang Cargo
 Write-Host " -> Dang bien dich Rust release binary..." -ForegroundColor Yellow
 $cargoExe = "$env:USERPROFILE\.cargo\bin\cargo.exe"
@@ -51,7 +59,13 @@ if ($LASTEXITCODE -ne 0) {
     throw "Loi bien dich Rust!"
 }
 
-# 4. Copy file ra thu muc goc (ca VUONGTT_Toolkit.exe va VUONGTT_Toolkit_Rust.exe)
+# 4. Dung tien trinh cu neu dang chay de tranh file lock, roi copy file ra thu muc goc
+Get-Process -Name "VUONGTT_Toolkit*" -ErrorAction SilentlyContinue | ForEach-Object {
+    Write-Host " -> Dang dung tien trinh $($_.ProcessName) (PID: $($_.Id)) de cap nhat file thuc thi..." -ForegroundColor Yellow
+    Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+}
+Start-Sleep -Milliseconds 600
+
 $srcExe = "$projectRoot\src-tauri\target\release\vuongtt_toolkit.exe"
 $distExe = "$projectRoot\VUONGTT_Toolkit.exe"
 $distRustExe = "$projectRoot\VUONGTT_Toolkit_Rust.exe"

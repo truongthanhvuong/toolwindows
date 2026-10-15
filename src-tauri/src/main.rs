@@ -18,7 +18,7 @@ use std::time::Instant;
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-const APP_VERSION: &str = "20.5.909.123";
+const APP_VERSION: &str = "20.5.909.125";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -159,7 +159,9 @@ fn handle_client(
 
         let mut json_resp = "{\"success\":true,\"message\":\"OK\"}".to_string();
 
-        if req.contains("get_system_telemetry") {
+        if req.contains("get_app_version") || body.contains("get_app_version") {
+            json_resp = format!(r#"{{"success":true,"version":"{}"}}"#, APP_VERSION);
+        } else if req.contains("get_system_telemetry") {
             let telem = telemetry::collect_telemetry();
             json_resp = telem.to_json();
         } else if body.contains("get_disk_smart_telemetry") {
