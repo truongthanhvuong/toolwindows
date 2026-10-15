@@ -59,6 +59,7 @@ struct HardwareSnapshot {
     cpu_mhz: u32,
     cpu_cores: u32,
     gpu_name: String,
+    gpu_percent: f32,
     disk_name: String,
     disk_interface: String,
     net_name: String,
@@ -78,7 +79,10 @@ struct HardwareSnapshot {
 static GLOBAL_SNAPSHOT: Mutex<Option<Arc<Mutex<HardwareSnapshot>>>> = Mutex::new(None);
 
 fn get_global_snapshot() -> Arc<Mutex<HardwareSnapshot>> {
-    let mut global = GLOBAL_SNAPSHOT.lock().unwrap();
+    let mut global = match GLOBAL_SNAPSHOT.lock() {
+        Ok(g) => g,
+        Err(poisoned) => poisoned.into_inner(),
+    };
     if let Some(ref arc) = *global {
         return Arc::clone(arc);
     }
@@ -93,6 +97,7 @@ fn get_global_snapshot() -> Arc<Mutex<HardwareSnapshot>> {
         cpu_mhz: 2400,
         cpu_cores: std::env::var("NUMBER_OF_PROCESSORS").unwrap_or_else(|_| "4".to_string()).parse().unwrap_or(4),
         gpu_name: "Display Adapter".to_string(),
+        gpu_percent: 0.0,
         disk_name: "Local Fixed Disk".to_string(),
         disk_interface: "Fixed".to_string(),
         net_name: "Ethernet".to_string(),
@@ -138,6 +143,8 @@ $cpu = (Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0')
 $mhz = (Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0').'~MHz'
 $cores = [System.Environment]::ProcessorCount
 $gpu = (Get-CimInstance Win32_VideoController | Select-Object -First 1 -ExpandProperty Name)
+$gpu_pct = (Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction SilentlyContinue | Measure-Object -Property UtilizationPercentage -Maximum).Maximum
+if (-not $gpu_pct) { $gpu_pct = 0 }
 $diskDrive = (Get-CimInstance Win32_DiskDrive | Select-Object -First 1)
 $disk = if ($diskDrive.Model) { $diskDrive.Model.Trim() } else { "Local Disk" }
 $disk_sn = if ($diskDrive.SerialNumber) { $diskDrive.SerialNumber.Trim() } else { "PHYSICAL_DRIVE_0" }
@@ -149,13 +156,15 @@ $err_pnp_cnt = @(Get-CimInstance Win32_PnPEntity -Filter 'ConfigManagerErrorCode
 $net = (Get-CimInstance Win32_NetworkAdapter -Filter 'NetConnectionStatus=2' | Select-Object -First 1 -ExpandProperty Name)
 $bat = (Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty EstimatedChargeRemaining)
 $procs = @(Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 5 Id, ProcessName, @{N='mem_mb';E={[math]::Round($_.WorkingSet64/1MB)}} | ForEach-Object { [PSCustomObject]@{ name=$_.ProcessName; pid=$_.Id; memory_mb=$_.mem_mb; cpu_percent=0.5 } })
-ConvertTo-Json -Compress ([PSCustomObject]@{ os=$os; build=$build; disp=$disp; cpu=$cpu; mhz=$mhz; cores=$cores; gpu=$gpu; disk=$disk; disk_sn=$disk_sn; disk_fw=$disk_fw; mb=$mb; bios=$bios; pnp_cnt=$pnp_cnt; err_pnp_cnt=$err_pnp_cnt; net=$net; bat=$bat; procs=$procs })
+ConvertTo-Json -Compress ([PSCustomObject]@{ os=$os; build=$build; disp=$disp; cpu=$cpu; mhz=$mhz; cores=$cores; gpu=$gpu; gpu_pct=$gpu_pct; disk=$disk; disk_sn=$disk_sn; disk_fw=$disk_fw; mb=$mb; bios=$bios; pnp_cnt=$pnp_cnt; err_pnp_cnt=$err_pnp_cnt; net=$net; bat=$bat; procs=$procs })
 "#
         } else {
             r#"
 $bat = (Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty EstimatedChargeRemaining)
+$gpu_pct = (Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction SilentlyContinue | Measure-Object -Property UtilizationPercentage -Maximum).Maximum
+if (-not $gpu_pct) { $gpu_pct = 0 }
 $procs = @(Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 5 Id, ProcessName, @{N='mem_mb';E={[math]::Round($_.WorkingSet64/1MB)}} | ForEach-Object { [PSCustomObject]@{ name=$_.ProcessName; pid=$_.Id; memory_mb=$_.mem_mb; cpu_percent=0.5 } })
-ConvertTo-Json -Compress ([PSCustomObject]@{ bat=$bat; procs=$procs })
+ConvertTo-Json -Compress ([PSCustomObject]@{ bat=$bat; gpu_pct=$gpu_pct; procs=$procs })
 "#
         };
 
@@ -206,7 +215,27 @@ fn parse_and_update_snapshot(json: &str, state: &Arc<Mutex<HardwareSnapshot>>) {
         None
     };
 
-    let mut lock = state.lock().unwrap();
+    let extract_float = |key: &str| -> Option<f32> {
+        let pattern = format!(r#""{}":"#, key);
+        if let Some(pos) = json.find(&pattern) {
+            let start = pos + pattern.len();
+            let mut num_str = String::new();
+            for ch in json[start..].chars() {
+                if ch.is_ascii_digit() || ch == '.' {
+                    num_str.push(ch);
+                } else if ch == ',' || ch == '}' || ch == ']' || ch.is_whitespace() {
+                    break;
+                }
+            }
+            return num_str.parse::<f32>().ok();
+        }
+        None
+    };
+
+    let mut lock = match state.lock() {
+        Ok(g) => g,
+        Err(poisoned) => poisoned.into_inner(),
+    };
 
     if let Some(os) = extract_str("os") {
         if !os.is_empty() {
@@ -238,6 +267,9 @@ fn parse_and_update_snapshot(json: &str, state: &Arc<Mutex<HardwareSnapshot>>) {
         if !gpu.is_empty() {
             lock.gpu_name = gpu;
         }
+    }
+    if let Some(gpu_pct) = extract_float("gpu_pct") {
+        lock.gpu_percent = gpu_pct.clamp(0.0, 100.0);
     }
     if let Some(disk) = extract_str("disk") {
         if !disk.is_empty() {
@@ -347,9 +379,215 @@ fn parse_and_update_snapshot(json: &str, state: &Arc<Mutex<HardwareSnapshot>>) {
     lock.last_update = Instant::now();
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Default)]
+struct FileTime {
+    dw_low_date_time: u32,
+    dw_high_date_time: u32,
+}
+
+impl FileTime {
+    fn to_u64(&self) -> u64 {
+        ((self.dw_high_date_time as u64) << 32) | (self.dw_low_date_time as u64)
+    }
+}
+
+#[cfg(windows)]
+#[link(name = "kernel32")]
+extern "system" {
+    fn GetSystemTimes(
+        lp_idle_time: *mut FileTime,
+        lp_kernel_time: *mut FileTime,
+        lp_user_time: *mut FileTime,
+    ) -> i32;
+}
+
+static CPU_TIMES: Mutex<Option<(u64, u64, u64, Instant)>> = Mutex::new(None);
+
+pub fn compute_real_cpu_percent() -> f32 {
+    #[cfg(windows)]
+    {
+        let mut idle = FileTime::default();
+        let mut kernel = FileTime::default();
+        let mut user = FileTime::default();
+
+        if unsafe { GetSystemTimes(&mut idle, &mut kernel, &mut user) } != 0 {
+            let cur_idle = idle.to_u64();
+            let cur_kernel = kernel.to_u64();
+            let cur_user = user.to_u64();
+            let now = Instant::now();
+
+            let mut guard = match CPU_TIMES.lock() {
+                Ok(g) => g,
+                Err(poisoned) => poisoned.into_inner(),
+            };
+
+            if let Some((prev_idle, prev_kernel, prev_user, prev_time)) = *guard {
+                let elapsed = now.duration_since(prev_time);
+                if elapsed.as_millis() >= 80 {
+                    let delta_idle = cur_idle.saturating_sub(prev_idle);
+                    let delta_kernel = cur_kernel.saturating_sub(prev_kernel);
+                    let delta_user = cur_user.saturating_sub(prev_user);
+                    let total_sys = delta_kernel + delta_user;
+
+                    *guard = Some((cur_idle, cur_kernel, cur_user, now));
+
+                    if total_sys > 0 {
+                        let idle_ratio = delta_idle as f64 / total_sys as f64;
+                        let usage = (1.0 - idle_ratio) * 100.0;
+                        return (usage.clamp(0.0, 100.0) as f32 * 10.0).round() / 10.0;
+                    }
+                }
+            } else {
+                *guard = Some((cur_idle, cur_kernel, cur_user, now));
+                thread::sleep(Duration::from_millis(50));
+                let mut idle2 = FileTime::default();
+                let mut kernel2 = FileTime::default();
+                let mut user2 = FileTime::default();
+                if unsafe { GetSystemTimes(&mut idle2, &mut kernel2, &mut user2) } != 0 {
+                    let cur_idle2 = idle2.to_u64();
+                    let cur_kernel2 = kernel2.to_u64();
+                    let cur_user2 = user2.to_u64();
+                    let delta_idle = cur_idle2.saturating_sub(cur_idle);
+                    let delta_kernel = cur_kernel2.saturating_sub(cur_kernel);
+                    let delta_user = cur_user2.saturating_sub(cur_user);
+                    let total_sys = delta_kernel + delta_user;
+                    *guard = Some((cur_idle2, cur_kernel2, cur_user2, Instant::now()));
+
+                    if total_sys > 0 {
+                        let idle_ratio = delta_idle as f64 / total_sys as f64;
+                        let usage = (1.0 - idle_ratio) * 100.0;
+                        return (usage.clamp(0.0, 100.0) as f32 * 10.0).round() / 10.0;
+                    }
+                }
+            }
+        }
+    }
+    0.0
+}
+
+#[repr(C)]
+struct MibIfRow2 {
+    interface_luid: u64,
+    interface_index: u32,
+    interface_guid: [u8; 16],
+    alias: [u16; 257],
+    description: [u16; 257],
+    physical_address_length: u32,
+    physical_address: [u8; 32],
+    permanent_physical_address: [u8; 32],
+    mtu: u32,
+    interface_type: u32,
+    tunnel_type: u32,
+    media_type: u32,
+    physical_medium_type: u32,
+    access_type: u32,
+    direction_type: u32,
+    interface_and_oper_status_flags: u32,
+    oper_status: u32,
+    admin_status: u32,
+    media_connect_state: u32,
+    network_guid: [u8; 16],
+    connection_type: u32,
+    transmit_link_speed: u64,
+    receive_link_speed: u64,
+    in_octets: u64,
+    in_ucast_pkts: u64,
+    in_nucast_pkts: u64,
+    in_discards: u64,
+    in_errors: u64,
+    in_unknown_protos: u64,
+    in_ucast_octets: u64,
+    in_multicast_octets: u64,
+    in_broadcast_octets: u64,
+    out_octets: u64,
+    out_ucast_pkts: u64,
+    out_nucast_pkts: u64,
+    out_discards: u64,
+    out_errors: u64,
+    out_ucast_octets: u64,
+    out_multicast_octets: u64,
+    out_broadcast_octets: u64,
+    out_ql_len: u64,
+}
+
+#[repr(C)]
+struct MibIfTable2 {
+    num_entries: u32,
+    table: [MibIfRow2; 1],
+}
+
+#[cfg(windows)]
+#[link(name = "iphlpapi")]
+extern "system" {
+    fn GetIfTable2(table: *mut *mut MibIfTable2) -> u32;
+    fn FreeMibTable(table: *mut std::ffi::c_void);
+}
+
+static NET_SAMPLE: Mutex<Option<(u64, u64, Instant)>> = Mutex::new(None);
+
+pub fn compute_real_network_rates() -> (f32, f32, String) {
+    #[cfg(windows)]
+    {
+        let mut table_ptr: *mut MibIfTable2 = std::ptr::null_mut();
+        let ret = unsafe { GetIfTable2(&mut table_ptr) };
+        if ret == 0 && !table_ptr.is_null() {
+            let num_entries = unsafe { (*table_ptr).num_entries };
+            let mut total_in: u64 = 0;
+            let mut total_out: u64 = 0;
+            let mut has_online = false;
+
+            unsafe {
+                let first_row = &(*table_ptr).table[0] as *const MibIfRow2;
+                for i in 0..num_entries {
+                    let row = &*first_row.add(i as usize);
+                    if row.interface_type != 24 && row.interface_type != 131 {
+                        if row.oper_status == 1 {
+                            has_online = true;
+                        }
+                        total_in = total_in.saturating_add(row.in_octets);
+                        total_out = total_out.saturating_add(row.out_octets);
+                    }
+                }
+                FreeMibTable(table_ptr as *mut std::ffi::c_void);
+            }
+
+            let now = Instant::now();
+            let mut guard = match NET_SAMPLE.lock() {
+                Ok(g) => g,
+                Err(poisoned) => poisoned.into_inner(),
+            };
+
+            let status = if has_online { "Online".to_string() } else { "Offline".to_string() };
+
+            if let Some((prev_in, prev_out, prev_time)) = *guard {
+                let elapsed = now.duration_since(prev_time);
+                let secs = elapsed.as_secs_f64();
+                if secs >= 0.1 {
+                    let delta_in = total_in.saturating_sub(prev_in);
+                    let delta_out = total_out.saturating_sub(prev_out);
+                    *guard = Some((total_in, total_out, now));
+
+                    let down_kb = ((delta_in as f64 / 1024.0 / secs) * 10.0).round() / 10.0;
+                    let up_kb = ((delta_out as f64 / 1024.0 / secs) * 10.0).round() / 10.0;
+                    return (down_kb as f32, up_kb as f32, status);
+                }
+            } else {
+                *guard = Some((total_in, total_out, now));
+                return (0.0, 0.0, status);
+            }
+            return (0.0, 0.0, status);
+        }
+    }
+    (0.0, 0.0, "Online".to_string())
+}
+
 pub fn collect_telemetry() -> SystemTelemetry {
     let snap_arc = get_global_snapshot();
-    let snap = snap_arc.lock().unwrap().clone();
+    let snap = match snap_arc.lock() {
+        Ok(g) => g.clone(),
+        Err(poisoned) => poisoned.into_inner().clone(),
+    };
 
     // 1. Hostname & OS info thực tế
     let os_build_part = if !snap.os_build.is_empty() {
@@ -432,8 +670,11 @@ pub fn collect_telemetry() -> SystemTelemetry {
         }
     };
 
-    // CPU % động dựa trên tải bộ nhớ và hoạt động
-    let cpu_percent = ((ram_percent * 0.42).clamp(8.0, 92.0) * 10.0).round() / 10.0;
+    // CPU % thực tế từ Win32 GetSystemTimes
+    let cpu_percent = compute_real_cpu_percent();
+
+    // Tốc độ mạng thực tế từ Win32 GetIfTable2
+    let (net_down_kb, net_up_kb, net_status) = compute_real_network_rates();
 
     let ram_name = format!("{:.0} GB System Memory", ram_total_gb);
 
@@ -468,15 +709,15 @@ pub fn collect_telemetry() -> SystemTelemetry {
         ram_used_gb,
         ram_percent,
         gpu_name: snap.gpu_name,
-        gpu_percent: 2.0,
+        gpu_percent: snap.gpu_percent,
         disk_name: snap.disk_name,
         disk_interface: snap.disk_interface,
         disk_free_gb,
         disk_total_gb,
         net_name: snap.net_name,
-        net_status: "Online".to_string(),
-        net_down_kb: 4.2,
-        net_up_kb: 2.8,
+        net_status,
+        net_down_kb,
+        net_up_kb,
         power_source: snap.power_source,
         battery_percent: snap.battery_percent,
         battery_health: snap.battery_health,
@@ -541,3 +782,43 @@ impl SystemTelemetry {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_collect_telemetry_validity() {
+        let telem = collect_telemetry();
+        assert!(!telem.os_summary.is_empty(), "OS summary should not be empty");
+        assert!(telem.ram_total_gb > 0.0, "Total RAM should be greater than 0");
+        assert!(telem.cpu_cores > 0, "CPU cores should be greater than 0");
+        assert!(telem.cpu_percent >= 0.0 && telem.cpu_percent <= 100.0, "CPU percent should be between 0 and 100");
+        assert!(telem.ram_percent >= 0.0 && telem.ram_percent <= 100.0, "RAM percent should be between 0 and 100");
+        assert!(telem.gpu_percent >= 0.0 && telem.gpu_percent <= 100.0, "GPU percent should be between 0 and 100");
+        assert!(telem.net_down_kb >= 0.0, "Network download speed should be >= 0");
+        assert!(telem.net_up_kb >= 0.0, "Network upload speed should be >= 0");
+
+        let json = telem.to_json();
+        assert!(json.starts_with('{') && json.ends_with('}'), "JSON should be enclosed in braces");
+        assert!(json.contains("cpu_percent"), "JSON should contain cpu_percent");
+        assert!(json.contains("ram_percent"), "JSON should contain ram_percent");
+        assert!(json.contains("gpu_percent"), "JSON should contain gpu_percent");
+        assert!(json.contains("net_down_kb"), "JSON should contain net_down_kb");
+    }
+
+    #[test]
+    fn test_compute_real_cpu_percent() {
+        let pct = compute_real_cpu_percent();
+        assert!(pct >= 0.0 && pct <= 100.0, "Measured CPU percent should be between 0.0 and 100.0, got {}", pct);
+    }
+
+    #[test]
+    fn test_compute_real_network_rates() {
+        let (down, up, status) = compute_real_network_rates();
+        assert!(down >= 0.0, "Download rate should be >= 0");
+        assert!(up >= 0.0, "Upload rate should be >= 0");
+        assert!(status == "Online" || status == "Offline", "Status should be Online or Offline");
+    }
+}
+

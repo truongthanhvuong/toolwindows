@@ -35,15 +35,15 @@ $appJs = [System.IO.File]::ReadAllText($appJsPath, [System.Text.Encoding]::UTF8)
 # --- Test 1: IPC Routing in main.rs ---
 Write-Host "`n--- Nhom 1: IPC Routing trong main.rs ---"
 Assert-Condition -TestName "main.rs phai co routing cho install_apps" `
-    -Condition ($mainRs -match 'body\.contains\("install_apps"\)') `
+    -Condition ($mainRs -match 'cmd\s*==\s*"install_apps"' -or $mainRs -match 'body\.contains\("install_apps"\)') `
     -Message "main.rs chua bat command install_apps dan den lenh cai dat bi bo qua"
 
 Assert-Condition -TestName "main.rs phai co routing cho get_install_logs" `
-    -Condition ($mainRs -match 'body\.contains\("get_install_logs"\)') `
+    -Condition ($mainRs -match 'cmd\s*==\s*"get_install_logs"' -or $mainRs -match 'body\.contains\("get_install_logs"\)') `
     -Message "main.rs chua bat command get_install_logs khien terminal khong nhan log"
 
 Assert-Condition -TestName "main.rs phai co routing cho clear_install_logs" `
-    -Condition ($mainRs -match 'body\.contains\("clear_install_logs"\)') `
+    -Condition ($mainRs -match 'cmd\s*==\s*"clear_install_logs"' -or $mainRs -match 'body\.contains\("clear_install_logs"\)') `
     -Message "main.rs chua bat command clear_install_logs"
 
 # --- Test 2: Support for Tor Browser and extended apps in system_ops.rs ---

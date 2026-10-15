@@ -16,9 +16,72 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+#[cfg(windows)]
+#[link(name = "user32")]
+extern "system" {
+    fn GetForegroundWindow() -> isize;
+    fn ShowWindow(hwnd: isize, nCmdShow: i32) -> i32;
+    fn IsZoomed(hwnd: isize) -> i32;
+}
+
+fn control_window(action: &str) -> (bool, &'static str) {
+    #[cfg(windows)]
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd != 0 {
+            match action {
+                "minimize" => {
+                    ShowWindow(hwnd, 6); // SW_MINIMIZE = 6
+                    (true, "Window minimized")
+                }
+                "maximize" => {
+                    if IsZoomed(hwnd) != 0 {
+                        ShowWindow(hwnd, 9); // SW_RESTORE = 9
+                        (true, "Window restored")
+                    } else {
+                        ShowWindow(hwnd, 3); // SW_MAXIMIZE = 3
+                        (true, "Window maximized")
+                    }
+                }
+                _ => (false, "Unknown window action"),
+            }
+        } else {
+            let ps_code = if action == "minimize" {
+                r#"
+                $w = (Get-Process -Name msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1).MainWindowHandle
+                if ($w) {
+                    Add-Type '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);' -Name W1 -Namespace U -ErrorAction SilentlyContinue
+                    [U.W1]::ShowWindow($w, 6)
+                }
+                "#
+            } else {
+                r#"
+                $w = (Get-Process -Name msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1).MainWindowHandle
+                if ($w) {
+                    Add-Type '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c); [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr h);' -Name W2 -Namespace U -ErrorAction SilentlyContinue
+                    if ([U.W2]::IsZoomed($w)) { [U.W2]::ShowWindow($w, 9) } else { [U.W2]::ShowWindow($w, 3) }
+                }
+                "#
+            };
+            let mut cmd = Command::new("powershell");
+            cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            (true, "Window controlled via fallback")
+        }
+    }
+    #[cfg(not(windows))]
+    (true, "Mock window controlled")
+}
+
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-const APP_VERSION: &str = "20.5.909.126";
+const APP_VERSION: &str = "20.5.909.127";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -26,6 +89,10 @@ fn handle_client(
     last_activity: Arc<Mutex<Instant>>,
     has_connected: Arc<AtomicBool>,
 ) {
+    let _ = stream.set_nonblocking(false);
+    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(3)));
+    let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(3)));
+
     let mut buffer = Vec::with_capacity(8192);
     let mut chunk = [0u8; 4096];
     loop {
@@ -52,7 +119,9 @@ fn handle_client(
                     break;
                 }
             }
-            _ => break,
+            Ok(_) => break,
+            Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => break,
         }
     }
 
@@ -148,118 +217,7 @@ fn handle_client(
             *act = Instant::now();
         }
 
-        // Parse JSON Body
-        let body = if let Some(idx) = req.find("\r\n\r\n") {
-            &req[idx + 4..]
-        } else if let Some(idx) = req.find("\n\n") {
-            &req[idx + 2..]
-        } else {
-            &req
-        };
-
-        let mut json_resp = "{\"success\":true,\"message\":\"OK\"}".to_string();
-
-        if req.contains("get_app_version") || body.contains("get_app_version") {
-            json_resp = format!(r#"{{"success":true,"version":"{}"}}"#, APP_VERSION);
-        } else if req.contains("get_system_telemetry") {
-            let telem = telemetry::collect_telemetry();
-            json_resp = telem.to_json();
-        } else if body.contains("get_disk_smart_telemetry") {
-            let disk_json = system_ops::collect_disk_smart_telemetry();
-            json_resp = format!(r#"{{"success":true,"data":{}}}"#, disk_json);
-        } else if body.contains("get_cpu_main_details") {
-            let details = system_ops::collect_cpu_main_details();
-            json_resp = format!(r#"{{"success":true,"data":{}}}"#, details);
-        } else if body.contains("get_win_optimize_state") {
-            let state_json = system_ops::collect_win_optimize_state();
-            json_resp = format!(r#"{{"success":true,"data":{}}}"#, state_json);
-        } else if body.contains("get_local_users") {
-            let users = system_ops::collect_local_users();
-            json_resp = format!(r#"{{"success":true,"data":{}}}"#, users);
-        } else if body.contains("manage_local_user") {
-            let sub = system_ops::extract_json_field(body, "subAction").unwrap_or("toggle_active");
-            let user = system_ops::extract_json_field(body, "username").unwrap_or("");
-            let val = system_ops::extract_json_field(body, "value").unwrap_or("");
-            let (ok, msg) = system_ops::manage_local_user(sub, user, val);
-            json_resp = format!(
-                r#"{{"success":{},"message":"{}"}}"#,
-                ok,
-                msg.replace('"', "\\\"")
-            );
-        } else if body.contains("window_control") {
-            if body.contains("close") {
-                is_running.store(false, Ordering::SeqCst);
-                json_resp = "{\"success\":true,\"message\":\"Closing\"}".to_string();
-            }
-        } else if body.contains("admin_") {
-            let act_id = if body.contains("admin_login") {
-                "admin_login"
-            } else if body.contains("admin_get_data") {
-                "admin_get_data"
-            } else if body.contains("admin_save_policies") {
-                "admin_save_policies"
-            } else if body.contains("admin_generate_key") {
-                "admin_generate_key"
-            } else if body.contains("admin_delete_key") {
-                "admin_delete_key"
-            } else if body.contains("admin_push_git") {
-                "admin_push_git"
-            } else {
-                "admin_general"
-            };
-            let (success, msg) = system_ops::execute_system_action(act_id, body);
-            if act_id == "admin_get_data" && success {
-                json_resp = format!(r#"{{"success":true,"data":{}}}"#, msg);
-            } else {
-                json_resp = format!(
-                    r#"{{"success":{},"message":"{}"}}"#,
-                    success,
-                    msg.replace('"', "\\\"")
-                );
-            }
-        } else if body.contains("install_apps") {
-            let (success, msg) = system_ops::execute_system_action("install_apps", body);
-            json_resp = format!(
-                r#"{{"success":{},"message":"{}"}}"#,
-                success,
-                msg.replace('"', "\\\"")
-            );
-        } else if body.contains("get_install_logs") {
-            let logs_raw = system_ops::get_logs_json();
-            let safe_escaped = logs_raw.replace('\\', "\\\\").replace('"', "\\\"");
-            json_resp = format!(
-                r#"{{"success":true,"message":"{}","logs":{}}}"#,
-                safe_escaped,
-                logs_raw
-            );
-        } else if body.contains("clear_install_logs") {
-            system_ops::clear_logs();
-            json_resp = r#"{"success":true,"message":"[]"}"#.to_string();
-        } else if body.contains("get_installed_apps") {
-            let (success, msg) = system_ops::execute_system_action("get_installed_apps", body);
-            json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, if msg.is_empty() { "[]" } else { &msg });
-        } else if body.contains("run_system_action") {
-            let act_id = system_ops::extract_json_field(body, "actionId")
-                .or_else(|| system_ops::extract_json_field(body, "command"))
-                .unwrap_or("general");
-
-            let (success, msg) = system_ops::execute_system_action(act_id, body);
-            if act_id == "browse_iso" || act_id.contains("browse_iso") {
-                let escaped_path = msg.replace('\\', "\\\\").replace('"', "\\\"");
-                json_resp = format!(
-                    r#"{{"success":{},"file_path":"{}","message":"{}"}}"#,
-                    success,
-                    escaped_path,
-                    escaped_path
-                );
-            } else {
-                json_resp = format!(
-                    r#"{{"success":{},"message":"{}"}}"#,
-                    success,
-                    msg.replace('"', "\\\"")
-                );
-            }
-        }
+        let json_resp = route_ipc_request(&req, &is_running);
 
         let resp = format!(
             "HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n{}",
@@ -268,6 +226,7 @@ fn handle_client(
         );
         let _ = stream.write_all(resp.as_bytes());
         let _ = stream.flush();
+        let _ = stream.shutdown(std::net::Shutdown::Write);
         return;
     }
 
@@ -275,6 +234,133 @@ fn handle_client(
     let resp = "HTTP/1.1 404 NOT FOUND\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
     let _ = stream.write_all(resp.as_bytes());
     let _ = stream.flush();
+}
+
+pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
+    // Parse JSON Body
+    let body = if let Some(idx) = req.find("\r\n\r\n") {
+        &req[idx + 4..]
+    } else if let Some(idx) = req.find("\n\n") {
+        &req[idx + 2..]
+    } else {
+        req
+    };
+
+    let cmd = system_ops::extract_json_field(body, "command").unwrap_or("");
+    let json_resp;
+
+    if cmd == "get_app_version" {
+        json_resp = format!(r#"{{"success":true,"version":"{}"}}"#, APP_VERSION);
+    } else if cmd == "get_system_telemetry" {
+        let telem = telemetry::collect_telemetry();
+        json_resp = telem.to_json();
+    } else if cmd == "get_disk_smart_telemetry" {
+        let disk_json = system_ops::collect_disk_smart_telemetry();
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, disk_json);
+    } else if cmd == "get_cpu_main_details" {
+        let details = system_ops::collect_cpu_main_details();
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, details);
+    } else if cmd == "get_win_optimize_state" {
+        let state_json = system_ops::collect_win_optimize_state();
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, state_json);
+    } else if cmd == "get_troubleshoot_database" {
+        let db_path = "src/Data/TroubleshootDatabase.json";
+        let content = std::fs::read_to_string(db_path)
+            .or_else(|_| std::fs::read_to_string("../src/Data/TroubleshootDatabase.json"))
+            .unwrap_or_else(|_| "{\"Categories\":[],\"Problems\":[]}".to_string());
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, content);
+    } else if cmd == "get_local_users" {
+        let users = system_ops::collect_local_users();
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, users);
+    } else if cmd == "manage_local_user" {
+        let sub = system_ops::extract_json_field(body, "subAction").unwrap_or("toggle_active");
+        let user = system_ops::extract_json_field(body, "username").unwrap_or("");
+        let val = system_ops::extract_json_field(body, "value").unwrap_or("");
+        let (ok, msg) = system_ops::manage_local_user(sub, user, val);
+        json_resp = format!(
+            r#"{{"success":{},"message":"{}"}}"#,
+            ok,
+            msg.replace('"', "\\\"")
+        );
+    } else if cmd == "window_control" {
+        let action = system_ops::extract_json_field(body, "action").unwrap_or("");
+        if action == "close" {
+            is_running.store(false, Ordering::SeqCst);
+            json_resp = "{\"success\":true,\"message\":\"Closing\"}".to_string();
+        } else if action == "minimize" {
+            let (ok, msg) = control_window("minimize");
+            json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, msg);
+        } else if action == "maximize" {
+            let (ok, msg) = control_window("maximize");
+            json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, msg);
+        } else {
+            json_resp = "{\"success\":false,\"message\":\"Unknown window action\"}".to_string();
+        }
+    } else if cmd == "admin_login"
+        || cmd == "admin_get_data"
+        || cmd == "admin_save_policies"
+        || cmd == "admin_generate_key"
+        || cmd == "admin_delete_key"
+        || cmd == "admin_push_git"
+        || cmd == "admin_general"
+    {
+        let act_id = cmd;
+        let (success, msg) = system_ops::execute_system_action(act_id, body);
+        if act_id == "admin_get_data" && success {
+            json_resp = format!(r#"{{"success":true,"data":{}}}"#, msg);
+        } else {
+            json_resp = format!(
+                r#"{{"success":{},"message":"{}"}}"#,
+                success,
+                msg.replace('"', "\\\"")
+            );
+        }
+    } else if cmd == "install_apps" {
+        let (success, msg) = system_ops::execute_system_action("install_apps", body);
+        json_resp = format!(
+            r#"{{"success":{},"message":"{}"}}"#,
+            success,
+            msg.replace('"', "\\\"")
+        );
+    } else if cmd == "get_install_logs" {
+        let logs_raw = system_ops::get_logs_json();
+        let safe_escaped = logs_raw.replace('\\', "\\\\").replace('"', "\\\"");
+        json_resp = format!(
+            r#"{{"success":true,"message":"{}","logs":{}}}"#,
+            safe_escaped,
+            logs_raw
+        );
+    } else if cmd == "clear_install_logs" {
+        system_ops::clear_logs();
+        json_resp = r#"{"success":true,"message":"[]"}"#.to_string();
+    } else if cmd == "get_installed_apps" {
+        let (success, msg) = system_ops::execute_system_action("get_installed_apps", body);
+        json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, if msg.is_empty() { "[]" } else { &msg });
+    } else if cmd == "run_system_action" {
+        let act_id = system_ops::extract_json_field(body, "actionId")
+            .unwrap_or("general");
+
+        let (success, msg) = system_ops::execute_system_action(act_id, body);
+        if act_id == "browse_iso" || act_id == "browse_file" {
+            let escaped_path = msg.replace('\\', "\\\\").replace('"', "\\\"");
+            json_resp = format!(
+                r#"{{"success":{},"file_path":"{}","message":"{}"}}"#,
+                success,
+                escaped_path,
+                escaped_path
+            );
+        } else {
+            json_resp = format!(
+                r#"{{"success":{},"message":"{}"}}"#,
+                success,
+                msg.replace('"', "\\\"")
+            );
+        }
+    } else {
+        json_resp = r#"{"success":false,"message":"Lỗi: Lệnh IPC không hợp lệ hoặc chưa được hỗ trợ!"}"#.to_string();
+    }
+
+    json_resp
 }
 
 fn main() {
@@ -304,7 +390,10 @@ fn main() {
         },
     };
 
-    let port = listener.local_addr().unwrap().port();
+    let port = match listener.local_addr() {
+        Ok(addr) => addr.port(),
+        Err(_) => 58992,
+    };
     let is_running = Arc::new(AtomicBool::new(true));
     let has_connected = Arc::new(AtomicBool::new(false));
     let last_activity = Arc::new(Mutex::new(Instant::now()));
@@ -389,5 +478,90 @@ fn main() {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unknown_command_fails_closed() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"unknown_action_xyz_123\",\"payload\":{}}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":false"), "Unknown command must return success=false: {}", resp);
+        assert!(resp.contains("Lỗi: Lệnh IPC không hợp lệ"), "Expected error message: {}", resp);
+    }
+
+    #[test]
+    fn test_arbitrary_json_fails_closed() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"foo\":\"bar\",\"action\":\"fake_action\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":false"), "Arbitrary JSON must return success=false: {}", resp);
+    }
+
+    #[test]
+    fn test_window_control_substring_collision_safe() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"window_control\",\"action\":\"disclose\",\"note\":\"do not close\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(flag.load(Ordering::SeqCst), "Flag should not be set to false on substring collision");
+        assert!(resp.contains("Unknown window action"), "Expected Unknown window action: {}", resp);
+    }
+
+    #[test]
+    fn test_window_control_close_exact_match() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"window_control\",\"action\":\"close\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(!flag.load(Ordering::SeqCst), "Flag should be set to false on exact close match");
+        assert!(resp.contains("Closing"), "Expected Closing: {}", resp);
+    }
+
+    #[test]
+    fn test_route_collision_with_note_install_apps() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"open_disk_mgmt\",\"note\":\"install_apps failed earlier\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":true"), "Should successfully route to run_system_action: {}", resp);
+        assert!(resp.contains("diskmgmt.msc"), "Should trigger diskmgmt.msc, not install_apps: {}", resp);
+    }
+
+    #[test]
+    fn test_window_control_action_id_not_matched_as_action() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"window_control\",\"actionId\":\"close\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(flag.load(Ordering::SeqCst), "Flag should remain true when actionId is close");
+        assert!(resp.contains("Unknown window action"), "Expected Unknown window action: {}", resp);
+    }
+
+    #[test]
+    fn test_window_control_reaction_not_matched_as_action() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"window_control\",\"reaction\":\"close\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(flag.load(Ordering::SeqCst), "Flag should remain true when reaction is close");
+        assert!(resp.contains("Unknown window action"), "Expected Unknown window action: {}", resp);
+    }
+
+    #[test]
+    fn test_run_system_action_check_winsxs_size_fails_closed() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"check_winsxs_size\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":false"), "check_winsxs_size must return success=false: {}", resp);
+        assert!(resp.contains("không tồn tại"), "Expected action not found error: {}", resp);
+    }
+
+    #[test]
+    fn test_run_system_action_verify_office_license_fails_closed() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"verify_office_license\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":false"), "verify_office_license must return success=false: {}", resp);
+        assert!(resp.contains("không tồn tại"), "Expected action not found error: {}", resp);
     }
 }

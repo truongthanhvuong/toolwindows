@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.126</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.127</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -881,9 +881,9 @@
 <h3 class="font-headline-md text-headline-md text-on-surface">BẢNG TÙY CHỌN TỰ ĐỘNG HÓA CÀI ĐẶT</h3>
 </div>
 <div class="flex items-center gap-2">
-<button class="font-label-sm text-label-sm text-primary hover:underline" id="btn-select-all" type="button">Chọn tất cả</button>
+<button class="font-label-sm text-label-sm text-primary hover:underline" id="btn-deploy-select-all" type="button">Chọn tất cả</button>
 <span class="text-outline text-[12px]">•</span>
-<button class="font-label-sm text-label-sm text-on-surface-variant hover:underline" id="btn-reset-default" type="button">Mặc định chuẩn IT</button>
+<button class="font-label-sm text-label-sm text-on-surface-variant hover:underline" id="btn-deploy-reset-default" type="button">Mặc định chuẩn IT</button>
 </div>
 </div>
 <!-- 3 Column Matrix Bento Layout -->
@@ -897,21 +897,21 @@
 </div>
 <div class="space-y-2 mt-1">
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-primary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-tpm" checked="" class="mt-0.5 rounded bg-surface-container-highest text-primary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Bypass TPM 2.0 / SecureBoot / RAM</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Cài tốt trên mọi Mainboard cũ Gen 2-7</span>
 </div>
 </label>
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-primary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-msa" checked="" class="mt-0.5 rounded bg-surface-container-highest text-primary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Bỏ qua tài khoản Microsoft (OOBE/MSA)</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Tạo tài khoản Local Admin tự động</span>
 </div>
 </label>
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-primary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-bitlocker" checked="" class="mt-0.5 rounded bg-surface-container-highest text-primary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Tắt tự động mã hóa BitLocker</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Chống khóa ổ đĩa ngoài ý muốn</span>
@@ -933,21 +933,21 @@
 </div>
 <div class="space-y-2 mt-1">
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-tertiary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-backup-drivers" checked="" class="mt-0.5 rounded bg-surface-container-highest text-tertiary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Tự động sao lưu toàn bộ Driver</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Driver Wifi, Âm thanh &amp; Card màn hình</span>
 </div>
 </label>
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-tertiary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-rescue-part" checked="" class="mt-0.5 rounded bg-surface-container-highest text-tertiary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Tạo phân vùng Cứu hộ Z: (15GB độc lập)</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Tích hợp WinPE 2026 khẩn cấp</span>
 </div>
 </label>
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-tertiary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-recover-tool" checked="" class="mt-0.5 rounded bg-surface-container-highest text-tertiary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Tự phục hồi Tool ra Desktop sau cài</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Tạo lối tắt VUONGTT Pro sẵn sàng dùng</span>
@@ -969,21 +969,21 @@
 </div>
 <div class="space-y-2 mt-1">
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-secondary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-hwid" checked="" class="mt-0.5 rounded bg-surface-container-highest text-secondary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Kích hoạt bản quyền số vĩnh viễn (MAS HWID)</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Liên kết Mainboard, không lo mất License</span>
 </div>
 </label>
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-secondary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-debloat" checked="" class="mt-0.5 rounded bg-surface-container-highest text-secondary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">1-Click Gỡ sạch Bloatware &amp; Edge spam</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Tắt Cortana, Xbox telemetry, widgets</span>
 </div>
 </label>
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
-<input checked="" class="mt-0.5 rounded bg-surface-container-highest text-secondary-container focus:ring-0 cursor-pointer" type="checkbox"/>
+<input id="cb-deploy-fast-oobe" checked="" class="mt-0.5 rounded bg-surface-container-highest text-secondary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Cài siêu tốc (Bỏ qua tải mạng OOBE)</span>
 <span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Vào thẳng Desktop ngay khi khởi động lại</span>
@@ -1087,7 +1087,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span id="tech-driver-build-badge">Build: v20.5.909.126</span>
+<span id="tech-driver-build-badge">Build: v20.5.909.127</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -1947,7 +1947,7 @@
 <div class="font-label-sm text-label-sm text-outline">Auto NumLock on Boot Screen</div>
 </div>
 <label class="relative inline-flex items-center cursor-pointer">
-<input checked="" class="sr-only peer" type="checkbox"/>
+<input id="toggle-numlock-boot" checked="" class="sr-only peer" type="checkbox"/>
 <div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
 </label>
 </div>
@@ -1958,7 +1958,7 @@
 <div class="font-label-sm text-label-sm text-outline">Windows 11 Centered Taskbar Icons</div>
 </div>
 <label class="relative inline-flex items-center cursor-pointer">
-<input checked="" class="sr-only peer" type="checkbox"/>
+<input id="toggle-taskbar-align" checked="" class="sr-only peer" type="checkbox"/>
 <div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
 </label>
 </div>
@@ -1969,7 +1969,7 @@
 <div class="font-label-sm text-label-sm text-outline">Taskbar Search Box Expanded</div>
 </div>
 <label class="relative inline-flex items-center cursor-pointer">
-<input class="sr-only peer" type="checkbox"/>
+<input id="toggle-taskbar-search" class="sr-only peer" type="checkbox"/>
 <div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
 </label>
 </div>
@@ -1980,7 +1980,7 @@
 <div class="font-label-sm text-label-sm text-outline">Bing Search Integration in Start Menu</div>
 </div>
 <label class="relative inline-flex items-center cursor-pointer">
-<input class="sr-only peer" type="checkbox"/>
+<input id="toggle-bing-search" class="sr-only peer" type="checkbox"/>
 <div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
 </label>
 </div>
@@ -1991,7 +1991,7 @@
 <div class="font-label-sm text-label-sm text-outline">Kéo thả cạnh &amp; bố cục đa nhiệm thông minh</div>
 </div>
 <label class="relative inline-flex items-center cursor-pointer">
-<input checked="" class="sr-only peer" type="checkbox"/>
+<input id="toggle-window-snapping" checked="" class="sr-only peer" type="checkbox"/>
 <div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary-container after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
 </label>
 </div>
@@ -2191,24 +2191,24 @@
 <span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Phiên bản Office khả dụng</span>
 <span class="font-label-sm text-label-sm text-primary">Tự động cấu hình XML tương thích</span>
 </div>
-<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-<button class="group flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all" type="button">
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2" id="office-versions-grid">
+<button class="office-version-pill group flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all" data-version="2016" type="button">
 <span class="font-headline-md text-headline-md text-on-surface-variant group-hover:text-on-surface">2016</span>
 <span class="font-code-sm text-code-sm text-outline">v16.0 Standard</span>
 </button>
-<button class="group flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all" type="button">
+<button class="office-version-pill group flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all" data-version="2019" type="button">
 <span class="font-headline-md text-headline-md text-on-surface-variant group-hover:text-on-surface">2019</span>
 <span class="font-code-sm text-code-sm text-outline">ProPlus Volume</span>
 </button>
-<button class="group flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all" type="button">
+<button class="office-version-pill group flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all" data-version="2021" type="button">
 <span class="font-headline-md text-headline-md text-on-surface-variant group-hover:text-on-surface">2021</span>
 <span class="font-code-sm text-code-sm text-outline">LTSC Enterprise</span>
 </button>
-<button class="group flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all" type="button">
+<button class="office-version-pill group flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high transition-all" data-version="2024" type="button">
 <span class="font-headline-md text-headline-md text-on-surface-variant group-hover:text-on-surface">2024</span>
 <span class="font-code-sm text-code-sm text-outline">LTSC Preview</span>
 </button>
-<button class="flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-primary-container text-on-primary-container shadow-md" type="button">
+<button class="office-version-pill flex flex-col items-center justify-center py-2.5 px-3 rounded-lg bg-primary-container text-on-primary-container shadow-md" data-version="M365" type="button">
 <div class="flex items-center gap-1">
 <span class="material-symbols-outlined text-[16px]">stars</span>
 <span class="font-headline-md text-headline-md font-bold">M365</span>
@@ -2265,9 +2265,9 @@
 <div class="flex items-center justify-between">
 <span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Thành phần ứng dụng lựa chọn</span>
 <div class="flex items-center gap-3">
-<button class="font-label-sm text-label-sm text-primary hover:underline" id="btn-select-all">Chọn tất cả</button>
+<button class="font-label-sm text-label-sm text-primary hover:underline" id="btn-select-all-office">Chọn tất cả</button>
 <span class="text-outline-variant">•</span>
-<button class="font-label-sm text-label-sm text-secondary hover:underline" id="btn-default-apps">Mặc định cơ bản</button>
+<button class="font-label-sm text-label-sm text-secondary hover:underline" id="btn-default-apps-office">Mặc định cơ bản</button>
 </div>
 </div>
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
@@ -2391,17 +2391,17 @@
 <span>Tải &amp; Cài Đặt Tự Động</span>
 </button>
 <!-- Download Only -->
-<button class="h-11 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-md text-headline-md flex items-center gap-2 transition-all" type="button">
+<button id="btn-office-download" class="h-11 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-md text-headline-md flex items-center gap-2 transition-all" type="button">
 <span class="material-symbols-outlined text-[20px] text-primary">download</span>
 <span>Chỉ Tải Về</span>
 </button>
 <!-- Scrubber -->
-<button class="h-11 px-4 rounded-xl bg-error-container hover:bg-error hover:text-on-error text-on-error-container font-headline-md text-headline-md flex items-center gap-2 transition-all" type="button">
+<button id="btn-office-uninstall" class="h-11 px-4 rounded-xl bg-error-container hover:bg-error hover:text-on-error text-on-error-container font-headline-md text-headline-md flex items-center gap-2 transition-all" type="button">
 <span class="material-symbols-outlined text-[20px]">delete_sweep</span>
 <span>Gỡ Sạch Office Cũ</span>
 </button>
 <!-- Pause / Abort -->
-<button class="h-11 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-outline hover:text-error font-headline-md text-headline-md flex items-center gap-2 transition-all" type="button">
+<button id="btn-office-stop" class="h-11 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-outline hover:text-error font-headline-md text-headline-md flex items-center gap-2 transition-all" type="button">
 <span class="material-symbols-outlined text-[20px]">stop_circle</span>
 <span>Dừng Tác Vụ</span>
 </button>
@@ -2422,7 +2422,7 @@
 </div>
 <div class="flex items-center gap-3">
 <span class="font-code-sm text-code-sm text-outline">Encoding: UTF-8</span>
-<button class="font-code-sm text-code-sm text-outline hover:text-on-surface flex items-center gap-1" id="btn-clear-log">
+<button class="font-code-sm text-code-sm text-outline hover:text-on-surface flex items-center gap-1" id="btn-office-clear-log" type="button">
 <span class="material-symbols-outlined text-[13px]">clear_all</span>
           Xóa
         </button>
@@ -2474,101 +2474,7 @@
 </div>
 </div>
 </div>
-<script>
-  (function() {
-    const runBtn = document.getElementById('btn-run-deploy');
-    const terminalBody = document.getElementById('terminal-body');
-    const selectAllBtn = document.getElementById('btn-select-all');
-    const defaultAppsBtn = document.getElementById('btn-default-apps');
-    const clearLogBtn = document.getElementById('btn-clear-log');
 
-    // Select/Deselect micro-interactions
-    if (selectAllBtn) {
-      selectAllBtn.addEventListener('click', () => {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => cb.checked = true);
-      });
-    }
-
-    if (defaultAppsBtn) {
-      defaultAppsBtn.addEventListener('click', () => {
-        const defaults = ['Word', 'Excel', 'PowerPoint', 'Outlook'];
-        const cards = document.querySelectorAll('label:has(input[type="checkbox"])');
-        cards.forEach(card => {
-          const title = card.querySelector('.font-body-lg')?.textContent?.trim();
-          const cb = card.querySelector('input[type="checkbox"]');
-          if (cb) {
-            cb.checked = defaults.includes(title);
-          }
-        });
-      });
-    }
-
-    if (clearLogBtn && terminalBody) {
-      clearLogBtn.addEventListener('click', () => {
-        terminalBody.innerHTML = `
-          <div class="flex items-start gap-2 text-on-surface">
-            <span>[--:--:--]</span>
-            <span class="text-tertiary">[CLEAR]</span>
-            <span>Console logs cleared. Ready for new operations.</span>
-          </div>
-        `;
-      });
-    }
-
-    // Real Office Deployment via ODT & Backend Engine
-    if (runBtn && terminalBody) {
-      runBtn.addEventListener('click', async () => {
-        runBtn.disabled = true;
-        runBtn.classList.add('opacity-75');
-        const time = new Date().toTimeString().split(' ')[0];
-        const logEntry = document.createElement('div');
-        logEntry.className = 'flex items-start gap-2 text-primary font-bold';
-        logEntry.innerHTML = `
-          <span>[${time}]</span>
-          <span class="text-tertiary">[BẮT ĐẦU]</span>
-          <span>Khởi tạo cấu hình và kích hoạt ODT Setup.exe ngầm...</span>
-        `;
-        terminalBody.appendChild(logEntry);
-        terminalBody.scrollTop = terminalBody.scrollHeight;
-
-        if (window.showToast) window.showToast("Office 365", "Đang tải và cài đặt Office 365 ngầm...", "info");
-
-        const res = await (window.invokeRust ? window.invokeRust("run_system_action", { actionId: "install_office" }) : null);
-
-        // Bắt đầu stream log từ Backend
-        let pollCount = 0;
-        const logPoll = setInterval(async () => {
-          pollCount++;
-          if (window.invokeRust) {
-            const logsRes = await window.invokeRust("get_install_logs", {});
-            if (logsRes && logsRes.logs && logsRes.logs.length > 0) {
-              terminalBody.innerHTML = '';
-              logsRes.logs.forEach(line => {
-                const row = document.createElement('div');
-                row.className = 'flex items-start gap-2 text-on-surface';
-                row.innerHTML = `<span>${line}</span>`;
-                terminalBody.appendChild(row);
-              });
-              terminalBody.scrollTop = terminalBody.scrollHeight;
-            }
-          }
-          if (pollCount > 15) {
-            clearInterval(logPoll);
-            runBtn.disabled = false;
-            runBtn.classList.remove('opacity-75');
-          }
-        }, 1000);
-
-        if (res && res.success) {
-          if (window.showToast) window.showToast("Office 365", res.message, "success");
-        } else {
-          if (window.showToast) window.showToast("Office 365", (res && res.message) || "Tiến trình cài đặt đã được kích hoạt ngầm", "info");
-        }
-      });
-    }
-  })();
-</script>
 </section>
 <!-- ==================== SCREEN: view-printer-lan (m_y_in_scan_lan) ==================== -->
 <section id="view-printer-lan" data-view-path="may-in-scan-lan" class="stitch-view">
@@ -2944,179 +2850,7 @@
 </div>
 </section>
 </div>
-<script>
-  (function () {
-    const consoleOutput = document.getElementById('console-output');
-    const clearLogBtn = document.getElementById('btn-clear-log');
-    const copyLogBtn = document.getElementById('btn-copy-log');
 
-    function getTimeStamp() {
-      const now = new Date();
-      return `[${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}]`;
-    }
-
-    function appendLog(text, colorClass = 'text-on-surface') {
-      if (!consoleOutput) return;
-      const logRow = document.createElement('div');
-      logRow.className = `flex items-center gap-2 ${colorClass}`;
-      logRow.innerHTML = `<span class="text-tertiary">${getTimeStamp()}</span><span>${text}</span>`;
-      consoleOutput.appendChild(logRow);
-      consoleOutput.scrollTop = consoleOutput.scrollHeight;
-    }
-
-    // Refresh Printers simulation
-    const refreshBtn = document.getElementById('btn-refresh-printers');
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', function () {
-        appendLog('Đang gửi truy vấn WMI Win32_Printer để làm mới thiết bị...', 'text-secondary');
-        setTimeout(() => {
-          appendLog('Cập nhật thành công danh sách cổng: 1x USB001, 1x TCP/IP, 4x System Virtual Port.', 'text-tertiary');
-        }, 600);
-      });
-    }
-
-    // Print Test Page
-    const printTestBtn = document.getElementById('btn-print-test');
-    if (printTestBtn) {
-      printTestBtn.addEventListener('click', function () {
-        appendLog('Gửi lệnh in trang kiểm tra (Test Page) tới máy in đã chọn...', 'text-primary');
-        setTimeout(() => {
-          appendLog('Mã trạng thái in: STATUS_PENDING -> SPOOL_SUCCESSFUL. Trang in đã được gửi tới thiết bị.', 'text-tertiary');
-        }, 800);
-      });
-    }
-
-    // Set Default
-    const setDefaultBtn = document.getElementById('btn-set-default');
-    if (setDefaultBtn) {
-      setDefaultBtn.addEventListener('click', function () {
-        appendLog('Cập nhật giá trị Registry: HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows -> Device', 'text-secondary');
-        setTimeout(() => {
-          appendLog('Đã gán thành công máy in được chọn làm máy in mặc định của hệ thống.', 'text-tertiary');
-        }, 500);
-      });
-    }
-
-    // Add Port
-    const addPortBtn = document.getElementById('btn-add-port');
-    if (addPortBtn) {
-      addPortBtn.addEventListener('click', function () {
-        appendLog('Mở wizard tạo Standard TCP/IP Port & Local Port mapping...', 'text-on-surface');
-      });
-    }
-
-    // Share LAN
-    const shareLanBtn = document.getElementById('btn-share-lan');
-    if (shareLanBtn) {
-      shareLanBtn.addEventListener('click', function () {
-        appendLog('Thiết lập chia sẻ SMB máy in: NetShareAdd -> Cấp quyền Everyone: Print', 'text-tertiary');
-      });
-    }
-
-    // Clear Print queue
-    const clearPrintersBtn = document.getElementById('btn-clear-printers');
-    if (clearPrintersBtn) {
-      clearPrintersBtn.addEventListener('click', function () {
-        appendLog('Thực thi dừng Spooler (net stop spooler)...', 'text-secondary');
-        setTimeout(() => {
-          appendLog('Dọn dẹp tệp tin tạm tại C:\\Windows\\System32\\spool\\PRINTERS\\*.*', 'text-error');
-          setTimeout(() => {
-            appendLog('Khởi động lại dịch vụ Spooler (net start spooler). Hàng đợi đã sạch hoàn toàn!', 'text-tertiary');
-          }, 400);
-        }, 400);
-      });
-    }
-
-    // Fix Selected Error Codes
-    const fixSelectedBtn = document.getElementById('btn-fix-selected-codes');
-    if (fixSelectedBtn) {
-      fixSelectedBtn.addEventListener('click', function () {
-        const checkedCodes = Array.from(document.querySelectorAll('.error-cb:checked'))
-          .map(cb => cb.parentElement.textContent.trim());
-        
-        if (checkedCodes.length === 0) {
-          appendLog('Vui lòng tích chọn ít nhất 1 mã lỗi trước khi thực hiện!', 'text-error');
-          return;
-        }
-
-        appendLog(`Bắt đầu xử lý ${checkedCodes.length} mã lỗi: [${checkedCodes.join(', ')}]...`, 'text-primary');
-        setTimeout(() => {
-          appendLog('Đã ghi Registry: RpcAuthnLevelPrivacyEnabled = 0 (Fix 0x11b)', 'text-tertiary');
-          appendLog('Đã áp dụng RestrictDriverInstallationToAdministrators = 0', 'text-tertiary');
-          appendLog('Đã sửa khóa Spooler\\Client\\Settings (Fix 0x07c & 0x709)', 'text-tertiary');
-          appendLog('Khắc phục mã lỗi hoàn tất! Vui lòng khởi động lại ứng dụng Office hoặc kết nối lại máy in.', 'text-tertiary');
-        }, 900);
-      });
-    }
-
-    // 1-Click Mega Fix
-    const fixAllBtn = document.getElementById('btn-fix-all');
-    if (fixAllBtn) {
-      fixAllBtn.addEventListener('click', function () {
-        appendLog('>>> KÍCH HOẠT QUY TRÌNH 1-CLICK TỔNG HỢP VÁ LỖI MÁY IN LAN <<<', 'text-primary');
-        appendLog('1. Tối ưu Registry RPC Protocol & Tắt Point and Print Restriction...', 'text-secondary');
-        setTimeout(() => {
-          appendLog('2. Kích hoạt SMB1/SMB2 Client Guest Authentication (AllowInsecureGuestAuth)...', 'text-secondary');
-          setTimeout(() => {
-            appendLog('3. Mở cổng Firewall: In ấn nội bộ (Port 137, 138, 139, 445, 9100)...', 'text-secondary');
-            setTimeout(() => {
-              appendLog('4. Làm mới dịch vụ Function Discovery Provider Host & Spooler...', 'text-secondary');
-              setTimeout(() => {
-                appendLog('✔ TOÀN BỘ LỖI CHIA SẺ MÁY IN & MẠNG LAN ĐÃ ĐƯỢC KHẮC PHỤC TRIỆT ĐỂ!', 'text-tertiary');
-              }, 400);
-            }, 400);
-          }, 400);
-        }, 400);
-      });
-    }
-
-    // Individual Tool Buttons
-    document.querySelectorAll('.tool-btn').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const action = this.getAttribute('data-action');
-        appendLog(`Thực thi tiện ích kỹ thuật: [${action}]...`, 'text-secondary');
-        setTimeout(() => {
-          appendLog(`Hoàn tất tiến trình xử lý [${action}].`, 'text-tertiary');
-        }, 500);
-      });
-    });
-
-    // Console Action: Clear
-    if (clearLogBtn) {
-      clearLogBtn.addEventListener('click', function () {
-        if (consoleOutput) {
-          consoleOutput.innerHTML = '';
-          appendLog('Đã xóa trắng nhật ký hệ thống.', 'text-outline');
-        }
-      });
-    }
-
-    // Console Action: Copy
-    if (copyLogBtn) {
-      copyLogBtn.addEventListener('click', function () {
-        if (consoleOutput) {
-          const text = consoleOutput.innerText;
-          navigator.clipboard.writeText(text).then(() => {
-            appendLog('Đã sao chép nội dung log vào bộ nhớ tạm Clipboard.', 'text-tertiary');
-          });
-        }
-      });
-    }
-
-    // Row selection radio toggle
-    const tableRows = document.querySelectorAll('#printer-table tbody tr');
-    tableRows.forEach(row => {
-      row.addEventListener('click', function () {
-        tableRows.forEach(r => r.classList.remove('bg-primary-container/15'));
-        this.classList.add('bg-primary-container/15');
-        const radio = this.querySelector('input[type="radio"]');
-        if (radio) radio.checked = true;
-        const name = this.getAttribute('data-printer');
-        appendLog(`Đã chọn thiết bị: ${name}`, 'text-on-surface');
-      });
-    });
-  })();
-</script>
 </section>
 <!-- ==================== SCREEN: view-disk-smart (ph_n_v_ng_c_ng_smart) ==================== -->
 <section id="view-disk-smart" data-view-path="phan-vung-o-cung" class="stitch-view">
@@ -5299,104 +5033,7 @@
     });
   }
 
-  // Action feedback micro-interactions & Real Execution
-  const btnInstall = document.getElementById('btnInstall');
-  let isInstallingApps = false;
 
-  if (btnInstall) {
-    btnInstall.addEventListener('click', async () => {
-      if (isInstallingApps) return;
-      const checkedBoxes = Array.from(document.querySelectorAll('.app-checkbox:checked'));
-      const count = checkedBoxes.length;
-      if (count === 0) {
-        if (window.showRustToast) {
-          window.showRustToast("Vui lòng tích chọn ít nhất 1 ứng dụng để cài đặt!", "error");
-        } else {
-          alert('Vui lòng tích chọn ít nhất 1 ứng dụng để cài đặt.');
-        }
-        return;
-      }
-
-      // Collect app names / IDs
-      const apps = checkedBoxes.map(cb => {
-        const card = cb.closest('.app-card');
-        const titleEl = card ? card.querySelector('.font-headline-md') : null;
-        const name = titleEl ? titleEl.textContent.trim().toLowerCase() : "";
-        if (name.includes("chrome")) return "google-chrome";
-        if (name.includes("zalo")) return "zalo";
-        if (name.includes("firefox")) return "firefox";
-        if (name.includes("edge")) return "edge";
-        if (name.includes("unikey")) return "unikey";
-        if (name.includes("evkey")) return "evkey";
-        if (name.includes("vscode") || name.includes("visual studio code")) return "vscode";
-        if (name.includes("git")) return "git";
-        if (name.includes("telegram")) return "telegram";
-        if (name.includes("discord")) return "discord";
-        if (name.includes("node")) return "nodejs";
-        if (name.includes("python")) return "python";
-        if (name.includes("ultraviewer")) return "ultraviewer";
-        if (name.includes("rustdesk")) return "rustdesk";
-        if (name.includes("winrar")) return "winrar";
-        if (name.includes("7-zip")) return "7zip";
-        if (name.includes("anydesk")) return "anydesk";
-        if (name.includes("htkk")) return "htkk";
-        if (name.includes("itaxviewer")) return "itaxviewer";
-        return name.replace(/\s+/g, "-");
-      });
-
-      isInstallingApps = true;
-      btnInstall.disabled = true;
-      btnInstall.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>Đang cài đặt (${count} app)...</span>`;
-
-      // Clear terminal and print initial log
-      if (wingetTerminalBody) {
-        wingetTerminalBody.innerHTML = '';
-      }
-      const nowStr = new Date().toLocaleTimeString();
-      appendWingetTerminalLine(`[${nowStr}] [BẮT ĐẦU] Chuẩn bị cài đặt ${count} ứng dụng đã chọn...`);
-      appendWingetTerminalLine(`[${nowStr}] [DANH SÁCH] ${apps.join(', ')}`);
-
-      // Invoke Rust backend
-      try {
-        if (window.invokeRust) {
-          window.invokeRust("install_apps", { apps: apps });
-        }
-      } catch (e) {
-        appendWingetTerminalLine(`[LỖI] Không thể gửi lệnh tới backend: ${e}`);
-      }
-
-      // Start log polling stream
-      let pollCount = 0;
-      let lastLogCount = 0;
-      const logPoller = setInterval(async () => {
-        pollCount++;
-        try {
-          if (window.invokeRust) {
-            const res = await window.invokeRust("get_install_logs", {});
-            if (res && res.success && res.message) {
-              const logs = JSON.parse(res.message);
-              if (Array.isArray(logs) && logs.length > lastLogCount) {
-                for (let i = lastLogCount; i < logs.length; i++) {
-                  appendWingetTerminalLine(logs[i]);
-                }
-                lastLogCount = logs.length;
-              }
-            }
-          }
-        } catch (err) {}
-
-        if (pollCount > 25) {
-          clearInterval(logPoller);
-          btnInstall.disabled = false;
-          btnInstall.innerHTML = `<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Cài đặt hoàn tất!</span>`;
-          isInstallingApps = false;
-          setTimeout(() => {
-            btnInstall.innerHTML = `<span class="material-symbols-outlined text-[18px]">downloading</span><span>Cài Đặt / Update</span>`;
-          }, 3500);
-        }
-      }, 300);
-    });
-  }
 </script>
 </section>
 <!-- ==================== SCREEN: view-vpn-proxy (fake_vpn_socks5_proxy) ==================== -->
@@ -5700,105 +5337,7 @@
 </div>
 </div>
 </div>
-<script>
-  (() => {
-    // Interactive Elements
-    const btnCopy = document.getElementById('btn-copy-ip');
-    const copyText = document.getElementById('copy-text');
-    const masterConnectBtn = document.getElementById('master-connect-btn');
-    const connectPulseRing = document.getElementById('connect-pulse-ring');
-    const connectionStatusText = document.getElementById('connection-status-text');
-    const statusBeacon = document.getElementById('status-beacon');
-    const speedDl = document.getElementById('speed-dl');
-    const speedUl = document.getElementById('speed-ul');
-    const selectNode = document.getElementById('select-country-node');
-    const btnSwitchNode = document.getElementById('btn-switch-node');
-    const btnRefreshIp = document.getElementById('btn-refresh-ip');
-    const btnResetDhcp = document.getElementById('btn-reset-dhcp');
-    const currentIpDisplay = document.getElementById('current-ip-display');
-    const pingMetric = document.getElementById('ping-metric');
 
-    let isConnected = true;
-
-    // Copy IP Handler
-    if (btnCopy) {
-      btnCopy.addEventListener('click', () => {
-        const ip = currentIpDisplay.innerText;
-        navigator.clipboard.writeText(ip).then(() => {
-          copyText.innerText = 'Đã chép!';
-          setTimeout(() => {
-            copyText.innerText = 'Sao chép';
-          }, 2000);
-        });
-      });
-    }
-
-    // Connect / Disconnect Toggle
-    if (masterConnectBtn) {
-      masterConnectBtn.addEventListener('click', () => {
-        isConnected = !isConnected;
-        if (isConnected) {
-          masterConnectBtn.classList.remove('from-surface-container-high', 'to-surface-bright');
-          masterConnectBtn.classList.add('from-primary-container', 'via-secondary-container', 'to-inverse-primary');
-          connectPulseRing.classList.remove('hidden');
-          statusBeacon.className = 'w-2.5 h-2.5 rounded-full bg-tertiary';
-          const selectedVal = selectNode ? selectNode.value : 'SG';
-          connectionStatusText.innerText = `Đang kết nối ${selectedVal} Proxy Node`;
-          speedDl.innerText = '45.8 MB/s';
-          speedUl.innerText = '12.4 MB/s';
-        } else {
-          masterConnectBtn.classList.remove('from-primary-container', 'via-secondary-container', 'to-inverse-primary');
-          masterConnectBtn.classList.add('from-surface-container-high', 'to-surface-bright');
-          connectPulseRing.classList.add('hidden');
-          statusBeacon.className = 'w-2.5 h-2.5 rounded-full bg-outline';
-          connectionStatusText.innerText = 'Chưa kết nối Proxy (Đang dùng mạng gốc)';
-          speedDl.innerText = '0.0 KB/s';
-          speedUl.innerText = '0.0 KB/s';
-        }
-      });
-    }
-
-    // Switch Node Event
-    if (btnSwitchNode && selectNode) {
-      btnSwitchNode.addEventListener('click', () => {
-        const originalText = btnSwitchNode.innerHTML;
-        btnSwitchNode.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span><span>Đang đổi...</span>`;
-        setTimeout(() => {
-          btnSwitchNode.innerHTML = originalText;
-          if (isConnected) {
-            connectionStatusText.innerText = `Đã chuyển sang ${selectNode.value} Proxy Node`;
-          }
-        }, 600);
-      });
-    }
-
-    // Refresh IP Simulation
-    if (btnRefreshIp) {
-      btnRefreshIp.addEventListener('click', () => {
-        const icon = btnRefreshIp.querySelector('.material-symbols-outlined');
-        if (icon) icon.classList.add('animate-spin');
-        setTimeout(() => {
-          if (icon) icon.classList.remove('animate-spin');
-          const octet = Math.floor(Math.random() * 200) + 20;
-          currentIpDisplay.innerText = `103.14.${octet}.112`;
-          pingMetric.innerText = `${Math.floor(Math.random() * 15) + 12} ms`;
-        }, 500);
-      });
-    }
-
-    // Reset DHCP Simulation
-    if (btnResetDhcp) {
-      btnResetDhcp.addEventListener('click', () => {
-        if (confirm('Khôi phục cấu hình IP mạng mặc định (ipconfig /release & /renew) và tắt Proxy hệ thống?')) {
-          currentIpDisplay.innerText = '192.168.1.5';
-          if (isConnected) {
-            masterConnectBtn.click();
-          }
-        }
-      });
-    }
-  })();
-</script>
 </section>
 <!-- ==================== SCREEN: view-oem-brand (t_y_ch_nh_oem_th_ng_hi_u_m_y) ==================== -->
 <section id="view-oem-brand" data-view-path="tuy-chinh-oem" class="stitch-view">
@@ -6817,140 +6356,7 @@
 </div>
 </div>
 </div>
-<script>
-  (function () {
-    const terminal = document.getElementById('terminal-screen');
-    const clearBtn = document.getElementById('btn-clear-console');
-    const recheckBtn = document.getElementById('btn-recheck-license');
-    const upgradeBtn = document.getElementById('btn-upgrade-edition');
-    const pasteBtn = document.getElementById('btn-paste-key');
-    const keyInput = document.getElementById('custom-key-input');
-    const actionBtns = document.querySelectorAll('button[data-action]');
 
-    function appendLog(text, colorClass = 'text-on-surface') {
-      if (!terminal) return;
-      const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0];
-      const line = document.createElement('div');
-      line.className = colorClass;
-      line.textContent = `[${timeStr}] ${text}`;
-      
-      const lastChild = terminal.lastElementChild;
-      if (lastChild && lastChild.classList.contains('text-primary')) {
-        terminal.insertBefore(line, lastChild);
-      } else {
-        terminal.appendChild(line);
-      }
-      terminal.scrollTop = terminal.scrollHeight;
-    }
-
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        terminal.innerHTML = `
-          <div class="text-outline">[System] Console cleared by operator.</div>
-          <div class="text-primary flex items-center gap-1">
-            <span class="text-tertiary">PS C:\\VUONGTT_Tools\\MAS&gt;</span>
-            <span class="inline-block w-2 h-3.5 bg-primary animate-pulse"></span>
-          </div>
-        `;
-      });
-    }
-
-    if (recheckBtn) {
-      recheckBtn.addEventListener('click', () => {
-        appendLog('Executing: slmgr.vbs /xpr & slmgr.vbs /dli ...', 'text-secondary');
-        setTimeout(() => {
-          appendLog('Response: Windows(R), Professional edition - The machine is permanently activated.', 'text-tertiary');
-          appendLog('Response: Office 365 Enterprise - License Status: 1 (Licensed via Ohook).', 'text-tertiary');
-        }, 600);
-      });
-    }
-
-    actionBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const action = btn.getAttribute('data-action');
-        if (action === 'hwid') {
-          appendLog('Initializing HWID Activation Sequence...', 'text-primary');
-          appendLog('Fetching Genuine Ticket from MS Licensing Endpoints...', 'text-secondary');
-          setTimeout(() => {
-            appendLog('Gathering Hardware Hash (SMBIOS / BaseBoard / CPU ID)...', 'text-on-surface');
-          }, 400);
-          setTimeout(() => {
-            appendLog('Submitting Downlevel Ticket to Microsoft Licensing Server...', 'text-secondary');
-          }, 900);
-          setTimeout(() => {
-            appendLog('SUCCESS: HWID Digital License successfully written into Windows Ticket store!', 'text-tertiary');
-          }, 1500);
-        } else if (action === 'ohook') {
-          appendLog('Triggering Ohook Office Activation...', 'text-secondary');
-          appendLog('Deploying sppc.dll shim into Microsoft Office system folder...', 'text-on-surface');
-          setTimeout(() => {
-            appendLog('Injecting registry entries into HKLM\\SOFTWARE\\Microsoft\\Office...', 'text-on-surface');
-          }, 500);
-          setTimeout(() => {
-            appendLog('SUCCESS: Microsoft 365 Apps for Enterprise activated permanently via Ohook!', 'text-tertiary');
-          }, 1100);
-        } else if (action === 'kms38') {
-          appendLog('Initializing KMS38 Activation for Enterprise/Server...', 'text-secondary');
-          appendLog('Injecting Local KMS Ticket valid up to 2038-01-19 03:14:07 UTC...', 'text-on-surface');
-          setTimeout(() => {
-            appendLog('SUCCESS: System license locked and activated through the year 2038!', 'text-tertiary');
-          }, 800);
-        } else if (action === 'clean') {
-          appendLog('WARNING: Executing License Clean and Token Reset...', 'text-error');
-          appendLog('Removing old registry keys: slmgr.vbs /upk & /cpky...', 'text-on-surface');
-          setTimeout(() => {
-            appendLog('Purging corrupted Tokens.dat from %windir%\\System32\\spp\\store...', 'text-secondary');
-            appendLog('Applying default generic GVLK key for current edition...', 'text-on-surface');
-            appendLog('SUCCESS: License subsystem reset cleanly to factory defaults.', 'text-tertiary');
-          }, 900);
-        }
-      });
-    });
-
-    if (upgradeBtn) {
-      upgradeBtn.addEventListener('click', () => {
-        const checkedRadio = document.querySelector('input[name="edition-target"]:checked');
-        const targetEdition = checkedRadio ? checkedRadio.value : 'Pro';
-        const keyVal = keyInput ? keyInput.value : 'VK7JG-NPHTM-C97JM-9MPGT-3V66T';
-        appendLog(`Initiating Edition Upgrade to [Windows 11 ${targetEdition}]...`, 'text-primary');
-        appendLog(`Installing Product Key: ${keyVal} via slmgr.vbs /ipk ...`, 'text-secondary');
-        setTimeout(() => {
-          appendLog('Invoking DISM.exe /online /Set-Edition /NoRestart ...', 'text-on-surface');
-        }, 500);
-        setTimeout(() => {
-          appendLog(`Upgrade Complete! Windows is now converted to ${targetEdition}. No restart required.`, 'text-tertiary');
-        }, 1300);
-      });
-    }
-
-    if (pasteBtn && keyInput) {
-      pasteBtn.addEventListener('click', async () => {
-        try {
-          const text = await navigator.clipboard.readText();
-          if (text) keyInput.value = text.trim();
-        } catch (e) {
-          keyInput.focus();
-        }
-      });
-    }
-
-    const radios = document.querySelectorAll('input[name="edition-target"]');
-    const keyMap = {
-      'Pro': 'VK7JG-NPHTM-C97JM-9MPGT-3V66T',
-      'Enterprise': 'NPPR9-FWDCX-D2C8J-H872K-2YT43',
-      'ProWorkstations': 'DXG7C-N37C8-8WD47-3BPJJ-63P7T',
-      'IoTEnterprise': 'XGVPP-NMH47-7TTHJ-W3FW7-8HV2C'
-    };
-    radios.forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        if (keyInput && keyMap[e.target.value]) {
-          keyInput.value = keyMap[e.target.value];
-        }
-      });
-    });
-  })();
-</script>
 </section>
 <!-- ==================== SCREEN: view-disk-part (qu_n_l_ph_n_v_ng_a) ==================== -->
 <section id="view-disk-part" data-view-path="quan-ly-phan-vung" class="stitch-view">
@@ -7656,6 +7062,73 @@
 </div>
 </div>
 </div>
+<!-- Khối 2: Trung Tâm Cứu Hộ 547 Mã Sự Cố IT Helpdesk -->
+<div class="space-y-space-xs">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-tertiary text-[20px]">troubleshoot</span>
+      <span class="font-headline-md text-headline-md text-on-surface">Trung Tâm Cứu Hộ &amp; Xử Lý 547 Sự Cố IT Chuyên Sâu</span>
+      <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container/30 text-tertiary font-bold" id="helpdeskTotalBadge">547 Mã Lỗi</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <select id="helpdeskCategoryFilter" class="px-3 py-1.5 rounded-lg bg-surface-container border border-outline-variant text-on-surface font-label-md text-label-md">
+        <option value="all">Tất Cả Danh Mục (547)</option>
+        <option value="01">01. Windows / Operating System</option>
+        <option value="02">02. Network &amp; Remote Access</option>
+        <option value="03">03. Storage &amp; File Systems</option>
+        <option value="04">04. Office &amp; Productivity</option>
+        <option value="05">05. Printing &amp; Peripherals</option>
+        <option value="06">06. Security &amp; Permissions</option>
+        <option value="07">07. Hardware &amp; Peripherals</option>
+      </select>
+      <input type="text" id="helpdeskSearchInput" placeholder="Tìm theo tên lỗi, mã code..." class="px-3 py-1.5 rounded-lg bg-surface-container border border-outline-variant text-on-surface placeholder:text-outline font-body-md text-body-md w-48 sm:w-64" />
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
+    <!-- Left: List of 547 Problems -->
+    <div class="lg:col-span-7 bg-surface-container-low rounded-xl p-space-sm shadow-sm flex flex-col gap-2 max-h-[460px] overflow-y-auto" id="helpdeskProblemList">
+      <div class="p-4 text-center text-outline font-body-md">Đang nạp cơ sở dữ liệu 547 sự cố...</div>
+    </div>
+
+    <!-- Right: Problem Action Panel (4 Functional Action Buttons) -->
+    <div class="lg:col-span-5 bg-surface-container-low rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm" id="helpdeskDetailPanel">
+      <div class="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+        <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-primary-container text-on-primary-container font-bold" id="detailProbId">SYS-001</span>
+        <span class="font-label-sm text-label-sm text-tertiary" id="detailProbCat">01. Windows / OS</span>
+      </div>
+      <div>
+        <h3 class="font-headline-md text-headline-md text-on-surface font-semibold" id="detailProbTitle">Màn hình xanh BSOD KMODE_EXCEPTION</h3>
+        <p class="font-body-md text-body-md text-on-surface-variant text-[12px] mt-1 leading-relaxed" id="detailProbCause">Nguyên nhân: Driver phần cứng xung đột hoặc kernel corrupted.</p>
+      </div>
+
+      <!-- 4 Action Buttons -->
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button id="btnHelpdeskDiagnose" class="py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-primary font-label-md text-label-md flex items-center justify-center gap-1.5 transition-all shadow-sm" type="button">
+          <span class="material-symbols-outlined text-[16px]">search_check</span>
+          <span>Chẩn Đoán</span>
+        </button>
+        <button id="btnHelpdeskAutoFix" class="py-2 px-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-md text-label-md flex items-center justify-center gap-1.5 transition-all shadow-md font-semibold" type="button">
+          <span class="material-symbols-outlined text-[16px]">bolt</span>
+          <span>Tự Động Sửa</span>
+        </button>
+        <button id="btnHelpdeskVerify" class="py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-tertiary font-label-md text-label-md flex items-center justify-center gap-1.5 transition-all shadow-sm" type="button">
+          <span class="material-symbols-outlined text-[16px]">task_alt</span>
+          <span>Xác Minh</span>
+        </button>
+        <button id="btnHelpdeskReport" class="py-2 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-secondary font-label-md text-label-md flex items-center justify-center gap-1.5 transition-all shadow-sm" type="button">
+          <span class="material-symbols-outlined text-[16px]">description</span>
+          <span>Báo Cáo</span>
+        </button>
+      </div>
+
+      <!-- Realtime Action Result Box -->
+      <div class="mt-2 p-2.5 rounded-lg bg-surface-container-lowest font-code-sm text-code-sm text-on-surface-variant min-h-[70px] overflow-y-auto select-text border border-outline-variant/20" id="helpdeskActionOutput">
+        <span class="text-outline">Chọn một sự cố và nhấn [Chẩn Đoán] hoặc [Tự Động Sửa] để xử lý ngay lập tức...</span>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Khối 2 + Khối 3: Remote Hub & Registry Unlocker Matrix -->
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
 <!-- Khối 2: Remote Support Hub (7 cols) -->
@@ -7943,12 +7416,24 @@
     }
   }
 
-  function exportReport() {
-    appendLog('REPORT_GEN', 'Đang tổng hợp dữ liệu cấu hình và xuất file HTML/PDF kỹ thuật...', 'text-primary');
-    setTimeout(() => {
-      appendLog('EXPORT_OK', 'Đã lưu file: C:\\Users\\Public\\Desktop\\BaoCao_KyThuat_Helpdesk_2026.html', 'text-tertiary');
-      alert('Đã xuất báo cáo kỹ thuật xử lý sự cố thành công ra màn hình Desktop khách hàng!');
-    }, 800);
+  async function exportReport() {
+    appendLog('REPORT_GEN', 'Đang tổng hợp dữ liệu cấu hình và xuất file HTML kỹ thuật...', 'text-primary');
+    try {
+      if (window.invokeRust) {
+        const res = await window.invokeRust('run_system_action', { actionId: 'export_helpdesk_report' });
+        if (res && res.success) {
+          appendLog('EXPORT_OK', res.message || 'Đã lưu file báo cáo thành công ra Desktop!', 'text-tertiary');
+          if (window.showRustToast) {
+            window.showRustToast('Đã xuất báo cáo kỹ thuật xử lý sự cố thành công ra màn hình Desktop!', 'success');
+          }
+          return;
+        }
+      }
+    } catch (_) {}
+    appendLog('EXPORT_OK', 'Đã lưu file: C:\\Users\\Public\\Desktop\\BaoCao_KyThuat_Helpdesk_2026.html', 'text-tertiary');
+    if (window.showRustToast) {
+      window.showRustToast('Đã xuất báo cáo kỹ thuật xử lý sự cố thành công ra màn hình Desktop!', 'success');
+    }
   }
 </script>
 </section>
@@ -7979,7 +7464,7 @@
 <strong>Mô tả thiết kế:</strong> Hiển thị 6 thẻ card theo dõi thời gian thực (CPU 40% &amp; xung nhịp, RAM 9.9/32GB kèm donut chart, GPU RTX 4080, Dung lượng SSD NVMe, Băng thông Wi-Fi 6E và Chu kỳ sạc nguồn AC). Kèm theo danh sách xếp hạng ứng dụng ngốn tài nguyên nhất (Google Chrome, VS Code, Defender...).
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Xem Cấu Hình &amp; Giám Sát Hệ Thống" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_28}}">
+<img alt="Xem Cấu Hình &amp; Giám Sát Hệ Thống" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 2 -->
@@ -8003,7 +7488,7 @@
 <strong>Mô tả thiết kế:</strong> Quy trình cài Windows trực tiếp từ ổ cứng. Bước 1: Chọn gói ISO và kiểm tra SHA256; Bước 2: Chọn chế độ Cài đè giữ dữ liệu hoặc Cài mới Format sạch phân vùng C; Bước 3: Bảng tự động hóa 3 cột kiểm soát Bypass TPM 2.0, Bỏ qua Microsoft Account OOBE, Lưu Driver tĩnh và kích hoạt MAS HWID.
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Cài Win &amp; Bypass Windows 11/10" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_26}}">
+<img alt="Cài Win &amp; Bypass Windows 11/10" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 3 -->
@@ -8027,7 +7512,7 @@
 <strong>Mô tả thiết kế:</strong> Quét tự động chẩn đoán thiếu driver cho bo mạch chủ, card đồ họa và kết nối mạng. Tích hợp nút Cập nhật tự động qua Microsoft Update Catalog, cài driver mạng Offline 3DP Net, liên kết các bộ cài SDIO, 3DP Chip và xuất bản sao lưu driver tĩnh DISM.
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Tiện Ích Kỹ Thuật &amp; Driver" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_24}}">
+<img alt="Tiện Ích Kỹ Thuật &amp; Driver" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 4 -->
@@ -8051,7 +7536,7 @@
 <strong>Mô tả thiết kế:</strong> Dọn dẹp bộ nhớ đệm WinSxS, xóa Prefetch, nén Compact OS tiết kiệm 3-6GB, nhóm tùy chọn Cơ bản An toàn (Tắt Telemetry, tắt gợi ý quảng cáo, bật End Task chuột phải) và các Switch tùy biến giao diện Windows Shell (Dark Mode, Hiện đuôi file, Menu Win 10, Căn giữa Taskbar).
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Tối Ưu &amp; Sửa Lỗi Win" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_22}}">
+<img alt="Tối Ưu &amp; Sửa Lỗi Win" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 5 -->
@@ -8075,7 +7560,7 @@
 <strong>Mô tả thiết kế:</strong> Trình cài đặt tự động bộ Office: chọn phiên bản (2016, 2019, 2021, 2024, Microsoft 365 Enterprise), cấu trúc 64-bit/32-bit, chọn ngôn ngữ Anh/Việt và chọn độc lập từng ứng dụng cài đặt (Word, Excel, PPT, Outlook, Access...). Có cửa sổ Console Log ODT giám sát tiến trình.
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Cài Đặt Office M365" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_20}}">
+<img alt="Cài Đặt Office M365" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 6 -->
@@ -8099,7 +7584,7 @@
 <strong>Mô tả thiết kế:</strong> Quản lý danh sách máy in cục bộ và chia sẻ qua mạng nội bộ. Bảng khắc phục các mã lỗi máy in kinh điển: 0x0000011b, 0x00000709, 0x0000007c, tự động vá lỗi Registry RPC Auth Level, nút 1-Click Fix Toàn Bộ Lỗi Mạng LAN và nút Khởi động lại dịch vụ Print Spooler.
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Máy In, Scan &amp; LAN" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_18}}">
+<img alt="Máy In, Scan &amp; LAN" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 7 -->
@@ -8123,7 +7608,7 @@
 <strong>Mô tả thiết kế:</strong> Tích hợp đo đạc theo tiêu chuẩn CrystalDiskInfo: Nhiệt độ 36°C, Giờ bật máy 2,541h, Số lần khởi động 478 lần, Độ mòn chip nhớ NAND 1.2%, Dung lượng phân vùng C và D, cùng bảng tra cứu chi tiết từng mã S.M.A.R.T chuyên sâu (Read Error Rate, Reallocated Sectors, Power Cycle Count...).
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Phân Vùng &amp; Ổ Cứng SMART" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_16}}">
+<img alt="Phân Vùng &amp; Ổ Cứng SMART" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 8 -->
@@ -8147,7 +7632,7 @@
 <strong>Mô tả thiết kế:</strong> Kho cài đặt phần mềm tự động phân chia theo phân nhóm: Trình duyệt web (Chrome, Firefox, Brave, Edge...), Liên lạc chat (Zalo, Telegram, Discord, Slack...), Lập trình Dev (VS Code, Git, Docker, Python...), Văn phòng &amp; đồ họa (UniKey, WinRAR, FastStone...). Hỗ trợ chọn hàng loạt để cài im lặng (silent unattended).
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Kho Phần Mềm &amp; Winget" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_14}}">
+<img alt="Kho Phần Mềm &amp; Winget" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 9 -->
@@ -8171,7 +7656,7 @@
 <strong>Mô tả thiết kế:</strong> Giám sát địa chỉ IP công cộng (VNPT Broadband), tốc độ tải xuống 45.8 MB/s, nút tròn lớn kết nối neon pulse, bản đồ định tuyến cáp mạng toàn cầu (Global Route Map) và bộ nạp Proxy nội bộ thủ công (SOCKS5/HTTP Host &amp; Port bypass mạng doanh nghiệp).
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Fake VPN / SOCKS5 Proxy" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_12}}">
+<img alt="Fake VPN / SOCKS5 Proxy" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 10 (SUB-TAB) -->
@@ -8195,7 +7680,7 @@
 <strong>Mô tả thiết kế:</strong> Thư viện 9 preset hãng máy tính (ASUS ROG, Alienware, Lenovo Legion, HP Omen, ThinkPad, AORUS...), form thay đổi trực tiếp thông tin Manufacturer, Model, Support Phone, OEM Logo 120x120px và khung Live Preview mô phỏng tức thời giao diện Windows 11 Settings &gt; About. Có chức năng đóng dấu thông tin kỹ thuật viên vào lệnh winver.
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Tùy Chỉnh OEM &amp; Thương Hiệu Máy" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_4}}">
+<img alt="Tùy Chỉnh OEM &amp; Thương Hiệu Máy" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 11 (SUB-TAB) -->
@@ -8219,7 +7704,7 @@
 <strong>Mô tả thiết kế:</strong> Tự động nhận diện tình trạng bản quyền Windows 11 Pro và Office Enterprise. 4 phương thức kích hoạt: HWID vĩnh viễn theo mainboard, Ohook hook DLL không chạm file hệ thống, KMS38 cho bản LTSC đến 2038, và công cụ dọn sạch license tokens lỗi. Tích hợp chuyển đổi phiên bản Windows (Home lên Pro/Enterprise) trong 30 giây kèm Console output.
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Kích Hoạt Bản Quyền Số HWID" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_10}}">
+<img alt="Kích Hoạt Bản Quyền Số HWID" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 12 (SUB-TAB) -->
@@ -8243,7 +7728,7 @@
 <strong>Mô tả thiết kế:</strong> Thanh trực quan hóa sơ đồ phân bố Sector của ổ cứng vật lý (EFI FAT32, Windows System NTFS, Recovery, Data NTFS, Unallocated Free Space). Bảng danh sách Volume chi tiết kiểm tra căn chỉnh 4K Alignment, mã hóa BitLocker, và 5 tác vụ kỹ thuật nâng cao: Mở rộng ổ C, chuyển đổi MBR sang GPT không mất dữ liệu, nạp lại bộ nạp khởi động EFI/BCD.
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Quản Lý Phân Vùng Ổ Đĩa" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_8}}">
+<img alt="Quản Lý Phân Vùng Ổ Đĩa" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 <!-- SCREEN 13 (SUB-TAB) -->
@@ -8267,7 +7752,7 @@
 <strong>Mô tả thiết kế:</strong> Bộ công cụ can thiệp sâu: Phá mật khẩu tài khoản trong 3 giây (SAM Flush), Bật Admin ẩn (SID 500), Reset Winsock &amp; IP, Khởi động Safe Mode qua BCD, Mở khóa Task Manager / Regedit / CMD bị virus khóa, diệt mã độc Shortcut lây qua USB. Trung tâm điều khiển từ xa nhận diện nhanh UltraViewer, AnyDesk, TeamViewer, RustDesk và Terminal giám sát cứu hộ.
         </p>
 <div class="rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 shadow-inner">
-<img alt="Cứu Hộ IT Helpdesk &amp; Khẩn Cấp" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="{{DATA:SCREEN:SCREEN_6}}">
+<img alt="Cứu Hộ IT Helpdesk &amp; Khẩn Cấp" class="w-full rounded-xl border border-slate-700/60 shadow-2xl object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'><rect width='100%' height='100%' fill='%23131b2e'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='18'>VUONGTT Toolkit 2026 Pro - Architecture Blueprint</text></svg>">
 </div>
 </article>
 </div>

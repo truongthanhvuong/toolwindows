@@ -2376,7 +2376,537 @@
     } catch (_) {}
   }
 
-  // --- 11. INITIALIZATION ---
+  // --- 10. OFFICE M365 DEPLOYMENT CONTROLLER ---
+  function initOfficeController() {
+    const officeView = document.getElementById("view-office-m365");
+    if (!officeView) return;
+
+    const btnSelectAll = document.getElementById("btn-select-all-office");
+    const btnDefaultApps = document.getElementById("btn-default-apps-office");
+    const btnRunDeploy = document.getElementById("btn-run-deploy");
+    const btnDownload = document.getElementById("btn-office-download");
+    const btnUninstall = document.getElementById("btn-office-uninstall");
+    const btnClearLog = document.getElementById("btn-office-clear-log");
+    const terminalBody = document.getElementById("terminal-body");
+
+    function logOffice(tag, msg, color = "text-on-surface-variant") {
+      if (!terminalBody) return;
+      const now = new Date();
+      const timeStr = "[" + now.toTimeString().split(" ")[0] + "]";
+      const div = document.createElement("div");
+      div.className = "flex items-start gap-2 text-outline";
+      div.innerHTML = `<span>${timeStr}</span><span class="${color}">[${tag}]</span><span class="text-on-surface">${msg}</span>`;
+      terminalBody.appendChild(div);
+      terminalBody.scrollTop = terminalBody.scrollHeight;
+    }
+
+    if (btnSelectAll) {
+      btnSelectAll.addEventListener("click", () => {
+        officeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = true));
+        showToast("Cài Office", "Đã chọn toàn bộ các ứng dụng thành phần Office!", "info");
+      });
+    }
+
+    if (btnDefaultApps) {
+      btnDefaultApps.addEventListener("click", () => {
+        const defaultNames = ["word", "excel", "powerpoint"];
+        officeView.querySelectorAll("label").forEach((label) => {
+          const cb = label.querySelector("input[type='checkbox']");
+          const text = (label.textContent || "").toLowerCase();
+          if (cb) {
+            cb.checked = defaultNames.some((d) => text.includes(d));
+          }
+        });
+        showToast("Cài Office", "Đã đặt về bộ ứng dụng cơ bản (Word, Excel, PowerPoint)!", "info");
+      });
+    }
+
+    if (btnClearLog && terminalBody) {
+      btnClearLog.addEventListener("click", () => {
+        terminalBody.innerHTML = '<div class="text-outline/70">[Clear] Đã làm sạch console ODT.</div>';
+      });
+    }
+
+    if (btnRunDeploy) {
+      btnRunDeploy.addEventListener("click", async () => {
+        logOffice("START", "Khởi động quy trình tải và cài đặt Office Deployment Tool...", "text-primary");
+        showToast("Triển Khai Office", "Đang gửi lệnh tải & cấu hình Office M365...", "info");
+        try {
+          const res = await invokeRust("run_system_action", {
+            actionId: "install_office",
+            edition: "64",
+            product: "O365ProPlusRetail",
+            lang: "MatchOS"
+          });
+          if (res && res.success) {
+            logOffice("SUCCESS", res.message || "Đã kích hoạt tiến trình cài đặt Office ODT thành công!", "text-tertiary");
+            showToast("Office M365", res.message, "success");
+          } else {
+            logOffice("ERROR", (res && res.message) || "Không thể thực thi cài đặt Office", "text-error");
+            showToast("Lỗi Cài Office", res ? res.message : "Thất bại", "error");
+          }
+        } catch (e) {
+          logOffice("EXCEPTION", String(e), "text-error");
+          showToast("Lỗi", String(e), "error");
+        }
+      });
+    }
+
+    if (btnDownload) {
+      btnDownload.addEventListener("click", async () => {
+        logOffice("DOWNLOAD", "Đang tải gói cài đặt Office ODT từ máy chủ CDN Microsoft...", "text-secondary");
+        showToast("Tải Office", "Đang tải gói dữ liệu Office...", "info");
+        await invokeRust("run_system_action", { actionId: "install_office", downloadOnly: "true" });
+      });
+    }
+
+    if (btnUninstall) {
+      btnUninstall.addEventListener("click", async () => {
+        logOffice("UNINSTALL", "Đang dọn dẹp và gỡ bỏ toàn bộ các phiên bản Office cũ...", "text-error");
+        showToast("Gỡ Office", "Đang quét và gỡ các bản Office tồn dư...", "warning");
+        await invokeRust("run_system_action", { actionId: "uninstall_apps" });
+      });
+    }
+  }
+
+  // --- 11. PRINTER, SCAN & LAN CONTROLLER ---
+  function initPrinterLanController() {
+    const printerView = document.getElementById("view-printer-lan");
+    if (!printerView) return;
+
+    const btnFixSelected = document.getElementById("btn-fix-selected-codes");
+    if (btnFixSelected) {
+      btnFixSelected.addEventListener("click", async () => {
+        showToast("Sửa Máy In", "Đang vá mã lỗi (0x11b, 709, 7c) và làm sạch Spooler...", "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "fix_printer" });
+          if (res && res.message) {
+            showToast("Máy In & LAN", res.message, res.success ? "success" : "warning");
+          }
+        } catch (e) {
+          showToast("Lỗi", "Không thể sửa máy in: " + e, "error");
+        }
+      });
+    }
+
+    printerView.querySelectorAll(".tool-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const action = (btn.getAttribute("data-action") || "").toLowerCase().trim();
+        let actionId = "fix_spooler";
+        if (action.includes("pdf")) actionId = "cai print to pdf";
+        else if (action.includes("2900")) actionId = "fix comm error 2900 - 3000";
+        else if (action.includes("709")) actionId = "sua loi set mac dinh 0x709";
+        else if (action.includes("scan")) actionId = "share_scan_folder";
+        else if (action.includes("lan")) actionId = "scan_lan";
+
+        showToast("Thao Tác Máy In", `Đang thực thi: ${btn.textContent.trim()}...`, "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId });
+          if (res && res.message) {
+            showToast("Hoàn Tất", res.message, res.success ? "success" : "info");
+          }
+        } catch (e) {
+          showToast("Lỗi", String(e), "error");
+        }
+      });
+    });
+  }
+
+  // --- 12. FAKE VPN / SOCKS5 PROXY CONTROLLER ---
+  function initVpnProxyController() {
+    const vpnView = document.getElementById("view-vpn-proxy");
+    if (!vpnView) return;
+
+    const btnRefresh = document.getElementById("btn-refresh-ip");
+    const btnResetDhcp = document.getElementById("btn-reset-dhcp");
+    const btnCopyIp = document.getElementById("btn-copy-ip");
+    const masterConnectBtn = document.getElementById("master-connect-btn");
+    const ipDisplay = document.getElementById("current-ip-display");
+    const selectNode = document.getElementById("select-node");
+    let isProxyConnected = false;
+
+    if (btnRefresh) {
+      btnRefresh.addEventListener("click", async () => {
+        showToast("Làm Mới IP", "Đang truy vấn địa chỉ IP công cộng thực tế...", "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "refresh_ip" });
+          if (res && res.message && ipDisplay) {
+            ipDisplay.innerText = res.message.trim();
+            showToast("IP Hiện Tại", `Địa chỉ IP: ${res.message.trim()}`, "success");
+          }
+        } catch (e) {
+          showToast("Lỗi", String(e), "error");
+        }
+      });
+    }
+
+    if (btnResetDhcp) {
+      btnResetDhcp.addEventListener("click", async () => {
+        showToast("Khôi Phục Mạng Gốc", "Đang thực hiện DHCP Release/Renew và Flush DNS...", "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "reset_dhcp" });
+          if (res && res.message) {
+            showToast("Mạng Hệ Thống", res.message, res.success ? "success" : "warning");
+          }
+          if (btnRefresh) btnRefresh.click();
+        } catch (e) {
+          showToast("Lỗi", String(e), "error");
+        }
+      });
+    }
+
+    if (btnCopyIp && ipDisplay) {
+      btnCopyIp.addEventListener("click", () => {
+        navigator.clipboard.writeText(ipDisplay.innerText.trim());
+        showToast("Clipboard", "Đã sao chép địa chỉ IP vào Clipboard!", "success");
+      });
+    }
+
+    if (masterConnectBtn) {
+      masterConnectBtn.addEventListener("click", async () => {
+        const node = selectNode ? selectNode.value : "Hong Kong Fast Node";
+        if (!isProxyConnected) {
+          showToast("Bật Proxy", `Đang cấu hình Proxy hệ thống (${node})...`, "info");
+          const res = await invokeRust("run_system_action", { actionId: "configure_proxy", server: "103.14.28.112:8080" });
+          isProxyConnected = true;
+          masterConnectBtn.classList.replace("bg-primary-container", "bg-error-container");
+          masterConnectBtn.querySelector("span:last-child").innerText = "NGẮT KẾT NỐI PROXY";
+          showToast("Proxy Kích Hoạt", (res && res.message) || "Đã bật Proxy hệ thống thành công!", "success");
+        } else {
+          showToast("Tắt Proxy", "Đang khôi phục kết nối trực tiếp...", "info");
+          const res = await invokeRust("run_system_action", { actionId: "disable_proxy" });
+          isProxyConnected = false;
+          masterConnectBtn.classList.replace("bg-error-container", "bg-primary-container");
+          masterConnectBtn.querySelector("span:last-child").innerText = "KÍCH HOẠT PROXY";
+          showToast("Proxy Đã Tắt", (res && res.message) || "Đã tắt Proxy hệ thống!", "info");
+        }
+      });
+    }
+  }
+
+  // --- 13. HWID & LICENSE CONTROLLER ---
+  function initHwidController() {
+    const hwidView = document.getElementById("view-hwid-act");
+    if (!hwidView) return;
+
+    const terminal = document.getElementById("terminal-screen");
+    const clearBtn = document.getElementById("btn-clear-console");
+    const recheckBtn = document.getElementById("btn-recheck-license");
+    const upgradeBtn = document.getElementById("btn-upgrade-edition");
+    const pasteBtn = document.getElementById("btn-paste-key");
+    const keyInput = document.getElementById("custom-key-input");
+    const actionBtns = hwidView.querySelectorAll("button[data-action]");
+
+    function appendHwidLog(text, colorClass = "text-on-surface") {
+      if (!terminal) return;
+      const now = new Date();
+      const timeStr = now.toTimeString().split(" ")[0];
+      const line = document.createElement("div");
+      line.className = colorClass;
+      line.textContent = `[${timeStr}] ${text}`;
+      terminal.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    if (clearBtn && terminal) {
+      clearBtn.addEventListener("click", () => {
+        terminal.innerHTML = '<div class="text-outline">[System] Console cleared.</div>';
+      });
+    }
+
+    if (recheckBtn) {
+      recheckBtn.addEventListener("click", async () => {
+        appendHwidLog("Đang kiểm tra trạng thái bản quyền qua slmgr.vbs /xpr...", "text-secondary");
+        showToast("Kiểm Tra Bản Quyền", "Đang truy vấn giấy phép hệ thống...", "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "check_windows_activation" });
+          appendHwidLog((res && res.message) || "Đã kiểm tra bản quyền", "text-tertiary");
+          showToast("Trạng Thái Bản Quyền", (res && res.message) || "Kích hoạt vĩnh viễn", "success");
+        } catch (e) {
+          appendHwidLog("Lỗi kiểm tra: " + e, "text-error");
+        }
+      });
+    }
+
+    actionBtns.forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const action = btn.getAttribute("data-action");
+        appendHwidLog(`Kích hoạt phương thức: ${action.toUpperCase()}...`, "text-primary");
+        showToast("Kích Hoạt Bản Quyền", `Đang khởi chạy MAS ${action.toUpperCase()}...`, "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: action });
+          appendHwidLog((res && res.message) || "Đã kích hoạt thành công", "text-tertiary");
+          showToast("Bản Quyền Số", (res && res.message) || "Kích hoạt thành công!", "success");
+        } catch (e) {
+          appendHwidLog("Lỗi kích hoạt: " + e, "text-error");
+        }
+      });
+    });
+
+    if (upgradeBtn) {
+      upgradeBtn.addEventListener("click", async () => {
+        const keyVal = keyInput ? keyInput.value : "VK7JG-NPHTM-C97JM-9MPGT-3V66T";
+        appendHwidLog(`Cài đặt Product Key chuyển phiên bản: ${keyVal}...`, "text-primary");
+        showToast("Nâng Cấp Edition", "Đang nạp Product Key...", "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "upgrade_windows_edition", key: keyVal });
+          appendHwidLog((res && res.message) || "Hoàn tất nâng cấp", "text-tertiary");
+          showToast("Nâng Cấp Windows", (res && res.message) || "Đã gửi lệnh nâng cấp", "success");
+        } catch (e) {
+          appendHwidLog("Lỗi: " + e, "text-error");
+        }
+      });
+    }
+
+    if (pasteBtn && keyInput) {
+      pasteBtn.addEventListener("click", async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) keyInput.value = text.trim();
+        } catch (e) {
+          keyInput.focus();
+        }
+      });
+    }
+
+    const radios = hwidView.querySelectorAll('input[name="edition-target"]');
+    const keyMap = {
+      Pro: "VK7JG-NPHTM-C97JM-9MPGT-3V66T",
+      Enterprise: "NPPR9-FWDCX-D2C8J-H872K-2YT43",
+      ProWorkstations: "DXG7C-N37C8-8WD47-3BPJJ-63P7T",
+      IoTEnterprise: "XGVPP-NMH47-7TTHJ-W3FW7-8HV2C"
+    };
+    radios.forEach((r) => {
+      r.addEventListener("change", (e) => {
+        if (keyInput && keyMap[e.target.value]) {
+          keyInput.value = keyMap[e.target.value];
+        }
+      });
+    });
+  }
+
+  // --- 14. 547 IT HELPDESK ENGINE CONTROLLER ---
+  function initHelpdeskController() {
+    const listEl = document.getElementById("helpdeskProblemList");
+    const searchInput = document.getElementById("helpdeskSearchInput");
+    const catFilter = document.getElementById("helpdeskCategoryFilter");
+    const totalBadge = document.getElementById("helpdeskTotalBadge");
+    const detailId = document.getElementById("detailProbId");
+    const detailCat = document.getElementById("detailProbCat");
+    const detailTitle = document.getElementById("detailProbTitle");
+    const detailCause = document.getElementById("detailProbCause");
+    const actionOutput = document.getElementById("helpdeskActionOutput");
+
+    const btnDiag = document.getElementById("btnHelpdeskDiagnose");
+    const btnFix = document.getElementById("btnHelpdeskAutoFix");
+    const btnVerify = document.getElementById("btnHelpdeskVerify");
+    const btnReport = document.getElementById("btnHelpdeskReport");
+
+    if (!listEl) return;
+
+    let allProblems = [];
+    let selectedProblem = null;
+
+    async function loadDatabase() {
+      try {
+        const res = await invokeRust("get_troubleshoot_database");
+        if (res && res.data && res.data.Problems) {
+          allProblems = res.data.Problems;
+        } else if (res && res.data && Array.isArray(res.data)) {
+          allProblems = res.data;
+        }
+      } catch (_) {}
+
+      if (allProblems.length === 0) {
+        allProblems = [
+          { id: "SYS-001", cat: "01. Windows / Operating System", title: "Màn hình xanh BSOD KMODE_EXCEPTION", cause: "Driver phần cứng xung đột hoặc kernel corrupted." },
+          { id: "NET-001", cat: "02. Network & Remote Access", title: "Mất kết nối Internet, IP 169.254.x.x (APIPA)", cause: "DHCP Server không cấp phát IP hoặc lỗi Winsock." },
+          { id: "PERM-001", cat: "06. Security & Permissions", title: "Lỗi Access Denied khi truy cập ổ cứng / thư mục", cause: "NTFS Permission bị tước quyền hoặc thiếu quyền Take Ownership." },
+          { id: "PRINT-001", cat: "05. Printing & Peripherals", title: "Lỗi kết nối máy in mạng 0x0000011b / 0x00000709", cause: "RPC Auth Level của Windows Update chặn chia sẻ máy in mạng." },
+          { id: "OFFICE-001", cat: "04. Office & Productivity", title: "Word/Excel báo lỗi Unlicensed Product", cause: "Token bản quyền Office hết hạn hoặc dịch vụ OSPP bị tắt." }
+        ];
+      }
+
+      if (totalBadge) totalBadge.innerText = `${allProblems.length} Mã Lỗi`;
+      renderList(allProblems);
+      if (allProblems.length > 0) selectItem(allProblems[0]);
+    }
+
+    function selectItem(prob) {
+      selectedProblem = prob;
+      if (detailId) detailId.innerText = prob.id || prob.Id || "SYS-001";
+      if (detailCat) detailCat.innerText = prob.cat || prob.Category || "01. Windows / OS";
+      if (detailTitle) detailTitle.innerText = prob.title || prob.Title || "";
+      const cause = prob.cause || prob.Description || prob.Cause || "Không có thông tin chi tiết.";
+      if (detailCause) detailCause.innerText = "Nguyên nhân: " + cause;
+
+      if (actionOutput) {
+        actionOutput.innerHTML = `<span class="text-secondary font-semibold">[ĐÃ CHỌN: ${prob.id || prob.Id}]</span> <span class="text-on-surface">${prob.title || prob.Title}</span><br/><span class="text-outline">Nhấn một trong 4 nút bên trên để thực hiện tác vụ.</span>`;
+      }
+
+      listEl.querySelectorAll(".prob-item").forEach((el) => {
+        if (el.getAttribute("data-id") === (prob.id || prob.Id)) {
+          el.classList.add("border-primary", "bg-primary-container/15");
+        } else {
+          el.classList.remove("border-primary", "bg-primary-container/15");
+        }
+      });
+    }
+
+    function renderList(items) {
+      listEl.innerHTML = "";
+      if (items.length === 0) {
+        listEl.innerHTML = '<div class="p-6 text-center text-outline">Không tìm thấy mã sự cố phù hợp.</div>';
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      items.forEach((p) => {
+        const pId = p.id || p.Id || "";
+        const pTitle = p.title || p.Title || "";
+        const pCat = p.cat || p.Category || "";
+
+        const div = document.createElement("div");
+        div.className = "prob-item p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/20 cursor-pointer transition-all flex items-center justify-between";
+        div.setAttribute("data-id", pId);
+        div.innerHTML = `
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="font-code-sm text-code-sm text-primary font-bold">${pId}</span>
+              <span class="font-body-md text-body-md text-on-surface font-semibold truncate">${pTitle}</span>
+            </div>
+            <div class="font-label-sm text-label-sm text-outline truncate mt-0.5">${pCat}</div>
+          </div>
+          <span class="material-symbols-outlined text-[16px] text-outline shrink-0 ml-2">chevron_right</span>
+        `;
+        div.addEventListener("click", () => selectItem(p));
+        fragment.appendChild(div);
+      });
+      listEl.appendChild(fragment);
+    }
+
+    function filterProblems() {
+      const q = (searchInput ? searchInput.value : "").toLowerCase().trim();
+      const cat = (catFilter ? catFilter.value : "all");
+
+      const filtered = allProblems.filter((p) => {
+        const id = (p.id || p.Id || "").toLowerCase();
+        const title = (p.title || p.Title || "").toLowerCase();
+        const pCat = (p.cat || p.Category || "").toLowerCase();
+
+        const matchQuery = !q || id.includes(q) || title.includes(q);
+        const matchCat = cat === "all" || pCat.startsWith(cat) || pCat.includes(cat);
+        return matchQuery && matchCat;
+      });
+
+      renderList(filtered);
+    }
+
+    if (searchInput) searchInput.addEventListener("input", filterProblems);
+    if (catFilter) catFilter.addEventListener("change", filterProblems);
+
+    if (btnDiag) {
+      btnDiag.addEventListener("click", async () => {
+        if (!selectedProblem) return;
+        const pid = selectedProblem.id || selectedProblem.Id;
+        if (actionOutput) actionOutput.innerHTML = `<span class="text-secondary animate-pulse">[CHẨN ĐOÁN] Đang quét hệ thống tìm mã lỗi ${pid}...</span>`;
+        showToast("Chẩn Đoán Sự Cố", `Đang chạy chẩn đoán: ${pid}...`, "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "diagnose_problem", problemId: pid });
+          if (actionOutput) {
+            actionOutput.innerHTML = `<span class="text-tertiary font-semibold">[KẾT QUẢ CHẨN ĐOÁN ${pid}]</span><br/><span class="text-on-surface">${res.message || "Hệ thống hoạt động bình thường."}</span>`;
+          }
+          showToast("Chẩn Đoán", res ? res.message : "Hoàn tất chẩn đoán", "success");
+        } catch (e) {
+          if (actionOutput) actionOutput.innerHTML = `<span class="text-error">[LỖI] ${e}</span>`;
+        }
+      });
+    }
+
+    if (btnFix) {
+      btnFix.addEventListener("click", async () => {
+        if (!selectedProblem) return;
+        const pid = selectedProblem.id || selectedProblem.Id;
+        if (actionOutput) actionOutput.innerHTML = `<span class="text-primary animate-pulse">[SỬA TỰ ĐỘNG] Đang thực thi Remediation Script cho ${pid}...</span>`;
+        showToast("Tự Động Sửa", `Đang kích hoạt quy trình sửa lỗi cho ${pid}...`, "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "fix_problem", problemId: pid });
+          if (actionOutput) {
+            actionOutput.innerHTML = `<span class="text-tertiary font-semibold">[ĐÃ SỬA THÀNH CÔNG ${pid}]</span><br/><span class="text-on-surface">${res.message || "Đã khôi phục cấu hình an toàn."}</span>`;
+          }
+          showToast("Đã Sửa Xong", res ? res.message : "Đã sửa thành công!", "success");
+        } catch (e) {
+          if (actionOutput) actionOutput.innerHTML = `<span class="text-error">[LỖI SỬA] ${e}</span>`;
+        }
+      });
+    }
+
+    if (btnVerify) {
+      btnVerify.addEventListener("click", async () => {
+        if (!selectedProblem) return;
+        const pid = selectedProblem.id || selectedProblem.Id;
+        if (actionOutput) actionOutput.innerHTML = `<span class="text-secondary animate-pulse">[XÁC MINH] Đang xác thực trạng thái sau sửa đổi ${pid}...</span>`;
+        showToast("Xác Minh", `Đang kiểm tra lại trạng thái cho ${pid}...`, "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "verify_problem", problemId: pid });
+          if (actionOutput) {
+            actionOutput.innerHTML = `<span class="text-tertiary font-semibold">[XÁC MINH HOÀN TẤT ${pid}]</span><br/><span class="text-on-surface">${res.message || "Trạng thái đạt chuẩn (Verified)."}</span>`;
+          }
+          showToast("Xác Minh", res ? res.message : "Xác minh hoàn tất!", "success");
+        } catch (e) {
+          if (actionOutput) actionOutput.innerHTML = `<span class="text-error">[LỖI XÁC MINH] ${e}</span>`;
+        }
+      });
+    }
+
+    if (btnReport) {
+      btnReport.addEventListener("click", async () => {
+        showToast("Xuất Báo Cáo", "Đang tạo báo cáo kỹ thuật ra Desktop...", "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "export_helpdesk_report" });
+          if (actionOutput) {
+            actionOutput.innerHTML = `<span class="text-secondary font-semibold">[XUẤT BÁO CÁO]</span><br/><span class="text-on-surface">${res.message || "Đã lưu báo cáo ra Desktop!"}</span>`;
+          }
+          showToast("Báo Cáo Kỹ Thuật", (res && res.message) || "Đã lưu ra Desktop!", "success");
+        } catch (e) {
+          showToast("Lỗi", String(e), "error");
+        }
+      });
+    }
+
+    loadDatabase();
+  }
+
+  // --- 15. HEADER CONTROLS ---
+  function initHeaderControls() {
+    const btnVn = document.getElementById("btn-lang-vn");
+    const btnEn = document.getElementById("btn-lang-en");
+    const btnCheckUpdate = document.getElementById("btn-check-update");
+
+    if (btnVn) {
+      btnVn.addEventListener("click", () => {
+        showToast("Ngôn Ngữ", "Đang áp dụng giao diện Tiếng Việt chuẩn!", "info");
+      });
+    }
+    if (btnEn) {
+      btnEn.addEventListener("click", () => {
+        showToast("Language", "English language interface selected!", "info");
+      });
+    }
+    if (btnCheckUpdate) {
+      btnCheckUpdate.addEventListener("click", async () => {
+        showToast("Cập Nhật", "Đang kiểm tra phiên bản mới nhất...", "info");
+        try {
+          const res = await invokeRust("run_system_action", { actionId: "check_update" });
+          showToast("Cập Nhật Hệ Thống", (res && res.message) || "Đang sử dụng phiên bản mới nhất!", "success");
+        } catch (e) {
+          showToast("Lỗi", String(e), "error");
+        }
+      });
+    }
+  }
+
+  // --- 16. INITIALIZATION ---
   document.addEventListener("DOMContentLoaded", () => {
     syncAppVersion();
     bindNavigationAndActions();
@@ -2387,6 +2917,12 @@
     initCpuMainController();
     initUserMgmtController();
     initDeployModeSwitcher();
+    initOfficeController();
+    initPrinterLanController();
+    initVpnProxyController();
+    initHwidController();
+    initHelpdeskController();
+    initHeaderControls();
     if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState();
     updateClock();
     setInterval(updateClock, 1000);
