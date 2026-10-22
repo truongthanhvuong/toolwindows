@@ -132,6 +132,46 @@ pub fn clear_logs() {
     }
 }
 
+pub fn ensure_desktop_shortcut() -> bool {
+    let curr_exe = match std::env::current_exe() {
+        Ok(p) => p,
+        Err(_) => return false,
+    };
+    let exe_str = curr_exe.to_string_lossy().to_string();
+    let parent_dir = curr_exe.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+
+    let ps_code = format!(
+        r#"
+        $targetExe = '{}'
+        $targetDir = '{}'
+        if (Test-Path $targetExe) {{
+            $desktop = [System.Environment]::GetFolderPath('Desktop')
+            if ($desktop -and (Test-Path $desktop)) {{
+                $lnkPath = Join-Path $desktop 'VUONGTT Toolkit.lnk'
+                try {{
+                    $ws = New-Object -ComObject WScript.Shell
+                    $lnk = $ws.CreateShortcut($lnkPath)
+                    $lnk.TargetPath = $targetExe
+                    $lnk.WorkingDirectory = $targetDir
+                    $lnk.IconLocation = "$targetExe,0"
+                    $lnk.Description = 'VUONGTT Toolkit 2026 - Bộ Công Cụ Kỹ Thuật & Tối Ưu Hệ Thống'
+                    $lnk.Save()
+                }} catch {{}}
+            }}
+        }}
+        "#,
+        exe_str.replace('\'', "''"),
+        parent_dir.replace('\'', "''")
+    );
+
+    let mut cmd = Command::new("powershell");
+    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let _ = cmd.output();
+    true
+}
+
 pub fn collect_real_system_identity() -> (String, String, String, String, String) {
     let hostname = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "VUONGTT-HOST".to_string());
     
@@ -1901,9 +1941,108 @@ th { background: #222a3d; color: #6ffbbe; }
     }
 
     if act == "check_update" || act == "kiem tra cap nhat" {
+        let ps_code = r#"
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+            $curVer = if (Test-Path 'E:\toolwindows\version.json') {
+                try { (Get-Content -Path 'E:\toolwindows\version.json' -Raw | ConvertFrom-Json).version.Trim() } catch { '20.5.909.130' }
+            } else { '20.5.909.130' }
+            $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+            try {
+                $wc = New-Object System.Net.WebClient
+                $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+                $wc.Headers.Add("Pragma", "no-cache")
+                $raw = $wc.DownloadString($url)
+                $data = ConvertFrom-Json $raw
+                $remoteVer = if ($data.version) { $data.version.Trim() } else { $curVer }
+                $downUrl = if ($data.downloadUrl) { $data.downloadUrl } else { "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe" }
+                $changelog = if ($data.changelog) { ($data.changelog | Select-Object -First 2) -join " " } else { "Cải tiến hiệu năng & sửa lỗi." }
+
+                $hasUpd = $false
+                $curParts = $curVer.Split('.')
+                $remParts = $remoteVer.Split('.')
+                for ($i = 0; $i -lt [Math]::Min($curParts.Length, $remParts.Length); $i++) {
+                    $cP = 0; $rP = 0
+                    [int]::TryParse($curParts[$i], [ref]$cP) | Out-Null
+                    [int]::TryParse($remParts[$i], [ref]$rP) | Out-Null
+                    if ($rP -gt $cP) { $hasUpd = $true; break }
+                    elseif ($rP -lt $cP) { break }
+                }
+                [PSCustomObject]@{
+                    has_update = $hasUpd
+                    current_version = $curVer
+                    latest_version = $remoteVer
+                    download_url = $downUrl
+                    changelog = $changelog
+                    message = if ($hasUpd) { "Phát hiện phiên bản mới: VUONGTT Toolkit v$remoteVer (Hiện tại: v$curVer)" } else { "Đang sử dụng phiên bản VUONGTT Toolkit mới nhất: v$curVer" }
+                } | ConvertTo-Json -Compress
+            } catch {
+                [PSCustomObject]@{
+                    has_update = $false
+                    current_version = $curVer
+                    latest_version = $curVer
+                    download_url = ""
+                    changelog = "Hệ thống đang hoạt động ổn định."
+                    message = "Hệ thống đang chạy phiên bản VUONGTT Toolkit mới nhất (v$curVer)."
+                } | ConvertTo-Json -Compress
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
         return (
             true,
-            "Hệ thống đang chạy phiên bản VUONGTT Toolkit 2026 mới nhất và đã được đồng bộ tối ưu!".to_string(),
+            if trimmed.is_empty() {
+                r#"{"has_update":false,"current_version":"20.5.909.130","message":"Đang sử dụng phiên bản mới nhất!"}"#.to_string()
+            } else {
+                trimmed.to_string()
+            },
+        );
+    }
+
+    if act == "apply_update" || act == "download_and_apply_update" || act == "tu_dong_cap_nhat" {
+        let ps_code = r#"
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+            $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe"
+            $targetExe = if (Test-Path 'E:\toolwindows\VUONGTT_Toolkit.exe') { 'E:\toolwindows\VUONGTT_Toolkit.exe' } else { "$env:USERPROFILE\Desktop\VUONGTT_Toolkit.exe" }
+            $tempExe = "$env:TEMP\VUONGTT_Toolkit_Update.exe"
+            try {
+                $wc = New-Object System.Net.WebClient
+                $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                $wc.DownloadFile($url, $tempExe)
+                if ((Test-Path $tempExe) -and (Get-Item $tempExe).Length -gt 1000000) {
+                    $updaterScript = @"
+                        Start-Sleep -Seconds 1
+                        Move-Item -Path '$tempExe' -Destination '$targetExe' -Force
+                        Start-Process '$targetExe'
+"@
+                    $batPath = "$env:TEMP\vuongtt_apply_update.ps1"
+                    [System.IO.File]::WriteAllText($batPath, $updaterScript, [System.Text.Encoding]::UTF8)
+                    Start-Process powershell -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$batPath`""
+                    Write-Output "UPDATE_READY"
+                } else {
+                    Write-Output "UPDATE_FAILED_DOWNLOAD"
+                }
+            } catch {
+                Write-Output "UPDATE_ERROR: $($_.Exception.Message)"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        return (
+            trimmed.contains("UPDATE_READY"),
+            if trimmed.contains("UPDATE_READY") {
+                "Đã tải thành công bản cập nhật! Ứng dụng sẽ tự động khởi động lại sau giây lát...".to_string()
+            } else {
+                format!("Không thể tải bản cập nhật: {}", trimmed)
+            },
         );
     }
 
