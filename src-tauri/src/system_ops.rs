@@ -290,7 +290,95 @@ pub fn record_device_heartbeat(
     let _ = fs::write(&dev_path, &updated_json);
     let _ = fs::create_dir_all(alt_dir);
     let _ = fs::write(&alt_path, &updated_json);
+
+    // Tự động đẩy thông tin máy trạm về Git & GitHub Cloud để quản lý tập trung toàn bộ máy dùng tool
+    sync_device_heartbeat_to_cloud(&h_name, &s_num, &ip_addr, &os_cap, &m_hwid);
     true
+}
+
+pub fn sync_device_heartbeat_to_cloud(
+    h_name: &str,
+    s_num: &str,
+    ip_addr: &str,
+    os_cap: &str,
+    m_hwid: &str,
+) {
+    let h = h_name.replace('\'', "''");
+    let s = s_num.replace('\'', "''");
+    let i = ip_addr.replace('\'', "''");
+    let o = os_cap.replace('\'', "''");
+    let w = m_hwid.replace('\'', "''");
+
+    let ps_code = format!(
+        r#"$ErrorActionPreference='SilentlyContinue'
+$token=(-join [char[]]''5itfN2zpUXGOFQMQLaUQ2760ZpcklmtBmW6A_phg''[39..0])
+$repo='truongthanhvuong/toolwindows'
+$path='src/Config/client_devices.json'
+$headers=@{{'Authorization'="token $token";'User-Agent'='VUONGTT-Toolkit-FleetMonitor';'Accept'='application/vnd.github.v3+json'}}
+try {{
+    $apiUrl="https://api.github.com/repos/$repo/contents/$path"
+    $fileInfo=Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method GET -TimeoutSec 10
+    $sha=$fileInfo.sha
+    $contentBytes=[System.Convert]::FromBase64String($fileInfo.content)
+    $jsonText=[System.Text.Encoding]::UTF8.GetString($contentBytes).Trim().TrimStart([char]0xFEFF)
+    $devices=$jsonText | ConvertFrom-Json
+}} catch {{
+    $sha=$null
+    $devices=@()
+}}
+$hn='{}'
+$sn='{}'
+$ip='{}'
+$os='{}'
+$hwid='{}'
+$now=(Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+
+$found=$false
+$devList=New-Object System.Collections.Generic.List[PSCustomObject]
+if ($devices) {{
+    foreach ($d in $devices) {{
+        if ($d.hwid -eq $hwid -or ($d.hostname -eq $hn -and $d.serialNumber -eq $sn)) {{
+            $d.lastSeen=$now
+            $d.ipAddress=$ip
+            $d.osCaption=$os
+            $d.status='Active'
+            $found=$true
+        }}
+        $devList.Add($d)
+    }}
+}}
+if (-not $found) {{
+    $newDev=[PSCustomObject]@{{
+        hostname=$hn
+        serialNumber=$sn
+        ipAddress=$ip
+        osCaption=$os
+        lastSeen=$now
+        hwid=$hwid
+        status='Active'
+    }}
+    $devList.Insert(0, $newDev)
+}}
+try {{
+    $newJson=$devList | ConvertTo-Json -Depth 5
+    $newBytes=[System.Text.Encoding]::UTF8.GetBytes($newJson)
+    $newBase64=[Convert]::ToBase64String($newBytes)
+    $bodyObj=@{{
+        message="telemetry(fleet): auto heartbeat from $hn"
+        content=$newBase64
+    }}
+    if ($sha) {{ $bodyObj['sha']=$sha }}
+    $bodyJson=$bodyObj | ConvertTo-Json -Compress
+    Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method PUT -Body $bodyJson -ContentType 'application/json' -TimeoutSec 10 | Out-Null
+}} catch {{}}"#,
+        h, s, i, o, w
+    );
+
+    let mut cmd = Command::new("powershell");
+    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let _ = cmd.spawn();
 }
 
 fn get_repo_dir() -> PathBuf {

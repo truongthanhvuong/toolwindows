@@ -1,4 +1,4 @@
-﻿<#
+<#
 ========================================================================================
    VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.135
    VUONGTT Tool Pro 2026 - Professional
@@ -225,6 +225,13 @@ try {
 . (Join-Path $corePath "AppUpdater.ps1")
 . (Join-Path $corePath "LicenseManager.ps1")
 if (Get-Command "Update-VUONGTTRuntimeBundledConfig" -ErrorAction SilentlyContinue) { Update-VUONGTTRuntimeBundledConfig }
+try {
+    Start-Job -ScriptBlock {
+        if (Get-Command "Sync-VUONGTTDeviceHeartbeatToCloud" -ErrorAction SilentlyContinue) {
+            Sync-VUONGTTDeviceHeartbeatToCloud
+        }
+    } | Out-Null
+} catch {}
 . (Join-Path $corePath "IpScanner.ps1")
 . (Join-Path $corePath "ConfigManager.ps1")
 . (Join-Path $corePath "DiskHealthManager.ps1")

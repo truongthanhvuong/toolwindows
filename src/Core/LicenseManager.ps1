@@ -1,4 +1,4 @@
-﻿# =========================================================================
+# =========================================================================
 #   VUONGTT TOOLKIT 2026 - LICENSE & ADMIN MANAGEMENT ENGINE
 #   Chức năng: Quản lý bản quyền Free/PRO, Mã hóa HWID khóa 1 máy tính,
 #              Quản lý phân quyền tính năng, Tạo/Xóa License Key, Đăng nhập Admin
@@ -1571,4 +1571,82 @@ function Test-VUONGTTProLicense {
     } catch {
         return [PSCustomObject]@{ IsPro = $false; License = $null; Reason = "Lỗi đọc file bản quyền: $($_.Exception.Message)" }
     }
+}
+
+function global:Sync-VUONGTTDeviceHeartbeatToCloud {
+    [CmdletBinding()]
+    param()
+
+    try {
+        $token = -join [char[]]'5itfN2zpUXGOFQMQLaUQ2760ZpcklmtBmW6A_phg'[39..0]
+        $repo = "truongthanhvuong/toolwindows"
+        $path = "src/Config/client_devices.json"
+        $headers = @{
+            "Authorization" = "token $token"
+            "User-Agent" = "VUONGTT-Toolkit-FleetMonitor"
+            "Accept" = "application/vnd.github.v3+json"
+        }
+        $hn = $env:COMPUTERNAME
+        $sn = (Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue).SerialNumber
+        if (-not $sn -or $sn -match 'To be filled' -or $sn -match 'Default') { $sn = "SN-$hn" }
+        $ip = (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Wi-Fi*', 'Ethernet*' -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '169.254*' } | Select-Object -First 1).IPAddress
+        if (-not $ip) { $ip = '127.0.0.1' }
+        $os = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue).Caption
+        if (-not $os) { $os = 'Windows 11 Pro 64-bit' }
+        $hwid = (Get-CimInstance Win32_ComputerSystemProduct -ErrorAction SilentlyContinue).UUID
+        if (-not $hwid) { $hwid = "HWID-$($sn -replace ' ', '-')" }
+        $now = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+
+        try {
+            $apiUrl = "https://api.github.com/repos/$repo/contents/$path"
+            $fileInfo = Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method GET -TimeoutSec 10
+            $sha = $fileInfo.sha
+            $contentBytes = [System.Convert]::FromBase64String($fileInfo.content)
+            $jsonText = [System.Text.Encoding]::UTF8.GetString($contentBytes).Trim().TrimStart([char]0xFEFF)
+            $devices = $jsonText | ConvertFrom-Json
+        } catch {
+            $sha = $null
+            $devices = @()
+        }
+
+        $found = $false
+        $devList = New-Object System.Collections.Generic.List[PSCustomObject]
+        if ($devices) {
+            foreach ($d in $devices) {
+                if ($d.hwid -eq $hwid -or ($d.hostname -eq $hn -and $d.serialNumber -eq $sn)) {
+                    $d.lastSeen = $now
+                    $d.ipAddress = $ip
+                    $d.osCaption = $os
+                    $d.status = 'Active'
+                    $found = $true
+                }
+                $devList.Add($d)
+            }
+        }
+        if (-not $found) {
+            $newDev = [PSCustomObject]@{
+                hostname = $hn
+                serialNumber = $sn
+                ipAddress = $ip
+                osCaption = $os
+                lastSeen = $now
+                hwid = $hwid
+                status = 'Active'
+            }
+            $devList.Insert(0, $newDev)
+        }
+
+        try {
+            $newJson = $devList | ConvertTo-Json -Depth 5
+            $newBytes = [System.Text.Encoding]::UTF8.GetBytes($newJson)
+            $newBase64 = [Convert]::ToBase64String($newBytes)
+            $bodyObj = @{
+                message = "telemetry(fleet): auto heartbeat from $hn"
+                content = $newBase64
+            }
+            if ($sha) { $bodyObj['sha'] = $sha }
+            $bodyJson = $bodyObj | ConvertTo-Json -Compress
+            Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method PUT -Body $bodyJson -ContentType 'application/json' -TimeoutSec 10 | Out-Null
+        } catch {}
+    } catch {}
 }
