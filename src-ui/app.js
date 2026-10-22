@@ -70,7 +70,11 @@
   window.showToast = showToast;
 
   // --- 3. SPA VIEW ROUTER ---
-  function switchView(targetId) {
+  function switchView(targetId, focusElementId = null) {
+    // Safe Aliases for alternative/legacy sub-tab routes
+    if (targetId === "view-win-activate") targetId = "view-hwid-act";
+    if (targetId === "view-disk-bitlocker") targetId = "view-disk-part";
+
     const views = document.querySelectorAll(".stitch-view");
     let found = false;
     views.forEach((v) => {
@@ -104,7 +108,18 @@
       setTimeout(() => { if (window.checkBiosLicense) window.checkBiosLicense(); }, 50);
     }
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (focusElementId) {
+      setTimeout(() => {
+        const el = document.getElementById(focusElementId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-primary", "animate-pulse");
+          setTimeout(() => el.classList.remove("ring-2", "ring-primary", "animate-pulse"), 2500);
+        }
+      }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   window.switchView = switchView;
@@ -215,7 +230,12 @@
     { match: "Cấu Hình & Sửa Lỗi", target: "view-tech-driver" },
     { match: "Tối Ưu & Tweaks", target: "view-win-optimize" },
     { match: "Cứu Hộ IT Helpdesk", target: "view-it-helpdesk" },
-    { match: "Quét Driver & Sao Lưu", target: "view-tech-driver" },
+    { match: "Quét Driver & Sao Lưu", target: "view-tech-driver", focus: "driver-backup-vault" },
+    { match: "Sao Lưu Win / Driver", target: "view-tech-driver", focus: "driver-backup-vault" },
+    { match: "Sao Lưu Win", target: "view-tech-driver", focus: "driver-backup-vault" },
+    { match: "Sao Lưu Driver", target: "view-tech-driver", focus: "driver-backup-vault" },
+    { match: "Tắt BitLocker", target: "view-disk-part" },
+    { match: "BitLocker", target: "view-disk-part" },
     { match: "Cấu Hình Máy", target: "view-sys-monitor" },
     { match: "Tùy Chỉnh OEM", target: "view-oem-brand" },
     { match: "OEM", target: "view-oem-brand" },
@@ -955,7 +975,7 @@
               invokeRust("run_system_action", { actionId: route.action });
               if (route.toast) showToast("Hệ Thống", route.toast, "info");
             }
-            if (route.target) switchView(route.target);
+            if (route.target) switchView(route.target, route.focus);
           });
           return;
         }
@@ -2555,6 +2575,42 @@
   }
   window.initDeployModeSwitcher = initDeployModeSwitcher;
 
+  // --- 13.1 VIEW 02 DEPLOY SUB-TABS CONTROLLER ---
+  function initDeploySubTabs() {
+    const btnCaiWin = document.getElementById("tab-deploy-cai-win");
+    const btnHwid = document.getElementById("tab-deploy-hwid");
+    const btnBitlocker = document.getElementById("tab-deploy-bitlocker");
+    const btnBackup = document.getElementById("tab-deploy-backup-driver");
+
+    if (btnCaiWin) {
+      btnCaiWin.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchView("view-win-deploy");
+      });
+    }
+    if (btnHwid) {
+      btnHwid.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchView("view-hwid-act");
+      });
+    }
+    if (btnBitlocker) {
+      btnBitlocker.addEventListener("click", (e) => {
+        e.preventDefault();
+        showToast("BitLocker", "Đang chuyển đến bảng quản lý phân vùng ổ đĩa & BitLocker...", "info");
+        switchView("view-disk-part");
+      });
+    }
+    if (btnBackup) {
+      btnBackup.addEventListener("click", (e) => {
+        e.preventDefault();
+        showToast("Sao Lưu Driver", "Đang chuyển đến phân hệ Sao Lưu & Xuất Driver Hệ Thống...", "info");
+        switchView("view-tech-driver", "driver-backup-vault");
+      });
+    }
+  }
+  window.initDeploySubTabs = initDeploySubTabs;
+
   async function checkDiskPartitions() {
     try {
       const res = await invokeRust("run_system_action", { actionId: "check_disk_partitions" });
@@ -3215,6 +3271,7 @@
     initCpuMainController();
     initUserMgmtController();
     initDeployModeSwitcher();
+    initDeploySubTabs();
     initOfficeController();
     initPrinterLanController();
     initVpnProxyController();
