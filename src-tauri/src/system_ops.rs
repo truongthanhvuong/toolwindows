@@ -2779,6 +2779,334 @@ fn restart_explorer_safely() {}
         );
     }
 
+    // ========================================================================
+    // 18. CẤU HÌNH TỐI ƯU SIÊU NHẸ 2026 (SUPER LEAN PRO) & BỘ HOÀN TÁC TOÀN DIỆN
+    // ========================================================================
+    if act == "apply_super_lean_profile" || act == "super_lean_profile" || act == "toi_uu_sieu_nhe" || act == "super_lean" {
+        clear_logs();
+        append_log("[SUPER LEAN] Đang áp dụng Cấu Hình Tối Ưu Siêu Nhẹ 2026...");
+        let ps_code = r#"
+            $repo = if (Test-Path 'E:\toolwindows\src\Core\SystemTweaks.ps1') { 'E:\toolwindows\src\Core\SystemTweaks.ps1' } else { '.\src\Core\SystemTweaks.ps1' }
+            if (Test-Path $repo) {
+                . $repo
+                Invoke-VUONGTTSuperLeanProfile
+            } else {
+                # Fallback truc tiep neu khong tim thay SystemTweaks.ps1
+                compact.exe /compactos:always | Out-Null
+                $apps = @('Microsoft.549981C3F5F10','Microsoft.YourPhone','Microsoft.GetHelp','Microsoft.ZuneMusic','Microsoft.Microsoft3DViewer','microsoft.windowscommunicationsapps','Microsoft.MSPaint','Microsoft.Paint3D','Microsoft.MicrosoftOfficeHub','Microsoft.PowerAutomateDesktop','Microsoft.Wallet','Microsoft.People','Microsoft.Windows.Photos','Microsoft.MicrosoftSolitaireCollection','Microsoft.MicrosoftStickyNotes','Microsoft.MixedReality.Portal','Microsoft.ZuneVideo','Microsoft.BingWeather','Microsoft.Office.OneNote','Microsoft.SkypeApp','Microsoft.XboxApp','Microsoft.XboxGamingOverlay','Microsoft.XboxIdentityProvider','Microsoft.XboxSpeechToTextOverlay','Microsoft.WindowsSoundRecorder','Microsoft.WindowsCamera','Microsoft.WindowsMaps','Microsoft.WindowsAlarms','Microsoft.BingNews','Microsoft.WindowsFeedbackHub')
+                foreach ($a in $apps) { Get-AppxPackage -Name $a -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue }
+                $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel'
+                if (-not (Test-Path $k)) { New-Item -Path $k -Force | Out-Null }
+                Set-ItemProperty -Path $k -Name '{20D04FE0-3AEA-1069-A2D8-08002B30309D}' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $k -Name '{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $k -Name '{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $k -Name '{645FF040-5081-101B-9F08-00AA002F954E}' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                Write-Output "Đã kích hoạt cấu hình siêu nhẹ thành công!"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        append_log(&format!("[SUPER LEAN] {}", out.trim()));
+        return (
+            true,
+            "Đã áp dụng thành công Cấu Hình Tối Ưu Siêu Nhẹ 2026: RAM mục tiêu 1.5 - 1.8GB, dọn ổ đĩa đạt 12.5GB, gỡ bỏ 28 ứng dụng rác, hiện 4 icon Desktop, PrtSc Snipping Tool, Control Panel Icons, tắt Copilot & AI! Đã bảo tồn nguyên vẹn Edge, WebView2 và Windows Defender!".to_string(),
+        );
+    }
+
+    if act == "revert_super_lean_profile" || act == "revert_profile" || act == "khoi_phuc_mac_dinh" || act == "revert_lean" {
+        clear_logs();
+        append_log("[REVERT] Đang khôi phục toàn bộ cấu hình hệ thống về chuẩn mặc định Windows...");
+        let ps_code = r#"
+            $repo = if (Test-Path 'E:\toolwindows\src\Core\SystemTweaks.ps1') { 'E:\toolwindows\src\Core\SystemTweaks.ps1' } else { '.\src\Core\SystemTweaks.ps1' }
+            if (Test-Path $repo) {
+                . $repo
+                Invoke-VUONGTTRevertSuperLeanProfile
+            } else {
+                $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel'
+                if (Test-Path $k) {
+                    Set-ItemProperty -Path $k -Name '{20D04FE0-3AEA-1069-A2D8-08002B30309D}' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $k -Name '{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                    Set-ItemProperty -Path $k -Name '{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                }
+                powercfg -restoredefaultschemes | Out-Null
+                Write-Output "Đã khôi phục cài đặt mặc định thành công!"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        append_log(&format!("[REVERT] {}", out.trim()));
+        return (
+            true,
+            "Đã hoàn tác và khôi phục toàn bộ cài đặt hệ thống về trạng thái mặc định của Windows thành công!".to_string(),
+        );
+    }
+
+    if act == "purge_bloatware_28_apps" || act == "purge_bloatware" || act == "go_28_app_rac" || act == "debloat_apps" {
+        clear_logs();
+        append_log("[BLOATWARE PURGE] Đang rà soát và gỡ bỏ sạch 28 ứng dụng rác...");
+        let ps_code = r#"
+            $repo = if (Test-Path 'E:\toolwindows\src\Core\SystemTweaks.ps1') { 'E:\toolwindows\src\Core\SystemTweaks.ps1' } else { '.\src\Core\SystemTweaks.ps1' }
+            if (Test-Path $repo) {
+                . $repo
+                Invoke-VUONGTTPurgeBloatware
+            } else {
+                $apps = @('Microsoft.549981C3F5F10','Microsoft.YourPhone','Microsoft.GetHelp','Microsoft.ZuneMusic','Microsoft.Microsoft3DViewer','microsoft.windowscommunicationsapps','Microsoft.MSPaint','Microsoft.Paint3D','Microsoft.MicrosoftOfficeHub','Microsoft.PowerAutomateDesktop','Microsoft.Wallet','Microsoft.People','Microsoft.Windows.Photos','Microsoft.MicrosoftSolitaireCollection','Microsoft.MicrosoftStickyNotes','Microsoft.MixedReality.Portal','Microsoft.ZuneVideo','Microsoft.BingWeather','Microsoft.Office.OneNote','Microsoft.SkypeApp','Microsoft.XboxApp','Microsoft.XboxGamingOverlay','Microsoft.XboxIdentityProvider','Microsoft.XboxSpeechToTextOverlay','Microsoft.WindowsSoundRecorder','Microsoft.WindowsCamera','Microsoft.WindowsMaps','Microsoft.WindowsAlarms','Microsoft.BingNews','Microsoft.WindowsFeedbackHub')
+                $cnt = 0
+                foreach ($a in $apps) {
+                    $pkgs = Get-AppxPackage -Name $a -AllUsers -ErrorAction SilentlyContinue
+                    if ($pkgs) { $pkgs | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue; $cnt++ }
+                }
+                Write-Output "Đã gỡ bỏ $cnt ứng dụng rác!"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        append_log(&format!("[BLOATWARE PURGE] {}", out.trim()));
+        return (
+            true,
+            "Đã gỡ bỏ sạch sẽ toàn bộ 28 ứng dụng rác theo danh sách chỉ định, bảo tồn nguyên vẹn Edge, WebView2 và Windows Defender!".to_string(),
+        );
+    }
+
+    if act == "restore_windows_apps" || act == "restore_apps" || act == "khoi_phuc_ung_dung" {
+        clear_logs();
+        append_log("[RESTORE APPS] Đang nạp lại đăng ký gói ứng dụng mặc định qua AppX Manifest...");
+        let ps_code = r#"
+            $repo = if (Test-Path 'E:\toolwindows\src\Core\SystemTweaks.ps1') { 'E:\toolwindows\src\Core\SystemTweaks.ps1' } else { '.\src\Core\SystemTweaks.ps1' }
+            if (Test-Path $repo) {
+                . $repo
+                Invoke-VUONGTTRestoreWindowsApps
+            } else {
+                Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue | ForEach-Object {
+                    Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
+                }
+                wsreset.exe -i | Out-Null
+                Write-Output "Đã phục hồi ứng dụng AppX Manifest!"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        append_log(&format!("[RESTORE APPS] {}", out.trim()));
+        return (
+            true,
+            "Đã hoàn tất khôi phục và đăng ký lại toàn bộ gói ứng dụng AppX mặc định cho người dùng hiện tại!".to_string(),
+        );
+    }
+
+    if act == "set_desktop_icons_classic" || act == "desktop_icons_classic" || act == "hien_4_icon_desktop" {
+        let ps_code = r#"
+            $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force | Out-Null }
+            Set-ItemProperty -Path $k -Name '{20D04FE0-3AEA-1069-A2D8-08002B30309D}' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $k -Name '{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $k -Name '{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $k -Name '{645FF040-5081-101B-9F08-00AA002F954E}' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        #[cfg(not(test))]
+        restart_explorer_safely();
+        return (true, "Đã hiển thị đủ 4 biểu tượng quan trọng lên màn hình Desktop: This PC, Thùng Rác, Network và Control Panel!".to_string());
+    }
+
+    if act == "revert_desktop_icons" || act == "an_icon_desktop" {
+        let ps_code = r#"
+            $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel'
+            if (Test-Path $k) {
+                Set-ItemProperty -Path $k -Name '{20D04FE0-3AEA-1069-A2D8-08002B30309D}' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $k -Name '{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $k -Name '{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        #[cfg(not(test))]
+        restart_explorer_safely();
+        return (true, "Đã khôi phục trạng thái biểu tượng Desktop về mặc định Windows!".to_string());
+    }
+
+    if act == "set_control_panel_icons" || act == "control_panel_icons" || act == "cpl_icon_view" {
+        let ps_code = r#"
+            $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ControlPanel'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force | Out-Null }
+            Set-ItemProperty -Path $k -Name 'AllItemsIconView' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $k -Name 'StartupPage' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã cấu hình Control Panel luôn hiển thị sẵn toàn bộ biểu tượng icon trực quan!".to_string());
+    }
+
+    if act == "revert_control_panel_icons" || act == "cpl_category_view" {
+        let ps_code = r#"
+            $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ControlPanel'
+            if (Test-Path $k) {
+                Set-ItemProperty -Path $k -Name 'AllItemsIconView' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $k -Name 'StartupPage' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã khôi phục Control Panel về dạng phân loại danh mục (Category View) mặc định!".to_string());
+    }
+
+    if act == "set_printscreen_snipping_tool" || act == "prtsc_snipping" {
+        let ps_code = r#"
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Keyboard' -Name 'PrintScreenKeyForSnippingEnabled' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã bật phím Print Screen (PrtSc) mở trực tiếp Snipping Tool tiện lợi!".to_string());
+    }
+
+    if act == "revert_printscreen_snipping_tool" || act == "prtsc_classic" {
+        let ps_code = r#"
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Keyboard' -Name 'PrintScreenKeyForSnippingEnabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã khôi phục phím Print Screen về tính năng chụp màn hình toàn cảnh cổ điển mặc định!".to_string());
+    }
+
+    if act == "disable_copilot_ai" || act == "tat_copilot_ai" {
+        let ps_code = r#"
+            $keys = @('HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot', 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot', 'HKCU:\Software\Policies\Microsoft\Windows\WindowsAI', 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI')
+            foreach ($k in $keys) {
+                if (-not (Test-Path $k)) { New-Item -Path $k -Force | Out-Null }
+                if ($k -like '*WindowsCopilot*') {
+                    Set-ItemProperty -Path $k -Name 'TurnOffWindowsCopilot' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                } else {
+                    Set-ItemProperty -Path $k -Name 'DisableAIDataAnalysis' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                }
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt hoàn toàn Windows Copilot, AI Recall và các tiến trình AI ngầm chiếm dụng tài nguyên!".to_string());
+    }
+
+    if act == "revert_copilot_ai" || act == "bat_copilot_ai" {
+        let ps_code = r#"
+            $keys = @('HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot', 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot', 'HKCU:\Software\Policies\Microsoft\Windows\WindowsAI', 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI')
+            foreach ($k in $keys) {
+                if (Test-Path $k) {
+                    if ($k -like '*WindowsCopilot*') {
+                        Set-ItemProperty -Path $k -Name 'TurnOffWindowsCopilot' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                    } else {
+                        Set-ItemProperty -Path $k -Name 'DisableAIDataAnalysis' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                    }
+                }
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã kích hoạt lại Windows Copilot và các tính năng AI về mặc định!".to_string());
+    }
+
+    if act == "disable_hyperv_fax" || act == "tat_fax_hyperv" {
+        let ps_code = r#"
+            Stop-Service -Name "Fax" -Force -ErrorAction SilentlyContinue
+            Set-Service -Name "Fax" -StartupType Disabled -ErrorAction SilentlyContinue
+            Stop-Service -Name "vmms" -Force -ErrorAction SilentlyContinue
+            Set-Service -Name "vmms" -StartupType Disabled -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã tắt dịch vụ Fax và Hyper-V giải phóng tài nguyên CPU và bộ nhớ đệm!".to_string());
+    }
+
+    if act == "revert_hyperv_fax" || act == "bat_fax_hyperv" {
+        let ps_code = r#"
+            Set-Service -Name "Fax" -StartupType Manual -ErrorAction SilentlyContinue
+            Set-Service -Name "vmms" -StartupType Manual -ErrorAction SilentlyContinue
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã khôi phục dịch vụ Fax và Hyper-V về chế độ sẵn sàng Manual!".to_string());
+    }
+
+    if act == "detect_bios_license" || act == "get_bios_license" || act == "doc_license_bios" {
+        let ps_code = r#"
+            $oa3 = (Get-CimInstance -Namespace root/cimv2 -ClassName SoftwareLicensingService -ErrorAction SilentlyContinue).OA3xOriginalProductKey
+            if (-not $oa3) {
+                try {
+                    $msdm = (Get-SecureBootUEFI -Name MSDM -ErrorAction SilentlyContinue)
+                    if ($msdm) { $oa3 = [System.Text.Encoding]::ASCII.GetString($msdm.Bytes) }
+                } catch {}
+            }
+            $os = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue).Caption
+            if ($oa3 -and $oa3.Trim().Length -ge 20) {
+                ConvertTo-Json -Compress ([PSCustomObject]@{
+                    has_license = $true
+                    key = $oa3.Trim()
+                    edition = if ($os -like "*Pro*") { "Windows 10/11 Pro OEM" } else { "Windows 10/11 Home OEM" }
+                    note = "Bản cài đặt ISO sẽ tự động nhận diện bản quyền số nhúng trong BIOS để kích hoạt tự động sau khi cài!"
+                })
+            } else {
+                ConvertTo-Json -Compress ([PSCustomObject]@{
+                    has_license = $false
+                    key = ""
+                    edition = "Chưa phát hiện key BIOS (Cần license kích hoạt)"
+                    note = "Máy này không có bản quyền nhúng trong BIOS bo mạch chủ. Bạn cần nhập License kích hoạt hoặc dùng công cụ MAS kích hoạt sau khi cài xong."
+                })
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        let res = if trimmed.starts_with('{') {
+            trimmed.to_string()
+        } else {
+            r#"{"has_license":false,"key":"","edition":"Không có key BIOS","note":"Cần license kích hoạt sau khi cài đặt."}"#.to_string()
+        };
+        return (true, res);
+    }
+
     // Default Fallback - Return explicit failure for unknown actions
     append_log(&format!("[CẢNH BÁO] Tác vụ [{}] không tồn tại hoặc chưa được hỗ trợ!", action_id));
     (

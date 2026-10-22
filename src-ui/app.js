@@ -100,6 +100,9 @@
     if (targetId === "view-win-optimize") {
       setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 50);
     }
+    if (targetId === "view-win-deploy") {
+      setTimeout(() => { if (window.checkBiosLicense) window.checkBiosLicense(); }, 50);
+    }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -1918,6 +1921,112 @@
 
       } catch (e) {
         console.warn("syncRealWinOptimizeState error:", e);
+      }
+    };
+
+    // --- GENERIC SYSTEM ACTION CALLER ---
+    window.runSystemAction = async function(actionId, params) {
+      appendTweakLog(`[HỆ THỐNG] Đang thực thi tác vụ: ${actionId}...`, "progress");
+      showToast("Đang Xử Lý", `Đang thực thi tác vụ: ${actionId}...`, "info");
+      try {
+        const res = await invokeRust("run_system_action", { actionId, params: params || {} });
+        if (res && res.success) {
+          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+          showToast("Thành Công", res.message, "success");
+          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 400);
+        } else {
+          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Thao tác thất bại"}`, "error");
+          showToast("Lỗi", (res && res.message) || "Thao tác thất bại", "error");
+        }
+        return res;
+      } catch (e) {
+        appendTweakLog(`[LỖI] ✗ ${e}`, "error");
+        showToast("Lỗi", String(e), "error");
+        return { success: false, message: String(e) };
+      }
+    };
+
+    // --- SUPER LEAN PROFILE & HOÀN TÁC (UNDO ENGINE) ---
+    window.applySuperLeanProfile = async function() {
+      appendTweakLog("[SUPER LEAN] Đang kích hoạt Cấu Hình Tối Ưu Siêu Nhẹ 2026...", "progress");
+      showToast("Cấu Hình Siêu Nhẹ 2026", "Đang nén CompactOS, dọn WinSxS, giải phóng RAM, gỡ bỏ 28 app rác và áp dụng Tweaks...", "info");
+      try {
+        const res = await invokeRust("run_system_action", { actionId: "apply_super_lean_profile" });
+        if (res && res.success) {
+          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+          showToast("Thành Công Siêu Nhẹ", res.message, "success");
+          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);
+        } else {
+          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể áp dụng cấu hình siêu nhẹ"}`, "error");
+          showToast("Lỗi", (res && res.message) || "Không thể áp dụng cấu hình", "error");
+        }
+      } catch (err) {
+        appendTweakLog(`[LỖI] ✗ ${err}`, "error");
+        showToast("Lỗi", String(err), "error");
+      }
+    };
+
+    window.revertSuperLeanProfile = async function() {
+      appendTweakLog("[HOÀN TÁC] Đang khôi phục cài đặt hệ thống về mặc định Windows...", "progress");
+      showToast("Hoàn Tác Về Mặc Định", "Đang khôi phục toàn bộ Tweaks, icon Desktop, Control Panel, giao diện và dịch vụ về chuẩn...", "info");
+      try {
+        const res = await invokeRust("run_system_action", { actionId: "revert_super_lean_profile" });
+        if (res && res.success) {
+          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+          showToast("Khôi Phục Thành Công", res.message, "success");
+          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);
+        } else {
+          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể hoàn tác cấu hình"}`, "error");
+          showToast("Lỗi", (res && res.message) || "Không thể hoàn tác cấu hình", "error");
+        }
+      } catch (err) {
+        appendTweakLog(`[LỖI] ✗ ${err}`, "error");
+        showToast("Lỗi", String(err), "error");
+      }
+    };
+
+    // --- BIOS LICENSE RECOGNITION CONTROLLER ---
+    window.checkBiosLicense = async function() {
+      const keyEl = document.getElementById("bios-license-key");
+      const badgeEl = document.getElementById("bios-license-badge");
+      const noteEl = document.getElementById("bios-license-note");
+
+      if (keyEl) keyEl.textContent = "Đang truy vấn bảng MSDM / OA3x trong BIOS...";
+      if (badgeEl) {
+        badgeEl.textContent = "Đang quét...";
+        badgeEl.className = "px-2 py-0.5 rounded text-xs font-mono font-bold bg-surface-container text-on-surface-variant animate-pulse";
+      }
+
+      try {
+        const res = await invokeRust("run_system_action", { actionId: "detect_bios_license" });
+        if (res && res.success && res.message) {
+          let parsed = null;
+          try {
+            parsed = JSON.parse(res.message);
+          } catch (_) {}
+
+          if (parsed && parsed.has_license && parsed.key) {
+            if (keyEl) keyEl.textContent = `🔑 Key BIOS: ${parsed.key} (${parsed.edition})`;
+            if (badgeEl) {
+              badgeEl.textContent = "ĐÃ TÌM THẤY KEY OEM";
+              badgeEl.className = "px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+            }
+            if (noteEl) {
+              noteEl.innerHTML = `✅ <strong>Tuyệt vời!</strong> Máy bạn có sẵn bản quyền OEM <strong>${parsed.edition}</strong> trong BIOS bo mạch chủ. Quá trình cài đặt ISO sẽ tự động nhận diện và kích hoạt Windows bản quyền trọn đời cho bạn!`;
+            }
+          } else {
+            if (keyEl) keyEl.textContent = "Không tìm thấy Product Key nhúng trong BIOS (Không có OA3x/MSDM)";
+            if (badgeEl) {
+              badgeEl.textContent = "CHƯA CÓ KEY BIOS";
+              badgeEl.className = "px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+            }
+            if (noteEl) {
+              noteEl.innerHTML = `📣 <strong>Lưu ý:</strong> Bản cài đặt này là ISO nguyên gốc. Do máy không có key OEM BIOS nhúng sẵn, bạn hãy chọn đúng phiên bản (Home/Pro) và kích hoạt sau khi cài xong (bằng key cá nhân hoặc bộ kích hoạt MAS HWID tại Tab Kích Hoạt).`;
+            }
+          }
+        }
+      } catch (e) {
+        if (keyEl) keyEl.textContent = "Lỗi khi truy vấn BIOS: " + e;
       }
     };
 

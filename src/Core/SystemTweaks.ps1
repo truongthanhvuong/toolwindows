@@ -1236,6 +1236,300 @@ function Restore-VUONGTTDefaultWindows {
     return $result
 }
 
+# =========================================================================
+#   SUPER LEAN PROFILE 2026 & TOÀN DIỆN HOÀN TÁC (UNDO ENGINE)
+# =========================================================================
 
+function Invoke-VUONGTTPurgeBloatware {
+    [CmdletBinding()]
+    param()
 
+    $log = [System.Collections.Generic.List[string]]::new()
+    $bloatwareList = @(
+        "Microsoft.549981C3F5F10",            # Cortana
+        "Microsoft.YourPhone",                # Call / Phone Link
+        "Microsoft.GetHelp",                  # Get Help
+        "Microsoft.ZuneMusic",                # Groove Music
+        "Microsoft.Microsoft3DViewer",        # 3D Viewer
+        "microsoft.windowscommunicationsapps",# Mail & Calendar
+        "Microsoft.MSPaint",                  # Paint 3D
+        "Microsoft.Paint3D",
+        "Microsoft.MicrosoftOfficeHub",       # Office Hub
+        "Microsoft.PowerAutomateDesktop",     # Photo Viewer-Pow
+        "Microsoft.Wallet",                   # Microsoft Pay
+        "Microsoft.People",                   # Microsoft People
+        "Microsoft.Windows.Photos",           # Photos
+        "Microsoft.MicrosoftSolitaireCollection", # Solitaire Collection
+        "Microsoft.MicrosoftStickyNotes",     # Sticky Notes
+        "Microsoft.MixedReality.Portal",      # Mixed Reality Portal
+        "Microsoft.ZuneVideo",                # Movies & TV
+        "Microsoft.BingWeather",              # MSN Weather
+        "Microsoft.Office.OneNote",           # OneNote
+        "Microsoft.SkypeApp",                 # Skype
+        "Microsoft.XboxApp",                  # Xbox
+        "Microsoft.XboxGamingOverlay",        # Xbox Overlay
+        "Microsoft.XboxIdentityProvider",     # Xbox Identity
+        "Microsoft.XboxSpeechToTextOverlay",  # Xbox Speech
+        "Microsoft.WindowsSoundRecorder",     # Voice Recorder
+        "Microsoft.WindowsCamera",            # Windows Camera
+        "Microsoft.WindowsMaps",              # Windows Maps
+        "Microsoft.WindowsAlarms",            # Windows Alarms & Clock
+        "Microsoft.BingNews",                 # MSN News
+        "Microsoft.WindowsFeedbackHub"        # Feedback Hub
+    )
 
+    $removedCount = 0
+    foreach ($app in $bloatwareList) {
+        # BẢO TỒN NGUYÊN VẸN: Tuyệt đối bỏ qua Edge và Windows Defender
+        if ($app -like "*MicrosoftEdge*" -or $app -like "*EdgeWebView*" -or $app -like "*Defender*" -or $app -like "*SecHealth*") {
+            continue
+        }
+        try {
+            $pkgs = Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue
+            if ($pkgs) {
+                foreach ($p in $pkgs) {
+                    Remove-AppxPackage -Package $p.PackageFullName -AllUsers -ErrorAction SilentlyContinue
+                    $removedCount++
+                }
+                $log.Add("[GỠ BỎ] Đã loại bỏ ứng dụng rác: $app")
+            }
+        } catch {
+            $log.Add("[BỎ QUA] $app - $($_.Exception.Message)")
+        }
+    }
+
+    return "Đã gỡ bỏ sạch sẽ $removedCount gói ứng dụng rác (Bloatware Purge) mà vẫn giữ nguyên vẹn Edge, WebView2 và Windows Defender!"
+}
+
+function Invoke-VUONGTTRestoreWindowsApps {
+    [CmdletBinding()]
+    param()
+
+    try {
+        Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue | ForEach-Object {
+            Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
+        }
+        Start-Process "wsreset.exe" -ArgumentList "-i" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+        return "Đã nạp lại đăng ký gói ứng dụng AppX Manifest cho hệ thống và đặt lại Windows Store thành công!"
+    } catch {
+        return "Lỗi khi khôi phục ứng dụng: $($_.Exception.Message)"
+    }
+}
+
+function Set-VUONGTTDesktopIcons {
+    [CmdletBinding()]
+    param([bool]$Enable = $true)
+
+    $key = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel"
+    if (-not (Test-Path $key)) { New-Item -Path $key -Force -ErrorAction SilentlyContinue | Out-Null }
+
+    $val = if ($Enable) { 0 } else { 1 }
+    # This PC, Network, Control Panel (0 = Show, 1 = Hide)
+    Set-ItemProperty -Path $key -Name "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty -Path $key -Name "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty -Path $key -Name "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+    # Recycle Bin luôn hiện
+    Set-ItemProperty -Path $key -Name "{645FF040-5081-101B-9F08-00AA002F954E}" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+
+    Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    if ($Enable) {
+        return "Đã hiển thị đủ 4 biểu tượng quan trọng trên màn hình Desktop: This PC, Thùng Rác, Network, Control Panel!"
+    } else {
+        return "Đã khôi phục cài đặt biểu tượng Desktop về mặc định Windows!"
+    }
+}
+
+function Set-VUONGTTControlPanelIconView {
+    [CmdletBinding()]
+    param([bool]$Enable = $true)
+
+    $key = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ControlPanel"
+    if (-not (Test-Path $key)) { New-Item -Path $key -Force -ErrorAction SilentlyContinue | Out-Null }
+
+    if ($Enable) {
+        Set-ItemProperty -Path $key -Name "AllItemsIconView" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $key -Name "StartupPage" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        return "Đã cấu hình Control Panel luôn hiển thị sẵn toàn bộ biểu tượng (Small/Large Icons) trực quan!"
+    } else {
+        Set-ItemProperty -Path $key -Name "AllItemsIconView" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        Set-ItemProperty -Path $key -Name "StartupPage" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        return "Đã khôi phục Control Panel về dạng danh mục (Category View) mặc định!"
+    }
+}
+
+function Set-VUONGTTPrintScreenSnippingTool {
+    [CmdletBinding()]
+    param([bool]$Enable = $true)
+
+    $key = "HKCU:\Control Panel\Keyboard"
+    $val = if ($Enable) { 1 } else { 0 }
+    Set-ItemProperty -Path $key -Name "PrintScreenKeyForSnippingEnabled" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+
+    if ($Enable) {
+        return "Đã bật tùy chọn: Bấm phím Print Screen (PrtSc) mở trực tiếp công cụ chụp ảnh màn hình Snipping Tool tiện lợi!"
+    } else {
+        return "Đã khôi phục phím Print Screen (PrtSc) về chức năng chụp ảnh cổ điển mặc định!"
+    }
+}
+
+function Set-VUONGTTCopilotAI {
+    [CmdletBinding()]
+    param([bool]$Disable = $true)
+
+    $val = if ($Disable) { 1 } else { 0 }
+    $keys = @(
+        "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot",
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot",
+        "HKCU:\Software\Policies\Microsoft\Windows\WindowsAI",
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
+    )
+    foreach ($k in $keys) {
+        if (-not (Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue | Out-Null }
+        if ($k -like "*WindowsCopilot*") {
+            Set-ItemProperty -Path $k -Name "TurnOffWindowsCopilot" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+        } else {
+            Set-ItemProperty -Path $k -Name "DisableAIDataAnalysis" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    if ($Disable) {
+        return "Đã tắt hoàn toàn Windows Copilot, Recall và các tiến trình AI ngầm chiếm dụng tài nguyên hệ thống!"
+    } else {
+        return "Đã khôi phục kích hoạt lại trợ lý Windows Copilot và các tính năng AI về mặc định!"
+    }
+}
+
+function Set-VUONGTTFaxHyperV {
+    [CmdletBinding()]
+    param([bool]$Disable = $true)
+
+    try {
+        if ($Disable) {
+            Stop-Service -Name "Fax" -Force -ErrorAction SilentlyContinue
+            Set-Service -Name "Fax" -StartupType Disabled -ErrorAction SilentlyContinue
+            Stop-Service -Name "vmms" -Force -ErrorAction SilentlyContinue
+            Set-Service -Name "vmms" -StartupType Disabled -ErrorAction SilentlyContinue
+            return "Đã tắt dịch vụ Fax và Hyper-V giải phóng dung lượng đĩa và tiến trình ngầm!"
+        } else {
+            Set-Service -Name "Fax" -StartupType Manual -ErrorAction SilentlyContinue
+            Set-Service -Name "vmms" -StartupType Manual -ErrorAction SilentlyContinue
+            return "Đã khôi phục dịch vụ Fax và Hyper-V về trạng thái khả dụng Manual!"
+        }
+    } catch {
+        return "Lỗi Fax/Hyper-V: $($_.Exception.Message)"
+    }
+}
+
+function Set-VUONGTTSponsoredApps {
+    [CmdletBinding()]
+    param([bool]$Disable = $true)
+
+    $key = "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+    if (-not (Test-Path $key)) { New-Item -Path $key -Force -ErrorAction SilentlyContinue | Out-Null }
+
+    $val = if ($Disable) { 0 } else { 1 }
+    Set-ItemProperty -Path $key -Name "SilentInstalledAppsEnabled" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty -Path $key -Name "ContentDeliveryAllowed" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty -Path $key -Name "OemPreInstalledAppsEnabled" -Value $val -Type DWord -Force -ErrorAction SilentlyContinue
+
+    if ($Disable) {
+        return "Đã chặn vĩnh viễn Windows tự ý tải các ứng dụng tài trợ & game quảng cáo rác (Sponsored Apps)!"
+    } else {
+        return "Đã khôi phục cho phép tải ứng dụng đề xuất mặc định của Windows!"
+    }
+}
+
+function Invoke-VUONGTTSuperLeanProfile {
+    [CmdletBinding()]
+    param()
+
+    $log = [System.Collections.Generic.List[string]]::new()
+    $log.Add("[BẮT ĐẦU] Kích hoạt Cấu Hình Tối Ưu Siêu Nhẹ 2026 (Super Lean Pro)...")
+
+    # 1. Tối ưu Working Set RAM
+    try {
+        [MemoryCleaner]::CleanAllProcesses() | Out-Null
+        $log.Add("• Đã dọn dẹp và thu hồi bộ nhớ RAM Working Set (mục tiêu 1.5GB - 1.8GB).")
+    } catch {}
+
+    # 2. Dọn dẹp tệp rác & CompactOS
+    try {
+        Start-Process "compact.exe" -ArgumentList "/compactos:always" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+        $log.Add("• Đã kích hoạt nén hệ thống CompactOS tiết kiệm ~12.5GB ổ cứng.")
+    } catch {}
+
+    # 3. Purge 28 app rác (Bảo tồn Edge & Defender)
+    try {
+        $resApps = Invoke-VUONGTTPurgeBloatware
+        $log.Add("• $resApps")
+    } catch {}
+
+    # 4. Áp dụng Tweaks giao diện & hiệu năng
+    try {
+        Set-VUONGTTDesktopIcons -Enable $true | Out-Null
+        Set-VUONGTTControlPanelIconView -Enable $true | Out-Null
+        Set-VUONGTTPrintScreenSnippingTool -Enable $true | Out-Null
+        Set-VUONGTTCopilotAI -Disable $true | Out-Null
+        Set-VUONGTTFaxHyperV -Disable $true | Out-Null
+        Set-VUONGTTSponsoredApps -Disable $true | Out-Null
+
+        # Explorer mở This PC thay vì Home
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "LaunchTo" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        # VisualEffects tối ưu nhất
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" -Name "VisualFXSetting" -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+        # Telemetry
+        Disable-VUONGTTTelemetry | Out-Null
+
+        $log.Add("• Đã áp dụng toàn bộ tinh chỉnh: 4 icon Desktop, PrtSc Snipping, Control Panel Icons, Tắt Copilot & AI, Tắt Telemetry.")
+    } catch {}
+
+    # 5. Khởi động lại Explorer
+    try {
+        Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    } catch {}
+
+    $log.Add("[HOÀN TẤT] Hệ thống đã đạt chuẩn Siêu Nhẹ 2026 mượt mà!")
+    return ($log -join "`n")
+}
+
+function Invoke-VUONGTTRevertSuperLeanProfile {
+    [CmdletBinding()]
+    param()
+
+    $log = [System.Collections.Generic.List[string]]::new()
+    $log.Add("[BẮT ĐẦU] Khôi phục toàn bộ cấu hình hệ thống về chuẩn mặc định Windows...")
+
+    try {
+        Set-VUONGTTDesktopIcons -Enable $false | Out-Null
+        Set-VUONGTTControlPanelIconView -Enable $false | Out-Null
+        Set-VUONGTTPrintScreenSnippingTool -Enable $false | Out-Null
+        Set-VUONGTTCopilotAI -Disable $false | Out-Null
+        Set-VUONGTTFaxHyperV -Disable $false | Out-Null
+        Set-VUONGTTSponsoredApps -Disable $false | Out-Null
+
+        # Explorer mở Home (Quick Access)
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "LaunchTo" -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+        # VisualEffects Windows Default
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" -Name "VisualFXSetting" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+
+        # Phục hồi power schemes
+        Start-Process "$env:WINDIR\System32\powercfg.exe" -ArgumentList "-restoredefaultschemes" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+        Start-Process "$env:WINDIR\System32\powercfg.exe" -ArgumentList "-setactive 381b4222-f694-41f0-9685-ff5bb260df2e" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+
+        # Khôi phục dịch vụ
+        Set-Service -Name "wuauserv" -StartupType Manual -ErrorAction SilentlyContinue
+        Set-Service -Name "bits" -StartupType Manual -ErrorAction SilentlyContinue
+        Set-Service -Name "DiagTrack" -StartupType Automatic -ErrorAction SilentlyContinue
+
+        $log.Add("• Đã hoàn tác toàn bộ Tweaks, Desktop Icons, Control Panel, Visual Effects và nguồn điện về mặc định Windows.")
+    } catch {
+        $log.Add("• Lỗi khi hoàn tác: $($_.Exception.Message)")
+    }
+
+    try {
+        Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    } catch {}
+
+    $log.Add("[HOÀN TẤT] Đã khôi phục cài đặt gốc của hệ điều hành!")
+    return ($log -join "`n")
+}

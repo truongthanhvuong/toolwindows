@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.127</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.128</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -740,8 +740,29 @@
           </span>
 </div>
 </div>
+<!-- BIOS License Recognition Banner -->
+<div id="bios-license-card" class="p-space-md rounded-xl bg-gradient-to-r from-primary-container/20 via-surface-container to-secondary-container/20 border border-primary-container/30 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+  <div class="flex items-start gap-3">
+    <div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+      <span class="material-symbols-outlined text-[22px]">key</span>
+    </div>
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="font-headline-md text-headline-md text-on-surface font-semibold">Bản Quyền Nhúng BIOS (MSDM / OA3x):</span>
+        <span id="bios-license-badge" class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-tertiary-container text-on-tertiary-container">Đang kiểm tra...</span>
+      </div>
+      <div id="bios-license-key" class="font-mono text-sm font-semibold text-secondary">Đang truy vấn số hiệu bản quyền từ BIOS bo mạch chủ...</div>
+      <p id="bios-license-note" class="font-body-md text-xs text-on-surface-variant leading-relaxed">
+        📣 <strong>Lưu ý:</strong> Đây là bản cài đặt chuẩn ISO nguyên gốc. Nếu máy bạn đã có license nhúng trong BIOS, bản cài đặt sẽ tự động nhận diện bản quyền và cài đặt kích hoạt giúp bạn!
+      </p>
+    </div>
+  </div>
+  <button id="btn-refresh-bios-license" onclick="checkBiosLicense()" type="button" class="px-3 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors">
+    <span class="material-symbols-outlined text-[16px] text-primary">sync</span>
+    <span>Quét Lại BIOS</span>
+  </button>
 </div>
-</div>
+
 <!-- Step 1: Chọn Phiên Bản & ISO -->
 <div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm space-y-space-md">
 <div class="flex items-center justify-between">
@@ -1087,7 +1108,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span id="tech-driver-build-badge">Build: v20.5.909.127</span>
+<span id="tech-driver-build-badge">Build: v20.5.909.128</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -1484,7 +1505,136 @@
 <span>Cứu Hộ IT Helpdesk</span>
 </button>
 </div>
+<!-- CẤU HÌNH TỐI ƯU SIÊU NHẸ 2026 (SUPER LEAN PRO) KÈM NÚT HOÀN TÁC -->
+<div class="p-space-lg rounded-2xl bg-gradient-to-br from-surface-container-low via-surface-container to-surface-container-high border-2 border-primary-container/40 shadow-xl flex flex-col gap-space-md relative overflow-hidden">
+  <div class="absolute -right-12 -top-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md relative z-10">
+    <div class="space-y-1.5 max-w-2xl">
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-container text-on-primary-container flex items-center gap-1 shadow-sm">
+          <span class="material-symbols-outlined text-[14px]">speed</span>
+          SUPER LEAN PRO 2026
+        </span>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-tertiary-container/40 text-on-tertiary-container">
+          RAM 1.5GB - 1.8GB • Ổ Cứng ~12.5GB • CPU 0%
+        </span>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          🛡️ Giữ Edge &amp; Defender
+        </span>
+      </div>
+      <h2 class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
+        Gói Cấu Hình Tối Ưu Siêu Nhẹ 2026 &amp; Debloat Sạch 28 App Rác
+      </h2>
+      <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+        Tự động nén CompactOS, dọn WinSxS, giải phóng RAM 1.5 - 1.8GB, hiện 4 icon Desktop, phím PrtSc mở Snipping Tool, Control Panel hiển thị sẵn icon, tắt Copilot &amp; AI Recall, tắt Fax &amp; Hyper-V. <strong>Hỗ trợ 1-Click Hoàn Tác về cài đặt chuẩn Windows bất cứ lúc nào!</strong>
+      </p>
+    </div>
+    <div class="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
+      <button id="btn-apply-super-lean" onclick="applySuperLeanProfile()" type="button" class="px-5 py-3 rounded-xl bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-headline-md text-headline-md font-semibold shadow-lg shadow-primary-container/20 flex items-center gap-2 transition-all transform active:scale-95 group">
+        <span class="material-symbols-outlined text-[20px] transition-transform group-hover:scale-125">bolt</span>
+        <span>ÁP DỤNG CẤU HÌNH SIÊU NHẸ</span>
+      </button>
+      <button id="btn-revert-super-lean" onclick="revertSuperLeanProfile()" type="button" class="px-4 py-3 rounded-xl bg-surface-container-highest hover:bg-error-container hover:text-on-error-container text-on-surface font-label-md text-label-md font-semibold flex items-center gap-2 transition-all border border-outline/20">
+        <span class="material-symbols-outlined text-[18px]">undo</span>
+        <span>HOÀN TÁC VỀ MẶC ĐỊNH</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Micro-tweak Quick Control Grid with Apply & Revert buttons -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-2 border-t border-outline-variant/30">
+    <!-- Tweak 1: 4 Desktop Icons -->
+    <div class="p-2.5 rounded-xl bg-surface-container-lowest/60 flex items-center justify-between gap-2 shadow-sm">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="material-symbols-outlined text-primary text-[20px]">desktop_windows</span>
+        <div class="min-w-0">
+          <div class="font-label-md text-on-surface font-semibold text-xs truncate">4 Icon Màn Hình Desktop</div>
+          <div class="font-body-md text-outline text-[11px] truncate">This PC, Recycle Bin, Network, Control Panel</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="runSystemAction('set_desktop_icons_classic')" type="button" class="px-2 py-1 rounded bg-primary-container text-on-primary-container text-[11px] font-semibold hover:opacity-90">Hiện 4 Icon</button>
+        <button onclick="runSystemAction('revert_desktop_icons')" type="button" class="px-2 py-1 rounded bg-surface-container-high text-on-surface text-[11px] hover:bg-surface-container-highest">Hoàn tác</button>
+      </div>
+    </div>
+
+    <!-- Tweak 2: Control Panel Icons -->
+    <div class="p-2.5 rounded-xl bg-surface-container-lowest/60 flex items-center justify-between gap-2 shadow-sm">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="material-symbols-outlined text-secondary text-[20px]">grid_view</span>
+        <div class="min-w-0">
+          <div class="font-label-md text-on-surface font-semibold text-xs truncate">Control Panel Hiện Icon</div>
+          <div class="font-body-md text-outline text-[11px] truncate">Mở sẵn All Items Icon View trực quan</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="runSystemAction('set_control_panel_icons')" type="button" class="px-2 py-1 rounded bg-primary-container text-on-primary-container text-[11px] font-semibold hover:opacity-90">Bật Icon</button>
+        <button onclick="runSystemAction('revert_control_panel_icons')" type="button" class="px-2 py-1 rounded bg-surface-container-high text-on-surface text-[11px] hover:bg-surface-container-highest">Danh mục</button>
+      </div>
+    </div>
+
+    <!-- Tweak 3: PrtSc Snipping Tool -->
+    <div class="p-2.5 rounded-xl bg-surface-container-lowest/60 flex items-center justify-between gap-2 shadow-sm">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="material-symbols-outlined text-tertiary text-[20px]">screenshot_region</span>
+        <div class="min-w-0">
+          <div class="font-label-md text-on-surface font-semibold text-xs truncate">Phím PrtSc -&gt; Snipping Tool</div>
+          <div class="font-body-md text-outline text-[11px] truncate">Bấm Print Screen mở thẳng công cụ chụp</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="runSystemAction('set_printscreen_snipping_tool')" type="button" class="px-2 py-1 rounded bg-primary-container text-on-primary-container text-[11px] font-semibold hover:opacity-90">Bật</button>
+        <button onclick="runSystemAction('revert_printscreen_snipping_tool')" type="button" class="px-2 py-1 rounded bg-surface-container-high text-on-surface text-[11px] hover:bg-surface-container-highest">Hoàn tác</button>
+      </div>
+    </div>
+
+    <!-- Tweak 4: Tắt Copilot & Windows AI Recall -->
+    <div class="p-2.5 rounded-xl bg-surface-container-lowest/60 flex items-center justify-between gap-2 shadow-sm">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="material-symbols-outlined text-amber-400 text-[20px]">smart_toy</span>
+        <div class="min-w-0">
+          <div class="font-label-md text-on-surface font-semibold text-xs truncate">Tắt Copilot &amp; AI Recall</div>
+          <div class="font-body-md text-outline text-[11px] truncate">Tắt tiến trình AI ngầm giải phóng RAM/CPU</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="runSystemAction('disable_copilot_ai')" type="button" class="px-2 py-1 rounded bg-amber-500/20 text-amber-300 font-semibold text-[11px] hover:bg-amber-500/30">Tắt AI</button>
+        <button onclick="runSystemAction('revert_copilot_ai')" type="button" class="px-2 py-1 rounded bg-surface-container-high text-on-surface text-[11px] hover:bg-surface-container-highest">Bật lại</button>
+      </div>
+    </div>
+
+    <!-- Tweak 5: Gỡ Sạch 28 App Rác Bloatware -->
+    <div class="p-2.5 rounded-xl bg-surface-container-lowest/60 flex items-center justify-between gap-2 shadow-sm">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="material-symbols-outlined text-rose-400 text-[20px]">delete_sweep</span>
+        <div class="min-w-0">
+          <div class="font-label-md text-on-surface font-semibold text-xs truncate">Gỡ Sạch 28 App Rác</div>
+          <div class="font-body-md text-outline text-[11px] truncate">Xóa Cortana, Games, Xbox, giữ Edge/Defender</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="runSystemAction('purge_bloatware_28_apps')" type="button" class="px-2 py-1 rounded bg-rose-500/20 text-rose-300 font-semibold text-[11px] hover:bg-rose-500/30">Gỡ 28 App</button>
+        <button onclick="runSystemAction('restore_windows_apps')" type="button" class="px-2 py-1 rounded bg-surface-container-high text-on-surface text-[11px] hover:bg-surface-container-highest">Khôi phục</button>
+      </div>
+    </div>
+
+    <!-- Tweak 6: Tắt Fax & Hyper-V -->
+    <div class="p-2.5 rounded-xl bg-surface-container-lowest/60 flex items-center justify-between gap-2 shadow-sm">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="material-symbols-outlined text-teal-400 text-[20px]">layers_clear</span>
+        <div class="min-w-0">
+          <div class="font-label-md text-on-surface font-semibold text-xs truncate">Tắt Fax &amp; Hyper-V Services</div>
+          <div class="font-body-md text-outline text-[11px] truncate">Giải phóng ổ đĩa và dịch vụ nền thừa</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="runSystemAction('disable_hyperv_fax')" type="button" class="px-2 py-1 rounded bg-teal-500/20 text-teal-300 font-semibold text-[11px] hover:bg-teal-500/30">Tắt</button>
+        <button onclick="runSystemAction('revert_hyperv_fax')" type="button" class="px-2 py-1 rounded bg-surface-container-high text-on-surface text-[11px] hover:bg-surface-container-highest">Bật lại</button>
+      </div>
+    </div>
+  </div>
 </div>
+
 <!-- Section 1: 1-Click Fast Actions (Action Badges / Pills) -->
 <div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
 <div class="flex items-center justify-between">
