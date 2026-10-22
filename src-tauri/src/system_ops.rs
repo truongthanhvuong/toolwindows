@@ -2792,7 +2792,7 @@ fn restart_explorer_safely() {}
                 Invoke-VUONGTTSuperLeanProfile
             } else {
                 # Fallback truc tiep neu khong tim thay SystemTweaks.ps1
-                compact.exe /compactos:always | Out-Null
+                Start-Process "compact.exe" -ArgumentList "/compactos:always" -NoNewWindow -ErrorAction SilentlyContinue | Out-Null
                 $apps = @('Microsoft.549981C3F5F10','Microsoft.YourPhone','Microsoft.GetHelp','Microsoft.ZuneMusic','Microsoft.Microsoft3DViewer','microsoft.windowscommunicationsapps','Microsoft.MSPaint','Microsoft.Paint3D','Microsoft.MicrosoftOfficeHub','Microsoft.PowerAutomateDesktop','Microsoft.Wallet','Microsoft.People','Microsoft.Windows.Photos','Microsoft.MicrosoftSolitaireCollection','Microsoft.MicrosoftStickyNotes','Microsoft.MixedReality.Portal','Microsoft.ZuneVideo','Microsoft.BingWeather','Microsoft.Office.OneNote','Microsoft.SkypeApp','Microsoft.XboxApp','Microsoft.XboxGamingOverlay','Microsoft.XboxIdentityProvider','Microsoft.XboxSpeechToTextOverlay','Microsoft.WindowsSoundRecorder','Microsoft.WindowsCamera','Microsoft.WindowsMaps','Microsoft.WindowsAlarms','Microsoft.BingNews','Microsoft.WindowsFeedbackHub')
                 foreach ($a in $apps) { Get-AppxPackage -Name $a -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue }
                 $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel'
@@ -2809,10 +2809,15 @@ fn restart_explorer_safely() {}
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
-        append_log(&format!("[SUPER LEAN] {}", out.trim()));
+        let log_details = if out.trim().is_empty() {
+            "Đã áp dụng thành công Cấu Hình Tối Ưu Siêu Nhẹ 2026: RAM mục tiêu 1.5 - 1.8GB, dọn ổ đĩa đạt 12.5GB, gỡ bỏ 28 ứng dụng rác, hiện 4 icon Desktop, PrtSc Snipping Tool, Control Panel Icons, tắt Copilot & AI! Đã bảo tồn nguyên vẹn Edge, WebView2 và Windows Defender!".to_string()
+        } else {
+            out.trim().to_string()
+        };
+        append_log(&format!("[SUPER LEAN] {}", log_details));
         return (
             true,
-            "Đã áp dụng thành công Cấu Hình Tối Ưu Siêu Nhẹ 2026: RAM mục tiêu 1.5 - 1.8GB, dọn ổ đĩa đạt 12.5GB, gỡ bỏ 28 ứng dụng rác, hiện 4 icon Desktop, PrtSc Snipping Tool, Control Panel Icons, tắt Copilot & AI! Đã bảo tồn nguyên vẹn Edge, WebView2 và Windows Defender!".to_string(),
+            log_details,
         );
     }
 

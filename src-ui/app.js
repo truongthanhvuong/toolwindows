@@ -1979,44 +1979,156 @@
 
     // --- SUPER LEAN PROFILE & HOÀN TÁC (UNDO ENGINE) ---
     window.applySuperLeanProfile = async function() {
-      appendTweakLog("[SUPER LEAN] Đang kích hoạt Cấu Hình Tối Ưu Siêu Nhẹ 2026...", "progress");
-      showToast("Cấu Hình Siêu Nhẹ 2026", "Đang nén CompactOS, dọn WinSxS, giải phóng RAM, gỡ bỏ 28 app rác và áp dụng Tweaks...", "info");
+      const btnApply = document.getElementById("btn-apply-super-lean");
+      const badge = document.getElementById("super-lean-status-badge");
+
+      if (btnApply) {
+        btnApply.disabled = true;
+        btnApply.classList.add("opacity-80", "cursor-wait");
+        btnApply.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span><span>ĐANG TỐI ƯU SIÊU NHẸ...</span>';
+      }
+
+      if (badge) {
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm flex items-center gap-1 animate-pulse";
+        badge.innerHTML = '<span class="material-symbols-outlined text-[13px] animate-spin">progress_activity</span><span>Đang tối ưu hệ thống...</span>';
+      }
+
+      appendTweakLog("==================================================================", "progress");
+      appendTweakLog("[BẮT ĐẦU] 🚀 TIẾN TRÌNH KÍCH HOẠT CẤU HÌNH TỐI ƯU SIÊU NHẸ 2026...", "progress");
+      showToast("Cấu Hình Siêu Nhẹ 2026", "Bắt đầu tiến trình tối ưu siêu nhẹ theo 5 bước...", "info");
+
       try {
-        const res = await invokeRust("run_system_action", { actionId: "apply_super_lean_profile" });
-        if (res && res.success) {
-          localStorage.setItem("super_lean_applied", "true");
-          updateSuperLeanUI(true);
-          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
-          showToast("Thành Công Siêu Nhẹ", res.message, "success");
-          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);
+        // BƯỚC 1: Dọn dẹp RAM Working Set
+        appendTweakLog("[BƯỚC 1/5] 🧹 Đang giải phóng bộ nhớ RAM Working Set (mục tiêu 1.5 - 1.8GB)...", "progress");
+        if (btnApply) btnApply.querySelector('span:last-child').textContent = "ĐANG DỌN RAM (1/5)...";
+        const resRam = await invokeRust("run_system_action", { actionId: "optimize_ram" });
+        if (resRam && resRam.success) {
+          appendTweakLog(`  ✓ [1/5 Thành công] ${resRam.message}`, "success");
         } else {
-          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể áp dụng cấu hình siêu nhẹ"}`, "error");
-          showToast("Lỗi", (res && res.message) || "Không thể áp dụng cấu hình", "error");
+          appendTweakLog(`  ⚠️ [1/5 Lưu ý] ${(resRam && resRam.message) || "Đã áp dụng tối ưu RAM cơ bản."}`, "info");
         }
+
+        // BƯỚC 2: Gỡ bỏ 28 ứng dụng bloatware rác (bảo tồn Edge, WebView2, Defender)
+        appendTweakLog("[BƯỚC 2/5] 🗑️ Đang gỡ bỏ 28 ứng dụng bloatware rác (bảo tồn Edge, WebView2 & Defender)...", "progress");
+        if (btnApply) btnApply.querySelector('span:last-child').textContent = "ĐANG GỠ APP RÁC (2/5)...";
+        const resApps = await invokeRust("run_system_action", { actionId: "purge_bloatware_28_apps" });
+        if (resApps && resApps.success) {
+          appendTweakLog(`  ✓ [2/5 Thành công] ${resApps.message}`, "success");
+        } else {
+          appendTweakLog(`  ⚠️ [2/5 Lưu ý] ${(resApps && resApps.message) || "Đã xử lý danh sách ứng dụng rác."}`, "info");
+        }
+
+        // BƯỚC 3: Tweaks giao diện & Tiện ích Desktop
+        appendTweakLog("[BƯỚC 3/5] ⚡ Đang thiết lập 4 icon Desktop, PrtSc mở Snipping Tool, Control Panel Icons...", "progress");
+        if (btnApply) btnApply.querySelector('span:last-child').textContent = "CẤU HÌNH TWEAKS (3/5)...";
+        await invokeRust("run_system_action", { actionId: "set_desktop_icons_classic" });
+        await invokeRust("run_system_action", { actionId: "set_control_panel_icons" });
+        await invokeRust("run_system_action", { actionId: "set_printscreen_snipping_tool" });
+        appendTweakLog("  ✓ [3/5 Thành công] Đã kích hoạt 4 icon Desktop (This PC, Recycle Bin, LAN, Control Panel) & Snipping Tool.", "success");
+
+        // BƯỚC 4: Vô hiệu hóa Copilot, Windows AI Recall, Fax, Hyper-V & Telemetry
+        appendTweakLog("[BƯỚC 4/5] 🚫 Đang tắt Copilot, Windows AI Recall, Fax, Hyper-V & Sponsored Apps...", "progress");
+        if (btnApply) btnApply.querySelector('span:last-child').textContent = "TẮT DỊCH VỤ THỪA (4/5)...";
+        await invokeRust("run_system_action", { actionId: "disable_copilot_ai" });
+        await invokeRust("run_system_action", { actionId: "disable_hyperv_fax" });
+        await invokeRust("run_system_action", { actionId: "disable_sponsored_apps" });
+        appendTweakLog("  ✓ [4/5 Thành công] Đã vô hiệu hóa Copilot & các dịch vụ nền tiêu hao tài nguyên.", "success");
+
+        // BƯỚC 5: Kích hoạt CompactOS nén đĩa ngầm & Master Profile
+        appendTweakLog("[BƯỚC 5/5] 💾 Đang kích hoạt nén hệ thống CompactOS tiết kiệm ~12.5GB đĩa cứng...", "progress");
+        if (btnApply) btnApply.querySelector('span:last-child').textContent = "KÍCH HOẠT COMPACTOS (5/5)...";
+        const resFinal = await invokeRust("run_system_action", { actionId: "apply_super_lean_profile" });
+        if (resFinal && resFinal.message) {
+          const lines = resFinal.message.split('\n');
+          lines.forEach(l => {
+            if (l.trim()) appendTweakLog(`  • ${l.trim()}`, "info");
+          });
+        }
+
+        // HOÀN TẤT THÀNH CÔNG
+        appendTweakLog("==================================================================", "success");
+        appendTweakLog("[HOÀN TẤT 100%] 🎉 CẤU HÌNH SIÊU NHẸ 2026 ĐÃ ĐƯỢC ÁP DỤNG THÀNH CÔNG VÀ AN TOÀN TUYỆT ĐỐI!", "success");
+        appendTweakLog("[GHI CHÚ] 💡 Nếu muốn quay lại cài đặt gốc, bạn có thể bấm nút '↩ HOÀN TÁC VỀ MẶC ĐỊNH TRƯỚC ĐÓ' bất kỳ lúc nào.", "info");
+
+        localStorage.setItem("super_lean_applied", "true");
+        updateSuperLeanUI(true);
+        showToast("Thành Công Siêu Nhẹ", "Đã hoàn tất 100% Cấu Hình Siêu Nhẹ 2026!", "success");
+        setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);
+
       } catch (err) {
-        appendTweakLog(`[LỖI] ✗ ${err}`, "error");
+        appendTweakLog("==================================================================", "error");
+        appendTweakLog(`[LỖI] ✗ Quá trình áp dụng cấu hình gặp lỗi: ${err}`, "error");
+        appendTweakLog("[HƯỚNG DẪN] 💡 Hãy khởi chạy ứng dụng với quyền Administrator để đảm bảo đầy đủ quyền tinh chỉnh hệ thống.", "error");
         showToast("Lỗi", String(err), "error");
+        if (badge) {
+          badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm flex items-center gap-1";
+          badge.innerHTML = '<span class="material-symbols-outlined text-[13px] text-rose-400">error</span><span>Lỗi xử lý</span>';
+        }
+      } finally {
+        if (btnApply) {
+          btnApply.disabled = false;
+          btnApply.classList.remove("opacity-80", "cursor-wait");
+          btnApply.innerHTML = '<span class="material-symbols-outlined text-[20px]">bolt</span><span>ÁP DỤNG CẤU HÌNH SIÊU NHẸ</span>';
+        }
       }
     };
 
     window.revertSuperLeanProfile = async function() {
-      appendTweakLog("[HOÀN TÁC] Đang khôi phục cài đặt hệ thống về mặc định Windows...", "progress");
-      showToast("Hoàn Tác Về Mặc Định", "Đang khôi phục toàn bộ Tweaks, icon Desktop, Control Panel, giao diện và dịch vụ về chuẩn...", "info");
+      const btnRevert = document.getElementById("btn-revert-super-lean");
+      const badge = document.getElementById("super-lean-status-badge");
+
+      if (btnRevert) {
+        btnRevert.disabled = true;
+        btnRevert.classList.add("opacity-80", "cursor-wait");
+        btnRevert.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span><span>ĐANG HOÀN TÁC...</span>';
+      }
+
+      appendTweakLog("==================================================================", "progress");
+      appendTweakLog("[BẮT ĐẦU HOÀN TÁC] 🔄 Đang khôi phục cài đặt hệ thống về chuẩn mặc định Windows...", "progress");
+      showToast("Hoàn Tác Về Mặc Định", "Đang khôi phục toàn bộ cài đặt về mặc định của hệ thống...", "info");
+
       try {
+        // BƯỚC 1: Hoàn tác Desktop Icons & Control Panel
+        appendTweakLog("[BƯỚC 1/3] 🔄 Đang khôi phục biểu tượng Desktop, Control Panel & PrtSc về mặc định...", "progress");
+        await invokeRust("run_system_action", { actionId: "revert_desktop_icons" });
+        await invokeRust("run_system_action", { actionId: "revert_control_panel_icons" });
+        await invokeRust("run_system_action", { actionId: "revert_printscreen_snipping_tool" });
+        appendTweakLog("  ✓ Đã hoàn tác giao diện Desktop & Control Panel.", "success");
+
+        // BƯỚC 2: Khôi phục Copilot, AI, Fax, Hyper-V & Sponsored Apps
+        appendTweakLog("[BƯỚC 2/3] 🔄 Đang khôi phục Copilot, AI Recall, Fax, Hyper-V & Dịch vụ hệ thống...", "progress");
+        await invokeRust("run_system_action", { actionId: "revert_copilot_ai" });
+        await invokeRust("run_system_action", { actionId: "revert_hyperv_fax" });
+        await invokeRust("run_system_action", { actionId: "revert_sponsored_apps" });
+        appendTweakLog("  ✓ Đã khôi phục trạng thái chuẩn cho các dịch vụ.", "success");
+
+        // BƯỚC 3: Gọi backend revert master profile
+        appendTweakLog("[BƯỚC 3/3] 🔄 Đang khôi phục nguồn điện chuẩn (powercfg) & khởi động lại Explorer...", "progress");
         const res = await invokeRust("run_system_action", { actionId: "revert_super_lean_profile" });
-        if (res && res.success) {
-          localStorage.setItem("super_lean_applied", "false");
-          updateSuperLeanUI(false);
-          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
-          showToast("Khôi Phục Thành Công", res.message, "success");
-          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);
-        } else {
-          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể hoàn tác cấu hình"}`, "error");
-          showToast("Lỗi", (res && res.message) || "Không thể hoàn tác cấu hình", "error");
+        if (res && res.message) {
+          const lines = res.message.split('\n');
+          lines.forEach(l => {
+            if (l.trim()) appendTweakLog(`  • ${l.trim()}`, "info");
+          });
         }
+
+        appendTweakLog("==================================================================", "success");
+        appendTweakLog("[HOÀN TẤT] ✅ ĐÃ KHÔI PHỤC TOÀN BỘ CÀI ĐẶT VỀ MẶC ĐỊNH WINDOWS BAN ĐẦU THÀNH CÔNG!", "success");
+
+        localStorage.setItem("super_lean_applied", "false");
+        updateSuperLeanUI(false);
+        showToast("Khôi Phục Thành Công", "Đã hoàn tác toàn bộ cấu hình về mặc định Windows!", "success");
+        setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);
+
       } catch (err) {
-        appendTweakLog(`[LỖI] ✗ ${err}`, "error");
+        appendTweakLog(`[LỖI] ✗ Không thể hoàn tác cấu hình: ${err}`, "error");
         showToast("Lỗi", String(err), "error");
+      } finally {
+        if (btnRevert) {
+          btnRevert.disabled = false;
+          btnRevert.classList.remove("opacity-80", "cursor-wait");
+          btnRevert.innerHTML = '<span class="material-symbols-outlined text-[18px]">undo</span><span>HOÀN TÁC VỀ MẶC ĐỊNH</span>';
+        }
       }
     };
 

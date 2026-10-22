@@ -1454,8 +1454,8 @@ function Invoke-VUONGTTSuperLeanProfile {
 
     # 2. Dọn dẹp tệp rác & CompactOS
     try {
-        Start-Process "compact.exe" -ArgumentList "/compactos:always" -NoNewWindow -Wait -ErrorAction SilentlyContinue
-        $log.Add("• Đã kích hoạt nén hệ thống CompactOS tiết kiệm ~12.5GB ổ cứng.")
+        Start-Process "compact.exe" -ArgumentList "/compactos:always" -NoNewWindow -ErrorAction SilentlyContinue
+        $log.Add("• Đã kích hoạt nén hệ thống CompactOS tiết kiệm ~12.5GB ổ cứng (chạy ngầm).")
     } catch {}
 
     # 3. Purge 28 app rác (Bảo tồn Edge & Defender)

@@ -81,7 +81,7 @@ fn control_window(action: &str) -> (bool, &'static str) {
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-const APP_VERSION: &str = "20.5.909.129";
+const APP_VERSION: &str = "20.5.909.130";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -236,6 +236,14 @@ fn handle_client(
     let _ = stream.flush();
 }
 
+pub fn escape_json_str(s: &str) -> String {
+    s.replace('\\', "\\\\")
+     .replace('"', "\\\"")
+     .replace('\r', "")
+     .replace('\n', "\\n")
+     .replace('\t', "\\t")
+}
+
 pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
     // Parse JSON Body
     let body = if let Some(idx) = req.find("\r\n\r\n") {
@@ -280,7 +288,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         json_resp = format!(
             r#"{{"success":{},"message":"{}"}}"#,
             ok,
-            msg.replace('"', "\\\"")
+            escape_json_str(&msg)
         );
     } else if cmd == "window_control" {
         let action = system_ops::extract_json_field(body, "action").unwrap_or("");
@@ -289,10 +297,10 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
             json_resp = "{\"success\":true,\"message\":\"Closing\"}".to_string();
         } else if action == "minimize" {
             let (ok, msg) = control_window("minimize");
-            json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, msg);
+            json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, escape_json_str(&msg));
         } else if action == "maximize" {
             let (ok, msg) = control_window("maximize");
-            json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, msg);
+            json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, escape_json_str(&msg));
         } else {
             json_resp = "{\"success\":false,\"message\":\"Unknown window action\"}".to_string();
         }
@@ -312,7 +320,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
             json_resp = format!(
                 r#"{{"success":{},"message":"{}"}}"#,
                 success,
-                msg.replace('"', "\\\"")
+                escape_json_str(&msg)
             );
         }
     } else if cmd == "install_apps" {
@@ -320,11 +328,11 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         json_resp = format!(
             r#"{{"success":{},"message":"{}"}}"#,
             success,
-            msg.replace('"', "\\\"")
+            escape_json_str(&msg)
         );
     } else if cmd == "get_install_logs" {
         let logs_raw = system_ops::get_logs_json();
-        let safe_escaped = logs_raw.replace('\\', "\\\\").replace('"', "\\\"");
+        let safe_escaped = escape_json_str(&logs_raw);
         json_resp = format!(
             r#"{{"success":true,"message":"{}","logs":{}}}"#,
             safe_escaped,
@@ -342,7 +350,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
 
         let (success, msg) = system_ops::execute_system_action(act_id, body);
         if act_id == "browse_iso" || act_id == "browse_file" {
-            let escaped_path = msg.replace('\\', "\\\\").replace('"', "\\\"");
+            let escaped_path = escape_json_str(&msg);
             json_resp = format!(
                 r#"{{"success":{},"file_path":"{}","message":"{}"}}"#,
                 success,
@@ -353,7 +361,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
             json_resp = format!(
                 r#"{{"success":{},"message":"{}"}}"#,
                 success,
-                msg.replace('"', "\\\"")
+                escape_json_str(&msg)
             );
         }
     } else {
