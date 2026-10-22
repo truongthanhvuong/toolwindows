@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.133</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.134</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -960,12 +960,12 @@
 <input id="cb-deploy-backup-drivers" checked="" class="mt-0.5 rounded bg-surface-container-highest text-tertiary-container focus:ring-0 cursor-pointer" type="checkbox"/>
 <div class="min-w-0">
 <span class="font-label-md text-label-md text-on-surface block leading-tight">Tự động sao lưu toàn bộ Driver</span>
-<span class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Driver Wifi, Âm thanh &amp; Card màn hình</span>
+<span id="deploy-driver-target-desc" class="font-body-md text-body-md text-outline text-[11px] block mt-0.5">Lưu an toàn vào D:\Drivers_Backup_2026 (chống mất khi format C:)</span>
 </div>
 </div>
-<button id="btn-quick-backup-drivers" onclick="event.preventDefault(); event.stopPropagation(); exportDrivers();" class="shrink-0 px-2 py-0.5 rounded bg-primary-container/20 hover:bg-primary-container text-primary hover:text-on-primary-container font-label-sm text-[11px] font-semibold flex items-center gap-1 transition-all" type="button" title="Xuất toàn bộ Driver máy ra ổ cứng ngay bây giờ">
+<button id="btn-quick-backup-drivers" onclick="event.preventDefault(); event.stopPropagation(); backupDriverFromDeploy();" class="shrink-0 px-2 py-0.5 rounded bg-primary-container/20 hover:bg-primary-container text-primary hover:text-on-primary-container font-label-sm text-[11px] font-semibold flex items-center gap-1 transition-all" type="button" title="Xuất toàn bộ Driver máy ra ổ cứng ngay bây giờ">
 <span class="material-symbols-outlined text-[13px]">download_for_offline</span>
-<span>Sao Lưu Ngay</span>
+<span id="btn-quick-backup-label">Sao Lưu Ngay</span>
 </button>
 </label>
 <label class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-lowest/60 hover:bg-surface-container-high transition-colors cursor-pointer select-none">
@@ -1116,7 +1116,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span id="tech-driver-build-badge">Build: v20.5.909.133</span>
+<span id="tech-driver-build-badge">Build: v20.5.909.134</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>

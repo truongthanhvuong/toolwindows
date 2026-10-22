@@ -2619,12 +2619,44 @@
   }
   window.checkDiskPartitions = checkDiskPartitions;
 
+  async function backupDriverFromDeploy() {
+    const btn = document.getElementById("btn-quick-backup-drivers");
+    const label = document.getElementById("btn-quick-backup-label");
+    const desc = document.getElementById("deploy-driver-target-desc");
+    if (label) label.innerText = "Đang sao lưu...";
+    if (btn) btn.disabled = true;
+    showToast("Sao Lưu Driver", "Đang trích xuất toàn bộ Driver phần cứng ra đĩa...", "info");
+
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "backup_drivers" });
+      if (res && res.success) {
+        showToast("Sao Lưu Driver", res.message, "success");
+        if (label) label.innerText = "✓ Đã Sao Lưu";
+        if (desc) desc.innerText = res.message;
+      } else {
+        showToast("Lỗi Sao Lưu Driver", (res && res.message) || "Không thể sao lưu Driver", "error");
+        if (label) label.innerText = "Sao Lưu Ngay";
+      }
+      return res;
+    } catch (e) {
+      showToast("Lỗi Sao Lưu Driver", String(e), "error");
+      if (label) label.innerText = "Sao Lưu Ngay";
+      return null;
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  window.backupDriverFromDeploy = backupDriverFromDeploy;
+  window.exportDrivers = backupDriverFromDeploy;
+
   async function startWinDeploy() {
     const btn = document.getElementById("btn-start-deploy");
     const isoPathEl = document.getElementById("iso-path-text");
     const isoPath = (isoPathEl ? isoPathEl.innerText : "").trim();
     const modeEl = document.querySelector('input[name="deploy-mode"]:checked');
     const deployMode = modeEl ? modeEl.value : "upgrade";
+    const cbBackupDrivers = document.getElementById("cb-deploy-backup-drivers");
+    const shouldBackupDrivers = cbBackupDrivers ? cbBackupDrivers.checked : true;
 
     if (!isoPath) {
       showToast("Cài Đặt Windows", "Vui lòng chọn hoặc nhập đường dẫn file ISO trước khi bắt đầu!", "warning");
@@ -2634,14 +2666,23 @@
     const originalHtml = btn ? btn.innerHTML : "";
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = `<span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span><span>ĐANG NẠP ISO VÀ KÍCH HOẠT SETUP...</span>`;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span><span>${shouldBackupDrivers ? "ĐANG SAO LƯU DRIVER & NẠP ISO..." : "ĐANG NẠP ISO VÀ KÍCH HOẠT SETUP..."}</span>`;
     }
 
     try {
+      if (shouldBackupDrivers) {
+        showToast("Sao Lưu Driver", "Đang tiến hành sao lưu Driver máy tính trước khi cài Win...", "info");
+        await backupDriverFromDeploy();
+      }
+
       const res = await invokeRust("run_system_action", {
         actionId: "start_win_deploy",
+        iso_path: isoPath,
         isoPath: isoPath,
-        deployMode: deployMode
+        mode: deployMode,
+        deployMode: deployMode,
+        backup_drivers: shouldBackupDrivers ? "true" : "false",
+        backupDrivers: shouldBackupDrivers ? "true" : "false"
       });
       if (res && res.success) {
         showToast("Cài Đặt Windows", res.message || "Đã kích hoạt Windows Setup thành công!", "success");

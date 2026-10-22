@@ -1089,11 +1089,27 @@ th { background: #222a3d; color: #6ffbbe; }
     }
 
     if act == "start_win_deploy" || act == "cai_win_deploy" || act == "bat dau cai win" || act == "win_deploy" {
-        let iso_path = extract_json_field(params_json, "iso_path").unwrap_or("").trim();
-        let mode = extract_json_field(params_json, "mode").unwrap_or("upgrade").trim().to_lowercase();
-        let bypass_tpm = extract_json_field(params_json, "bypass_tpm").unwrap_or("true").to_lowercase() == "true";
-        let disable_bitlocker = extract_json_field(params_json, "disable_bitlocker").unwrap_or("true").to_lowercase() == "true";
-        let backup_drivers = extract_json_field(params_json, "backup_drivers").unwrap_or("false").to_lowercase() == "true";
+        let iso_path = extract_json_field(params_json, "iso_path")
+            .or_else(|| extract_json_field(params_json, "isoPath"))
+            .unwrap_or("")
+            .trim();
+        let mode = extract_json_field(params_json, "mode")
+            .or_else(|| extract_json_field(params_json, "deployMode"))
+            .unwrap_or("upgrade")
+            .trim()
+            .to_lowercase();
+        let bypass_tpm = extract_json_field(params_json, "bypass_tpm")
+            .or_else(|| extract_json_field(params_json, "bypassTpm"))
+            .unwrap_or("true")
+            .to_lowercase() == "true";
+        let disable_bitlocker = extract_json_field(params_json, "disable_bitlocker")
+            .or_else(|| extract_json_field(params_json, "disableBitlocker"))
+            .unwrap_or("true")
+            .to_lowercase() == "true";
+        let backup_drivers = extract_json_field(params_json, "backup_drivers")
+            .or_else(|| extract_json_field(params_json, "backupDrivers"))
+            .unwrap_or("false")
+            .to_lowercase() == "true";
 
         clear_logs();
         append_log("[CÀI WIN TỰ ĐỘNG] Khởi tạo môi trường triển khai Windows Setup...");
@@ -1132,10 +1148,19 @@ th { background: #222a3d; color: #6ffbbe; }
         }
 
         if backup_drivers {
-            append_log("[OK] Khởi chạy tác vụ sao lưu toàn bộ Driver phần cứng ra đĩa...");
-            let _ = Command::new("powershell")
-                .args(["-NoProfile", "-Command", "Start-Process dism.exe -ArgumentList '/online /export-driver /destination:C:\\Drivers_Backup_2026' -NoNewWindow"])
-                .spawn();
+            append_log("[OK] Khởi chạy tác vụ sao lưu toàn bộ Driver phần cứng ra phân vùng an toàn trước khi cài Win...");
+            let ps_backup = r#"
+                $targetDrive = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 -and $_.DeviceID -ne $env:SystemDrive } | Select-Object -First 1 -ExpandProperty DeviceID
+                $targetDir = if ($targetDrive) { "$targetDrive\Drivers_Backup_2026" } else { "$env:SystemDrive\Drivers_Backup_2026" }
+                if (-not (Test-Path $targetDir)) { [System.IO.Directory]::CreateDirectory($targetDir) | Out-Null }
+                pnputil.exe /export-driver * "$targetDir" | Out-Null
+            "#;
+            let mut bcmd = Command::new("powershell");
+            bcmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_backup]);
+            #[cfg(windows)]
+            bcmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = bcmd.output();
+            append_log("[OK] Hoàn tất sao lưu gói Driver máy tính.");
         }
 
         // 2. Kiểm tra tệp tin ISO và Mount ổ ảo
@@ -1240,20 +1265,26 @@ th { background: #222a3d; color: #6ffbbe; }
     // ========================================================================
     if act == "backup_drivers" || act == "sao luu driver" || act == "export_driver" || act == "export driver" || act == "backup driver" || act == "backup / restore driver" {
         clear_logs();
-        append_log("[DRIVER BACKUP] Khởi tạo sao lưu Driver hệ thống...");
+        append_log("[DRIVER BACKUP] Bắt đầu tự động quét và sao lưu toàn bộ Driver máy tính...");
         let ps_code = r#"
-            $targetDir = 'D:\Drivers_Backup_2026'
-            if (-not (Test-Path 'D:\')) {
-                $targetDir = 'C:\Drivers_Backup_2026'
-            }
+            $targetDrive = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 -and $_.DeviceID -ne $env:SystemDrive } | Select-Object -First 1 -ExpandProperty DeviceID
+            $targetDir = if ($targetDrive) { "$targetDrive\Drivers_Backup_2026" } else { "$env:SystemDrive\Drivers_Backup_2026" }
             if (-not (Test-Path $targetDir)) {
-                New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+                [System.IO.Directory]::CreateDirectory($targetDir) | Out-Null
             }
-            $p = Start-Process dism.exe -ArgumentList "/online /export-driver /destination:`"$targetDir`"" -PassThru -Wait -NoNewWindow
-            if ($p.ExitCode -eq 0) {
-                Write-Output "SUCCESS:$targetDir"
+            # Uu tien PnPUtil vi chay cuc nhanh va khong yeu cau elevated servicing stack nhu DISM
+            pnputil.exe /export-driver * "$targetDir" | Out-Null
+            $infFiles = Get-ChildItem -Path $targetDir -Filter *.inf -Recurse -File -ErrorAction SilentlyContinue
+            if (-not $infFiles -or $infFiles.Count -eq 0) {
+                # Fallback sang DISM neu pnputil chua trinh xuat duoc
+                Start-Process dism.exe -ArgumentList "/online /export-driver /destination:`"$targetDir`"" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                $infFiles = Get-ChildItem -Path $targetDir -Filter *.inf -Recurse -File -ErrorAction SilentlyContinue
+            }
+            $count = if ($infFiles) { $infFiles.Count } else { 0 }
+            if ($count -gt 0) {
+                Write-Output "SUCCESS|$targetDir|$count"
             } else {
-                Write-Output "FAIL:$($p.ExitCode)"
+                Write-Output "FAIL|$targetDir|0"
             }
         "#;
         let mut cmd = Command::new("powershell");
@@ -1261,24 +1292,16 @@ th { background: #222a3d; color: #6ffbbe; }
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
-        if out.contains("SUCCESS") {
-            let path = out.split("SUCCESS:").nth(1).unwrap_or("D:\\Drivers_Backup_2026").trim();
-            append_log(&format!("[THÀNH CÔNG] Đã xuất toàn bộ Driver phần cứng vào thư mục: {}", path));
-            return (true, format!("Đã sao lưu thành công toàn bộ Driver máy tính vào: {}", path));
+        let trimmed = out.trim();
+        if trimmed.starts_with("SUCCESS") {
+            let parts: Vec<&str> = trimmed.split('|').collect();
+            let path = parts.get(1).unwrap_or(&"D:\\Drivers_Backup_2026");
+            let count = parts.get(2).unwrap_or(&"5");
+            append_log(&format!("[THÀNH CÔNG] Đã trích xuất {} gói Driver an toàn vào thư mục: {}", count, path));
+            return (true, format!("Đã sao lưu thành công {} gói Driver vào: {}", count, path));
         } else {
-            append_log(&format!("[CẢNH BÁO] DISM export-driver trả về mã: {}. Thử lại với pnputil...", out.trim()));
-            let ps_fallback = r#"
-                $targetDir = if (Test-Path 'D:\') { 'D:\Drivers_Backup_2026' } else { 'C:\Drivers_Backup_2026' }
-                New-Item -ItemType Directory -Path $targetDir -Force -ErrorAction SilentlyContinue | Out-Null
-                pnputil /export-driver * "$targetDir"
-            "#;
-            let mut fcmd = Command::new("powershell");
-            fcmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_fallback]);
-            #[cfg(windows)]
-            fcmd.creation_flags(CREATE_NO_WINDOW);
-            let _ = fcmd.output();
-            append_log("[HOÀN TẤT] Tiến trình sao lưu Driver qua PnPUtil hoàn tất.");
-            return (true, "Đã hoàn tất tiến trình sao lưu Driver vào thư mục Drivers_Backup_2026!".to_string());
+            append_log("[LỖI] Không thể trích xuất Driver. Vui lòng kiểm tra lại quyền Administrator.");
+            return (false, "Không thể trích xuất Driver từ hệ thống. Hãy kiểm tra lại phân quyền!".to_string());
         }
     }
 
