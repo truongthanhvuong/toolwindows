@@ -147,6 +147,9 @@ pub fn ensure_desktop_shortcut() -> bool {
         if (Test-Path $targetExe) {{
             $desktop = [System.Environment]::GetFolderPath('Desktop')
             if ($desktop -and (Test-Path $desktop)) {{
+                $oldLnk = Join-Path $desktop 'VUONGTT Tool Pro 2026.lnk'
+                if (Test-Path $oldLnk) {{ Remove-Item $oldLnk -Force -ErrorAction SilentlyContinue }}
+
                 $lnkPath = Join-Path $desktop 'VUONGTT Toolkit.lnk'
                 try {{
                     $ws = New-Object -ComObject WScript.Shell
@@ -2053,67 +2056,162 @@ th { background: #222a3d; color: #6ffbbe; }
         let ps_code = format!(
             r#"
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
-            $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
             $targetExe = "{target_exe}"
             $tempExe = "$env:TEMP\VUONGTT_Toolkit_Update.exe"
             $currPid = {current_pid}
+            $tStamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+
+            # 1. Thu lay SHA commit moi nhat tren GitHub de bypass 100% Fastly cache
+            $latestSha = ""
             try {{
-                $wc = New-Object System.Net.WebClient
-                $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
-                $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
-                $wc.Headers.Add("Pragma", "no-cache")
-                $wc.DownloadFile($url, $tempExe)
-                if ((Test-Path $tempExe) -and (Get-Item $tempExe).Length -gt 1000000) {{
-                    $updaterScript = @"
+                $wcApi = New-Object System.Net.WebClient
+                $wcApi.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                $jsonCommits = $wcApi.DownloadString("https://api.github.com/repos/truongthanhvuong/toolwindows/commits/main")
+                $objCommits = ConvertFrom-Json $jsonCommits
+                if ($objCommits -and $objCommits.sha) {{ $latestSha = $objCommits.sha }}
+            }} catch {{}}
+
+            $dlUrls = @()
+            if ($latestSha) {{
+                $dlUrls += "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/$latestSha/VUONGTT_Toolkit.exe"
+            }}
+            $dlUrls += "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe?t=$tStamp"
+            $dlUrls += "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe?t=$tStamp"
+
+            $downloaded = $false
+            if (Test-Path $tempExe) {{ Remove-Item $tempExe -Force -ErrorAction SilentlyContinue }}
+
+            foreach ($u in $dlUrls) {{
+                try {{
+                    $wc = New-Object System.Net.WebClient
+                    $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                    $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+                    $wc.Headers.Add("Pragma", "no-cache")
+                    $wc.DownloadFile($u, $tempExe)
+                    if ((Test-Path $tempExe) -and (Get-Item $tempExe).Length -gt 1000000) {{
+                        Unblock-File -Path $tempExe -ErrorAction SilentlyContinue
+                        $downloaded = $true
+                        break
+                    }}
+                }} catch {{}}
+            }}
+
+            if ($downloaded) {{
+                $updaterScript = @"
 param(`$TargetExe = '$targetExe', `$TempExe = '$tempExe', [int]`$CurrentPid = $currPid)
-# 1. Cho tiến trình cũ thoát hoặc buộc dừng để giải phóng file lock
+`$logFile = "`$env:TEMP\vuongtt_updater.log"
+function Log(`$msg) {{
+    `$ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+    "[`$ts] `$msg" | Out-File -FilePath `$logFile -Append -Encoding UTF8
+}}
+
+Log "=== BAT DAU QUY TRINH CAP NHAT VUONGTT TOOLKIT ==="
+Log "TargetExe: `$TargetExe"
+Log "TempExe: `$TempExe"
+Log "CurrentPid: `$CurrentPid"
+
+# 1. Cho tien trinh cu thoat va tieu diet cay tien trinh (Process Tree)
 if (`$CurrentPid -gt 0) {{
-    for (`$i = 0; `$i -lt 12; `$i++) {{
+    Log "Cho tien trinh `$CurrentPid thoat..."
+    for (`$i = 0; `$i -lt 10; `$i++) {{
         `$p = Get-Process -Id `$CurrentPid -ErrorAction SilentlyContinue
         if (-not `$p -or `$p.HasExited) {{ break }}
-        Start-Sleep -Milliseconds 500
+        Start-Sleep -Milliseconds 400
     }}
-    Stop-Process -Id `$CurrentPid -Force -ErrorAction SilentlyContinue
+    Log "Giai phong handle voi taskkill /F /PID `$CurrentPid /T..."
+    taskkill /F /PID `$CurrentPid /T 2>&1 | Out-Null
+    Start-Sleep -Milliseconds 500
+}}
+
+Get-Process -Name "VUONGTT_Toolkit*" -ErrorAction SilentlyContinue | ForEach-Object {{
+    Log "Dung tien trinh `$(`$_.Name) (PID: `$(`$_.Id))..."
+    Stop-Process -Id `$_.Id -Force -ErrorAction SilentlyContinue
+}}
+Start-Sleep -Milliseconds 500
+
+# 2. Xoa co Zone.Identifier
+Unblock-File -Path `$TempExe -ErrorAction SilentlyContinue
+
+# 3. Ghi de TargetExe voi co che retry 25 lan
+`$success = `$false
+`$oldBackup = "`$TargetExe.bak"
+if (Test-Path `$oldBackup) {{ Remove-Item `$oldBackup -Force -ErrorAction SilentlyContinue }}
+
+for (`$i = 1; `$i -le 25; `$i++) {{
+    Log "Lan `$i / 25 de ghi de: `$TargetExe..."
+    try {{
+        Copy-Item -Path `$TempExe -Destination `$TargetExe -Force -ErrorAction Stop
+        if ((Test-Path `$TargetExe) -and ((Get-Item `$TargetExe).Length -eq (Get-Item `$TempExe).Length)) {{
+            Log "Ghi de truc tiep thanh cong tai lan `$i!"
+            `$success = `$true
+            break
+        }}
+    }} catch {{
+        Log "Ghi de truc tiep chua thanh cong: `$(`$_.Exception.Message). Thu doi ten backup..."
+        try {{
+            Rename-Item -Path `$TargetExe -NewName ([System.IO.Path]::GetFileName(`$oldBackup)) -Force -ErrorAction Stop
+            Copy-Item -Path `$TempExe -Destination `$TargetExe -Force -ErrorAction Stop
+            if ((Test-Path `$TargetExe) -and ((Get-Item `$TargetExe).Length -eq (Get-Item `$TempExe).Length)) {{
+                Log "Ghi de thanh cong sau khi doi ten backup tai lan `$i!"
+                `$success = `$true
+                break
+            }}
+        }} catch {{
+            Log "Doi ten backup va ghi de cung chua thanh cong: `$(`$_.Exception.Message)"
+        }}
+    }}
     Start-Sleep -Milliseconds 400
 }}
 
-# 2. Xóa backup cũ nếu có
-`$oldBackup = "`$TargetExe.old"
-if (Test-Path `$oldBackup) {{ Remove-Item `$oldBackup -Force -ErrorAction SilentlyContinue }}
-
-# 3. Thay thế tệp với cơ chế đổi tên dự phòng
-`$success = `$false
-for (`$i = 0; `$i -lt 15; `$i++) {{
+# 4. Dong bo sang vi tri ProgramData neu ton tai de ngan lech version
+`$pdExe = "`$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe"
+if (Test-Path ([System.IO.Path]::GetDirectoryName(`$pdExe))) {{
     try {{
-        Move-Item -Path `$TempExe -Destination `$TargetExe -Force -ErrorAction Stop
-        `$success = `$true
-        break
+        Copy-Item -Path `$TempExe -Destination `$pdExe -Force -ErrorAction SilentlyContinue
+        Log "Da dong bo cap nhat sang ProgramData: `$pdExe"
     }} catch {{
-        try {{
-            Rename-Item -Path `$TargetExe -NewName ([System.IO.Path]::GetFileName(`$oldBackup)) -Force -ErrorAction Stop
-            Move-Item -Path `$TempExe -Destination `$TargetExe -Force -ErrorAction Stop
-            `$success = `$true
-            break
-        }} catch {{
-            Start-Sleep -Milliseconds 600
-        }}
+        Log "Khong the copy sang ProgramData: `$(`$_.Exception.Message)"
     }}
 }}
 
-# 4. Khởi chạy phiên bản mới
+# 5. Don dep shortcut cu va cap nhat shortcut chuan tren Desktop
+`$desktop = [System.Environment]::GetFolderPath('Desktop')
+if (`$desktop -and (Test-Path `$desktop)) {{
+    `$oldLnk = Join-Path `$desktop 'VUONGTT Tool Pro 2026.lnk'
+    if (Test-Path `$oldLnk) {{
+        Remove-Item `$oldLnk -Force -ErrorAction SilentlyContinue
+        Log "Da don dep shortcut cu: `$oldLnk"
+    }}
+    try {{
+        `$ws = New-Object -ComObject WScript.Shell
+        `$lnk = `$ws.CreateShortcut((Join-Path `$desktop 'VUONGTT Toolkit.lnk'))
+        `$lnk.TargetPath = `$TargetExe
+        `$lnk.WorkingDirectory = [System.IO.Path]::GetDirectoryName(`$TargetExe)
+        `$lnk.IconLocation = "`$TargetExe,0"
+        `$lnk.Save()
+        Log "Da cap nhat shortcut Desktop tro ve: `$TargetExe"
+    }} catch {{}}
+}}
+
+# 6. Khoi chay phien ban moi voi WorkingDirectory va don dep
 if (`$success -and (Test-Path `$TargetExe)) {{
-    Start-Process -FilePath `$TargetExe
+    `$targetDir = [System.IO.Path]::GetDirectoryName(`$TargetExe)
+    Log "Khoi dong phien ban moi: `$TargetExe (WorkingDirectory: `$targetDir)..."
+    Start-Process -FilePath `$TargetExe -WorkingDirectory `$targetDir
+    Start-Sleep -Seconds 1
+    Remove-Item -Path `$TempExe -Force -ErrorAction SilentlyContinue
+    if (Test-Path `$oldBackup) {{ Remove-Item -Path `$oldBackup -Force -ErrorAction SilentlyContinue }}
+    Log "Hoan tat cap nhat thanh cong!"
+}} else {{
+    Log "CAP NHAT THAT BAI: Khong the ghi de `$TargetExe sau 25 lan thu!"
 }}
 "@
-                    $batPath = "$env:TEMP\vuongtt_apply_update.ps1"
-                    [System.IO.File]::WriteAllText($batPath, $updaterScript, [System.Text.Encoding]::UTF8)
-                    Start-Process powershell -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$batPath`""
-                    Write-Output "UPDATE_READY"
-                }} else {{
-                    Write-Output "UPDATE_FAILED_DOWNLOAD"
-                }}
-            }} catch {{
-                Write-Output "UPDATE_ERROR: $($_.Exception.Message)"
+                $batPath = "$env:TEMP\vuongtt_apply_update.ps1"
+                [System.IO.File]::WriteAllText($batPath, $updaterScript, [System.Text.Encoding]::UTF8)
+                Start-Process powershell -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$batPath`""
+                Write-Output "UPDATE_READY"
+            }} else {{
+                Write-Output "UPDATE_FAILED_DOWNLOAD"
             }}
         "#,
             target_exe = target_exe_str,
