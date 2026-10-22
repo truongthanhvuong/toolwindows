@@ -14,52 +14,59 @@ function Assert-True([bool]$condition, [string]$message) {
     }
 }
 
-Write-Host "`n>>> KIỂM THỬ TDD: TỰ ĐỘNG TẠO SHORTCUT & TỰ ĐỘNG CẬP NHẬT KHI KHỞI CHẠY <<<`n" -ForegroundColor Cyan
+Write-Host "`n>>> KIEM THU TDD: TU DONG TAO SHORTCUT & TU DONG CAP NHAT KHI KHOI CHAY <<<`n" -ForegroundColor Cyan
 
 $mainRsPath = "src-tauri\src\main.rs"
 $opsRsPath = "src-tauri\src\system_ops.rs"
 $appJsPath = "src-ui\app.js"
 $updPs1Path = "src\Core\AppUpdater.ps1"
 
-Assert-True (Test-Path $mainRsPath) "Tệp main.rs phải tồn tại"
-Assert-True (Test-Path $opsRsPath) "Tệp system_ops.rs phải tồn tại"
-Assert-True (Test-Path $appJsPath) "Tệp app.js phải tồn tại"
-Assert-True (Test-Path $updPs1Path) "Tệp AppUpdater.ps1 phải tồn tại"
+Assert-True (Test-Path $mainRsPath) "Tep main.rs phai ton tai"
+Assert-True (Test-Path $opsRsPath) "Tep system_ops.rs phai ton tai"
+Assert-True (Test-Path $appJsPath) "Tep app.js phai ton tai"
+Assert-True (Test-Path $updPs1Path) "Tep AppUpdater.ps1 phai ton tai"
 
 $mainRsContent = Get-Content -Raw -Encoding UTF8 $mainRsPath
 $opsRsContent = Get-Content -Raw -Encoding UTF8 $opsRsPath
 $appJsContent = Get-Content -Raw -Encoding UTF8 $appJsPath
 $updPs1Content = Get-Content -Raw -Encoding UTF8 $updPs1Path
 
-Write-Host "--- Nhóm 1: Kiểm Tra Cơ Chế Tạo Shortcut Desktop ---" -ForegroundColor Yellow
+Write-Host "--- Nhom 1: Kiem Tra Co Che Tao Shortcut Desktop ---" -ForegroundColor Yellow
 
-# 1.1 main.rs hoặc system_ops.rs phải có hàm tạo Shortcut Desktop
-Assert-True ($mainRsContent -match 'ensure_desktop_shortcut' -or $opsRsContent -match 'ensure_desktop_shortcut') "Hệ thống phải có hàm ensure_desktop_shortcut() tạo biểu tượng Desktop"
+# 1.1 main.rs hoac system_ops.rs phai co ham tao Shortcut Desktop
+Assert-True ($mainRsContent -match 'ensure_desktop_shortcut' -or $opsRsContent -match 'ensure_desktop_shortcut') "He thong phai co ham ensure_desktop_shortcut() tao bieu tuong Desktop"
 
-# 1.2 main() phải gọi hàm tạo shortcut khi khởi động
-Assert-True ($mainRsContent -match 'ensure_desktop_shortcut') "main() trong main.rs phải tự động gọi ensure_desktop_shortcut() khi khởi động tool"
+# 1.2 main() phai goi ham tao shortcut khi khoi dong
+Assert-True ($mainRsContent -match 'ensure_desktop_shortcut') "main() trong main.rs phai tu dong goi ensure_desktop_shortcut() khi khoi dong tool"
 
-# 1.3 Kiểm tra logic tạo shortcut qua PowerShell COM WScript.Shell
-Assert-True ($mainRsContent -match 'WScript.Shell' -or $opsRsContent -match 'WScript.Shell' -or $opsRsContent -match 'VUONGTT Toolkit.lnk') "Cơ chế tạo shortcut phải nhắm đến 'VUONGTT Toolkit.lnk' trên Desktop"
+# 1.3 Kiem tra logic tao shortcut qua PowerShell COM WScript.Shell
+Assert-True ($mainRsContent -match 'WScript.Shell' -or $opsRsContent -match 'WScript.Shell' -or $opsRsContent -match 'VUONGTT Toolkit.lnk') "Co che tao shortcut phai nham den 'VUONGTT Toolkit.lnk' tren Desktop"
 
-Write-Host "`n--- Nhóm 2: Kiểm Tra Động Cơ Kiểm Tra & Tự Động Cập Nhật ---" -ForegroundColor Yellow
+Write-Host "`n--- Nhom 2: Kiem Tra Dong Co Kiem Tra & Tu Dong Cap Nhat ---" -ForegroundColor Yellow
 
-# 2.1 system_ops.rs phải có action 'check_update' kết nối logic cập nhật thực tế (không phải mockup)
-Assert-True ($opsRsContent -match 'act == "check_update"' -and ($opsRsContent -match 'version\.json' -or $opsRsContent -match 'AppUpdater')) "system_ops.rs phải có action check_update kiểm tra tệp version.json thực tế"
+# 2.1 system_ops.rs phai co action 'check_update' ket noi logic cap nhat thuc te
+Assert-True ($opsRsContent -match 'act == "check_update"' -and ($opsRsContent -match 'version\.json' -or $opsRsContent -match 'AppUpdater')) "system_ops.rs phai co action check_update kiem tra tep version.json thuc te"
 
-# 2.2 AppUpdater.ps1 phải có hàm Get-VUONGTTAppUpdateInfo
-Assert-True ($updPs1Content -match 'function Get-VUONGTTAppUpdateInfo') "AppUpdater.ps1 phải có hàm Get-VUONGTTAppUpdateInfo kiểm tra cập nhật"
+# 2.2 AppUpdater.ps1 phai co ham Get-VUONGTTAppUpdateInfo
+Assert-True ($updPs1Content -match 'function Get-VUONGTTAppUpdateInfo') "AppUpdater.ps1 phai co ham Get-VUONGTTAppUpdateInfo kiem tra cap nhat"
 
-# 2.3 system_ops.rs phải có action thực thi cập nhật tự động 'apply_update'
-Assert-True ($opsRsContent -match 'apply_update' -or $opsRsContent -match 'download_and_apply_update') "system_ops.rs phải hỗ trợ action tải và cập nhật phiên bản mới"
+# 2.3 system_ops.rs phai co action thuc thi cap nhat tu dong 'apply_update'
+Assert-True ($opsRsContent -match 'apply_update' -or $opsRsContent -match 'download_and_apply_update') "system_ops.rs phai ho tro action tai va cap nhat phien ban moi"
 
-Write-Host "`n--- Nhóm 3: Kiểm Tra Tự Động Kiểm Tra Cập Nhật Trên UI (app.js) ---" -ForegroundColor Yellow
+# 2.4 system_ops.rs phai ho tro restart_app / exit_app de giai phong file lock
+Assert-True ($opsRsContent -match 'restart_app' -or $opsRsContent -match 'exit_app') "system_ops.rs phai ho tro action restart_app giai phong file lock khi cap nhat"
 
-# 3.1 app.js phải tự động kiểm tra cập nhật khi tải trang (DOMContentLoaded)
-Assert-True ($appJsContent -match 'initAutoUpdateOnStartup' -or $appJsContent -match 'check_update') "app.js phải tự động kích hoạt kiểm tra cập nhật khi khởi động"
+Write-Host "`n--- Nhom 3: Kiem Tra Tu Dong Kiem Tra Cap Nhat Tren UI (app.js) ---" -ForegroundColor Yellow
 
-# 3.2 app.js phải có xử lý thông báo khi có bản cập nhật mới
-Assert-True ($appJsContent -match 'showToast' -and ($appJsContent -match 'checkForUpdate' -or $appJsContent -match 'apply_update')) "app.js phải hiển thị thông báo cập nhật cho người dùng"
+# 3.1 app.js phai tu dong kiem tra cap nhat khi tai trang (DOMContentLoaded)
+Assert-True ($appJsContent -match 'initAutoUpdateOnStartup' -or $appJsContent -match 'check_update') "app.js phai tu dong kich hoat kiem tra cap nhat khi khoi dong"
+
+# 3.2 app.js phai co xu ly thong bao khi co ban cap nhat moi
+Assert-True ($appJsContent -match 'showToast' -and ($appJsContent -match 'checkForUpdate' -or $appJsContent -match 'apply_update')) "app.js phai hien thi thong bao cap nhat cho nguoi dung"
+
+# 3.3 Nut btn-header-update phai goi checkForUpdate (khong hien thi raw JSON)
+Assert-True ($appJsContent -match 'btn-header-update' -and $appJsContent -match 'checkForUpdate\(true\)') "Nut btn-header-update tren Header phai kich hoat checkForUpdate(true)"
+Assert-True (-not ($appJsContent -match 'actionId:\s*"check_update"[^}]+showToast\([^)]*res\.message')) "app.js khong duoc hien thi raw JSON res.message cua check_update vao showToast"
 
 Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host "KẾT QUẢ: TOÀN BỘ TEST TDD CHO SHORTCUT VÀ AUTO-UPDATE ĐẠT PASS!" -ForegroundColor Green
+Write-Host "KET QUA: TOAN BO TEST TDD CHO SHORTCUT VA AUTO-UPDATE DAT PASS!" -ForegroundColor Green

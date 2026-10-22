@@ -906,11 +906,7 @@
     }
 
     if (btnUpdate) {
-      btnUpdate.addEventListener("click", async () => {
-        showToast("Kiểm tra cập nhật", "Đang kết nối máy chủ GitHub kiểm tra phiên bản mới...", "info");
-        const res = await invokeRust("run_system_action", { actionId: "check_update", params: {} });
-        showToast("Cập nhật hệ thống", (res && res.message) || "Bạn đang sử dụng phiên bản VUONGTT Toolkit mới nhất!", "success");
-      });
+      btnUpdate.addEventListener("click", () => checkForUpdate(true));
     }
 
     // Theme Switcher
@@ -3192,7 +3188,7 @@
   // --- 15. HEADER CONTROLS & AUTO-UPDATE ENGINE ---
   async function checkForUpdate(isManual = false) {
     if (isManual) {
-      showToast("Cập Nhật", "Đang kết nối máy chủ kiểm tra phiên bản mới nhất...", "info");
+      showToast("Cập Nhật", "Đang kết nối máy chủ GitHub kiểm tra phiên bản mới nhất...", "info");
     }
     try {
       const res = await invokeRust("run_system_action", { actionId: "check_update" });
@@ -3212,17 +3208,25 @@
         }
         const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
         if (applyRes && applyRes.success) {
-          showToast("Khởi Động Lại", "Đã tải xong bản cập nhật. Ứng dụng sẽ tự khởi động lại sau giây lát!", "success");
+          showToast("Khởi Động Lại", "Đã tải xong bản cập nhật! Ứng dụng sẽ tự động khởi động lại sau 2 giây...", "success");
           if (logEl && typeof appendLog === "function") {
             appendLog("UPDATE", "Bản cập nhật đã sẵn sàng! Đang khởi động lại ứng dụng...", "text-tertiary");
           }
+          setTimeout(async () => {
+            try {
+              await invokeRust("run_system_action", { actionId: "restart_app" });
+            } catch (_) {}
+            try {
+              window.close();
+            } catch (_) {}
+          }, 1500);
         } else {
-          showToast("Cập Nhật", (applyRes && applyRes.message) || "Không thể tự cập nhật.", "warning");
+          showToast("Cập Nhật Thất Bại", (applyRes && applyRes.message) || "Không thể tự cập nhật.", "warning");
         }
       } else {
         if (isManual) {
-          const msg = updateInfo ? updateInfo.message : res.message;
-          showToast("Cập Nhật Hệ Thống", msg || "Đang sử dụng phiên bản mới nhất!", "success");
+          const msg = (updateInfo && updateInfo.message) ? updateInfo.message : "Bạn đang sử dụng phiên bản VUONGTT Toolkit mới nhất!";
+          showToast("Cập Nhật Hệ Thống", msg, "success");
         }
       }
     } catch (e) {
@@ -3241,6 +3245,7 @@
   function initHeaderControls() {
     const btnVn = document.getElementById("btn-lang-vn");
     const btnEn = document.getElementById("btn-lang-en");
+    const btnHeaderUpdate = document.getElementById("btn-header-update");
     const btnCheckUpdate = document.getElementById("btn-check-update");
 
     if (btnVn) {
@@ -3253,10 +3258,12 @@
         showToast("Language", "English language interface selected!", "info");
       });
     }
+    const triggerUpdate = () => checkForUpdate(true);
+    if (btnHeaderUpdate) {
+      btnHeaderUpdate.addEventListener("click", triggerUpdate);
+    }
     if (btnCheckUpdate) {
-      btnCheckUpdate.addEventListener("click", () => {
-        checkForUpdate(true);
-      });
+      btnCheckUpdate.addEventListener("click", triggerUpdate);
     }
   }
 

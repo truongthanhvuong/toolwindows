@@ -1941,54 +1941,72 @@ th { background: #222a3d; color: #6ffbbe; }
     }
 
     if act == "check_update" || act == "kiem tra cap nhat" {
-        let ps_code = r#"
+        let app_ver = crate::APP_VERSION;
+        let current_exe = std::env::current_exe()
+            .unwrap_or_else(|_| std::path::PathBuf::from(r"E:\toolwindows\VUONGTT_Toolkit.exe"));
+        let current_dir = current_exe
+            .parent()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|| r"E:\toolwindows".to_string())
+            .replace('\\', "\\\\");
+
+        let ps_code = format!(
+            r#"
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
-            $curVer = if (Test-Path 'E:\toolwindows\version.json') {
-                try { (Get-Content -Path 'E:\toolwindows\version.json' -Raw | ConvertFrom-Json).version.Trim() } catch { '20.5.909.130' }
-            } else { '20.5.909.130' }
+            $curVer = "{app_ver}"
+            $localJson = Join-Path "{current_dir}" "version.json"
+            if (Test-Path $localJson) {{
+                try {{
+                    $lv = (Get-Content -Path $localJson -Raw -Encoding UTF8 | ConvertFrom-Json).version
+                    if ($lv) {{ $curVer = $lv.Trim() }}
+                }} catch {{}}
+            }}
             $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-            try {
+            try {{
                 $wc = New-Object System.Net.WebClient
                 $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
                 $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
                 $wc.Headers.Add("Pragma", "no-cache")
                 $raw = $wc.DownloadString($url)
                 $data = ConvertFrom-Json $raw
-                $remoteVer = if ($data.version) { $data.version.Trim() } else { $curVer }
-                $downUrl = if ($data.downloadUrl) { $data.downloadUrl } else { "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe" }
-                $changelog = if ($data.changelog) { ($data.changelog | Select-Object -First 2) -join " " } else { "Cải tiến hiệu năng & sửa lỗi." }
+                $remoteVer = if ($data.version) {{ $data.version.Trim() }} else {{ $curVer }}
+                $downUrl = if ($data.downloadUrl) {{ $data.downloadUrl }} else {{ "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe" }}
+                $changelog = if ($data.changelog) {{ ($data.changelog | Select-Object -First 2) -join " " }} else {{ "Cải tiến hiệu năng & sửa lỗi." }}
 
                 $hasUpd = $false
                 $curParts = $curVer.Split('.')
                 $remParts = $remoteVer.Split('.')
-                for ($i = 0; $i -lt [Math]::Min($curParts.Length, $remParts.Length); $i++) {
+                for ($i = 0; $i -lt [Math]::Min($curParts.Length, $remParts.Length); $i++) {{
                     $cP = 0; $rP = 0
                     [int]::TryParse($curParts[$i], [ref]$cP) | Out-Null
                     [int]::TryParse($remParts[$i], [ref]$rP) | Out-Null
-                    if ($rP -gt $cP) { $hasUpd = $true; break }
-                    elseif ($rP -lt $cP) { break }
-                }
-                [PSCustomObject]@{
+                    if ($rP -gt $cP) {{ $hasUpd = $true; break }}
+                    elseif ($rP -lt $cP) {{ break }}
+                }}
+                [PSCustomObject]@{{
                     has_update = $hasUpd
                     current_version = $curVer
                     latest_version = $remoteVer
                     download_url = $downUrl
                     changelog = $changelog
-                    message = if ($hasUpd) { "Phát hiện phiên bản mới: VUONGTT Toolkit v$remoteVer (Hiện tại: v$curVer)" } else { "Đang sử dụng phiên bản VUONGTT Toolkit mới nhất: v$curVer" }
-                } | ConvertTo-Json -Compress
-            } catch {
-                [PSCustomObject]@{
+                    message = if ($hasUpd) {{ "Phát hiện phiên bản mới: VUONGTT Toolkit v$remoteVer (Hiện tại: v$curVer)" }} else {{ "Bạn đang sử dụng phiên bản VUONGTT Toolkit mới nhất: v$curVer" }}
+                }} | ConvertTo-Json -Compress
+            }} catch {{
+                [PSCustomObject]@{{
                     has_update = $false
                     current_version = $curVer
                     latest_version = $curVer
                     download_url = ""
                     changelog = "Hệ thống đang hoạt động ổn định."
-                    message = "Hệ thống đang chạy phiên bản VUONGTT Toolkit mới nhất (v$curVer)."
-                } | ConvertTo-Json -Compress
-            }
-        "#;
+                    message = "Bạn đang sử dụng phiên bản VUONGTT Toolkit mới nhất: v$curVer"
+                }} | ConvertTo-Json -Compress
+            }}
+        "#,
+            app_ver = app_ver,
+            current_dir = current_dir
+        );
         let mut cmd = Command::new("powershell");
-        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
@@ -1996,7 +2014,7 @@ th { background: #222a3d; color: #6ffbbe; }
         return (
             true,
             if trimmed.is_empty() {
-                r#"{"has_update":false,"current_version":"20.5.909.130","message":"Đang sử dụng phiên bản mới nhất!"}"#.to_string()
+                format!(r#"{{"has_update":false,"current_version":"{}","message":"Đang sử dụng phiên bản mới nhất!"}}"#, app_ver)
             } else {
                 trimmed.to_string()
             },
@@ -2004,34 +2022,82 @@ th { background: #222a3d; color: #6ffbbe; }
     }
 
     if act == "apply_update" || act == "download_and_apply_update" || act == "tu_dong_cap_nhat" {
-        let ps_code = r#"
+        let current_exe = std::env::current_exe()
+            .unwrap_or_else(|_| std::path::PathBuf::from(r"E:\toolwindows\VUONGTT_Toolkit.exe"));
+        let target_exe_str = current_exe.to_string_lossy().to_string().replace('\\', "\\\\");
+        let current_pid = std::process::id();
+
+        let ps_code = format!(
+            r#"
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
-            $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe"
-            $targetExe = if (Test-Path 'E:\toolwindows\VUONGTT_Toolkit.exe') { 'E:\toolwindows\VUONGTT_Toolkit.exe' } else { "$env:USERPROFILE\Desktop\VUONGTT_Toolkit.exe" }
+            $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+            $targetExe = "{target_exe}"
             $tempExe = "$env:TEMP\VUONGTT_Toolkit_Update.exe"
-            try {
+            $currPid = {current_pid}
+            try {{
                 $wc = New-Object System.Net.WebClient
                 $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+                $wc.Headers.Add("Pragma", "no-cache")
                 $wc.DownloadFile($url, $tempExe)
-                if ((Test-Path $tempExe) -and (Get-Item $tempExe).Length -gt 1000000) {
+                if ((Test-Path $tempExe) -and (Get-Item $tempExe).Length -gt 1000000) {{
                     $updaterScript = @"
-                        Start-Sleep -Seconds 1
-                        Move-Item -Path '$tempExe' -Destination '$targetExe' -Force
-                        Start-Process '$targetExe'
+param(`$TargetExe = '$targetExe', `$TempExe = '$tempExe', [int]`$CurrentPid = $currPid)
+# 1. Cho tiến trình cũ thoát hoặc buộc dừng để giải phóng file lock
+if (`$CurrentPid -gt 0) {{
+    for (`$i = 0; `$i -lt 12; `$i++) {{
+        `$p = Get-Process -Id `$CurrentPid -ErrorAction SilentlyContinue
+        if (-not `$p -or `$p.HasExited) {{ break }}
+        Start-Sleep -Milliseconds 500
+    }}
+    Stop-Process -Id `$CurrentPid -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 400
+}}
+
+# 2. Xóa backup cũ nếu có
+`$oldBackup = "`$TargetExe.old"
+if (Test-Path `$oldBackup) {{ Remove-Item `$oldBackup -Force -ErrorAction SilentlyContinue }}
+
+# 3. Thay thế tệp với cơ chế đổi tên dự phòng
+`$success = `$false
+for (`$i = 0; `$i -lt 15; `$i++) {{
+    try {{
+        Move-Item -Path `$TempExe -Destination `$TargetExe -Force -ErrorAction Stop
+        `$success = `$true
+        break
+    }} catch {{
+        try {{
+            Rename-Item -Path `$TargetExe -NewName ([System.IO.Path]::GetFileName(`$oldBackup)) -Force -ErrorAction Stop
+            Move-Item -Path `$TempExe -Destination `$TargetExe -Force -ErrorAction Stop
+            `$success = `$true
+            break
+        }} catch {{
+            Start-Sleep -Milliseconds 600
+        }}
+    }}
+}}
+
+# 4. Khởi chạy phiên bản mới
+if (`$success -and (Test-Path `$TargetExe)) {{
+    Start-Process -FilePath `$TargetExe
+}}
 "@
                     $batPath = "$env:TEMP\vuongtt_apply_update.ps1"
                     [System.IO.File]::WriteAllText($batPath, $updaterScript, [System.Text.Encoding]::UTF8)
                     Start-Process powershell -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$batPath`""
                     Write-Output "UPDATE_READY"
-                } else {
+                }} else {{
                     Write-Output "UPDATE_FAILED_DOWNLOAD"
-                }
-            } catch {
+                }}
+            }} catch {{
                 Write-Output "UPDATE_ERROR: $($_.Exception.Message)"
-            }
-        "#;
+            }}
+        "#,
+            target_exe = target_exe_str,
+            current_pid = current_pid
+        );
         let mut cmd = Command::new("powershell");
-        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
@@ -2044,6 +2110,14 @@ th { background: #222a3d; color: #6ffbbe; }
                 format!("Không thể tải bản cập nhật: {}", trimmed)
             },
         );
+    }
+
+    if act == "restart_app" || act == "exit_app" {
+        std::thread::spawn(|| {
+            std::thread::sleep(std::time::Duration::from_millis(600));
+            std::process::exit(0);
+        });
+        return (true, "Ứng dụng đang khởi động lại...".to_string());
     }
 
     if act == "devmgmt" || act == "open_devmgmt" || act == "device manager" {
