@@ -1919,10 +1919,41 @@
         const toggleHidden = document.getElementById("toggle-show-hidden");
         if (toggleHidden) toggleHidden.checked = !!data.show_hidden;
 
+        // 4. Đồng bộ trạng thái Super Lean Profile & Nút Hoàn Tác
+        const isSuperLean = localStorage.getItem("super_lean_applied") === "true";
+        updateSuperLeanUI(isSuperLean);
+
       } catch (e) {
         console.warn("syncRealWinOptimizeState error:", e);
       }
     };
+
+    // --- CẬP NHẬT TRẠNG THÁI GIAO DIỆN NÚT HOÀN TÁC CẤU HÌNH SIÊU NHẸ ---
+    function updateSuperLeanUI(isApplied) {
+      const badge = document.getElementById("super-lean-status-badge");
+      const revertBtn = document.getElementById("btn-revert-super-lean");
+      if (isApplied) {
+        if (badge) {
+          badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm flex items-center gap-1";
+          badge.innerHTML = '<span class="material-symbols-outlined text-[13px] text-emerald-400">check_circle</span><span>Đang Bật Cấu Hình Siêu Nhẹ</span>';
+        }
+        if (revertBtn) {
+          revertBtn.className = "px-4 py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-all border-2 border-amber-400/80 shadow-lg ring-2 ring-amber-400/40 animate-pulse";
+          revertBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] text-amber-300">undo</span><span>↩ HOÀN TÁC VỀ MẶC ĐỊNH TRƯỚC ĐÓ</span>';
+          revertBtn.title = "Bấm vào đây để hủy bỏ toàn bộ tối ưu và khôi phục về trạng thái chuẩn mặc định của Windows";
+        }
+      } else {
+        if (badge) {
+          badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant border border-outline/20";
+          badge.innerHTML = "⚪ Chuẩn Windows (Mặc Định)";
+        }
+        if (revertBtn) {
+          revertBtn.className = "px-4 py-3 rounded-xl bg-surface-container-highest hover:bg-error-container hover:text-on-error-container text-on-surface font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all border border-outline/20";
+          revertBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">undo</span><span>HOÀN TÁC VỀ MẶC ĐỊNH</span>';
+          revertBtn.title = "Khôi phục toàn bộ cài đặt về mặc định của hệ thống";
+        }
+      }
+    }
 
     // --- GENERIC SYSTEM ACTION CALLER ---
     window.runSystemAction = async function(actionId, params) {
@@ -1953,6 +1984,8 @@
       try {
         const res = await invokeRust("run_system_action", { actionId: "apply_super_lean_profile" });
         if (res && res.success) {
+          localStorage.setItem("super_lean_applied", "true");
+          updateSuperLeanUI(true);
           appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
           showToast("Thành Công Siêu Nhẹ", res.message, "success");
           setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);
@@ -1972,6 +2005,8 @@
       try {
         const res = await invokeRust("run_system_action", { actionId: "revert_super_lean_profile" });
         if (res && res.success) {
+          localStorage.setItem("super_lean_applied", "false");
+          updateSuperLeanUI(false);
           appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
           showToast("Khôi Phục Thành Công", res.message, "success");
           setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 500);

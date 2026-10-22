@@ -77,14 +77,23 @@ Write-Host "`n--- Nhóm 3: Kiểm Tra Giao Diện UI & Hoàn Tác (View 04 & Vie
 # 3.1 Card Super Lean Pro trong View 04
 Assert-True ($htmlContent -match 'btn-apply-super-lean' -or $htmlContent -match 'btnApplySuperLean') "index.html phải có nút Áp Dụng Cấu Hình Siêu Nhẹ"
 Assert-True ($htmlContent -match 'btn-revert-super-lean' -or $htmlContent -match 'btnRevertSuperLean') "index.html phải có nút Hoàn Tác Về Mặc Định"
+Assert-True ($htmlContent -match 'super-lean-status-badge') "index.html phải có badge trạng thái super-lean-status-badge"
 
-# 3.2 Banner nhận diện License BIOS trong View 02
+# 3.2 Kiểm tra cân bằng thẻ HTML trong view-win-optimize chống lỗi vỡ layout
+$optSec = [regex]::Match($htmlContent, '(?s)<section\s+id=[\x22\x27]view-win-optimize[\x22\x27].*?(?=<section\s+id=[\x22\x27]view-)').Value
+$openDivs = ([regex]::Matches($optSec, '<div[\s>]')).Count
+$closeDivs = ([regex]::Matches($optSec, '</div>')).Count
+Assert-True ($openDivs -eq $closeDivs) "view-win-optimize phải có cấu trúc thẻ div cân bằng tuyệt đối (Open: $openDivs, Close: $closeDivs)"
+
+# 3.3 Banner nhận diện License BIOS trong View 02
 Assert-True ($htmlContent -match 'bios-license-card' -or $htmlContent -match 'biosLicenseInfo' -or $htmlContent -match 'banner-bios-license') "View 02 phải có khu vực hiển thị License nhận diện từ BIOS"
 
-# 3.3 Event wiring trong app.js
+# 3.4 Event wiring & state retention trong app.js
 Assert-True ($appJsContent -match 'apply_super_lean_profile') "app.js phải gọi 'apply_super_lean_profile'"
 Assert-True ($appJsContent -match 'revert_super_lean_profile') "app.js phải gọi 'revert_super_lean_profile'"
 Assert-True ($appJsContent -match 'detect_bios_license') "app.js phải gọi 'detect_bios_license'"
+Assert-True ($appJsContent -match 'updateSuperLeanUI') "app.js phải có hàm updateSuperLeanUI để cập nhật nút hoàn tác và badge trạng thái"
+Assert-True ($appJsContent -match 'super_lean_applied') "app.js phải lưu và đồng bộ trạng thái super_lean_applied trong localStorage"
 
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "KẾT QUẢ: TOÀN BỘ TEST TDD CHO TÍNH NĂNG VÀ HOÀN TÁC ĐẠT PASS!" -ForegroundColor Green

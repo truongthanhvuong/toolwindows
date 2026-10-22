@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.128</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.129</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -740,6 +740,8 @@
           </span>
 </div>
 </div>
+</div>
+</div>
 <!-- BIOS License Recognition Banner -->
 <div id="bios-license-card" class="p-space-md rounded-xl bg-gradient-to-r from-primary-container/20 via-surface-container to-secondary-container/20 border border-primary-container/30 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
   <div class="flex items-start gap-3">
@@ -1108,7 +1110,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span id="tech-driver-build-badge">Build: v20.5.909.128</span>
+<span id="tech-driver-build-badge">Build: v20.5.909.129</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -1505,12 +1507,13 @@
 <span>Cứu Hộ IT Helpdesk</span>
 </button>
 </div>
+</div>
 <!-- CẤU HÌNH TỐI ƯU SIÊU NHẸ 2026 (SUPER LEAN PRO) KÈM NÚT HOÀN TÁC -->
 <div class="p-space-lg rounded-2xl bg-gradient-to-br from-surface-container-low via-surface-container to-surface-container-high border-2 border-primary-container/40 shadow-xl flex flex-col gap-space-md relative overflow-hidden">
   <div class="absolute -right-12 -top-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
   <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md relative z-10">
     <div class="space-y-1.5 max-w-2xl">
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-container text-on-primary-container flex items-center gap-1 shadow-sm">
           <span class="material-symbols-outlined text-[14px]">speed</span>
           SUPER LEAN PRO 2026
@@ -1521,6 +1524,9 @@
         <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
           🛡️ Giữ Edge &amp; Defender
         </span>
+        <span id="super-lean-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant border border-outline/20">
+          ⚪ Chưa Kích Hoạt
+        </span>
       </div>
       <h2 class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
         Gói Cấu Hình Tối Ưu Siêu Nhẹ 2026 &amp; Debloat Sạch 28 App Rác
@@ -1529,12 +1535,12 @@
         Tự động nén CompactOS, dọn WinSxS, giải phóng RAM 1.5 - 1.8GB, hiện 4 icon Desktop, phím PrtSc mở Snipping Tool, Control Panel hiển thị sẵn icon, tắt Copilot &amp; AI Recall, tắt Fax &amp; Hyper-V. <strong>Hỗ trợ 1-Click Hoàn Tác về cài đặt chuẩn Windows bất cứ lúc nào!</strong>
       </p>
     </div>
-    <div class="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
-      <button id="btn-apply-super-lean" onclick="applySuperLeanProfile()" type="button" class="px-5 py-3 rounded-xl bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-headline-md text-headline-md font-semibold shadow-lg shadow-primary-container/20 flex items-center gap-2 transition-all transform active:scale-95 group">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+      <button id="btn-apply-super-lean" onclick="applySuperLeanProfile()" type="button" class="px-5 py-3 rounded-xl bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-headline-md text-headline-md font-semibold shadow-lg shadow-primary-container/20 flex items-center justify-center gap-2 transition-all transform active:scale-95 group">
         <span class="material-symbols-outlined text-[20px] transition-transform group-hover:scale-125">bolt</span>
         <span>ÁP DỤNG CẤU HÌNH SIÊU NHẸ</span>
       </button>
-      <button id="btn-revert-super-lean" onclick="revertSuperLeanProfile()" type="button" class="px-4 py-3 rounded-xl bg-surface-container-highest hover:bg-error-container hover:text-on-error-container text-on-surface font-label-md text-label-md font-semibold flex items-center gap-2 transition-all border border-outline/20">
+      <button id="btn-revert-super-lean" onclick="revertSuperLeanProfile()" type="button" class="px-4 py-3 rounded-xl bg-surface-container-highest hover:bg-error-container hover:text-on-error-container text-on-surface font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all border border-outline/20">
         <span class="material-symbols-outlined text-[18px]">undo</span>
         <span>HOÀN TÁC VỀ MẶC ĐỊNH</span>
       </button>
@@ -5081,6 +5087,7 @@
       </button>
     </div>
   </div>
+</div>
 </div>
 </div>
 <script>
