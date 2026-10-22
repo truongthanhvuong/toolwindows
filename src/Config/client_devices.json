@@ -1,5 +1,14 @@
 [
     {
+        "hostname":  "TEST-PC-99",
+        "serialNumber":  "TEST-BIOS-SN-99",
+        "ipAddress":  "192.168.1.99",
+        "osCaption":  "Windows 11 Test",
+        "lastSeen":  "2026-10-22 14:23:47",
+        "hwid":  "HWID-TEST-99",
+        "status":  "Active"
+    },
+    {
         "hostname":  "VUONGTT",
         "serialNumber":  "SN-VUONGTT",
         "ipAddress":  "172.16.160.89",
