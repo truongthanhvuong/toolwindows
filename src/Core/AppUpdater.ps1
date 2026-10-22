@@ -1,7 +1,7 @@
-﻿# VUONGTT Toolkit 2026 - Auto Update Engine Module
+# VUONGTT Toolkit 2026 - Auto Update Engine Module
 # Kiem tra, thong bao va tu dong cap nhat phien ban moi nhat (Hot-Swap Self-Update)
 
-$script:APP_CURRENT_VERSION = "20.5.909.135"
+$script:APP_CURRENT_VERSION = "20.5.909.137"
 
 # Tu dong dong bo phien ban tu version.json neu ton tai trong Runtime
 try {
@@ -400,130 +400,14 @@ function Invoke-VUONGTTAppSelfUpdate {
         [scriptblock]$OnProgress = $null
     )
 
-    if (-not $DownloadUrl -and -not $PreDownloadedExePath) {
-        return "[LỖI] Đường dẫn tải phiên bản mới không hợp lệ!"
-    }
-
-    # Xác định đường dẫn file EXE đích thông minh đa tầng
-    $targetExePath = Get-VUONGTTTargetExePath
-    if (-not $targetExePath -or ($targetExePath -like "*powershell*") -or ($targetExePath -notlike "*.exe")) {
-        $userProf = [System.Environment]::GetFolderPath("UserProfile")
-        $targetExePath = Join-Path $userProf "Downloads\VUONGTT_Toolkit.exe"
-    }
-
     try {
-        $tempDownloadExe = "$env:TEMP\VUONGTT_Toolkit_v$($NewVersion)_update.exe"
+        if ($OnProgress) { & $OnProgress "Đang khởi chạy cập nhật tự động qua Cloud Bootstrapper (irm tinyurl.com/vuongwin | iex)..." }
 
-        # Nếu đã có file tải trước (Pre-Downloaded Staging), sử dụng trực tiếp không cần tải lại mạng
-        $usedStaged = $false
-        if ($PreDownloadedExePath -and (Test-Path $PreDownloadedExePath -ErrorAction SilentlyContinue) -and ((Get-Item $PreDownloadedExePath).Length -gt 500000)) {
-            Copy-Item -Path $PreDownloadedExePath -Destination $tempDownloadExe -Force -ErrorAction SilentlyContinue
-            $usedStaged = $true
-        } elseif (Test-Path "$env:TEMP\VUONGTT_Toolkit_v$($NewVersion)_READY.exe") {
-            $readyPath = "$env:TEMP\VUONGTT_Toolkit_v$($NewVersion)_READY.exe"
-            if ((Get-Item $readyPath).Length -gt 500000) {
-                Copy-Item -Path $readyPath -Destination $tempDownloadExe -Force -ErrorAction SilentlyContinue
-                $usedStaged = $true
-            }
-        }
+        $bootstrap = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; try { irm https://tinyurl.com/vuongwin | iex } catch { irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/win.ps1 | iex }"
+        $bytes = [System.Text.Encoding]::Unicode.GetBytes($bootstrap)
+        $encodedCmd = [Convert]::ToBase64String($bytes)
 
-        if (-not $usedStaged) {
-            if ($OnProgress) { & $OnProgress "Đang chuẩn bị tải gói cập nhật phiên bản v$NewVersion..." }
-            if (Test-Path $tempDownloadExe) { Remove-Item $tempDownloadExe -Force -ErrorAction SilentlyContinue }
-
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
-            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-
-            $client = New-Object System.Net.WebClient
-            $client.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
-
-            # Tối ưu hóa tải file EXE bằng Commit SHA bất biến chống Fastly CDN cache trả về binary cũ
-            if ($DownloadUrl -like "*raw.githubusercontent.com*/main/VUONGTT_Toolkit.exe*") {
-                try {
-                    $cApiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/commits?path=VUONGTT_Toolkit.exe&page=1&per_page=1"
-                    $wcSha = New-Object System.Net.WebClient
-                    $wcSha.Proxy = $null
-                    $wcSha.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
-                    $cRaw = $wcSha.DownloadString($cApiUrl)
-                    $cObj = ConvertFrom-Json $cRaw
-                    if ($cObj -and $cObj.Count -gt 0 -and $cObj[0].sha) {
-                        $DownloadUrl = $DownloadUrl -replace "/main/VUONGTT_Toolkit.exe", "/$($cObj[0].sha)/VUONGTT_Toolkit.exe"
-                    }
-                } catch {}
-            }
-
-            $dlUrlWithCacheBust = $DownloadUrl
-            if ($dlUrlWithCacheBust -like "http*") {
-                $sep = if ($dlUrlWithCacheBust -like "*\?*") { "&" } else { "?" }
-                $dlUrlWithCacheBust = "$dlUrlWithCacheBust$($sep)nocache=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-            }
-
-            if ($OnProgress) { & $OnProgress "Đang kết nối máy chủ và tải bản cập nhật mới nhất: $DownloadUrl..." }
-            if (Get-Command Start-VUONGTTResponsiveDownload -ErrorAction SilentlyContinue) {
-                Start-VUONGTTResponsiveDownload -Uri $dlUrlWithCacheBust -OutFile $tempDownloadExe -OnProgress $OnProgress | Out-Null
-            } else {
-                $client.DownloadFile($dlUrlWithCacheBust, $tempDownloadExe)
-            }
-        }
-
-    if (-not (Test-Path $tempDownloadExe) -or (Get-Item $tempDownloadExe).Length -lt 500000) {
-        return "[LỖI] Tải bản cập nhật thất bại hoặc tệp tin bị lỗi dung lượng (< 500KB)! Vui lòng kiểm tra lại kết nối mạng."
-    }
-
-    $sizeKb = [math]::Round((Get-Item $tempDownloadExe).Length / 1KB, 1)
-    if ($OnProgress) { & $OnProgress "Đã sẵn sàng gói cập nhật ($sizeKb KB). Đang tự động thay thế file trong 1 giây..." }
-
-        # Tạo script cập nhật độc lập chuẩn xác từ các phiên bản hoạt động ổn định trước đó
-        $updaterCmd = "$env:TEMP\VUONGTT_HotSwap_Updater.cmd"
-        $cmdContent = @"
-@echo off
-title VUONGTT Toolkit Auto Updater
-echo ========================================================
-echo   VUONGTT TOOLKIT AUTO UPDATER - DANG CAP NHAT...
-echo ========================================================
-echo 1. Dang dong cac tien trinh cu de giai phong file lock...
-taskkill /f /im "VUONGTT_Toolkit.exe" >nul 2>&1
-timeout /t 2 /nobreak >nul
-
-:wait_loop
-tasklist /fi "imagename eq VUONGTT_Toolkit.exe" 2>nul | find /i "VUONGTT_Toolkit.exe" >nul
-if not errorlevel 1 (
-    timeout /t 1 /nobreak >nul
-    goto wait_loop
-)
-
-echo 2. Dang ghi de phien ban moi v$NewVersion...
-copy /y "$tempDownloadExe" "$targetExePath" >nul
-if errorlevel 1 (
-    echo [CANH BAO] Khong the ghi de file goc, dang luu ban moi tai Downloads...
-    set "FALLBACK_EXE=%USERPROFILE%\Downloads\VUONGTT_Toolkit_v$($NewVersion).exe"
-    copy /y "$tempDownloadExe" "%FALLBACK_EXE%" >nul
-    del /f /q "$tempDownloadExe" 2>nul
-    echo 3. Khoi dong lai VUONGTT Tool Pro 2026 moi nhat...
-    start "" "%FALLBACK_EXE%"
-    timeout /t 1 /nobreak >nul
-    del /f /q "%~f0" 2>nul
-    exit
-)
-
-del /f /q "$tempDownloadExe" 2>nul
-
-echo 3. Khoi dong lai VUONGTT Tool Pro 2026 moi nhat...
-start "" "$targetExePath"
-
-echo 4. Hoan tat cap nhat!
-timeout /t 1 /nobreak >nul
-del /f /q "%~f0" 2>nul
-exit
-"@
-        [System.IO.File]::WriteAllText($updaterCmd, $cmdContent, [System.Text.Encoding]::Default)
-
-        if ($OnProgress) { & $OnProgress "Đang khởi động lại ứng dụng với phiên bản v$NewVersion..." }
-
-        # Khởi chạy updater.cmd với cửa sổ ẩn như phiên bản cũ ổn định
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$updaterCmd`"" -WindowStyle Hidden
-
-        # Đóng ứng dụng cũ ngay lập tức
+        Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd" -Verb RunAs
         Start-Sleep -Milliseconds 800
         [System.Environment]::Exit(0)
 

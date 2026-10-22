@@ -298,9 +298,11 @@ if ($needDownload) {
     if (Test-Path $tempDownload) { Remove-Item $tempDownload -Force -ErrorAction SilentlyContinue }
 
     # Dung tien trinh cu neu dang chay
+    taskkill /F /IM "VUONGTT_Toolkit.exe" /T 2>&1 | Out-Null
+    taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T 2>&1 | Out-Null
     $stopAttempts = 5
-    while ((Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue) -and ($stopAttempts -gt 0)) {
-        Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    while ((Get-Process -Name "VUONGTT_Toolkit*" -ErrorAction SilentlyContinue) -and ($stopAttempts -gt 0)) {
+        Get-Process -Name "VUONGTT_Toolkit*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 300
         $stopAttempts--
     }
@@ -347,14 +349,17 @@ if ($needDownload) {
 # 5. TAO LOI TAT DESKTOP CONVENIENT SHORTCUT
 try {
     $desktopPath = [System.Environment]::GetFolderPath('Desktop')
-    $shortcutPath = Join-Path $desktopPath "VUONGTT Tool Pro 2026.lnk"
     $wshShell = New-Object -ComObject WScript.Shell
-    $shortcut = $wshShell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $exePath
-    $shortcut.WorkingDirectory = $installDir
-    $shortcut.Description = "VUONGTT Tool Pro 2026 - He Thong Ky Thuat Vien Da Nang"
-    $shortcut.IconLocation = "$exePath,0"
-    $shortcut.Save()
+    foreach ($scName in @("VUONGTT Toolkit.lnk", "VUONGTT Tool Pro 2026.lnk")) {
+        try {
+            $shortcut = $wshShell.CreateShortcut((Join-Path $desktopPath $scName))
+            $shortcut.TargetPath = $exePath
+            $shortcut.WorkingDirectory = $installDir
+            $shortcut.Description = "VUONGTT Toolkit 2026 - He Thong Ky Thuat Vien Da Nang"
+            $shortcut.IconLocation = "$exePath,0"
+            $shortcut.Save()
+        } catch {}
+    }
 } catch {}
 
 # 6. KHOI CHAY UNG DUNG

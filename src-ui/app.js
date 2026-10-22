@@ -3314,9 +3314,9 @@
         }
         const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
         if (applyRes && applyRes.success) {
-          showToast("Khởi Động Lại", "Đã tải xong bản cập nhật! Ứng dụng sẽ tự động khởi động lại sau 2 giây...", "success");
+          showToast("Cập Nhật Tự Động", "Đang khởi chạy Cloud Bootstrapper (irm tinyurl.com/vuongwin | iex). Ứng dụng sẽ tự động tải và cài đặt phiên bản mới nhất...", "success");
           if (logEl && typeof appendLog === "function") {
-            appendLog("UPDATE", "Bản cập nhật đã sẵn sàng! Đang khởi động lại ứng dụng...", "text-tertiary");
+            appendLog("UPDATE", "Kích hoạt irm tinyurl.com/vuongwin | iex để tự động cập nhật và thay thế phiên bản mới nhất...", "text-success");
           }
           setTimeout(async () => {
             try {
@@ -3327,7 +3327,7 @@
             } catch (_) {}
           }, 1500);
         } else {
-          showToast("Cập Nhật Thất Bại", (applyRes && applyRes.message) || "Không thể tự cập nhật.", "warning");
+          showToast("Cập Nhật Thất Bại", (applyRes && applyRes.message) || "Không thể khởi chạy cập nhật.", "warning");
         }
       } else {
         if (isManual) {
