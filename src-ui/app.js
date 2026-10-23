@@ -116,7 +116,10 @@
       setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 50);
     }
     if (targetId === "view-win-deploy") {
-      setTimeout(() => { if (window.checkBiosLicense) window.checkBiosLicense(); }, 50);
+      setTimeout(() => {
+        if (window.checkBiosLicense) window.checkBiosLicense();
+        if (window.initWinDeployEnv) window.initWinDeployEnv();
+      }, 50);
     }
 
     if (focusElementId) {
@@ -2630,6 +2633,10 @@
       osSelector.addEventListener("change", (e) => {
         if (e.target.value === "custom-iso") {
           browseIsoFile();
+        } else if (e.target.value && (e.target.value.toLowerCase().endsWith(".iso") || e.target.value.toLowerCase().endsWith("setup.exe"))) {
+          const isoPathEl = document.getElementById("iso-path-text");
+          if (isoPathEl) isoPathEl.innerText = e.target.value;
+          showToast("Chọn Bộ Cài", "Đã chọn: " + e.target.value, "success");
         }
       });
     }
@@ -2714,6 +2721,116 @@
   window.backupDriverFromDeploy = backupDriverFromDeploy;
   window.exportDrivers = backupDriverFromDeploy;
 
+  async function backupSystemFromDeploy() {
+    const btn = document.getElementById("btn-quick-backup-system");
+    const label = document.getElementById("btn-quick-backup-system-label");
+    const desc = document.getElementById("deploy-system-target-desc");
+    if (label) label.innerText = "Đang sao lưu...";
+    if (btn) btn.disabled = true;
+    showToast("Sao Lưu Toàn Bộ Windows", "Đang tiến hành sao lưu hệ thống C: (WIM / Snapshot) ra phân vùng an toàn...", "info");
+
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "backup_full_windows" });
+      if (res && res.success) {
+        showToast("Sao Lưu Hoàn Tất", res.message || "Đã sao lưu Windows an toàn!", "success");
+        if (label) label.innerText = "✓ Đã Sao Lưu";
+        if (desc) desc.innerText = res.message;
+      } else {
+        showToast("Lỗi Sao Lưu", (res && res.message) || "Không thể sao lưu hệ thống.", "error");
+        if (label) label.innerText = "Sao Lưu Ngay";
+      }
+      return res;
+    } catch (e) {
+      showToast("Lỗi Hệ Thống", "Gặp lỗi khi sao lưu hệ thống: " + e, "error");
+      if (label) label.innerText = "Sao Lưu Ngay";
+      return null;
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  window.backupSystemFromDeploy = backupSystemFromDeploy;
+
+  async function initWinDeployEnv() {
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "detect_win_install_env" });
+      if (res && res.message) {
+        let envData = {};
+        try {
+          envData = JSON.parse(res.message);
+        } catch (_) {}
+
+        // 1. Chuẩn khởi động
+        const bootEl = document.getElementById("deploy-boot-mode");
+        if (bootEl && envData.boot_mode) {
+          bootEl.innerHTML = `<span class="material-symbols-outlined text-[14px]">check_circle</span> ${envData.boot_mode}`;
+        }
+
+        // 2. Môi trường (Máy ảo vs Vật lý)
+        const envBadge = document.getElementById("deploy-env-badge");
+        if (envBadge) {
+          if (envData.is_vm) {
+            envBadge.className = "font-label-md text-label-md text-amber-400 flex items-center gap-1 mt-0.5";
+            envBadge.innerHTML = `<span class="material-symbols-outlined text-[14px]">desktop_windows</span> ${envData.vm_type}`;
+          } else {
+            envBadge.className = "font-label-md text-label-md text-secondary flex items-center gap-1 mt-0.5";
+            envBadge.innerHTML = `<span class="material-symbols-outlined text-[14px]">computer</span> ${envData.vm_type || "Máy Vật Lý"}`;
+          }
+        }
+
+        // 3. Thanh trạng thái Readiness Bar
+        const freeEl = document.getElementById("readiness-c-free");
+        if (freeEl && envData.c_free_gb !== undefined) {
+          freeEl.innerText = `Ổ C: ${envData.c_free_gb} GB trống / ${envData.c_total_gb || 100} GB`;
+          if (envData.c_free_gb < 20) {
+            freeEl.className = "text-amber-400 font-bold";
+          }
+        }
+
+        const pwrEl = document.getElementById("readiness-power");
+        if (pwrEl && envData.power_status) {
+          pwrEl.innerText = envData.power_status;
+        }
+
+        const envReadinessEl = document.getElementById("readiness-env");
+        if (envReadinessEl && envData.vm_type) {
+          envReadinessEl.innerText = envData.is_vm ? `Môi trường Ảo: ${envData.vm_type}` : `Máy Vật Lý (${envData.boot_mode || "UEFI"})`;
+        }
+
+        // 4. Nếu có ổ đĩa ảo hoặc CD-ROM chứa setup.exe (Đặc trưng máy ảo)
+        const isoPathEl = document.getElementById("iso-path-text");
+        if (envData.mounted_setup_drive) {
+          const setupPath = `${envData.mounted_setup_drive}\\setup.exe`;
+          if (isoPathEl && (!isoPathEl.innerText || isoPathEl.innerText.includes("Chưa chọn file") || isoPathEl.innerText.endsWith(".iso"))) {
+            isoPathEl.innerText = setupPath;
+            showToast("Nhận Diện Máy Ảo", `Đã phát hiện bộ cài Windows tại ổ ${envData.mounted_setup_drive} (Virtual CD/DVD). Tự động nạp!`, "info");
+          }
+        }
+
+        // 5. Nếu phát hiện các file ISO trong máy
+        if (envData.found_isos && envData.found_isos.length > 0) {
+          const osSelector = document.getElementById("os-selector");
+          if (osSelector) {
+            const existingOptGroup = osSelector.querySelector('optgroup[label="File ISO Phát Hiện Trên Máy"]');
+            if (!existingOptGroup) {
+              const optGroup = document.createElement("optgroup");
+              optGroup.label = "File ISO Phát Hiện Trên Máy";
+              envData.found_isos.forEach((iso) => {
+                const opt = document.createElement("option");
+                opt.value = iso.path;
+                opt.innerText = `[Có Sẵn] ${iso.name} (${iso.size})`;
+                optGroup.appendChild(opt);
+              });
+              osSelector.appendChild(optGroup);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("initWinDeployEnv error:", e);
+    }
+  }
+  window.initWinDeployEnv = initWinDeployEnv;
+
   async function startWinDeploy() {
     const btn = document.getElementById("btn-start-deploy");
     const isoPathEl = document.getElementById("iso-path-text");
@@ -2722,6 +2839,8 @@
     const deployMode = modeEl ? modeEl.value : "upgrade";
     const cbBackupDrivers = document.getElementById("cb-deploy-backup-drivers");
     const shouldBackupDrivers = cbBackupDrivers ? cbBackupDrivers.checked : true;
+    const cbBackupSystem = document.getElementById("cb-deploy-backup-system");
+    const shouldBackupSystem = cbBackupSystem ? cbBackupSystem.checked : true;
 
     if (!isoPath) {
       showToast("Cài Đặt Windows", "Vui lòng chọn hoặc nhập đường dẫn file ISO trước khi bắt đầu!", "warning");
@@ -2731,10 +2850,15 @@
     const originalHtml = btn ? btn.innerHTML : "";
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = `<span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span><span>${shouldBackupDrivers ? "ĐANG SAO LƯU DRIVER & NẠP ISO..." : "ĐANG NẠP ISO VÀ KÍCH HOẠT SETUP..."}</span>`;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span><span>${shouldBackupSystem ? "ĐANG SAO LƯU WINDOWS & NẠP ISO..." : (shouldBackupDrivers ? "ĐANG SAO LƯU DRIVER & NẠP ISO..." : "ĐANG NẠP ISO VÀ KÍCH HOẠT SETUP...")}</span>`;
     }
 
     try {
+      if (shouldBackupSystem) {
+        showToast("Sao Lưu Hệ Thống", "Đang tự động sao lưu toàn bộ Windows C: trước khi cài mới...", "info");
+        await backupSystemFromDeploy();
+      }
+
       if (shouldBackupDrivers) {
         showToast("Sao Lưu Driver", "Đang tiến hành sao lưu Driver máy tính trước khi cài Win...", "info");
         await backupDriverFromDeploy();
@@ -2746,6 +2870,8 @@
         isoPath: isoPath,
         mode: deployMode,
         deployMode: deployMode,
+        backup_system: shouldBackupSystem ? "true" : "false",
+        backupSystem: shouldBackupSystem ? "true" : "false",
         backup_drivers: shouldBackupDrivers ? "true" : "false",
         backupDrivers: shouldBackupDrivers ? "true" : "false"
       });
@@ -3385,6 +3511,7 @@
     initUserMgmtController();
     initDeployModeSwitcher();
     initDeploySubTabs();
+    initWinDeployEnv();
     initOfficeController();
     initPrinterLanController();
     initVpnProxyController();

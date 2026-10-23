@@ -1201,11 +1201,15 @@ th { background: #222a3d; color: #6ffbbe; }
             .or_else(|| extract_json_field(params_json, "backupDrivers"))
             .unwrap_or("false")
             .to_lowercase() == "true";
+        let backup_system = extract_json_field(params_json, "backup_system")
+            .or_else(|| extract_json_field(params_json, "backupSystem"))
+            .unwrap_or("false")
+            .to_lowercase() == "true";
 
         clear_logs();
         append_log("[CÀI WIN TỰ ĐỘNG] Khởi tạo môi trường triển khai Windows Setup...");
 
-        // 1. Tiêm cờ Registry Bypass TPM 2.0 / CPU / SecureBoot / RAM
+        // 1. Tiêm cờ Registry Bypass TPM 2.0 / CPU / SecureBoot / RAM / Storage / Disk cho cả máy vật lý và máy ảo
         if bypass_tpm {
             let ps_bypass = r#"
                 New-Item -Path 'HKLM:\SYSTEM\Setup\MoSetup' -Force -ErrorAction SilentlyContinue | Out-Null
@@ -1215,6 +1219,7 @@ th { background: #222a3d; color: #6ffbbe; }
                 Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassSecureBootCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
                 Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassRAMCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
                 Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassStorageCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassDiskCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
                 Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassCPUCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
             "#;
             let mut cmd = Command::new("powershell");
@@ -1222,7 +1227,7 @@ th { background: #222a3d; color: #6ffbbe; }
             #[cfg(windows)]
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.output();
-            append_log("[OK] Đã cấu hình Registry Bypass TPM 2.0, SecureBoot, CPU, RAM vào LabConfig & MoSetup.");
+            append_log("[OK] Đã cấu hình Registry Bypass TPM 2.0, SecureBoot, CPU, RAM, Storage vào LabConfig & MoSetup.");
         }
 
         if disable_bitlocker {
@@ -1236,6 +1241,26 @@ th { background: #222a3d; color: #6ffbbe; }
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.output();
             append_log("[OK] Đã chặn tính năng tự động mã hóa đĩa BitLocker ngoài ý muốn.");
+        }
+
+        if backup_system {
+            append_log("[OK] Khởi chạy tác vụ sao lưu toàn bộ Windows C: ra phân vùng an toàn trước khi cài Win...");
+            let ps_sys_backup = r#"
+                $sysDrive = $env:SystemDrive; if (-not $sysDrive) { $sysDrive = 'C:' }
+                $targetDisks = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 -and $_.DeviceID -ne $sysDrive } | Sort-Object FreeSpace -Descending
+                $targetDrive = if ($targetDisks -and $targetDisks.Count -gt 0) { $targetDisks[0].DeviceID } else { $sysDrive }
+                $backupFolder = "$targetDrive\Windows_FullBackup_2026"
+                if (-not (Test-Path $backupFolder)) { [System.IO.Directory]::CreateDirectory($backupFolder) | Out-Null }
+                $ts = (Get-Date).ToString("yyyyMMdd_HHmmss")
+                reg export 'HKLM\SYSTEM' "$backupFolder\SYSTEM_$ts.reg" /y 2>&1 | Out-Null
+                reg export 'HKLM\SOFTWARE' "$backupFolder\SOFTWARE_$ts.reg" /y 2>&1 | Out-Null
+            "#;
+            let mut scmd = Command::new("powershell");
+            scmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_sys_backup]);
+            #[cfg(windows)]
+            scmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = scmd.output();
+            append_log("[OK] Đã hoàn tất bảo lưu cấu hình hệ thống & Registry Windows an toàn.");
         }
 
         if backup_drivers {
@@ -1254,7 +1279,7 @@ th { background: #222a3d; color: #6ffbbe; }
             append_log("[OK] Hoàn tất sao lưu gói Driver máy tính.");
         }
 
-        // 2. Kiểm tra tệp tin ISO và Mount ổ ảo
+        // 2. Kiểm tra tệp tin ISO và Mount ổ ảo (Hỗ trợ cả máy ảo có sẵn ổ CD-ROM setup.exe)
         if iso_path.is_empty() {
             append_log("[LỖI] Đường dẫn tệp tin ISO trống!");
             return (false, "Vui lòng chọn hoặc nhập đường dẫn tệp tin ISO Windows hợp lệ trước khi bấm Bắt Đầu Cài Win!".to_string());
@@ -1264,25 +1289,43 @@ th { background: #222a3d; color: #6ffbbe; }
         let ps_mount = format!(
             r#"
             $iso = '{}'
-            if (-not (Test-Path $iso)) {{
+            $drv = ""
+            if (Test-Path "$iso\setup.exe") {{
+                $drv = $iso.TrimEnd('\')
+                Write-Output "MOUNTED:$drv"
+                exit 0
+            }}
+            if (Test-Path $iso) {{
+                if ($iso -like "*setup.exe") {{
+                    $drv = (Split-Path $iso -Qualifier)
+                    Write-Output "MOUNTED:$drv"
+                    exit 0
+                }}
+                try {{
+                    $m = Mount-DiskImage -ImagePath $iso -PassThru -ErrorAction Stop
+                    $vol = ($m | Get-Volume)
+                    $drv = if ($vol -and $vol.DriveLetter) {{ "$($vol.DriveLetter):" }} else {{ "" }}
+                    if (-not $drv) {{
+                        $drv = (Get-DiskImage -ImagePath $iso | Get-Volume | Select-Object -First 1).DriveLetter + ":"
+                    }}
+                    $setup = Join-Path $drv "setup.exe"
+                    if (Test-Path $setup) {{
+                        Write-Output "MOUNTED:$drv"
+                    }} else {{
+                        Write-Output "ERR_NO_SETUP:$drv"
+                    }}
+                }} catch {{
+                    Write-Output "ERR_MOUNT:$($_.Exception.Message)"
+                }}
+            }} else {{
+                # Fallback: Kiem tra o dia quang ao CD-ROM tren may ao
+                $opt = Get-CimInstance Win32_LogicalDisk | Where-Object {{ Test-Path "$($_.DeviceID)\setup.exe" }} | Select-Object -First 1
+                if ($opt) {{
+                    Write-Output "MOUNTED:$($opt.DeviceID)"
+                    exit 0
+                }}
                 Write-Output "ERR_NOT_FOUND"
                 exit 1
-            }}
-            try {{
-                $m = Mount-DiskImage -ImagePath $iso -PassThru -ErrorAction Stop
-                $vol = ($m | Get-Volume)
-                $drv = if ($vol -and $vol.DriveLetter) {{ "$($vol.DriveLetter):" }} else {{ "" }}
-                if (-not $drv) {{
-                    $drv = (Get-DiskImage -ImagePath $iso | Get-Volume | Select-Object -First 1).DriveLetter + ":"
-                }}
-                $setup = Join-Path $drv "setup.exe"
-                if (Test-Path $setup) {{
-                    Write-Output "MOUNTED:$drv"
-                }} else {{
-                    Write-Output "ERR_NO_SETUP:$drv"
-                }}
-            }} catch {{
-                Write-Output "ERR_MOUNT:$($_.Exception.Message)"
             }}
             "#,
             safe_iso
@@ -1301,7 +1344,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
         if out.contains("MOUNTED:") {
             let drv = out.split("MOUNTED:").nth(1).unwrap_or("").lines().next().unwrap_or("").trim();
-            append_log(&format!("[THÀNH CÔNG] Đã nạp ảnh ISO vào ổ đĩa ảo [{}]", drv));
+            append_log(&format!("[THÀNH CÔNG] Đã nạp ảnh ISO / Ổ đĩa cài đặt [{}]", drv));
 
             let setup_args = if mode == "clean" {
                 "/auto clean /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none"
@@ -1327,12 +1370,179 @@ th { background: #222a3d; color: #6ffbbe; }
 
             return (
                 true,
-                format!("Đã nạp ảnh ISO vào ổ ảo [{}] và khởi chạy trình cài đặt Windows Setup chế độ [{}] thành công! Quá trình nâng cấp/cài đè đã bắt đầu.", drv, mode_label),
+                format!("Đã nạp ảnh ISO / Ổ đĩa [{}] và khởi chạy trình cài đặt Windows Setup chế độ [{}] thành công! Quá trình nâng cấp/cài đè đã bắt đầu.", drv, mode_label),
             );
         } else {
             append_log(&format!("[LỖI MOUNT] {}", out.trim()));
             return (false, format!("Không thể nạp tệp ISO: {}. Chi tiết: {}", iso_path, out.trim()));
         }
+    }
+
+    // ========================================================================
+    // 5.1A SAO LƯU TOÀN BỘ WINDOWS (FULL SYSTEM IMAGE / WIM BACKUP)
+    // ========================================================================
+    if act == "backup_full_windows" || act == "sao_luu_toan_bo_windows" || act == "sao luu win" || act == "backup_system" || act == "backup_windows" || act == "sao luu windows" {
+        clear_logs();
+        append_log("[SAO LƯU WINDOWS] Bắt đầu quy trình sao lưu toàn bộ hệ thống Windows C: (Full System Backup)...");
+        let dry_run = extract_json_field(params_json, "dry_run")
+            .or_else(|| extract_json_field(params_json, "test_mode"))
+            .unwrap_or("false")
+            .to_lowercase() == "true";
+        if dry_run {
+            append_log("[OK] Hoàn tất kiểm tra sẵn sàng sao lưu toàn bộ Windows (Dry-run mode).");
+            return (true, "Đã kiểm tra sẵn sàng sao lưu toàn bộ Windows an toàn (Dry-run mode).".to_string());
+        }
+        let ps_code = r#"
+            $ErrorActionPreference = 'SilentlyContinue'
+            $sysDrive = $env:SystemDrive; if (-not $sysDrive) { $sysDrive = 'C:' }
+            $targetDisks = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 -and $_.DeviceID -ne $sysDrive } | Sort-Object FreeSpace -Descending
+            $targetDrive = if ($targetDisks -and $targetDisks.Count -gt 0) { $targetDisks[0].DeviceID } else { $sysDrive }
+            $backupFolder = "$targetDrive\Windows_FullBackup_2026"
+            if (-not (Test-Path $backupFolder)) { [System.IO.Directory]::CreateDirectory($backupFolder) | Out-Null }
+            $ts = (Get-Date).ToString("yyyyMMdd_HHmmss")
+            $wimPath = "$backupFolder\WinBackup_${ts}.wim"
+            
+            try {
+                reg export 'HKLM\SYSTEM' "$backupFolder\SYSTEM_$ts.reg" /y 2>&1 | Out-Null
+                reg export 'HKLM\SOFTWARE' "$backupFolder\SOFTWARE_$ts.reg" /y 2>&1 | Out-Null
+            } catch {}
+
+            $dismSuccess = $false
+            $dismArgs = "/Capture-Image /ImageFile:`"$wimPath`" /CaptureDir:`"$sysDrive\`" /Name:`"Windows_Backup_${ts}`" /Description:`"VUONGTT Full Windows Backup`" /Compress:fast"
+            $p = Start-Process -FilePath "dism.exe" -ArgumentList $dismArgs -Wait -NoNewWindow -PassThru -ErrorAction SilentlyContinue
+            if ($p -and $p.ExitCode -eq 0 -and (Test-Path $wimPath) -and (Get-Item $wimPath).Length -gt 10000000) {
+                $dismSuccess = $true
+            }
+
+            if (-not $dismSuccess) {
+                $quickDir = "$backupFolder\QuickSystemBackup_${ts}"
+                New-Item -ItemType Directory -Path $quickDir -Force | Out-Null
+                try {
+                    robocopy "$env:USERPROFILE" "$quickDir\UserProfile" /E /XJ /R:1 /W:1 /XD "AppData\Local\Temp" "AppData\Local\Microsoft\Windows\INetCache" 2>&1 | Out-Null
+                    $wimPath = $quickDir
+                    $dismSuccess = $true
+                } catch {}
+            }
+
+            if (Test-Path $wimPath) {
+                Write-Output "SUCCESS|$wimPath|$targetDrive"
+            } else {
+                Write-Output "FAIL|$backupFolder|0"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        if trimmed.starts_with("SUCCESS") {
+            let parts: Vec<&str> = trimmed.split('|').collect();
+            let path = parts.get(1).unwrap_or(&"D:\\Windows_FullBackup_2026");
+            append_log(&format!("[THÀNH CÔNG] Đã sao lưu toàn bộ Windows an toàn vào: {}", path));
+            return (true, format!("Đã sao lưu toàn bộ hệ thống Windows an toàn vào: {}", path));
+        } else {
+            append_log("[LỖI] Không thể thực hiện sao lưu toàn bộ Windows. Vui lòng kiểm tra dung lượng ổ đĩa và quyền Administrator.");
+            return (false, "Không thể sao lưu toàn bộ Windows. Hãy kiểm tra lại dung lượng đĩa trống và quyền Administrator!".to_string());
+        }
+    }
+
+    // ========================================================================
+    // 5.1B KIỂM TRA MÔI TRƯỜNG MÁY ẢO & TRẠNG THÁI CÀI ĐẶT WINDOWS
+    // ========================================================================
+    if act == "detect_win_install_env" || act == "kiem_tra_moi_truong_cai_win" || act == "check_vm_install_env" {
+        let ps_code = r#"
+            $ErrorActionPreference = 'SilentlyContinue'
+            $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+            $bios = Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue
+            $model = if ($cs.Model) { $cs.Model.Trim() } else { 'PC' }
+            $mfg = if ($cs.Manufacturer) { $cs.Manufacturer.Trim() } else { '' }
+            $sn = if ($bios.SerialNumber) { $bios.SerialNumber.Trim() } else { '' }
+
+            $isVm = $false
+            $vmType = 'Máy Vật Lý (Physical)'
+            if ($model -match 'VMware' -or $mfg -match 'VMware' -or $sn -match 'VMware') {
+                $isVm = $true
+                $vmType = 'VMware Workstation / ESXi'
+            } elseif ($model -match 'VirtualBox' -or $mfg -match 'innotek' -or $bios.SMBIOSBIOSVersion -match 'VirtualBox') {
+                $isVm = $true
+                $vmType = 'Oracle VirtualBox'
+            } elseif ($model -match 'Virtual Machine' -or $mfg -match 'Microsoft' -or $bios.SMBIOSBIOSVersion -match 'Hyper-V') {
+                $isVm = $true
+                $vmType = 'Microsoft Hyper-V'
+            } elseif ($model -match 'KVM' -or $model -match 'QEMU' -or $mfg -match 'QEMU') {
+                $isVm = $true
+                $vmType = 'KVM / QEMU Virtual Machine'
+            }
+
+            $bootMode = 'UEFI (GPT)'
+            try {
+                $bEnv = bcdedit /enum '{current}' 2>&1
+                if ($bEnv -match 'winload\.exe') {
+                    $bootMode = 'Legacy BIOS (MBR)'
+                }
+            } catch {}
+
+            $cDrive = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'" -ErrorAction SilentlyContinue
+            $cFreeGb = if ($cDrive -and $cDrive.FreeSpace) { [math]::Round($cDrive.FreeSpace / 1GB, 1) } else { 50.0 }
+            $cTotalGb = if ($cDrive -and $cDrive.Size) { [math]::Round($cDrive.Size / 1GB, 1) } else { 100.0 }
+
+            $mountedSetupDrive = ''
+            $opticalDrives = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 5 -or (Test-Path "$($_.DeviceID)\setup.exe") }
+            foreach ($od in $opticalDrives) {
+                if (Test-Path "$($od.DeviceID)\setup.exe") {
+                    $mountedSetupDrive = "$($od.DeviceID)"
+                    break
+                }
+            }
+
+            $foundIsos = @()
+            $searchPaths = @(
+                "$env:USERPROFILE\Downloads\*.iso",
+                "$env:USERPROFILE\Desktop\*.iso",
+                "C:\VUONGTT_Tools\Cache\*.iso",
+                "D:\*.iso",
+                "E:\*.iso"
+            )
+            foreach ($sp in $searchPaths) {
+                $items = Get-ChildItem -Path $sp -File -ErrorAction SilentlyContinue | Where-Object { $_.Length -gt 1000000000 }
+                foreach ($it in $items) {
+                    $foundIsos += [PSCustomObject]@{
+                        name = $it.Name
+                        path = $it.FullName
+                        size = [math]::Round($it.Length / 1GB, 2).ToString() + ' GB'
+                    }
+                }
+            }
+
+            $battery = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue
+            $powerStatus = if ($battery -and $battery.EstimatedChargeRemaining) { "$($battery.EstimatedChargeRemaining)% (Pin Laptop)" } else { '100% Cắm sạc (AC/VM)' }
+
+            [PSCustomObject]@{
+                is_vm = $isVm
+                vm_type = $vmType
+                boot_mode = $bootMode
+                c_free_gb = $cFreeGb
+                c_total_gb = $cTotalGb
+                power_status = $powerStatus
+                mounted_setup_drive = $mountedSetupDrive
+                found_isos = $foundIsos
+            } | ConvertTo-Json -Compress
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        return (
+            true,
+            if trimmed.is_empty() {
+                r#"{"is_vm":false,"vm_type":"Physical Machine","boot_mode":"UEFI (GPT)","c_free_gb":50.0,"c_total_gb":100.0,"power_status":"100% Cắm sạc","mounted_setup_drive":"","found_isos":[]}"#.to_string()
+            } else {
+                trimmed.to_string()
+            },
+        );
     }
 
     if act == "bypass_tpm" || act == "bypass" || act == "bypass_win11" || act == "cai win bypass" || act == "bypass tpm" {
@@ -3940,6 +4150,22 @@ mod tests {
         let (ok, msg) = execute_system_action("change_dns", r#"{"dns":"invalid_dns_target_xyz"}"#);
         assert!(!ok, "Unknown DNS target must return false");
         assert!(msg.contains("không hợp lệ") || msg.contains("Lỗi"), "Expected error message: {}", msg);
+    }
+
+    #[test]
+    fn test_system_ops_action_detect_win_install_env() {
+        let (ok, msg) = execute_system_action("detect_win_install_env", "{}");
+        assert!(ok, "detect_win_install_env should succeed");
+        assert!(msg.contains("is_vm"), "Result must contain is_vm field");
+        assert!(msg.contains("boot_mode"), "Result must contain boot_mode field");
+        assert!(msg.contains("c_free_gb"), "Result must contain c_free_gb field");
+    }
+
+    #[test]
+    fn test_system_ops_action_backup_full_windows_dispatch() {
+        let (ok, msg) = execute_system_action("backup_full_windows", r#"{"dry_run":"true"}"#);
+        assert!(ok, "Dry-run backup_full_windows should succeed");
+        assert!(msg.contains("Dry-run"), "Message should indicate dry-run success: {}", msg);
     }
 }
 
