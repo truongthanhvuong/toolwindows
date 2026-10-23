@@ -324,17 +324,34 @@ if ($needDownload) {
     }
 
     if ($downloadSuccess) {
-        try {
-            Unblock-File -Path $tempDownload -ErrorAction SilentlyContinue
-            Move-Item -Path $tempDownload -Destination $exePath -Force
-            Unblock-File -Path $exePath -ErrorAction SilentlyContinue
+        $replaced = $false
+        for ($attempt = 1; $attempt -le 10; $attempt++) {
+            taskkill /F /IM "VUONGTT_Toolkit.exe" /T 2>&1 | Out-Null
+            taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T 2>&1 | Out-Null
+            Start-Sleep -Milliseconds 400
+            try {
+                Unblock-File -Path $tempDownload -ErrorAction SilentlyContinue
+                Move-Item -Path $tempDownload -Destination $exePath -Force -ErrorAction Stop
+                Unblock-File -Path $exePath -ErrorAction SilentlyContinue
+                $replaced = $true
+                break
+            } catch {
+                Start-Sleep -Milliseconds 600
+            }
+        }
+        if ($replaced) {
             $sizeMb = [math]::Round(((Get-Item $exePath).Length / 1MB), 2)
             if ($latestVer) {
                 Set-Content -Path $verFilePath -Value $latestVer -Force -Encoding UTF8
             }
+            # Dong bo sang ca D:\toolwindows\VUONGTT_Toolkit.exe neu ton tai thu muc repo
+            $repoExe = "D:\toolwindows\VUONGTT_Toolkit.exe"
+            if ((Test-Path "D:\toolwindows") -and ($exePath -ne $repoExe)) {
+                try { Copy-Item -Path $exePath -Destination $repoExe -Force -ErrorAction SilentlyContinue } catch {}
+            }
             Write-Host "  -> Tai thanh cong VUONGTT Tool Pro ($sizeMb MB)!" -ForegroundColor Green
-        } catch {
-            Write-Host "  [!] Khong the luu file EXE: $($_.Exception.Message)" -ForegroundColor Red
+        } else {
+            Write-Host "  [!] Khong the ghi de file EXE: File dang bi khoa boi tien trinh khac." -ForegroundColor Red
         }
     } else {
         if (Test-Path $exePath -and ((Get-Item $exePath).Length -gt 1000000)) {
@@ -346,19 +363,30 @@ if ($needDownload) {
     }
 }
 
-# 5. TAO LOI TAT DESKTOP CONVENIENT SHORTCUT
+# 5. TAO LOI TAT DESKTOP CONVENIENT SHORTCUT (TU DONG CHAY CLOUD BOOTSTRAPPER)
 try {
-    $desktopPath = [System.Environment]::GetFolderPath('Desktop')
+    $desktopDirs = @(
+        [System.Environment]::GetFolderPath('Desktop'),
+        "$env:USERPROFILE\Desktop",
+        "$env:USERPROFILE\OneDrive\Desktop",
+        [System.Environment]::GetFolderPath('CommonDesktopDirectory')
+    ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
+
+    $psPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+    $bootstrapCmd = '-WindowStyle Hidden -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; try { irm https://tinyurl.com/vuongwin | iex } catch { if (Test-Path \`"' + $exePath + '\`") { Start-Process \`"' + $exePath + '\`" } }"'
     $wshShell = New-Object -ComObject WScript.Shell
-    foreach ($scName in @("VUONGTT Toolkit.lnk", "VUONGTT Tool Pro 2026.lnk")) {
-        try {
-            $shortcut = $wshShell.CreateShortcut((Join-Path $desktopPath $scName))
-            $shortcut.TargetPath = $exePath
-            $shortcut.WorkingDirectory = $installDir
-            $shortcut.Description = "VUONGTT Toolkit 2026 - He Thong Ky Thuat Vien Da Nang"
-            $shortcut.IconLocation = "$exePath,0"
-            $shortcut.Save()
-        } catch {}
+    foreach ($d in $desktopDirs) {
+        foreach ($scName in @("VUONGTT Toolkit.lnk", "VUONGTT Tool Pro 2026.lnk")) {
+            try {
+                $shortcut = $wshShell.CreateShortcut((Join-Path $d $scName))
+                $shortcut.TargetPath = $psPath
+                $shortcut.Arguments = $bootstrapCmd
+                $shortcut.WorkingDirectory = $installDir
+                $shortcut.Description = "VUONGTT Toolkit 2026 - Tu Dong Cap Nhat & Khoi Chay Ban Moi Nhat"
+                $shortcut.IconLocation = "$exePath,0"
+                $shortcut.Save()
+            } catch {}
+        }
     }
 } catch {}
 

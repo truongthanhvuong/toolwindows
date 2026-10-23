@@ -81,7 +81,7 @@ fn control_window(action: &str) -> (bool, &'static str) {
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-pub const APP_VERSION: &str = "20.5.909.138";
+pub const APP_VERSION: &str = "20.5.909.139";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -436,6 +436,40 @@ fn main() {
 
     // 5.1 Tự động tạo biểu tượng Shortcut trên Desktop trỏ đến tool khi khởi chạy
     let _ = system_ops::ensure_desktop_shortcut();
+
+    // 5.2 Tự động kiểm tra và chạy Cloud Bootstrapper trong luồng nền nếu có bản mới trên Cloud
+    thread::spawn(|| {
+        thread::sleep(std::time::Duration::from_secs(3));
+        let app_ver = APP_VERSION;
+        let ps_check = format!(
+            r#"
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+            try {{
+                $req = [System.Net.HttpWebRequest]::Create("https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())")
+                $req.Timeout = 6000
+                $req.UserAgent = "VUONGTT-Toolkit-Updater/2026"
+                $resp = $req.GetResponse()
+                $reader = New-Object System.IO.StreamReader($resp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $raw = $reader.ReadToEnd()
+                $reader.Close()
+                $resp.Close()
+                $data = ConvertFrom-Json $raw
+                if ($data.version -and ($data.version.Trim() -ne "{app_ver}")) {{
+                    $runnerBat = Join-Path $env:TEMP "vuongtt_bootstrapper_runner.cmd"
+                    $batContent = "@echo off`r`ntimeout /t 1 /nobreak >nul`r`ntaskkill /F /IM VUONGTT_Toolkit.exe /T >nul 2>&1`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex`""
+                    [System.IO.File]::WriteAllText($runnerBat, $batContent, [System.Text.Encoding]::ASCII)
+                    Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$runnerBat`"" -Verb RunAs
+                }}
+            }} catch {{}}
+            "#,
+            app_ver = app_ver
+        );
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_check]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+    });
 
     // 6. Open Edge App Mode Window
     let url = format!("http://127.0.0.1:{}", port);

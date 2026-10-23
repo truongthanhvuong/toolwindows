@@ -144,27 +144,36 @@ pub fn ensure_desktop_shortcut() -> bool {
         r#"
         $targetExe = '{}'
         $targetDir = '{}'
-        if (Test-Path $targetExe) {{
-            $desktop = [System.Environment]::GetFolderPath('Desktop')
-            if ($desktop -and (Test-Path $desktop)) {{
-                $oldLnk = Join-Path $desktop 'VUONGTT Tool Pro 2026.lnk'
-                if (Test-Path $oldLnk) {{ Remove-Item $oldLnk -Force -ErrorAction SilentlyContinue }}
+        $psPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+        $bootstrapCmd = '-WindowStyle Hidden -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; try {{ irm https://tinyurl.com/vuongwin | iex }} catch {{ if (Test-Path \`"{}\`") {{ Start-Process \`"{}\`" }} }}"'
+        
+        $desktopDirs = @(
+            [System.Environment]::GetFolderPath('Desktop'),
+            "$env:USERPROFILE\Desktop",
+            "$env:USERPROFILE\OneDrive\Desktop",
+            [System.Environment]::GetFolderPath('CommonDesktopDirectory')
+        ) | Where-Object {{ $_ -and (Test-Path $_) }} | Select-Object -Unique
 
-                $lnkPath = Join-Path $desktop 'VUONGTT Toolkit.lnk'
+        $ws = New-Object -ComObject WScript.Shell
+        foreach ($d in $desktopDirs) {{
+            foreach ($scName in @('VUONGTT Toolkit.lnk', 'VUONGTT Tool Pro 2026.lnk')) {{
                 try {{
-                    $ws = New-Object -ComObject WScript.Shell
+                    $lnkPath = Join-Path $d $scName
                     $lnk = $ws.CreateShortcut($lnkPath)
-                    $lnk.TargetPath = $targetExe
-                    $lnk.WorkingDirectory = $targetDir
-                    $lnk.IconLocation = "$targetExe,0"
-                    $lnk.Description = 'VUONGTT Toolkit 2026 - Bộ Công Cụ Kỹ Thuật & Tối Ưu Hệ Thống'
+                    $lnk.TargetPath = $psPath
+                    $lnk.Arguments = $bootstrapCmd
+                    $lnk.WorkingDirectory = if (Test-Path $targetDir) {{ $targetDir }} else {{ "$env:ProgramData\VUONGTT_Toolkit" }}
+                    $lnk.IconLocation = if (Test-Path $targetExe) {{ "$targetExe,0" }} else {{ "C:\ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe,0" }}
+                    $lnk.Description = 'VUONGTT Toolkit 2026 - Tu Dong Cap Nhat & Khoi Chay Ban Moi Nhat'
                     $lnk.Save()
                 }} catch {{}}
             }}
         }}
         "#,
         exe_str.replace('\'', "''"),
-        parent_dir.replace('\'', "''")
+        parent_dir.replace('\'', "''"),
+        exe_str.replace('"', "`\""),
+        exe_str.replace('"', "`\"")
     );
 
     let mut cmd = Command::new("powershell");
@@ -2266,32 +2275,22 @@ th { background: #222a3d; color: #6ffbbe; }
 
     if act == "check_update" || act == "kiem tra cap nhat" {
         let app_ver = crate::APP_VERSION;
-        let current_exe = std::env::current_exe()
-            .unwrap_or_else(|_| std::path::PathBuf::from(r"E:\toolwindows\VUONGTT_Toolkit.exe"));
-        let current_dir = current_exe
-            .parent()
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|| r"E:\toolwindows".to_string())
-            .replace('\\', "\\\\");
-
         let ps_code = format!(
             r#"
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13 -bor [Net.SecurityProtocolType]::Tls
             $curVer = "{app_ver}"
-            $localJson = Join-Path "{current_dir}" "version.json"
-            if (Test-Path $localJson) {{
-                try {{
-                    $lv = (Get-Content -Path $localJson -Raw -Encoding UTF8 | ConvertFrom-Json).version
-                    if ($lv) {{ $curVer = $lv.Trim() }}
-                }} catch {{}}
-            }}
             $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
             try {{
-                $wc = New-Object System.Net.WebClient
-                $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
-                $wc.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
-                $wc.Headers.Add("Pragma", "no-cache")
-                $raw = $wc.DownloadString($url)
+                $req = [System.Net.HttpWebRequest]::Create($url)
+                $req.Timeout = 6000
+                $req.ReadWriteTimeout = 6000
+                $req.UserAgent = "VUONGTT-Toolkit-Updater/2026"
+                $resp = $req.GetResponse()
+                $reader = New-Object System.IO.StreamReader($resp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $raw = $reader.ReadToEnd()
+                $reader.Close()
+                $resp.Close()
+
                 $data = ConvertFrom-Json $raw
                 $remoteVer = if ($data.version) {{ $data.version.Trim() }} else {{ $curVer }}
                 $downUrl = if ($data.downloadUrl) {{ $data.downloadUrl }} else {{ "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe" }}
@@ -2326,8 +2325,7 @@ th { background: #222a3d; color: #6ffbbe; }
                 }} | ConvertTo-Json -Compress
             }}
         "#,
-            app_ver = app_ver,
-            current_dir = current_dir
+            app_ver = app_ver
         );
         let mut cmd = Command::new("powershell");
         cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
@@ -2348,14 +2346,24 @@ th { background: #222a3d; color: #6ffbbe; }
     if act == "apply_update" || act == "download_and_apply_update" || act == "tu_dong_cap_nhat" {
         let ps_code = r#"
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13 -bor [Net.SecurityProtocolType]::Tls
-            $bootstrap = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; try { irm https://tinyurl.com/vuongwin | iex } catch { irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/win.ps1 | iex }"
-            $bytes = [System.Text.Encoding]::Unicode.GetBytes($bootstrap)
-            $encodedCmd = [Convert]::ToBase64String($bytes)
+            $runnerBat = Join-Path $env:TEMP "vuongtt_bootstrapper_runner.cmd"
+            $batContent = @"
+@echo off
+timeout /t 1 /nobreak >nul
+taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex"
+"@
+            [System.IO.File]::WriteAllText($runnerBat, $batContent, [System.Text.Encoding]::ASCII)
             try {
-                Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd" -Verb RunAs
+                Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$runnerBat`"" -Verb RunAs
                 Write-Output "UPDATE_READY"
             } catch {
-                Write-Output "UPDATE_FAILED: $($_.Exception.Message)"
+                try {
+                    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex`"" -Verb RunAs
+                    Write-Output "UPDATE_READY"
+                } catch {
+                    Write-Output "UPDATE_FAILED: $($_.Exception.Message)"
+                }
             }
         "#;
         let mut cmd = Command::new("powershell");

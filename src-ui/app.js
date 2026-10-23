@@ -3420,8 +3420,23 @@
   // --- 15. HEADER CONTROLS & AUTO-UPDATE ENGINE ---
   async function checkForUpdate(isManual = false) {
     if (isManual) {
-      showToast("Cập Nhật", "Đang kết nối máy chủ GitHub kiểm tra phiên bản mới nhất...", "info");
+      showToast("Cập Nhật Tự Động", "Đang khởi chạy Cloud Bootstrapper (irm tinyurl.com/vuongwin | iex) để nâng cấp lên bản mới nhất...", "info");
+      try {
+        const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
+        if (applyRes && applyRes.success) {
+          showToast("Đang Nâng Cấp", "Cloud Bootstrapper đang tải bản mới nhất từ GitHub. Ứng dụng sẽ tự động khởi động lại!", "success");
+          setTimeout(() => {
+            try { window.close(); } catch (_) {}
+          }, 1200);
+        } else {
+          showToast("Lỗi Khởi Chạy", (applyRes && applyRes.message) || "Không thể kích hoạt Cloud Bootstrapper.", "warning");
+        }
+      } catch (e) {
+        showToast("Lỗi Cập Nhật", String(e), "error");
+      }
+      return;
     }
+
     try {
       const res = await invokeRust("run_system_action", { actionId: "check_update" });
       if (!res || !res.message) return;
@@ -3433,39 +3448,19 @@
       if (updateInfo && updateInfo.has_update) {
         const newVer = updateInfo.latest_version;
         const curVer = updateInfo.current_version;
-        showToast("Bản Cập Nhật Mới!", `Phát hiện v${newVer} (Hiện tại: v${curVer}). Đang tự động tải và cập nhật...`, "info");
+        showToast("Bản Cập Nhật Mới!", `Phát hiện v${newVer} (Hiện tại: v${curVer}). Đang tự động cập nhật qua Cloud Bootstrapper...`, "info");
         const logEl = document.getElementById("log-console");
         if (logEl && typeof appendLog === "function") {
-          appendLog("UPDATE", `Phát hiện phiên bản mới: v${newVer} (Hiện tại: v${curVer}). Đang tải và áp dụng...`, "text-secondary");
+          appendLog("UPDATE", `Phát hiện phiên bản mới: v${newVer} (Hiện tại: v${curVer}). Đang kích hoạt Cloud Bootstrapper...`, "text-secondary");
         }
         const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
         if (applyRes && applyRes.success) {
-          showToast("Cập Nhật Tự Động", "Đang khởi chạy Cloud Bootstrapper (irm tinyurl.com/vuongwin | iex). Ứng dụng sẽ tự động tải và cài đặt phiên bản mới nhất...", "success");
-          if (logEl && typeof appendLog === "function") {
-            appendLog("UPDATE", "Kích hoạt irm tinyurl.com/vuongwin | iex để tự động cập nhật và thay thế phiên bản mới nhất...", "text-success");
-          }
-          setTimeout(async () => {
-            try {
-              await invokeRust("run_system_action", { actionId: "restart_app" });
-            } catch (_) {}
-            try {
-              window.close();
-            } catch (_) {}
+          setTimeout(() => {
+            try { window.close(); } catch (_) {}
           }, 1500);
-        } else {
-          showToast("Cập Nhật Thất Bại", (applyRes && applyRes.message) || "Không thể khởi chạy cập nhật.", "warning");
-        }
-      } else {
-        if (isManual) {
-          const msg = (updateInfo && updateInfo.message) ? updateInfo.message : "Bạn đang sử dụng phiên bản VUONGTT Toolkit mới nhất!";
-          showToast("Cập Nhật Hệ Thống", msg, "success");
         }
       }
-    } catch (e) {
-      if (isManual) {
-        showToast("Lỗi Cập Nhật", String(e), "error");
-      }
-    }
+    } catch (_) {}
   }
 
   function initAutoUpdateOnStartup() {
