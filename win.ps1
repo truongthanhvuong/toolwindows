@@ -1,3 +1,18 @@
+﻿function Compare-SemVer([string]$v1, [string]$v2) {
+    if (-not $v1 -or -not $v2) { return 0 }
+    $p1 = ($v1.Trim() -replace '^[vV]', '').Split('.')
+    $p2 = ($v2.Trim() -replace '^[vV]', '').Split('.')
+    $maxLen = [Math]::Max($p1.Length, $p2.Length)
+    for ($i = 0; $i -lt $maxLen; $i++) {
+        $n1 = 0; $n2 = 0
+        if ($i -lt $p1.Length) { [int]::TryParse($p1[$i], [ref]$n1) | Out-Null }
+        if ($i -lt $p2.Length) { [int]::TryParse($p2[$i], [ref]$n2) | Out-Null }
+        if ($n1 -gt $n2) { return 1 }
+        if ($n1 -lt $n2) { return -1 }
+    }
+    return 0
+}
+
 ﻿$Host.UI.RawUI.WindowTitle = "VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13 -bor [System.Net.SecurityProtocolType]::Tls
@@ -166,13 +181,21 @@ if (Test-Path $exePath) {
     $fileSize = (Get-Item $exePath).Length
 }
 
-if ($localVersion -and $latestVer -and ($localVersion -eq $latestVer) -and ($fileSize -gt 1000000)) {
-    Write-Host "  [OK] May tinh da co san phien ban moi nhat v$localVersion! San sang khoi chay." -ForegroundColor Green
+if ($localVersion -and $latestVer -and ($fileSize -gt 1000000)) {
+    $cmp = Compare-SemVer $latestVer $localVersion
+    if ($cmp -le 0) {
+        Write-Host "  [OK] May tinh da co san phien ban moi nhat v$localVersion! San sang khoi chay." -ForegroundColor Green
+        $needDownload = $false
+    } else {
+        Write-Host "  [*] Phat hien phien ban moi tren Cloud (v$localVersion -> v$latestVer), dang cap nhat..." -ForegroundColor Yellow
+        $needDownload = $true
+    }
+} elseif (Test-Path $exePath -and ($fileSize -gt 1000000)) {
+    Write-Host "  [OK] May tinh da co san ban cai dat v$localVersion. San sang khoi chay." -ForegroundColor Green
     $needDownload = $false
-} elseif ($localVersion -and $latestVer -and ($localVersion -ne $latestVer)) {
-    Write-Host "  [*] Phat hien phien ban moi (v$localVersion -> v$latestVer), dang cap nhat..." -ForegroundColor Yellow
-} elseif (-not (Test-Path $exePath) -or ($fileSize -le 1000000)) {
+} else {
     Write-Host "  [*] Dang tai ban phat hanh VUONGTT Tool Pro..." -ForegroundColor Yellow
+    $needDownload = $true
 }
 
 if ($needDownload) {
@@ -282,6 +305,19 @@ try {
 
 # 6. KHOI CHAY UNG DUNG
 Write-Host "`n [4/4] Dang khoi chay VUONGTT Tool Pro 2026..." -ForegroundColor Cyan
+
+# Kiem tra neu VUONGTT_Toolkit da dang chay va khong can cap nhat thi khong mo them cua so moi
+$existingProc = Get-Process -Name "VUONGTT_Toolkit" -ErrorAction SilentlyContinue
+if ($existingProc -and (-not $needDownload)) {
+    Write-Host "  [OK] Ung dung VUONGTT Toolkit da dang chay tren he thong (PID: $($existingProc[0].Id))." -ForegroundColor Green
+    Write-Host "  -> Dang tap trung cua so ung dung..." -ForegroundColor Cyan
+    try {
+        $wsh = New-Object -ComObject WScript.Shell
+        $wsh.AppActivate("VUONGTT Toolkit") | Out-Null
+    } catch {}
+    Start-Sleep -Seconds 1
+    Exit
+}
 
 $env:VUONGTT_LIVE_MODE = "1"
 

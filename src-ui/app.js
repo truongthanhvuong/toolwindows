@@ -3448,16 +3448,15 @@
       if (updateInfo && updateInfo.has_update) {
         const newVer = updateInfo.latest_version;
         const curVer = updateInfo.current_version;
-        showToast("Bản Cập Nhật Mới!", `Phát hiện v${newVer} (Hiện tại: v${curVer}). Đang tự động cập nhật qua Cloud Bootstrapper...`, "info");
+        showToast("Bản Cập Nhật Mới!", `Đã có phiên bản v${newVer} (Hiện tại: v${curVer}). Bấm nút 'Cập nhật' trên thanh tiêu đề để nâng cấp!`, "info");
         const logEl = document.getElementById("log-console");
         if (logEl && typeof appendLog === "function") {
-          appendLog("UPDATE", `Phát hiện phiên bản mới: v${newVer} (Hiện tại: v${curVer}). Đang kích hoạt Cloud Bootstrapper...`, "text-secondary");
+          appendLog("UPDATE", `Phát hiện phiên bản mới: v${newVer} (Hiện tại: v${curVer}). Bấm 'Cập nhật' trên Header để tải.`, "text-secondary");
         }
-        const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
-        if (applyRes && applyRes.success) {
-          setTimeout(() => {
-            try { window.close(); } catch (_) {}
-          }, 1500);
+        const btnHeaderUpdate = document.getElementById("btn-header-update");
+        if (btnHeaderUpdate) {
+          btnHeaderUpdate.classList.add("animate-pulse");
+          btnHeaderUpdate.title = `Có bản cập nhật mới v${newVer}! Bấm để nâng cấp ngay.`;
         }
       }
     } catch (_) {}
