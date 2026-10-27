@@ -817,27 +817,49 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     }
 
     if act == "open_uninstaller_tool" || act == "uninstaller_tool" || act == "geek_uninstaller" {
-        let ps_code = r#"
-            $tools = @(
-                "$env:ProgramFiles\GeekUninstaller\geek.exe",
-                "${env:ProgramFiles(x86)}\GeekUninstaller\geek.exe",
-                "$env:ProgramFiles\VS Revo Group\Revo Uninstaller Pro\RevoUninPro.exe",
-                "${env:ProgramFiles(x86)}\VS Revo Group\Revo Uninstaller\RevoUPPort.exe",
-                "$env:ProgramFiles\IObit\IObit Uninstaller\IObitUninst.exe"
-            )
-            $found = $tools | Where-Object { Test-Path $_ } | Select-Object -First 1
-            if ($found) {
-                Start-Process $found
-            } else {
+        let tool = extract_json_field(params_json, "tool").unwrap_or("appwiz");
+        let ps_code = format!(
+            r#"
+            $tool = "{}"
+            if ($tool -eq "appwiz") {{
                 Start-Process "control.exe" -ArgumentList "appwiz.cpl"
-            }
-        "#;
+            }} elseif ($tool -eq "geek") {{
+                $tools = @(
+                    "$env:ProgramFiles\GeekUninstaller\geek.exe",
+                    "${{env:ProgramFiles(x86)}}\GeekUninstaller\geek.exe",
+                    "$env:LOCALAPPDATA\Programs\Geek\geek.exe",
+                    "$env:TEMP\geek.exe"
+                )
+                $found = $tools | Where-Object {{ Test-Path $_ }} | Select-Object -First 1
+                if ($found) {{
+                    Start-Process $found
+                }} else {{
+                    Start-Process "control.exe" -ArgumentList "appwiz.cpl"
+                }}
+            }} elseif ($tool -eq "bcu") {{
+                $tools = @(
+                    "$env:ProgramFiles\Bulk Crap Uninstaller\BCUninstaller.exe",
+                    "${{env:ProgramFiles(x86)}}\Bulk Crap Uninstaller\BCUninstaller.exe",
+                    "$env:LOCALAPPDATA\Programs\Bulk Crap Uninstaller\BCUninstaller.exe"
+                )
+                $found = $tools | Where-Object {{ Test-Path $_ }} | Select-Object -First 1
+                if ($found) {{
+                    Start-Process $found
+                }} else {{
+                    Start-Process "control.exe" -ArgumentList "appwiz.cpl"
+                }}
+            }} else {{
+                Start-Process "control.exe" -ArgumentList "appwiz.cpl"
+            }}
+            "#,
+            tool
+        );
         let mut cmd = Command::new("powershell");
-        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let _ = cmd.spawn();
-        return (true, "Đã khởi chạy công cụ gỡ cài đặt ứng dụng chuyên sâu!".to_string());
+        return (true, format!("Đã khởi chạy công cụ gỡ cài đặt [{}]!", tool));
     }
 
     if act == "open_fonts_folder" || act == "fonts_folder" || act == "open_fonts" {
@@ -2513,7 +2535,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointMan
                     }
                 }
             }
-            $unique = $apps | Sort-Object name -Unique | Select-Object -First 100
+            $unique = @($apps | Sort-Object name -Unique | Select-Object -First 300)
             $unique | ConvertTo-Json -Compress
         "#;
         let mut cmd = Command::new("powershell");

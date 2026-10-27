@@ -2348,6 +2348,9 @@
           apps = [];
         }
       }
+            if (apps && !Array.isArray(apps)) {
+        apps = [apps];
+      }
       cachedInstalledApps = Array.isArray(apps) ? apps : [];
       if (badge) badge.textContent = `${cachedInstalledApps.length} Ứng Dụng`;
       window.renderInstalledApps(cachedInstalledApps);
