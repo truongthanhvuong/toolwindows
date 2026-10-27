@@ -53,6 +53,21 @@ Write-Host "`n--- Nhom 2: Kiem Tra Bootstrapper (win.ps1 & vuongtt.ps1) ---" -Fo
 
 foreach ($psFile in @($winPs1, $vuongttPs1)) {
     $fName = Split-Path $psFile -Leaf
+    $bytes = [System.IO.File]::ReadAllBytes($psFile)
+    $cText = [System.IO.File]::ReadAllText($psFile, [System.Text.Encoding]::UTF8)
+
+    Assert-Test "$fName la UTF-8 khong co BOM va khong chua ky tu U+FEFF" {
+        $noFileBom = -not ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
+        $noFeffChar = -not ($cText.Contains([string][char]65279))
+        $noFileBom -and $noFeffChar
+    }
+
+    Assert-Test "$fName co the compile thanh ScriptBlock AST hop le va dinh nghia Compare-SemVer" {
+        $sb = [scriptblock]::Create($cText)
+        $funcs = $sb.Ast.FindAll({ $args[0] -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true)
+        ($funcs | Where-Object { $_.Name -eq 'Compare-SemVer' }) -ne $null
+    }
+    $fName = Split-Path $psFile -Leaf
 
     $c = Get-Content -Path $psFile -Raw -Encoding UTF8
 

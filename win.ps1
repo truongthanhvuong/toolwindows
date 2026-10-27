@@ -1,4 +1,5 @@
-﻿function Compare-SemVer([string]$v1, [string]$v2) {
+# VUONGTT TOOL PRO 2026 - CLOUD BOOTSTRAPPER & AUTO UPDATER
+function Compare-SemVer([string]$v1, [string]$v2) {
     if (-not $v1 -or -not $v2) { return 0 }
     $p1 = ($v1.Trim() -replace '^[vV]', '').Split('.')
     $p2 = ($v2.Trim() -replace '^[vV]', '').Split('.')
@@ -13,7 +14,7 @@
     return 0
 }
 
-﻿$Host.UI.RawUI.WindowTitle = "VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
+$Host.UI.RawUI.WindowTitle = "VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13 -bor [System.Net.SecurityProtocolType]::Tls
 
@@ -182,7 +183,21 @@ if (Test-Path $exePath) {
 }
 
 if ($localVersion -and $latestVer -and ($fileSize -gt 1000000)) {
-    $cmp = Compare-SemVer $latestVer $localVersion
+        $cmp = 0
+    try {
+        $cmp = Compare-SemVer $latestVer $localVersion
+    } catch {
+        $p1 = ($latestVer.Trim() -replace '^[vV]', '').Split('.')
+        $p2 = ($localVersion.Trim() -replace '^[vV]', '').Split('.')
+        $maxLen = [Math]::Max($p1.Length, $p2.Length)
+        for ($i = 0; $i -lt $maxLen; $i++) {
+            $n1 = 0; $n2 = 0
+            if ($i -lt $p1.Length) { [int]::TryParse($p1[$i], [ref]$n1) | Out-Null }
+            if ($i -lt $p2.Length) { [int]::TryParse($p2[$i], [ref]$n2) | Out-Null }
+            if ($n1 -gt $n2) { $cmp = 1; break }
+            if ($n1 -lt $n2) { $cmp = -1; break }
+        }
+    }
     if ($cmp -le 0) {
         Write-Host "  [OK] May tinh da co san phien ban moi nhat v$localVersion! San sang khoi chay." -ForegroundColor Green
         $needDownload = $false
@@ -257,10 +272,12 @@ if ($needDownload) {
             if ($latestVer) {
                 Set-Content -Path $verFilePath -Value $latestVer -Force -Encoding UTF8
             }
-            # Dong bo sang ca E:\toolwindows\VUONGTT_Toolkit.exe neu ton tai thu muc repo
-            $repoExe = "E:\toolwindows\VUONGTT_Toolkit.exe"
-            if ((Test-Path "E:\toolwindows") -and ($exePath -ne $repoExe)) {
-                try { Copy-Item -Path $exePath -Destination $repoExe -Force -ErrorAction SilentlyContinue } catch {}
+            # Dong bo sang ca cac thu muc repo neu ton tai
+            foreach ($rDir in @("D:\toolwindows", "E:\toolwindows")) {
+                $repoExe = Join-Path $rDir "VUONGTT_Toolkit.exe"
+                if ((Test-Path $rDir) -and ($exePath -ne $repoExe)) {
+                    try { Copy-Item -Path $exePath -Destination $repoExe -Force -ErrorAction SilentlyContinue } catch {}
+                }
             }
             Write-Host "  -> Tai thanh cong VUONGTT Tool Pro ($sizeMb MB)!" -ForegroundColor Green
         } else {

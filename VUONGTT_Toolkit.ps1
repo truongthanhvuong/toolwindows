@@ -1,4 +1,4 @@
-﻿<#
+<#
 ========================================================================================
    VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.141
    VUONGTT Tool Pro 2026 - Professional
@@ -33,7 +33,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.141"
+$Script:AppVersion = "v20.5.909.142"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false

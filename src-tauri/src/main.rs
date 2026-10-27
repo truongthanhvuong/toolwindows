@@ -88,7 +88,7 @@ fn control_window(action: &str) -> (bool, &'static str) {
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-pub const APP_VERSION: &str = "20.5.909.141";
+pub const APP_VERSION: &str = "20.5.909.142";
 
 fn handle_client(
     mut stream: TcpStream,
