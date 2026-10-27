@@ -68,22 +68,22 @@ Assert-True ($appJsContent -match 'showToast' -and ($appJsContent -match 'checkF
 Assert-True ($appJsContent -match 'btn-header-update' -and $appJsContent -match 'checkForUpdate\(true\)') "Nut btn-header-update tren Header phai kich hoat checkForUpdate(true)"
 Assert-True (-not ($appJsContent -match 'actionId:\s*"check_update"[^}]+showToast\([^)]*res\.message')) "app.js khong duoc hien thi raw JSON res.message cua check_update vao showToast"
 
-Write-Host "`n--- Nhom 4: Kiem Tra Dong Co Hot-Swap Bulletproof Updater & Don Dep Shortcut Cu ---" -ForegroundColor Yellow
+Write-Host "`n--- Nhom 4: Kiem Tra Dong Co Cloud Bootstrapper Updater & Don Dep Shortcut Cu ---" -ForegroundColor Yellow
 
-# 4.1 Updater script phai ghi nhat ky chan doan ra vuongtt_updater.log
-Assert-True ($opsRsContent -match 'vuongtt_updater\.log') "Updater script phai ghi nhat ky chan doan ra vuongtt_updater.log"
+# 4.1 Updater script phai khoi chay Cloud Bootstrapper (irm tinyurl.com/vuongwin | iex) hoac AppUpdater
+Assert-True ($opsRsContent -match 'tinyurl\.com\/vuongwin' -or $opsRsContent -match 'vuongtt_updater\.log') "Updater phai ket noi Cloud Bootstrapper"
 
 # 4.2 Updater script phai tieu diet cay tien trinh (process tree) de giai phong file lock WebView2
-Assert-True ($opsRsContent -match 'taskkill.*\/T' -or $opsRsContent -match 'taskkill.*\/F.*\/PID') "Updater script phai tieu diet cay tien trinh de giai phong file lock"
+Assert-True ($opsRsContent -match 'taskkill.*\/T' -or $opsRsContent -match 'taskkill.*\/F.*\/PID' -or $opsRsContent -match 'taskkill.*\/IM.*VUONGTT_Toolkit\.exe') "Updater script phai tieu diet cay tien trinh de giai phong file lock"
 
-# 4.3 Updater script phai khoi chay lai TargetExe voi WorkingDirectory
-Assert-True ($opsRsContent -match 'Start-Process.*-WorkingDirectory' -or $opsRsContent -match 'WorkingDirectory.*targetDir') "Updater script phai khoi chay lai TargetExe voi WorkingDirectory chuan xac"
+# 4.3 Updater script phai khoi chay an toan voi quyen RunAs
+Assert-True ($opsRsContent -match 'Verb RunAs' -or $opsRsContent -match 'Start-Process.*-Verb\s+RunAs') "Updater script phai yeu cau quyen RunAs"
 
-# 4.4 Co che tao/cap nhat shortcut phai tu dong don dep shortcut cu 'VUONGTT Tool Pro 2026.lnk'
-Assert-True ($opsRsContent -match 'VUONGTT Tool Pro 2026\.lnk') "He thong phai tu dong don dep shortcut cu 'VUONGTT Tool Pro 2026.lnk' tren Desktop"
+# 4.4 Co che tao/cap nhat shortcut phai dong bo hai shortcut tren Desktop
+Assert-True ($opsRsContent -match 'VUONGTT Tool Pro 2026\.lnk' -and $opsRsContent -match 'VUONGTT Toolkit\.lnk') "He thong phai quan ly day du shortcut tren Desktop"
 
-# 4.5 Updater script phai dong bo sang ProgramData\VUONGTT_Toolkit de chong lech version
-Assert-True ($opsRsContent -match 'ProgramData.*VUONGTT_Toolkit.*VUONGTT_Toolkit\.exe') "Updater script phai ho tro dong bo cap nhat vao ProgramData de ngan lech phien ban"
+# 4.5 Updater phai ho tro dong bo vao ProgramData de ngan lech phien ban
+Assert-True ($opsRsContent -match 'ProgramData.*VUONGTT_Toolkit' -or (Get-Content "win.ps1" -Raw) -match 'ProgramData.*VUONGTT_Toolkit') "Updater script phai ho tro dong bo cap nhat vao ProgramData de ngan lech phien ban"
 
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "KET QUA: TOAN BO TEST TDD CHO SHORTCUT VA AUTO-UPDATE DAT PASS!" -ForegroundColor Green

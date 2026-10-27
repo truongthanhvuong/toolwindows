@@ -1,29 +1,8 @@
-$Host.UI.RawUI.WindowTitle = "VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
+﻿$Host.UI.RawUI.WindowTitle = "VUONGTT Tool Pro 2026 - Cloud Bootstrapper"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13 -bor [System.Net.SecurityProtocolType]::Tls
 
 Clear-Host
-# Vo hieu hoa QuickEdit Mode tren Console de ngan chan freeze tien trinh khi click chuot
-try {
-    $consoleTypeDef = @"
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern IntPtr GetStdHandle(int nStdHandle);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
-"@
-    if (-not ([System.Management.Automation.PSTypeName]'VUONGTT.Win32Console').Type) {
-        Add-Type -MemberDefinition $consoleTypeDef -Name "Win32Console" -Namespace "VUONGTT" -ErrorAction SilentlyContinue
-    }
-    $hIn = [VUONGTT.Win32Console]::GetStdHandle(-10) # STD_INPUT_HANDLE
-    $mode = 0
-    if ([VUONGTT.Win32Console]::GetConsoleMode($hIn, [ref]$mode)) {
-        # 0x0040 = ENABLE_QUICK_EDIT_MODE, 0x0080 = ENABLE_EXTENDED_FLAGS
-        $newMode = ($mode -band (-bnot 0x0040)) -bor 0x0080
-        [VUONGTT.Win32Console]::SetConsoleMode($hIn, $newMode) | Out-Null
-    }
-} catch {}
 
 Write-Host ""
 Write-Host " ====================================================================== " -ForegroundColor DarkYellow
@@ -40,12 +19,9 @@ if (-not $isAdmin) {
     Write-Host "`n [*] Dang yeu cau quyen quan tri vien (Run as Administrator)..." -ForegroundColor Yellow
     Write-Host " [*] Vui long bam 'YES' tren hop thoai UAC de cap phep hoat dong.`n" -ForegroundColor Cyan
     
-    $bootstrapRaw = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex"
-    $bytes = [System.Text.Encoding]::Unicode.GetBytes($bootstrapRaw)
-    $encodedCmd = [Convert]::ToBase64String($bytes)
-
+    $cleanCmd = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex"
     try {
-        Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd" -Verb RunAs
+        Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"$cleanCmd`"" -Verb RunAs
         Stop-Process -Id $PID -Force
         Exit
     } catch {
@@ -61,99 +37,14 @@ if (-not $isAdmin) {
     }
 }
 
-# [FLEET TELEMETRY] Tu dong dong bo thong tin may tram ve Git & GitHub Cloud cho Admin Portal
-try {
-    Start-Job -ScriptBlock {
-        $ErrorActionPreference = 'SilentlyContinue'
-        $token = -join [char[]]'5itfN2zpUXGOFQMQLaUQ2760ZpcklmtBmW6A_phg'[39..0]
-        $repo = 'truongthanhvuong/toolwindows'
-        $path = 'src/Config/client_devices.json'
-        $headers = @{
-            'Authorization' = "token $token"
-            'User-Agent' = 'VUONGTT-Toolkit-FleetMonitor'
-            'Accept' = 'application/vnd.github.v3+json'
-        }
-        $hn = $env:COMPUTERNAME
-        $sn = (Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue).SerialNumber
-        if (-not $sn -or $sn -match 'To be filled' -or $sn -match 'Default') { $sn = "SN-$hn" }
-        $ip = (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Wi-Fi*', 'Ethernet*' -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '169.254*' } | Select-Object -First 1).IPAddress
-        if (-not $ip) { $ip = '127.0.0.1' }
-        $os = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue).Caption
-        if (-not $os) { $os = 'Windows 11 Pro 64-bit' }
-        $hwid = (Get-CimInstance Win32_ComputerSystemProduct -ErrorAction SilentlyContinue).UUID
-        if (-not $hwid) { $hwid = "HWID-$($sn -replace ' ', '-')" }
-        $now = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
-
-        try {
-            $apiUrl = "https://api.github.com/repos/$repo/contents/$path"
-            $fileInfo = Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method GET -TimeoutSec 10
-            $sha = $fileInfo.sha
-            $contentBytes = [System.Convert]::FromBase64String($fileInfo.content)
-            $jsonText = [System.Text.Encoding]::UTF8.GetString($contentBytes).Trim().TrimStart([char]0xFEFF)
-            $devices = $jsonText | ConvertFrom-Json
-        } catch {
-            $sha = $null
-            $devices = @()
-        }
-
-        $found = $false
-        $devList = New-Object System.Collections.Generic.List[PSCustomObject]
-        if ($devices) {
-            foreach ($d in $devices) {
-                if ($d.hwid -eq $hwid -or ($d.hostname -eq $hn -and $d.serialNumber -eq $sn)) {
-                    $d.lastSeen = $now
-                    $d.ipAddress = $ip
-                    $d.osCaption = $os
-                    $d.status = 'Active'
-                    $found = $true
-                }
-                $devList.Add($d)
-            }
-        }
-        if (-not $found) {
-            $newDev = [PSCustomObject]@{
-                hostname = $hn
-                serialNumber = $sn
-                ipAddress = $ip
-                osCaption = $os
-                lastSeen = $now
-                hwid = $hwid
-                status = 'Active'
-            }
-            $devList.Insert(0, $newDev)
-        }
-
-        try {
-            $newJson = $devList | ConvertTo-Json -Depth 5
-            $newBytes = [System.Text.Encoding]::UTF8.GetBytes($newJson)
-            $newBase64 = [Convert]::ToBase64String($newBytes)
-            $bodyObj = @{
-                message = "telemetry(fleet): auto heartbeat from $hn"
-                content = $newBase64
-            }
-            if ($sha) { $bodyObj['sha'] = $sha }
-            $bodyJson = $bodyObj | ConvertTo-Json -Compress
-            Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method PUT -Body $bodyJson -ContentType 'application/json' -TimeoutSec 10 | Out-Null
-        } catch {}
-    } | Out-Null
-} catch {}
-
-# 2. THIET LAP VUNG CAI DAT AN TOAN & CAU HINH WINDOWS DEFENDER EXCLUSION
-Write-Host "`n [1/4] Thiet lap vung luu tru an toan & Dang ky ngoai le Windows Defender..." -ForegroundColor Cyan
+# 2. THIET LAP VUNG CAI DAT AN TOAN
+Write-Host "`n [1/4] Thiet lap vung luu tru bo cong cu..." -ForegroundColor Cyan
 $installDir   = Join-Path $env:ProgramData "VUONGTT_Toolkit"
 $exePath      = Join-Path $installDir "VUONGTT_Toolkit.exe"
 $verFilePath  = Join-Path $installDir "installed_version.txt"
 
 if (-not (Test-Path $installDir)) {
     New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-}
-
-try {
-    Add-MpPreference -ExclusionPath $installDir -ErrorAction SilentlyContinue
-    Add-MpPreference -ExclusionProcess "VUONGTT_Toolkit.exe" -ErrorAction SilentlyContinue
-    Write-Host "  -> Da bao ve an toan thu muc va tien trinh khoi Windows Defender" -ForegroundColor Green
-} catch {
-    Write-Host "  -> Khong the dang ky Defender Exclusion (Co the da tat Defender hoac dung AV khac)" -ForegroundColor Gray
 }
 
 # Don dep cache rac tu cac phien ban cu trong TEMP va ProgramData de chong xung dot phien ban
@@ -165,7 +56,6 @@ try {
     Get-ChildItem -Path $env:TEMP -Filter "VUONGTT_Toolkit_v*_READY.exe" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
     Get-ChildItem -Path $env:TEMP -Filter "VUONGTT_HotSwap_*.cmd" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 
-    # Neu co file script cu nam lac ngoai runtime trong ProgramData\VUONGTT_Toolkit, don sach
     $staleRootScript = Join-Path $installDir "VUONGTT_Toolkit.ps1"
     if (Test-Path $staleRootScript) {
         Remove-Item -Path $staleRootScript -Force -ErrorAction SilentlyContinue
@@ -319,7 +209,7 @@ if ($needDownload) {
                 break
             }
         } catch {
-            Write-Host "  [!] Ket noi link nay khong thanh cong, dang thu nguon du phong..." -ForegroundColor DarkYellow
+            Write-Host "  [!] Ket noi link nay khong thanh conc, dang thu nguon du phong..." -ForegroundColor DarkYellow
         }
     }
 
@@ -344,9 +234,9 @@ if ($needDownload) {
             if ($latestVer) {
                 Set-Content -Path $verFilePath -Value $latestVer -Force -Encoding UTF8
             }
-            # Dong bo sang ca D:\toolwindows\VUONGTT_Toolkit.exe neu ton tai thu muc repo
-            $repoExe = "D:\toolwindows\VUONGTT_Toolkit.exe"
-            if ((Test-Path "D:\toolwindows") -and ($exePath -ne $repoExe)) {
+            # Dong bo sang ca E:\toolwindows\VUONGTT_Toolkit.exe neu ton tai thu muc repo
+            $repoExe = "E:\toolwindows\VUONGTT_Toolkit.exe"
+            if ((Test-Path "E:\toolwindows") -and ($exePath -ne $repoExe)) {
                 try { Copy-Item -Path $exePath -Destination $repoExe -Force -ErrorAction SilentlyContinue } catch {}
             }
             Write-Host "  -> Tai thanh cong VUONGTT Tool Pro ($sizeMb MB)!" -ForegroundColor Green
@@ -393,88 +283,13 @@ try {
 # 6. KHOI CHAY UNG DUNG
 Write-Host "`n [4/4] Dang khoi chay VUONGTT Tool Pro 2026..." -ForegroundColor Cyan
 
-# Thiet lap bien moi truong Live Mode de toan bo ung dung chay doc lap, khong bao gio hien popup cap nhat
 $env:VUONGTT_LIVE_MODE = "1"
 
 $proc = $null
-$useScriptFallback = $false
 try {
     $proc = Start-Process -FilePath $exePath -WorkingDirectory $installDir -PassThru -ErrorAction Stop
 } catch {
-    $errLaunch = $_.Exception.Message
-    Write-Host "  [!] Khoi chay truc tiep file EXE that bai do chinh sach bao mat he thong (Smart App Control / WDAC / Application Control): $errLaunch" -ForegroundColor Yellow
-    Write-Host "  [*] Dang tu dong kich hoat Dong Co Du Phong (In-Memory Fallback Engine) de mo giao dien qua Microsoft PowerShell..." -ForegroundColor Cyan
-    $useScriptFallback = $true
-}
-
-# 6.2. Neu he thong chan file EXE boi Application Control / Smart App Control / WDAC:
-if ($useScriptFallback -or (-not $proc)) {
-    try {
-        $runtimeDir = Join-Path $installDir "runtime"
-        if (-not (Test-Path $runtimeDir)) { New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null }
-
-        $bytes = [System.IO.File]::ReadAllBytes($exePath)
-        $asm = [System.Reflection.Assembly]::Load($bytes)
-        $resNames = $asm.GetManifestResourceNames()
-
-        foreach ($name in $resNames) {
-            $relPath = ""
-            if ($name.Contains("VUONGTT_Toolkit.ps1")) { $relPath = "VUONGTT_Toolkit.ps1" }
-            elseif ($name.Contains("MainWindow.xaml")) { $relPath = "src\UI\MainWindow.xaml" }
-            elseif ($name.Contains("OfficeAIOModal.xaml")) { $relPath = "src\UI\OfficeAIOModal.xaml" }
-            elseif ($name.Contains("HardwareInfo.ps1")) { $relPath = "src\Core\HardwareInfo.ps1" }
-            elseif ($name.Contains("OfficeInstaller.ps1")) { $relPath = "src\Core\OfficeInstaller.ps1" }
-            elseif ($name.Contains("Activator.ps1")) { $relPath = "src\Core\Activator.ps1" }
-            elseif ($name.Contains("NetworkPrinterFix.ps1")) { $relPath = "src\Core\NetworkPrinterFix.ps1" }
-            elseif ($name.Contains("SystemTweaks.ps1")) { $relPath = "src\Core\SystemTweaks.ps1" }
-            elseif ($name.Contains("BitLockerManager.ps1")) { $relPath = "src\Core\BitLockerManager.ps1" }
-            elseif ($name.Contains("SoftwareInstaller.ps1")) { $relPath = "src\Core\SoftwareInstaller.ps1" }
-            elseif ($name.Contains("SystemCustomizer.ps1")) { $relPath = "src\Core\SystemCustomizer.ps1" }
-            elseif ($name.Contains("UserManager.ps1")) { $relPath = "src\Core\UserManager.ps1" }
-            elseif ($name.Contains("CpuMainDatabase.ps1")) { $relPath = "src\Core\CpuMainDatabase.ps1" }
-            elseif ($name.Contains("LaptopTester.ps1")) { $relPath = "src\Core\LaptopTester.ps1" }
-            elseif ($name.Contains("FontInstaller.ps1")) { $relPath = "src\Core\FontInstaller.ps1" }
-            elseif ($name.Contains("PartitionManager.ps1")) { $relPath = "src\Core\PartitionManager.ps1" }
-            elseif ($name.Contains("AccountingApps.ps1")) { $relPath = "src\Core\AccountingApps.ps1" }
-            elseif ($name.Contains("AppUpdater.ps1")) { $relPath = "src\Core\AppUpdater.ps1" }
-            elseif ($name.Contains("LicenseManager.ps1")) { $relPath = "src\Core\LicenseManager.ps1" }
-            elseif ($name.Contains("IpScanner.ps1")) { $relPath = "src\Core\IpScanner.ps1" }
-            elseif ($name.Contains("ConfigManager.ps1")) { $relPath = "src\Core\ConfigManager.ps1" }
-            elseif ($name.Contains("DiskHealthManager.ps1")) { $relPath = "src\Core\DiskHealthManager.ps1" }
-            elseif ($name.Contains("AutoWinDeployer.ps1")) { $relPath = "src\Core\AutoWinDeployer.ps1" }
-            elseif ($name.Contains("SystemBackupManager.ps1")) { $relPath = "src\Core\SystemBackupManager.ps1" }
-            elseif ($name.Contains("TroubleshootManager.ps1")) { $relPath = "src\Core\TroubleshootManager.ps1" }
-            elseif ($name.Contains("licenses_vault.json")) { $relPath = "src\Config\licenses_vault.json" }
-            elseif ($name.Contains("feature_policy.json")) { $relPath = "src\Config\feature_policy.json" }
-            elseif ($name.Contains("SoftwareDatabase.json")) { $relPath = "src\Data\SoftwareDatabase.json" }
-            elseif ($name.Contains("TroubleshootDatabase.json")) { $relPath = "src\Data\TroubleshootDatabase.json" }
-            elseif ($name.Contains("version.json")) { $relPath = "version.json" }
-            elseif ($name.StartsWith("VUONGTT.AppIcons.")) {
-                $iconFile = $name.Substring("VUONGTT.AppIcons.".Length)
-                $relPath = "src\Assets\AppIcons\$iconFile"
-            }
-
-            if ($relPath) {
-                $dest = Join-Path $runtimeDir $relPath
-                $parent = Split-Path $dest -Parent
-                if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
-                $stream = $asm.GetManifestResourceStream($name)
-                $fs = [System.IO.File]::Create($dest)
-                $stream.CopyTo($fs)
-                $fs.Close()
-                $stream.Close()
-            }
-        }
-
-        $mainScript = Join-Path $runtimeDir "VUONGTT_Toolkit.ps1"
-        if (Test-Path $mainScript) {
-            Write-Host "  -> Giai nen bo cong cu thanh cong! Dang khoi chay qua Microsoft PowerShell Host (Che do Live doc lap)..." -ForegroundColor Green
-            $proc = Start-Process -FilePath "powershell.exe" -ArgumentList "-STA -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$mainScript`" -Live" -WorkingDirectory $runtimeDir -PassThru
-        }
-    } catch {
-        Write-Host "  [!] Khong the khoi chay qua Che Do Du Phong: $($_.Exception.Message)" -ForegroundColor Red
-        return
-    }
+    Write-Host "  [!] Khoi chay that bai: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 if ($proc) {
@@ -491,4 +306,3 @@ if ($proc) {
     [System.Environment]::Exit(0)
     Stop-Process -Id $PID -Force
 }
-

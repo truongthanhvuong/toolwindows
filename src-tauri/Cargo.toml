@@ -1,6 +1,6 @@
 [package]
 name = "vuongtt_toolkit"
-version = "20.5.139"
+version = "20.5.140"
 description = "VUONGTT Tool Pro 2026 — Rust (Tauri v2) Fluent OS Utility"
 edition = "2021"
 

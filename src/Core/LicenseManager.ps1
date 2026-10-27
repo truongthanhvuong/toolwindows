@@ -1,4 +1,4 @@
-# =========================================================================
+﻿# =========================================================================
 #   VUONGTT TOOLKIT 2026 - LICENSE & ADMIN MANAGEMENT ENGINE
 #   Chức năng: Quản lý bản quyền Free/PRO, Mã hóa HWID khóa 1 máy tính,
 #              Quản lý phân quyền tính năng, Tạo/Xóa License Key, Đăng nhập Admin
