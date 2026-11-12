@@ -2498,6 +2498,18 @@
     if (logEl && typeof appendLog === "function") {
       appendLog("UNINSTALL", `Đang khởi chạy trình gỡ cài đặt cho: ${name}...`, "text-warning");
     }
+
+    // Xóa ngay lập tức khỏi bảng hiển thị giao diện (Optimistic UI removal)
+    cachedInstalledApps = cachedInstalledApps.filter(a => a && a.name !== name);
+    currentFilteredApps = currentFilteredApps.filter(a => a && a.name !== name);
+    if (typeof selectedAppNames !== "undefined") {
+      selectedAppNames.delete(name);
+    }
+    window.renderInstalledApps(currentFilteredApps);
+    if (typeof window.updateBulkUninstallUI === "function") {
+      window.updateBulkUninstallUI();
+    }
+
     const res = await invokeRust("run_system_action", {
       actionId: "uninstall_app",
       params: { name, uninstall_string: uninstStr },
@@ -2506,7 +2518,6 @@
     if (logEl && typeof appendLog === "function") {
       appendLog(res && res.success ? "SUCCESS" : "INFO", (res && res.message) || `Đã kích hoạt lệnh gỡ ${name}`, res && res.success ? "text-tertiary" : "text-outline");
     }
-    setTimeout(() => window.refreshInstalledApps(), 2500);
   };
 
   window.bulkUninstallSelectedApps = async function() {
@@ -2519,6 +2530,16 @@
     const appNamesSummary = selectedList.map(a => `• ${a.name}`).join("\n");
     const confirmMsg = `Bạn có chắc chắn muốn gỡ bỏ ${selectedList.length} phần mềm đã chọn sau đây?\n\n${appNamesSummary}\n\nNhấn OK để hệ thống lần lượt kích hoạt trình gỡ cho từng ứng dụng.`;
     if (!confirm(confirmMsg)) return;
+
+    // Xóa ngay lập tức tất cả phần mềm được chọn khỏi giao diện
+    const removingSet = new Set(selectedList.map(a => a.name));
+    cachedInstalledApps = cachedInstalledApps.filter(a => a && !removingSet.has(a.name));
+    currentFilteredApps = currentFilteredApps.filter(a => a && !removingSet.has(a.name));
+    selectedAppNames.clear();
+    window.renderInstalledApps(currentFilteredApps);
+    if (typeof window.updateBulkUninstallUI === "function") {
+      window.updateBulkUninstallUI();
+    }
 
     showToast("Bắt Đầu Gỡ Hàng Loạt", `Đang chuẩn bị gỡ bỏ ${selectedList.length} phần mềm...`, "info");
     const logEl = document.getElementById("log-console");
@@ -2548,12 +2569,10 @@
       }
     }
 
-    showToast("Hoàn Tất", `Đã kích hoạt gỡ bỏ toàn bộ ${selectedList.length} phần mềm!`, "success");
+    showToast("Hoàn Tất", `Đã gửi lệnh gỡ bỏ toàn bộ ${selectedList.length} phần mềm! Bạn có thể nhấn 'Quét Lại Danh Sách Máy' sau khi hoàn tất để làm mới.`, "success");
     if (logEl && typeof appendLog === "function") {
-      appendLog("SUCCESS", `Hoàn tất gỡ hàng loạt ${selectedList.length} phần mềm!`, "text-tertiary");
+      appendLog("SUCCESS", `Hoàn tất gửi lệnh gỡ ${selectedList.length} phần mềm!`, "text-tertiary");
     }
-    selectedAppNames.clear();
-    setTimeout(() => window.refreshInstalledApps(), 2000);
   };
 
   window.openUninstallerTool = async function(tool) {

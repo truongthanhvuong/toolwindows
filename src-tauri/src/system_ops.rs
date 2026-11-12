@@ -819,21 +819,41 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         );
     }
 
-    if act == "uninstall_app" || act == "uninstall_apps" || act == "bulk_uninstall_apps" || act == "uninstall_multiple_apps" || act == "go cai dat" || act == "go cai dat ung dung" {
+if act == "uninstall_app" || act == "uninstall_apps" || act == "bulk_uninstall_apps" || act == "uninstall_multiple_apps" || act == "go cai dat" || act == "go cai dat ung dung" {
         let uninst_cmd = extract_json_string(params_json, "uninstall_string")
             .or_else(|| extract_json_string(params_json, "uninstallString"))
             .unwrap_or_default();
         let app_name = extract_json_string(params_json, "name")
             .unwrap_or_else(|| "ứng dụng".to_string());
 
-        if !uninst_cmd.is_empty() {
+        if !uninst_cmd.is_empty() || !app_name.is_empty() {
             let ps_code = format!(
                 r#"
                 $rawCmd = @'
 {}
 '@
+                $appName = @'
+{}
+'@
                 $cmd = $rawCmd.Trim()
-                if (-not $cmd) {{ exit 0 }}
+                $app = $appName.Trim()
+
+                # 0. Giai phong tien trinh neu dang chay ngam gay khoa tep (File Lock)
+                $procNames = switch -Regex ($app) {{
+                    '(?i)brave' {{ 'brave' }}
+                    '(?i)copilot' {{ 'copilot' }}
+                    '(?i)chrome' {{ 'chrome' }}
+                    '(?i)edge' {{ 'msedge' }}
+                    '(?i)adspower' {{ 'adspower' }}
+                    '(?i)bluestacks' {{ 'HD-Player' }}
+                    '(?i)docker' {{ 'Docker Desktop' }}
+                    '(?i)forticlient' {{ 'FortiClient' }}
+                    '(?i)foxit' {{ 'FoxitReader' }}
+                    default {{ $null }}
+                }}
+                if ($procNames) {{
+                    Stop-Process -Name $procNames -Force -ErrorAction SilentlyContinue
+                }}
 
                 # 1. Truong hop MsiExec: dam bao tham so /X (go bo) thay vi /I (cai dat)
                 if ($cmd -match '(?i)msiexec(\.exe)?\s+(.*)') {{
@@ -843,10 +863,22 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                     }} elseif (-not ($msiArgs -match '(?i)\/(x|uninstall)\b')) {{
                         $msiArgs = "/X $msiArgs"
                     }}
+                    # Thu go yen lang /qn /norestart truoc, neu that bai thi go co ban /qb
+                    $silentArgs = $msiArgs
+                    if (-not ($silentArgs -match '(?i)\/q[nb]')) {{
+                        $silentArgs = "$silentArgs /qn /norestart"
+                    }}
+                    $msiSuccess = $false
                     try {{
-                        Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Verb RunAs -Wait -ErrorAction Stop
-                    }} catch {{
-                        Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -ErrorAction SilentlyContinue
+                        $p = Start-Process -FilePath "msiexec.exe" -ArgumentList $silentArgs -Verb RunAs -Wait -PassThru -ErrorAction Stop
+                        if ($p.ExitCode -eq 0 -or $p.ExitCode -eq 3010) {{ $msiSuccess = $true }}
+                    }} catch {{}}
+                    if (-not $msiSuccess) {{
+                        try {{
+                            Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Verb RunAs -Wait -ErrorAction Stop
+                        }} catch {{
+                            Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -ErrorAction SilentlyContinue
+                        }}
                     }}
                     exit 0
                 }}
@@ -854,10 +886,25 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                 # 2. Truong hop tap tin thuc thi (.exe, .cmd, .bat)
                 $targetExe = ""
                 $targetArgs = ""
-                if ($cmd -match '^(["\'])(.+?)\1\s*(.*)$') {{
-                    $targetExe = $matches[2]
-                    $targetArgs = $matches[3]
-                }} elseif ($cmd -match '^([^\s]+)\s*(.*)$') {{
+                if ($cmd.StartsWith('"')) {{
+                    $endIdx = $cmd.IndexOf('"', 1)
+                    if ($endIdx -gt 1) {{
+                        $targetExe = $cmd.Substring(1, $endIdx - 1).Trim()
+                        $targetArgs = $cmd.Substring($endIdx + 1).Trim()
+                    }} else {{
+                        $targetExe = $cmd.Trim('"')
+                        $targetArgs = ""
+                    }}
+                }} elseif ($cmd.StartsWith("'")) {{
+                    $endIdx = $cmd.IndexOf("'", 1)
+                    if ($endIdx -gt 1) {{
+                        $targetExe = $cmd.Substring(1, $endIdx - 1).Trim()
+                        $targetArgs = $cmd.Substring($endIdx + 1).Trim()
+                    }} else {{
+                        $targetExe = $cmd.Trim("'")
+                        $targetArgs = ""
+                    }}
+                }} elseif ($cmd -match '^(\S+)\s*(.*)$') {{
                     $targetExe = $matches[1]
                     $targetArgs = $matches[2]
                 }} else {{
@@ -865,21 +912,78 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                     $targetArgs = ""
                 }}
 
+                # Bo sung co silent tu dong theo tung loai trinh cai dat
+                if ($targetExe -and ($targetExe -match '(?i)(setup|installer|unins\w*)\.exe')) {{
+                    if ($targetArgs -match '(?i)--uninstall') {{
+                        if (-not ($targetArgs -match '(?i)--force-uninstall')) {{
+                            $targetArgs = "$targetArgs --force-uninstall"
+                        }}
+                    }}
+                    if ($targetExe -match '(?i)unins\d*\.exe' -and (-not ($targetArgs -match '(?i)\/silent|\/verysilent'))) {{
+                        $targetArgs = "$targetArgs /VERYSILENT /SUPPRESSMSGBOXES /NORESTART"
+                    }}
+                    if ($targetExe -match '(?i)uninstall\.exe' -and (-not ($targetArgs -match '(?i)\/S\b'))) {{
+                        $targetArgs = "$targetArgs /S"
+                    }}
+                }}
+
+                $executed = $false
                 if ($targetExe -and (Test-Path $targetExe)) {{
                     try {{
                         Start-Process -FilePath $targetExe -ArgumentList $targetArgs -Verb RunAs -Wait -ErrorAction Stop
+                        $executed = $true
                     }} catch {{
-                        Start-Process -FilePath $targetExe -ArgumentList $targetArgs -Wait -ErrorAction SilentlyContinue
+                        try {{
+                            Start-Process -FilePath $targetExe -ArgumentList $targetArgs -Wait -ErrorAction SilentlyContinue
+                            $executed = $true
+                        }} catch {{}}
                     }}
-                }} else {{
+                }}
+
+                # 3. Fallback UWP / AppX Package neu la Copilot hoac ung dung Modern Store
+                if ($app -match '(?i)copilot') {{
+                    Get-AppxPackage *copilot* -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue
+                    Get-AppxPackage *copilot* -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
+                    Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object {{ $_.DisplayName -match '(?i)copilot' }} | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+                }}
+
+                # 4. Fallback winget neu lenh truoc that bai hoac exe khong ton tai
+                if ((-not $executed -or (-not (Test-Path $targetExe))) -and $app) {{
                     try {{
-                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$cmd`"" -Verb RunAs -Wait -ErrorAction Stop
-                    }} catch {{
-                        cmd.exe /c "$cmd"
+                        winget uninstall --name "$app" --silent --accept-source-agreements --force 2>$null
+                    }} catch {{}}
+                }}
+
+                # 5. Don dep Registry mo coi neu phan mem da bi xoa file nhung con xot lai key
+                $regPaths = @(
+                    'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+                    'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+                    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
+                )
+                foreach ($rp in $regPaths) {{
+                    Get-ItemProperty $rp -ErrorAction SilentlyContinue | Where-Object {{ $_.DisplayName -eq $app }} | ForEach-Object {{
+                        $rPath = $_.PSPath
+                        $chkStr = if ($_.UninstallString) {{ $_.UninstallString }} else {{ "" }}
+                        $chkExe = ""
+                        if ($chkStr.StartsWith('"')) {{
+                            $endIdx = $chkStr.IndexOf('"', 1)
+                            if ($endIdx -gt 1) {{ $chkExe = $chkStr.Substring(1, $endIdx - 1).Trim() }}
+                            else {{ $chkExe = $chkStr.Trim('"') }}
+                        }} elseif ($chkStr.StartsWith("'")) {{
+                            $endIdx = $chkStr.IndexOf("'", 1)
+                            if ($endIdx -gt 1) {{ $chkExe = $chkStr.Substring(1, $endIdx - 1).Trim() }}
+                            else {{ $chkExe = $chkStr.Trim("'") }}
+                        }} elseif ($chkStr -match '^(\S+)') {{
+                            $chkExe = $matches[1]
+                        }}
+                        if ($chkExe -and (-not ($chkExe -match '(?i)msiexec')) -and (-not (Test-Path $chkExe))) {{
+                            Remove-Item -Path $rPath -Recurse -Force -ErrorAction SilentlyContinue
+                        }}
                     }}
                 }}
                 "#,
-                uninst_cmd.replace('\'', "''")
+                uninst_cmd.replace('\'', "''"),
+                app_name.replace('\'', "''")
             );
             let mut cmd = Command::new("powershell");
             cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
