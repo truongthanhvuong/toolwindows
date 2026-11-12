@@ -1,4 +1,4 @@
-# VUONGTT TOOL PRO 2026 - CLOUD BOOTSTRAPPER & AUTO UPDATER
+﻿# VUONGTT TOOL PRO 2026 - CLOUD BOOTSTRAPPER & AUTO UPDATER
 function Compare-SemVer([string]$v1, [string]$v2) {
     if (-not $v1 -or -not $v2) { return 0 }
     $p1 = ($v1.Trim() -replace '^[vV]', '').Split('.')

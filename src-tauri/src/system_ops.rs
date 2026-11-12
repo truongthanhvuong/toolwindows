@@ -1775,6 +1775,11 @@ th { background: #222a3d; color: #6ffbbe; }
             .or_else(|| extract_json_field(params_json, "version"))
             .unwrap_or("O365ProPlusRetail");
         let lang = extract_json_field(params_json, "lang").unwrap_or("MatchOS");
+        let is_download_only = extract_json_field(params_json, "downloadOnly")
+            .or_else(|| extract_json_field(params_json, "download_only"))
+            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+            .unwrap_or(false);
+        let odt_mode = if is_download_only { "download" } else { "configure" };
 
         append_log(&format!(
             "[CẤU HÌNH] Tạo tệp configuration.xml (Phiên bản: {}, Kiến trúc: {}bit, Ngôn ngữ: {})...",
@@ -1819,7 +1824,7 @@ th { background: #222a3d; color: #6ffbbe; }
             }}
 
             if (Test-Path $setupExe) {{
-                $proc = Start-Process -FilePath $setupExe -ArgumentList "/configure `"$configPath`"" -PassThru
+                $proc = Start-Process -FilePath $setupExe -ArgumentList "/{} `"$configPath`"" -PassThru
                 Write-Output "ODT_PID:$($proc.Id)"
             }} else {{
                 # Fallback qua winget nếu setup.exe không giải nén được
@@ -1827,7 +1832,7 @@ th { background: #222a3d; color: #6ffbbe; }
                 Write-Output "WINGET_PID:$($winget.Id)"
             }}
             "#,
-            client_edition, prod_id, lang
+            odt_mode, client_edition, prod_id, lang
         );
 
         let mut cmd = Command::new("powershell");
