@@ -411,8 +411,20 @@ pub fn extract_json_field<'a>(json: &'a str, field: &str) -> Option<&'a str> {
             let after_colon = trimmed_rest[1..].trim_start();
             if after_colon.starts_with('"') {
                 let val_rest = &after_colon[1..];
-                let end = val_rest.find('"')?;
-                return Some(&val_rest[..end]);
+                let mut end = None;
+                let mut escaped = false;
+                for (i, c) in val_rest.char_indices() {
+                    if escaped {
+                        escaped = false;
+                    } else if c == '\\' {
+                        escaped = true;
+                    } else if c == '"' {
+                        end = Some(i);
+                        break;
+                    }
+                }
+                let end_idx = end?;
+                return Some(&val_rest[..end_idx]);
             }
             let end = after_colon.find(|c: char| c == ',' || c == '}' || c == ']' || c.is_whitespace()).unwrap_or(after_colon.len());
             let val = after_colon[..end].trim().trim_matches('"');
@@ -425,6 +437,37 @@ pub fn extract_json_field<'a>(json: &'a str, field: &str) -> Option<&'a str> {
         search_start = idx + quoted_field.len();
     }
     None
+}
+
+pub fn extract_json_string(json: &str, field: &str) -> Option<String> {
+    let raw = extract_json_field(json, field)?;
+    let mut out = String::with_capacity(raw.len());
+    let mut chars = raw.chars();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            if let Some(esc) = chars.next() {
+                match esc {
+                    '"' => out.push('"'),
+                    '\\' => out.push('\\'),
+                    '/' => out.push('/'),
+                    'b' => out.push('\x08'),
+                    'f' => out.push('\x0c'),
+                    'n' => out.push('\n'),
+                    'r' => out.push('\r'),
+                    't' => out.push('\t'),
+                    other => {
+                        out.push('\\');
+                        out.push(other);
+                    }
+                }
+            } else {
+                out.push('\\');
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    Some(out)
 }
 
 fn read_clean_file(path: &Path) -> String {
@@ -776,27 +819,67 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         );
     }
 
-    if act == "uninstall_app" || act == "uninstall_apps" || act == "go cai dat" || act == "go cai dat ung dung" {
-        let uninst_cmd = extract_json_field(params_json, "uninstall_string")
-            .or_else(|| extract_json_field(params_json, "uninstallString"))
-            .unwrap_or("");
-        let app_name = extract_json_field(params_json, "name").unwrap_or("ứng dụng");
+    if act == "uninstall_app" || act == "uninstall_apps" || act == "bulk_uninstall_apps" || act == "uninstall_multiple_apps" || act == "go cai dat" || act == "go cai dat ung dung" {
+        let uninst_cmd = extract_json_string(params_json, "uninstall_string")
+            .or_else(|| extract_json_string(params_json, "uninstallString"))
+            .unwrap_or_default();
+        let app_name = extract_json_string(params_json, "name")
+            .unwrap_or_else(|| "ứng dụng".to_string());
 
         if !uninst_cmd.is_empty() {
             let ps_code = format!(
                 r#"
-                $cmd = "{}"
-                if ($cmd -match '^(["'']?)(.+?\.(exe|bat|cmd))\1\s*(.*)$') {{
-                    $exe = $matches[2]
-                    $args = $matches[4]
-                    Start-Process -FilePath $exe -ArgumentList $args -NoNewWindow -Wait -ErrorAction SilentlyContinue
-                }} elseif ($cmd -match 'msiexec(\.exe)?\s+(.*)') {{
-                    Start-Process "msiexec.exe" -ArgumentList "$($matches[2]) /qn /norestart" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+                $rawCmd = @'
+{}
+'@
+                $cmd = $rawCmd.Trim()
+                if (-not $cmd) {{ exit 0 }}
+
+                # 1. Truong hop MsiExec: dam bao tham so /X (go bo) thay vi /I (cai dat)
+                if ($cmd -match '(?i)msiexec(\.exe)?\s+(.*)') {{
+                    $msiArgs = $matches[2].Trim()
+                    if ($msiArgs -match '(?i)^\s*\/i\b') {{
+                        $msiArgs = $msiArgs -replace '(?i)^\s*\/i\b', '/X'
+                    }} elseif (-not ($msiArgs -match '(?i)\/(x|uninstall)\b')) {{
+                        $msiArgs = "/X $msiArgs"
+                    }}
+                    try {{
+                        Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Verb RunAs -Wait -ErrorAction Stop
+                    }} catch {{
+                        Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -ErrorAction SilentlyContinue
+                    }}
+                    exit 0
+                }}
+
+                # 2. Truong hop tap tin thuc thi (.exe, .cmd, .bat)
+                $targetExe = ""
+                $targetArgs = ""
+                if ($cmd -match '^(["\'])(.+?)\1\s*(.*)$') {{
+                    $targetExe = $matches[2]
+                    $targetArgs = $matches[3]
+                }} elseif ($cmd -match '^([^\s]+)\s*(.*)$') {{
+                    $targetExe = $matches[1]
+                    $targetArgs = $matches[2]
                 }} else {{
-                    cmd.exe /c "$cmd"
+                    $targetExe = $cmd
+                    $targetArgs = ""
+                }}
+
+                if ($targetExe -and (Test-Path $targetExe)) {{
+                    try {{
+                        Start-Process -FilePath $targetExe -ArgumentList $targetArgs -Verb RunAs -Wait -ErrorAction Stop
+                    }} catch {{
+                        Start-Process -FilePath $targetExe -ArgumentList $targetArgs -Wait -ErrorAction SilentlyContinue
+                    }}
+                }} else {{
+                    try {{
+                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$cmd`"" -Verb RunAs -Wait -ErrorAction Stop
+                    }} catch {{
+                        cmd.exe /c "$cmd"
+                    }}
                 }}
                 "#,
-                uninst_cmd.replace('"', "`\"")
+                uninst_cmd.replace('\'', "''")
             );
             let mut cmd = Command::new("powershell");
             cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);

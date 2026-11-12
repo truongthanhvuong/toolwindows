@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.143</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.144</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -1136,7 +1136,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span id="tech-driver-build-badge">Build: v20.5.909.143</span>
+<span id="tech-driver-build-badge">Build: v20.5.909.144</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -4978,20 +4978,35 @@
       </button>
     </div>
 
-    <!-- Search input -->
-    <div class="flex items-center gap-2">
-      <div class="flex-1 relative">
+    <!-- Search & Bulk Action Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex-1 min-w-[280px] relative">
         <span class="material-symbols-outlined absolute left-3 top-2.5 text-[18px] text-outline">search</span>
         <input id="txtUninstallSearch" oninput="filterInstalledApps(this.value)" type="text" placeholder="Tìm kiếm phần mềm theo tên, nhà phát triển..." class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container-lowest text-on-surface border border-outline/30 focus:border-primary font-code-sm text-code-sm outline-none" />
       </div>
-      <span id="badgeInstalledCount" class="px-3 py-2 rounded-lg bg-surface-container-high text-on-surface font-code-sm text-code-sm font-semibold">0 Ứng Dụng</span>
+      <div class="flex items-center gap-2">
+        <button id="btnBulkUninstall" onclick="bulkUninstallSelectedApps()" disabled class="px-3.5 py-2 rounded-lg bg-red-600/40 text-white/50 font-label-md text-label-md font-semibold flex items-center gap-1.5 transition-all cursor-not-allowed" type="button" title="Chọn ít nhất 1 phần mềm để gỡ hàng loạt">
+          <span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+          <span id="txtBulkUninstallLabel">Gỡ Hàng Loạt (0)</span>
+        </button>
+        <button onclick="toggleSelectAllInstalledApps(true)" class="px-3 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-sm text-label-sm transition-colors cursor-pointer" type="button" title="Chọn tất cả ứng dụng">
+          Chọn Tất Cả
+        </button>
+        <button onclick="toggleSelectAllInstalledApps(false)" class="px-3 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-sm text-label-sm transition-colors cursor-pointer" type="button" title="Bỏ chọn tất cả">
+          Bỏ Chọn
+        </button>
+        <span id="badgeInstalledCount" class="px-3 py-2 rounded-lg bg-surface-container-high text-on-surface font-code-sm text-code-sm font-semibold">0 Ứng Dụng</span>
+      </div>
     </div>
 
     <!-- Apps Table -->
-    <div class="rounded-lg border border-outline/20 overflow-hidden max-h-96 overflow-y-auto">
+    <div class="rounded-lg border border-outline/20 overflow-hidden max-h-[520px] overflow-y-auto">
       <table class="w-full text-left text-on-surface font-label-md text-label-md">
-        <thead class="bg-surface-container-high text-on-surface font-semibold sticky top-0">
+        <thead class="bg-surface-container-high text-on-surface font-semibold sticky top-0 shadow-sm z-10">
           <tr>
+            <th class="p-3 w-10 text-center">
+              <input type="checkbox" id="chkSelectAllInstalledApps" onchange="toggleSelectAllInstalledApps(this.checked)" class="w-4 h-4 rounded border-outline/40 text-primary focus:ring-primary cursor-pointer accent-primary" title="Chọn tất cả / Bỏ chọn tất cả" />
+            </th>
             <th class="p-3">Tên Ứng Dụng</th>
             <th class="p-3">Nhà Phát Triển</th>
             <th class="p-3">Phiên Bản</th>
@@ -5000,7 +5015,7 @@
         </thead>
         <tbody id="tbodyInstalledApps" class="divide-y divide-outline/10 bg-surface-container-low">
           <tr>
-            <td colspan="4" class="p-6 text-center text-on-surface-variant font-body-md">
+            <td colspan="5" class="p-6 text-center text-on-surface-variant font-body-md">
               Bấm nút "Quét Danh Sách Máy" ở trên để tải toàn bộ phần mềm đã cài đặt trên máy tính này.
             </td>
           </tr>

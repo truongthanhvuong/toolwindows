@@ -2304,6 +2304,8 @@
 
   // --- 12. SOFTWARE HUB CONTROLLERS (SUB-TABS, UNINSTALLER, FONTS, CUSTOM) ---
   let cachedInstalledApps = [];
+  let currentFilteredApps = [];
+  let selectedAppNames = new Set();
 
   window.switchSoftSubTab = function(tabName) {
     const tabs = ["store", "custom", "uninstall", "fonts"];
@@ -2319,9 +2321,9 @@
       }
       if (btn) {
         if (t === tabName) {
-          btn.className = "px-3.5 py-1.5 rounded-md font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm flex items-center gap-1.5 transition-all";
+          btn.className = "px-4 py-2 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold flex items-center gap-2 shadow-sm transition-all";
         } else {
-          btn.className = "px-3.5 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-1.5";
+          btn.className = "px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md flex items-center gap-2 transition-all";
         }
       }
     });
@@ -2335,7 +2337,7 @@
     const tbody = document.getElementById("tbodyInstalledApps");
     const badge = document.getElementById("badgeInstalledCount");
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-secondary font-body-md animate-pulse">Đang quét toàn bộ Registry Uninstall...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-secondary font-body-md animate-pulse">Đang quét toàn bộ Registry Uninstall trên máy tính...</td></tr>`;
     }
 
     try {
@@ -2348,14 +2350,73 @@
           apps = [];
         }
       }
-            if (apps && !Array.isArray(apps)) {
+      if (apps && !Array.isArray(apps)) {
         apps = [apps];
       }
       cachedInstalledApps = Array.isArray(apps) ? apps : [];
+      currentFilteredApps = [...cachedInstalledApps];
+      selectedAppNames.clear();
       if (badge) badge.textContent = `${cachedInstalledApps.length} Ứng Dụng`;
-      window.renderInstalledApps(cachedInstalledApps);
+      const searchInput = document.getElementById("txtUninstallSearch");
+      if (searchInput && searchInput.value.trim()) {
+        window.filterInstalledApps(searchInput.value);
+      } else {
+        window.renderInstalledApps(currentFilteredApps);
+      }
+      window.updateBulkUninstallUI();
     } catch (e) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-error font-body-md">Lỗi khi quét ứng dụng: ${e}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-error font-body-md">Lỗi khi quét ứng dụng: ${e}</td></tr>`;
+    }
+  };
+
+  window.toggleSelectApp = function(name, checked) {
+    if (checked) {
+      selectedAppNames.add(name);
+    } else {
+      selectedAppNames.delete(name);
+    }
+    window.updateBulkUninstallUI();
+  };
+
+  window.toggleSelectAllInstalledApps = function(checked) {
+    if (checked) {
+      currentFilteredApps.forEach(a => {
+        if (a && a.name) selectedAppNames.add(a.name);
+      });
+    } else {
+      if (currentFilteredApps.length === cachedInstalledApps.length) {
+        selectedAppNames.clear();
+      } else {
+        currentFilteredApps.forEach(a => {
+          if (a && a.name) selectedAppNames.delete(a.name);
+        });
+      }
+    }
+    window.renderInstalledApps(currentFilteredApps);
+    window.updateBulkUninstallUI();
+  };
+
+  window.updateBulkUninstallUI = function() {
+    const chkAll = document.getElementById("chkSelectAllInstalledApps");
+    if (chkAll) {
+      chkAll.checked = currentFilteredApps.length > 0 && currentFilteredApps.every(a => a && a.name && selectedAppNames.has(a.name));
+    }
+    const btnBulk = document.getElementById("btnBulkUninstall");
+    const lblBulk = document.getElementById("txtBulkUninstallLabel");
+    const count = selectedAppNames.size;
+    if (lblBulk) {
+      lblBulk.textContent = count > 0 ? `Gỡ Hàng Loạt (${count})` : "Gỡ Hàng Loạt (0)";
+    }
+    if (btnBulk) {
+      if (count > 0) {
+        btnBulk.disabled = false;
+        btnBulk.className = "px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-label-md text-label-md font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-red-600/30 cursor-pointer animate-pulse";
+        btnBulk.title = `Bấm để gỡ bỏ đồng thời ${count} phần mềm đã chọn`;
+      } else {
+        btnBulk.disabled = true;
+        btnBulk.className = "px-3.5 py-2 rounded-lg bg-red-600/40 text-white/50 font-label-md text-label-md font-semibold flex items-center gap-1.5 transition-all cursor-not-allowed";
+        btnBulk.title = "Tick chọn các phần mềm cần gỡ để kích hoạt";
+      }
     }
   };
 
@@ -2363,23 +2424,29 @@
     const tbody = document.getElementById("tbodyInstalledApps");
     if (!tbody) return;
     if (!apps || apps.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-on-surface-variant font-body-md">Không tìm thấy ứng dụng phù hợp.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-on-surface-variant font-body-md">Không tìm thấy ứng dụng phù hợp trong danh sách.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = apps.map((app) => {
-      const name = (app.name || "").replace(/"/g, '&quot;');
-      const pub = (app.publisher || "Chưa rõ").replace(/"/g, '&quot;');
-      const ver = (app.version || "1.0").replace(/"/g, '&quot;');
-      const uninst = (app.uninstall_string || "").replace(/"/g, '&quot;');
+    tbody.innerHTML = apps.map((app, index) => {
+      const rawName = app.name || "Chưa rõ tên";
+      const nameEscaped = rawName.replace(/"/g, "&quot;");
+      const pubEscaped = (app.publisher || "Chưa rõ").replace(/"/g, "&quot;");
+      const verEscaped = (app.version || "1.0").replace(/"/g, "&quot;");
+      const isSelected = selectedAppNames.has(rawName);
+
       return `
-        <tr class="hover:bg-surface-container transition-colors">
-          <td class="p-3 font-semibold text-on-surface">${name}</td>
-          <td class="p-3 text-on-surface-variant">${pub}</td>
-          <td class="p-3 font-code-sm text-code-sm text-outline">${ver}</td>
+        <tr class="hover:bg-surface-container transition-colors ${isSelected ? "bg-red-500/10" : ""}">
+          <td class="p-3 text-center">
+            <input type="checkbox" class="chk-installed-app w-4 h-4 rounded border-outline/40 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600" ${isSelected ? "checked" : ""} onchange="window.toggleSelectApp(`${rawName.replace(/`/g, "\\`")}`, this.checked)" />
+          </td>
+          <td class="p-3 font-semibold text-on-surface">${nameEscaped}</td>
+          <td class="p-3 text-on-surface-variant">${pubEscaped}</td>
+          <td class="p-3 font-code-sm text-code-sm text-outline">${verEscaped}</td>
           <td class="p-3 text-right">
-            <button onclick="window.uninstallSpecificApp('${name.replace(/'/g, "\\'")}', '${uninst.replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded bg-error-container hover:bg-error text-on-error font-label-sm text-label-sm transition-colors">
-              Gỡ Cài Đặt
+            <button onclick="window.uninstallAppByIndex(${index})" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold text-xs shadow-sm hover:shadow-red-500/30 flex items-center gap-1.5 ml-auto transition-all cursor-pointer" type="button" title="Gỡ bỏ ${nameEscaped}">
+              <span class="material-symbols-outlined text-[15px]">delete</span>
+              <span>Gỡ Cài Đặt</span>
             </button>
           </td>
         </tr>
@@ -2390,24 +2457,86 @@
   window.filterInstalledApps = function(query) {
     const q = (query || "").toLowerCase().trim();
     if (!q) {
-      window.renderInstalledApps(cachedInstalledApps);
-      return;
+      currentFilteredApps = [...cachedInstalledApps];
+    } else {
+      currentFilteredApps = cachedInstalledApps.filter((a) =>
+        (a.name || "").toLowerCase().includes(q) ||
+        (a.publisher || "").toLowerCase().includes(q)
+      );
     }
-    const filtered = cachedInstalledApps.filter((a) =>
-      (a.name || "").toLowerCase().includes(q) ||
-      (a.publisher || "").toLowerCase().includes(q)
-    );
-    window.renderInstalledApps(filtered);
+    window.renderInstalledApps(currentFilteredApps);
+    window.updateBulkUninstallUI();
+  };
+
+  window.uninstallAppByIndex = function(index) {
+    const app = currentFilteredApps[index];
+    if (!app) return;
+    const uninstStr = app.uninstall_string || app.uninstallString || "";
+    window.uninstallSpecificApp(app.name, uninstStr);
   };
 
   window.uninstallSpecificApp = async function(name, uninstStr) {
     if (!confirm(`Bạn có chắc chắn muốn gỡ bỏ ứng dụng: ${name}?`)) return;
-    showToast("Gỡ Cài Đặt", `Đang khởi chạy trình gỡ cho ${name}...`, "info");
+    showToast("Gỡ Cài Đặt", `Đang khởi chạy trình gỡ cài đặt cho ${name}...`, "info");
+    const logEl = document.getElementById("log-console");
+    if (logEl && typeof appendLog === "function") {
+      appendLog("UNINSTALL", `Đang khởi chạy trình gỡ cài đặt cho: ${name}...`, "text-warning");
+    }
     const res = await invokeRust("run_system_action", {
       actionId: "uninstall_app",
       params: { name, uninstall_string: uninstStr },
     });
     showToast(res && res.success ? "Thành Công" : "Thông Báo", (res && res.message) || `Đã kích hoạt lệnh gỡ ${name}`, res && res.success ? "success" : "info");
+    if (logEl && typeof appendLog === "function") {
+      appendLog(res && res.success ? "SUCCESS" : "INFO", (res && res.message) || `Đã kích hoạt lệnh gỡ ${name}`, res && res.success ? "text-tertiary" : "text-outline");
+    }
+    setTimeout(() => window.refreshInstalledApps(), 2500);
+  };
+
+  window.bulkUninstallSelectedApps = async function() {
+    const selectedList = cachedInstalledApps.filter(a => a && a.name && selectedAppNames.has(a.name));
+    if (selectedList.length === 0) {
+      showToast("Gỡ Hàng Loạt", "Vui lòng tick chọn ít nhất 1 phần mềm cần gỡ bỏ!", "warning");
+      return;
+    }
+
+    const appNamesSummary = selectedList.map(a => `• ${a.name}`).join("\n");
+    const confirmMsg = `Bạn có chắc chắn muốn gỡ bỏ ${selectedList.length} phần mềm đã chọn sau đây?\n\n${appNamesSummary}\n\nNhấn OK để hệ thống lần lượt kích hoạt trình gỡ cho từng ứng dụng.`;
+    if (!confirm(confirmMsg)) return;
+
+    showToast("Bắt Đầu Gỡ Hàng Loạt", `Đang chuẩn bị gỡ bỏ ${selectedList.length} phần mềm...`, "info");
+    const logEl = document.getElementById("log-console");
+    if (logEl && typeof appendLog === "function") {
+      appendLog("BULK_UNINSTALL", `Bắt đầu gỡ hàng loạt ${selectedList.length} phần mềm đã chọn...`, "text-warning");
+    }
+
+    for (let i = 0; i < selectedList.length; i++) {
+      const app = selectedList[i];
+      const step = `[${i + 1}/${selectedList.length}]`;
+      showToast("Đang Gỡ Hàng Loạt", `${step} Đang gỡ bỏ: ${app.name}...`, "info");
+      if (logEl && typeof appendLog === "function") {
+        appendLog("UNINSTALL", `${step} Đang thực thi gỡ bỏ: ${app.name}...`, "text-secondary");
+      }
+      try {
+        await invokeRust("run_system_action", {
+          actionId: "uninstall_app",
+          params: { name: app.name, uninstall_string: app.uninstall_string || app.uninstallString || "" },
+        });
+      } catch (err) {
+        if (logEl && typeof appendLog === "function") {
+          appendLog("ERROR", `${step} Lỗi khi gỡ ${app.name}: ${err}`, "text-error");
+        }
+      }
+      if (i < selectedList.length - 1) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+
+    showToast("Hoàn Tất", `Đã kích hoạt gỡ bỏ toàn bộ ${selectedList.length} phần mềm!`, "success");
+    if (logEl && typeof appendLog === "function") {
+      appendLog("SUCCESS", `Hoàn tất gỡ hàng loạt ${selectedList.length} phần mềm!`, "text-tertiary");
+    }
+    selectedAppNames.clear();
     setTimeout(() => window.refreshInstalledApps(), 2000);
   };
 
