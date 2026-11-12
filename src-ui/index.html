@@ -173,7 +173,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.151</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.152</span>
       </div>
     </div>
 
@@ -194,7 +194,7 @@
       </div>
 
       <!-- Settings Icon -->
-      <button id="btn-nav-settings" onclick="switchView('view-general')" class="w-8 h-8 rounded-lg hover:bg-white/70 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors" title="Cài đặt">
+      <button id="btn-nav-settings" onclick="openSettingsModal()" class="w-8 h-8 rounded-lg hover:bg-white/70 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors" title="Cài đặt">
         <span class="material-symbols-outlined text-[19px]">settings</span>
       </button>
 
@@ -530,116 +530,146 @@
       </div>
 
       <!-- ========================================== -->
+      <!-- ========================================== -->
       <!-- VIEW 2: GENERAL (view-general)             -->
       <!-- ========================================== -->
       <div id="view-general" class="stitch-view">
         <div class="grid grid-cols-12 gap-4 h-full">
-          <!-- Left 8 Cols -->
+          <!-- Left 8 Cols: Tweak switches -->
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
-            <!-- Language -->
+            <!-- SYSTEM SECTION -->
             <div class="glass-card p-4">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
-                    <span class="material-symbols-outlined text-[20px]">language</span>
-                  </div>
-                  <div>
-                    <div class="font-semibold text-slate-800 text-sm">Choose a language:</div>
-                    <div class="text-xs text-slate-400">Select the best language for you</div>
-                  </div>
-                </div>
-                <select class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 outline-none">
-                  <option selected>Tiếng Việt</option>
-                  <option>English</option>
-                </select>
+              <div class="font-bold text-slate-800 text-sm mb-3">System</div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Optimize Performance" data-desc-en="In this option, you can optimize the overall performance, which means you will experience a boost in your computer's speed. Additionally, you can improve your privacy by turning off certain Microsoft tracking services." data-desc-vi="Với tùy chọn này, bạn có thể tối ưu hóa hiệu suất tổng thể, nghĩa là bạn sẽ thấy tốc độ máy tính của mình được cải thiện. Hơn nữa, bạn có thể tăng cường quyền riêng tư bằng cách tắt một số dịch vụ theo dõi của Microsoft.">
+                  <span class="text-slate-700">Optimize Performance</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('optimize_system')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Print Service" data-desc-en="Turns off the Spooler print service if this computer does not connect to printers, freeing background memory." data-desc-vi="Tắt dịch vụ in Spooler nếu máy tính không sử dụng máy in, giải phóng bộ nhớ ngầm.">
+                  <span class="text-slate-700">Disable Print Service</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_print_service')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Error Reporting" data-desc-en="Stops Windows Error Reporting dialogs and sending crash logs across the internet." data-desc-vi="Ngừng hiển thị thông báo lỗi và không gửi báo cáo sự cố qua mạng Internet.">
+                  <span class="text-slate-700">Disable Error Reporting</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('disable_error_reporting')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Fax Service" data-desc-en="Disables legacy Windows Fax background service to save RAM." data-desc-vi="Vô hiệu hóa dịch vụ Fax cũ của Windows giúp tiết kiệm RAM.">
+                  <span class="text-slate-700">Disable Fax Service</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('disable_fax_service')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable SmartScreen" data-desc-en="Disables Windows SmartScreen file scanner to speed up running downloaded applications." data-desc-vi="Tắt bộ quét SmartScreen để tăng tốc khi mở các ứng dụng tải về.">
+                  <span class="text-slate-700">Disable SmartScreen</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_smartscreen')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Sticky Keys" data-desc-en="Prevents the Sticky Keys prompt from popping up when Shift is pressed 5 times." data-desc-vi="Ngăn chặn hộp thoại phím dính Sticky Keys khi nhấn phím Shift 5 lần.">
+                  <span class="text-slate-700">Disable Sticky Keys</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('disable_sticky_keys')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Fullscreen Optimizations" data-desc-en="Disables hybrid fullscreen optimization for legacy DirectX games for smoother input latency." data-desc-vi="Vô hiệu hóa tối ưu hóa toàn màn hình lai giúp giảm độ trễ điều khiển trong game.">
+                  <span class="text-slate-700">Disable Fullscreen Optimizations</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_fso')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Set Display for Performance" data-desc-en="Adjusts visual effects for best performance, disabling heavy animations." data-desc-vi="Điều chỉnh hiệu ứng hình ảnh sang chế độ hiệu năng cao nhất, tắt các hiệu ứng chuyển động nặng.">
+                  <span class="text-slate-700">Set Display for Performance</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('display_for_performance')"/><span class="slider"></span></div>
+                </label>
               </div>
             </div>
 
-            <!-- Check for updates -->
+            <!-- DISK DRIVES SECTION -->
             <div class="glass-card p-4">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                    <span class="material-symbols-outlined text-[20px]">sync</span>
-                  </div>
-                  <div>
-                    <div class="font-semibold text-slate-800 text-sm">Check for updates</div>
-                    <div class="text-xs text-slate-400">VERSION INFORMATION v20.5.909.151 Official</div>
-                  </div>
-                </div>
-                <button onclick="runToolkitAction('check_update')" class="px-4 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition-colors">
-                  Check Update
-                </button>
+              <div class="font-bold text-slate-800 text-sm mb-3">Disk drives</div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Superfetch" data-desc-en="Disables SysMain/Superfetch caching service to prevent 100% disk usage on SSD and HDD." data-desc-vi="Vô hiệu hóa dịch vụ SysMain/Superfetch giúp khắc phục triệt để lỗi Full Disk 100% trên cả SSD và HDD.">
+                  <span class="text-slate-700">Disable Superfetch</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('disable_superfetch')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable NTFS Timestamp" data-desc-en="Stops updating Last Access time on NTFS files, reducing read/write cycles on your storage drive." data-desc-vi="Ngừng cập nhật thời gian truy cập tệp NTFS, giảm tải đọc/ghi và tăng tuổi thọ ổ đĩa.">
+                  <span class="text-slate-700">Disable NTFS Timestamp</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_ntfs_timestamp')"/><span class="slider"></span></div>
+                </label>
               </div>
             </div>
 
-            <!-- About Toolkit -->
+            <!-- PRIVACY SECTION -->
             <div class="glass-card p-4">
-              <div class="font-bold text-slate-800 text-base mb-2">About VUONGTT Toolkit</div>
-              <div class="text-xs text-slate-600 space-y-1 mb-4">
-                <div><strong>Version:</strong> Official Release v20.5.909.151</div>
-                <div><strong>First Build:</strong> 0.0.1</div>
-                <div><strong>Date:</strong> 12/11/2026</div>
-                <div><strong>Platform:</strong> Rust Native + Fluent Web Core (0% CPU, 100ms startup)</div>
+              <div class="font-bold text-slate-800 text-sm mb-3">Privacy</div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Telemetry Tasks" data-desc-en="Disables scheduled telemetry tasks that gather usage logs in the background." data-desc-vi="Tắt các tác vụ thu thập dữ liệu chẩn đoán tự động định kỳ của Windows.">
+                  <span class="text-slate-700">Disable Telemetry Tasks</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('disable_telemetry_tasks')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable HomeGroup" data-desc-en="Disables legacy HomeGroup networking listener services." data-desc-vi="Tắt dịch vụ mạng nhóm HomeGroup cũ không còn cần thiết.">
+                  <span class="text-slate-700">Disable HomeGroup</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_homegroup')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Media Player Sharing" data-desc-en="Stops Windows Media Player network streaming service from listening on ports." data-desc-vi="Ngừng dịch vụ chia sẻ mạng đa phương tiện của Windows Media Player.">
+                  <span class="text-slate-700">Disable Media Player Sharing</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_wmp_sharing')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable SMB v1 & v2 Protocol" data-desc-en="Disables outdated SMB protocols vulnerable to network exploits like WannaCry." data-desc-vi="Tắt giao thức mạng SMB phiên bản 1 và 2 cũ tiềm ẩn rủi ro bảo mật.">
+                  <span class="text-slate-700">Disable SMB v1 &amp; v2 Protocol</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_smb_v1_v2')"/><span class="slider"></span></div>
+                </label>
               </div>
+            </div>
 
-              <!-- About us section -->
-              <div class="font-bold text-slate-800 text-base mb-1">About us</div>
-              <div class="text-xs text-slate-600 mb-3 leading-relaxed">
-                <strong>Developed by Trương Thanh Vương.</strong><br/>
-                Bộ công cụ tối ưu hóa, tinh chỉnh hệ thống và hỗ trợ kỹ thuật máy tính toàn diện cho kỹ thuật viên và người dùng Windows tại Việt Nam.
-              </div>
-
-              <div class="flex items-center gap-2">
-                <a href="https://facebook.com/truongthanhvuong" target="_blank" class="px-3 py-1.5 rounded-lg bg-sky-50 text-sky-600 text-xs font-semibold flex items-center gap-1.5 hover:bg-sky-100 transition-colors">
-                  <span>Trương Thanh Vương</span>
-                </a>
-                <a href="https://github.com/truongthanhvuong/toolwindows" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-200 transition-colors">
-                  <span>GitHub Repository</span>
-                </a>
+            <!-- APPS SECTION -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3">Apps</div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Office Telemetry" data-desc-en="Blocks Microsoft Office diagnostic logging and customer experience improvement data." data-desc-vi="Chặn ghi log chẩn đoán và theo dõi của Microsoft Office.">
+                  <span class="text-slate-700">Disable Office Telemetry</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('disable_office_telemetry')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Brave Telemetry" data-desc-en="Disables Brave browser diagnostic data reporting." data-desc-vi="Tắt báo cáo dữ liệu chẩn đoán của trình duyệt Brave.">
+                  <span class="text-slate-700">Disable Brave Telemetry</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_brave_telemetry')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Chrome Telemetry" data-desc-en="Disables Google Chrome metrics reporting and crash uploaders." data-desc-vi="Tắt báo cáo chỉ số sử dụng và tải sự cố của Google Chrome.">
+                  <span class="text-slate-700">Disable Chrome Telemetry</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_chrome_telemetry')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Edge Telemetry" data-desc-en="Disables Microsoft Edge telemetry and diagnostic tracking." data-desc-vi="Tắt theo dõi và chẩn đoán của trình duyệt Microsoft Edge.">
+                  <span class="text-slate-700">Disable Edge Telemetry</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('disable_edge_telemetry')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable NVIDIA Telemetry" data-desc-en="Disables NVIDIA graphics driver telemetry services and scheduled tasks." data-desc-vi="Tắt dịch vụ và tác vụ chẩn đoán ngầm của trình điều khiển card màn hình NVIDIA.">
+                  <span class="text-slate-700">Disable NVIDIA Telemetry</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_nvidia_telemetry')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Visual Studio Telemetry" data-desc-en="Disables telemetry and customer feedback daemons for Visual Studio." data-desc-vi="Tắt phản hồi trải nghiệm và chẩn đoán của bộ công cụ Visual Studio.">
+                  <span class="text-slate-700">Disable Visual Studio Telemetry</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('disable_vs_telemetry')"/><span class="slider"></span></div>
+                </label>
               </div>
             </div>
           </div>
 
-          <!-- Right 4 Cols: Donation (MoMo & VietQR) -->
+          <!-- Right 4 Cols: Live Description Panel (matching HyperLis) -->
           <div class="col-span-12 lg:col-span-4 h-full">
             <div class="glass-card p-5 h-full flex flex-col justify-between">
               <div>
-                <div class="font-bold text-slate-800 text-base mb-2 flex items-center gap-2">
-                  <span class="material-symbols-outlined text-rose-500 text-[20px]">favorite</span>
-                  <span>Donation</span>
+                <div class="font-bold text-slate-800 text-base mb-2">Description:</div>
+                <div id="general-desc-en" class="text-xs text-slate-600 leading-relaxed mb-6 bg-white/70 p-3 rounded-xl border border-slate-200/60 shadow-2xs min-h-[90px]">
+                  In this option, you can optimize the overall performance, which means you will experience a boost in your computer's speed. Additionally, you can improve your privacy by turning off certain Microsoft tracking services.
                 </div>
-                <p class="text-xs text-slate-600 leading-relaxed mb-4">
-                  Phát triển và duy trì <strong>VUONGTT Toolkit</strong> đòi hỏi nhiều thời gian và tâm huyết. Nếu bộ công cụ này giúp ích cho bạn, bạn có thể ủng hộ tác giả <strong>Trương Thanh Vương</strong> qua MoMo hoặc chuyển khoản ngân hàng. Cảm ơn bạn rất nhiều!
-                </p>
 
-                <!-- MoMo / QR Card -->
-                <div class="p-4 rounded-xl bg-white border border-slate-200/80 shadow-sm text-center">
-                  <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
-                    <span class="text-xs font-bold text-rose-600 uppercase tracking-wide">MoMo / VietQR</span>
-                    <span class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-600 font-semibold">Napas 247</span>
-                  </div>
-
-                  <!-- QR Code placeholder / SVG -->
-                  <div class="w-48 h-48 mx-auto bg-slate-50 border border-slate-200 rounded-lg flex flex-col items-center justify-center p-2 mb-3">
-                    <img src="https://api.vietqr.io/image/970422-0909000000-compact2.jpg?accountName=TRUONG%20THANH%20VUONG&amount=0" alt="VietQR MoMo Trương Thanh Vương" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'160\' height=\'160\' viewBox=\'0 0 160 160\'><rect width=\'160\' height=\'160\' fill=\'%23f8fafc\'/><text x=\'50%\' y=\'45%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'12\' font-weight=\'bold\' fill=\'%23d946ef\'>MoMo / VietQR</text><text x=\'50%\' y=\'60%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'10\' fill=\'%23334155\'>TRUONG THANH VUONG</text></svg>'"/>
-                  </div>
-
-                  <div class="text-xs font-bold text-slate-800">TRƯƠNG THANH VƯƠNG</div>
-                  <div class="text-[11px] text-slate-500 font-mono mt-0.5">MoMo: 0909xxxxxx</div>
-                  <div class="text-[11px] text-slate-500 font-mono">MBBank: TRUONG THANH VUONG</div>
+                <div class="font-bold text-slate-800 text-base mb-2">Mô tả:</div>
+                <div id="general-desc-vi" class="text-xs text-slate-600 leading-relaxed bg-white/70 p-3 rounded-xl border border-slate-200/60 shadow-2xs min-h-[90px]">
+                  Với tùy chọn này, bạn có thể tối ưu hóa hiệu suất tổng thể, nghĩa là bạn sẽ thấy tốc độ máy tính của mình được cải thiện. Hơn nữa, bạn có thể tăng cường quyền riêng tư bằng cách tắt một số dịch vụ theo dõi của Microsoft.
                 </div>
               </div>
 
-              <div class="text-[11px] text-slate-400 text-center pt-3">
-                VUONGTT Toolkit 2026 • Dedicated to Community
+              <div class="pt-4 border-t border-slate-200/50 flex items-center justify-between text-xs text-slate-500">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Trực quan thời gian thực</span>
+                <button onclick="openSettingsModal()" class="text-sky-600 font-semibold hover:underline">⚙ Cài đặt &amp; Ủng hộ</button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- VIEW 3: WINDOWS (view-win-optimize)        -->
       <!-- ========================================== -->
       <div id="view-win-optimize" class="stitch-view">
@@ -1607,99 +1637,344 @@
       </div>
 
       <!-- ========================================== -->
+      <!-- ========================================== -->
       <!-- VIEW 13: OFFICE SETUP (view-office-m365)   -->
       <!-- ========================================== -->
       <div id="view-office-m365" class="stitch-view">
         <div class="grid grid-cols-12 gap-4 h-full">
-          <div class="col-span-12 lg:col-span-8 flex flex-col gap-3 overflow-y-auto pr-1">
-            <div class="grid grid-cols-2 gap-3">
-              <div class="glass-card p-3">
-                <div class="font-bold text-slate-800 text-xs mb-2">3. Architecture</div>
-                <div class="flex items-center gap-4 text-xs">
-                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="odt_arch" checked class="w-4 h-4 text-sky-600 accent-sky-600"/><span>64-bit</span></label>
-                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="odt_arch" class="w-4 h-4 text-sky-600 accent-sky-600"/><span>32-bit</span></label>
+          <!-- Left Column: Settings (8 Cols / lg:col-span-8) -->
+          <div class="col-span-12 lg:col-span-8 flex flex-col gap-3.5 overflow-y-auto pr-1">
+            <div class="flex items-center justify-between pb-1">
+              <h2 class="text-xl font-bold text-slate-800 tracking-tight">Microsoft Office Setup</h2>
+              <div class="text-xs text-slate-400 font-medium">Deployment Tool Engine</div>
+            </div>
+
+            <!-- 1. Microsoft 365 / Office Version -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3">1. Microsoft 365 / Office Version</div>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="office-main-versions">
+                <!-- Card 1: 365 -->
+                <div class="office-ver-card active p-3 rounded-xl border border-sky-500 bg-sky-50/70 hover:shadow-sm cursor-pointer transition-all relative flex items-center gap-3" onclick="selectOfficeMainVersion('365', this)">
+                  <img src="images/office/office365.png" alt="Microsoft 365" class="w-9 h-9 object-contain shrink-0"/>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-[13px] text-slate-800 leading-tight">Microsoft 365</div>
+                    <div class="text-[11px] text-slate-500 truncate">Apps for enterprise</div>
+                  </div>
+                  <span class="office-check absolute top-2 right-2 text-sky-600 material-symbols-outlined text-[16px]">check_circle</span>
+                </div>
+
+                <!-- Card 2: 2024 -->
+                <div class="office-ver-card p-3 rounded-xl border border-slate-200/90 bg-white/80 hover:bg-slate-50 hover:shadow-sm cursor-pointer transition-all relative flex items-center gap-3" onclick="selectOfficeMainVersion('2024', this)">
+                  <img src="images/office/office2024.png" alt="Office 2024" class="w-9 h-9 object-contain shrink-0"/>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-[13px] text-slate-800 leading-tight">Office 2024</div>
+                    <div class="text-[11px] text-slate-500 truncate">Standard / Pro Plus</div>
+                  </div>
+                  <span class="office-check hidden absolute top-2 right-2 text-sky-600 material-symbols-outlined text-[16px]">check_circle</span>
+                </div>
+
+                <!-- Card 3: 2021 -->
+                <div class="office-ver-card p-3 rounded-xl border border-slate-200/90 bg-white/80 hover:bg-slate-50 hover:shadow-sm cursor-pointer transition-all relative flex items-center gap-3" onclick="selectOfficeMainVersion('2021', this)">
+                  <img src="images/office/office2021.png" alt="Office LTSC 2021" class="w-9 h-9 object-contain shrink-0"/>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-[13px] text-slate-800 leading-tight">Office LTSC 2021</div>
+                    <div class="text-[11px] text-slate-500 truncate">Enterprise / Pro Plus</div>
+                  </div>
+                  <span class="office-check hidden absolute top-2 right-2 text-sky-600 material-symbols-outlined text-[16px]">check_circle</span>
+                </div>
+
+                <!-- Card 4: 2019 -->
+                <div class="office-ver-card p-3 rounded-xl border border-slate-200/90 bg-white/80 hover:bg-slate-50 hover:shadow-sm cursor-pointer transition-all relative flex items-center gap-3" onclick="selectOfficeMainVersion('2019', this)">
+                  <img src="images/office/Office2019.png" alt="Office 2019" class="w-9 h-9 object-contain shrink-0"/>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-[13px] text-slate-800 leading-tight">Office 2019</div>
+                    <div class="text-[11px] text-slate-500 truncate">Standard / Pro Plus</div>
+                  </div>
+                  <span class="office-check hidden absolute top-2 right-2 text-sky-600 material-symbols-outlined text-[16px]">check_circle</span>
+                </div>
+
+                <!-- Card 5: 2016 -->
+                <div class="office-ver-card p-3 rounded-xl border border-slate-200/90 bg-white/80 hover:bg-slate-50 hover:shadow-sm cursor-pointer transition-all relative flex items-center gap-3" onclick="selectOfficeMainVersion('2016', this)">
+                  <img src="images/office/Office2016.png" alt="Office 2016" class="w-9 h-9 object-contain shrink-0"/>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-[13px] text-slate-800 leading-tight">Office 2016</div>
+                    <div class="text-[11px] text-slate-500 truncate">Standard / Pro Plus</div>
+                  </div>
+                  <span class="office-check hidden absolute top-2 right-2 text-sky-600 material-symbols-outlined text-[16px]">check_circle</span>
+                </div>
+
+                <!-- Card 6: 2013 -->
+                <div class="office-ver-card p-3 rounded-xl border border-slate-200/90 bg-white/80 hover:bg-slate-50 hover:shadow-sm cursor-pointer transition-all relative flex items-center gap-3" onclick="selectOfficeMainVersion('2013', this)">
+                  <img src="images/office/Office2013.png" alt="Office 2013" class="w-9 h-9 object-contain shrink-0"/>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-[13px] text-slate-800 leading-tight">Office 2013</div>
+                    <div class="text-[11px] text-slate-500 truncate">Standard / Pro Plus</div>
+                  </div>
+                  <span class="office-check hidden absolute top-2 right-2 text-sky-600 material-symbols-outlined text-[16px]">check_circle</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Detailed Version -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3">2. Detailed Version</div>
+              <div id="office-sub-versions" class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-700">
+                <!-- Dynamically generated based on selected card -->
+              </div>
+            </div>
+
+            <!-- 3 & 4. Architecture & Update Channel -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <!-- 3. Architecture -->
+              <div class="glass-card p-4">
+                <div class="font-bold text-slate-800 text-sm mb-2.5">3. Architecture</div>
+                <div class="flex items-center gap-6 text-xs">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="odt_arch" value="64" checked onchange="updateOfficeConfig()" class="w-4 h-4 text-sky-600 accent-sky-600"/>
+                    <span class="font-medium text-slate-700">64-bit</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="odt_arch" value="32" onchange="updateOfficeConfig()" class="w-4 h-4 text-sky-600 accent-sky-600"/>
+                    <span class="font-medium text-slate-700">32-bit</span>
+                  </label>
                 </div>
               </div>
 
-              <div class="glass-card p-3">
-                <div class="font-bold text-slate-800 text-xs mb-1.5">4. Update Channel</div>
-                <select class="w-full px-2.5 py-1 rounded border border-slate-200 bg-white text-xs outline-none">
-                  <option selected>Current Channel</option>
-                  <option>Monthly Enterprise</option>
-                  <option>Semi-Annual Channel</option>
+              <!-- 4. Update Channel -->
+              <div class="glass-card p-4">
+                <div class="font-bold text-slate-800 text-sm mb-2">4. Update Channel</div>
+                <select id="odt-channel" onchange="updateOfficeConfig()" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 outline-none focus:border-sky-500">
+                  <option value="Current" selected>Current</option>
+                  <option value="MonthlyEnterprise">Monthly Enterprise</option>
+                  <option value="SemiAnnual">Semi-Annual Channel</option>
+                  <option value="PerpetualVL2024">PerpetualVL2024</option>
+                  <option value="PerpetualVL2021">PerpetualVL2021</option>
+                  <option value="PerpetualVL2019">PerpetualVL2019</option>
                 </select>
               </div>
             </div>
 
-            <!-- Apps Selection -->
+            <!-- 5. Applications -->
             <div class="glass-card p-4">
               <div class="flex items-center justify-between mb-3">
-                <div class="font-bold text-slate-800 text-xs">5. Applications</div>
+                <div class="font-bold text-slate-800 text-sm">5. Applications</div>
                 <div class="flex items-center gap-1.5">
-                  <button class="px-2 py-0.5 rounded border border-slate-200 bg-white text-[10px] font-medium text-slate-600">Minimum</button>
-                  <button class="px-2 py-0.5 rounded bg-sky-50 text-sky-600 border border-sky-200 text-[10px] font-semibold">Recommended</button>
-                  <button class="px-2 py-0.5 rounded border border-slate-200 bg-white text-[10px] font-medium text-slate-600">Full</button>
+                  <span class="text-xs text-slate-400 mr-1 hidden sm:inline">Chọn nhanh:</span>
+                  <button id="btn-default-apps-office" onclick="quickSelectOfficeApps('min')" class="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-medium text-slate-600">Tối thiểu</button>
+                  <button onclick="quickSelectOfficeApps('rec')" class="px-2.5 py-1 rounded-md bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 text-[11px] font-semibold">Đề xuất</button>
+                  <button id="btn-select-all-office" onclick="quickSelectOfficeApps('full')" class="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-medium text-slate-600">Đầy đủ</button>
+                  <button onclick="quickSelectOfficeApps('none')" class="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-medium text-slate-500">Bỏ chọn</button>
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2 text-xs">
-                <label class="flex items-center gap-2 p-1"><input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/><span class="font-medium text-slate-700">Word</span></label>
-                <label class="flex items-center gap-2 p-1"><input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/><span class="font-medium text-slate-700">Excel</span></label>
-                <label class="flex items-center gap-2 p-1"><input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/><span class="font-medium text-slate-700">PowerPoint</span></label>
-                <label class="flex items-center gap-2 p-1"><input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/><span class="font-medium text-slate-700">Outlook</span></label>
-                <label class="flex items-center gap-2 p-1"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/><span class="font-medium text-slate-700">OneNote</span></label>
-                <label class="flex items-center gap-2 p-1"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/><span class="font-medium text-slate-700">Access</span></label>
+              <!-- 2 columns of 12 apps with icons -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 text-xs" id="office-apps-list">
+                <!-- Col 1 -->
+                <div class="space-y-2.5">
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-word" data-app="Word" checked onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/word.png" class="w-5 h-5 object-contain" alt="Word"/>
+                    <span class="font-medium text-slate-700">Word</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-excel" data-app="Excel" checked onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/excel.png" class="w-5 h-5 object-contain" alt="Excel"/>
+                    <span class="font-medium text-slate-700">Excel</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-powerpoint" data-app="PowerPoint" checked onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/powerpoint.png" class="w-5 h-5 object-contain" alt="PowerPoint"/>
+                    <span class="font-medium text-slate-700">PowerPoint</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-outlook" data-app="Outlook" checked onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/outlook.png" class="w-5 h-5 object-contain" alt="Outlook"/>
+                    <span class="font-medium text-slate-700">Outlook</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-onenote" data-app="OneNote" onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/onenote.png" class="w-5 h-5 object-contain" alt="OneNote"/>
+                    <span class="font-medium text-slate-700">OneNote</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-access" data-app="Access" onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/access.png" class="w-5 h-5 object-contain" alt="Access"/>
+                    <span class="font-medium text-slate-700">Access</span>
+                  </label>
+                </div>
+
+                <!-- Col 2 -->
+                <div class="space-y-2.5">
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-teams" data-app="Teams" onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/teams.png" class="w-5 h-5 object-contain" alt="Teams"/>
+                    <span class="font-medium text-slate-700">Teams</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-onedrive" data-app="OneDrive" onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/onedrive.png" class="w-5 h-5 object-contain" alt="OneDrive"/>
+                    <span class="font-medium text-slate-700">OneDrive</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-skype" data-app="Lync" onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/skype.png" class="w-5 h-5 object-contain" alt="Skype"/>
+                    <span class="font-medium text-slate-700">Skype for Business</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-visiopro" data-app="VisioPro" onchange="toggleVisioPro(this); updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/visio.png" class="w-5 h-5 object-contain" alt="Visio Pro"/>
+                    <span class="font-medium text-slate-700">Visio Pro</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-visiostd" data-app="VisioStd" onchange="toggleVisioStd(this); updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/visio.png" class="w-5 h-5 object-contain" alt="Visio Standard"/>
+                    <span class="font-medium text-slate-700">Visio Standard</span>
+                  </label>
+                  <label class="flex items-center gap-2.5 cursor-pointer hover:bg-white/60 p-1.5 rounded-lg transition-colors">
+                    <input type="checkbox" id="app-projectpro" data-app="ProjectPro" onchange="updateOfficeConfig()" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                    <img src="images/office/project.png" class="w-5 h-5 object-contain" alt="Project Pro"/>
+                    <span class="font-medium text-slate-700">Project Pro</span>
+                  </label>
+                </div>
               </div>
             </div>
 
-            <!-- Language & License Type -->
-            <div class="grid grid-cols-2 gap-3">
-              <div class="glass-card p-3">
-                <div class="font-bold text-slate-800 text-xs mb-1.5">6. Language</div>
-                <select class="w-full px-2.5 py-1 rounded border border-slate-200 bg-white text-xs outline-none">
-                  <option selected>Tiếng Việt (vi-vn)</option>
-                  <option>English (en-us)</option>
+            <!-- 6 & 7. Language & License Type -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <!-- 6. Language -->
+              <div class="glass-card p-4">
+                <div class="font-bold text-slate-800 text-sm mb-2">6. Language</div>
+                <select id="odt-language" onchange="updateOfficeConfig()" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 outline-none focus:border-sky-500">
+                  <option value="en-us" selected>English (en-us)</option>
+                  <option value="vi-vn">Tiếng Việt (vi-vn)</option>
+                  <option value="ja-jp">Japanese (ja-jp)</option>
+                  <option value="ko-kr">Korean (ko-kr)</option>
+                  <option value="zh-cn">Chinese (zh-cn)</option>
+                  <option value="fr-fr">French (fr-fr)</option>
+                  <option value="es-es">Spanish (es-es)</option>
+                  <option value="de-de">German (de-de)</option>
                 </select>
               </div>
 
-              <div class="glass-card p-3">
-                <div class="font-bold text-slate-800 text-xs mb-1.5">7. License Type</div>
-                <div class="flex items-center gap-4 text-xs mt-1">
-                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="odt_lic" checked class="w-4 h-4 text-sky-600 accent-sky-600"/><span>Volume</span></label>
-                  <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="odt_lic" class="w-4 h-4 text-sky-600 accent-sky-600"/><span>Retail</span></label>
+              <!-- 7. License Type -->
+              <div class="glass-card p-4">
+                <div class="font-bold text-slate-800 text-sm mb-2.5">7. License Type</div>
+                <div class="flex items-center gap-6 text-xs" id="office-license-group">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="odt_lic" id="odt-lic-volume" value="Volume" onchange="updateOfficeConfig()" class="w-4 h-4 text-sky-600 accent-sky-600"/>
+                    <span class="font-medium text-slate-700">Volume</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="odt_lic" id="odt-lic-retail" value="Retail" checked onchange="updateOfficeConfig()" class="w-4 h-4 text-sky-600 accent-sky-600"/>
+                    <span class="font-medium text-slate-700">Retail</span>
+                  </label>
                 </div>
+              </div>
+            </div>
+
+            <!-- 8. Advanced Options -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-2.5">8. Advanced Options</div>
+              <div class="space-y-2 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer">
+                  <span class="font-medium text-slate-700">Remove existing Office</span>
+                  <div class="switch-toggle"><input type="checkbox" id="odt-opt-remove" checked onchange="updateOfficeConfig()"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer">
+                  <span class="font-medium text-slate-700">Create Desktop Shortcut</span>
+                  <div class="switch-toggle"><input type="checkbox" id="odt-opt-shortcut" checked onchange="updateOfficeConfig()"/><span class="slider"></span></div>
+                </label>
               </div>
             </div>
           </div>
 
-          <!-- Right 4 Cols: XML Preview & Actions -->
-          <div class="col-span-12 lg:col-span-4 h-full flex flex-col justify-between">
-            <div class="glass-card p-4 flex-1 flex flex-col mb-3">
+          <!-- Right Column: Sections 9, 10, 11, 12 (4 Cols / lg:col-span-4) -->
+          <div class="col-span-12 lg:col-span-4 h-full flex flex-col gap-3.5 overflow-y-auto pl-0.5">
+            <!-- 9. Configuration XML Preview -->
+            <div class="glass-card p-4 flex flex-col">
               <div class="flex items-center justify-between mb-2">
                 <span class="font-bold text-slate-800 text-xs">9. Configuration XML Preview</span>
-                <button onclick="navigator.clipboard.writeText(document.getElementById('xml-preview').innerText)" class="text-[11px] text-sky-600 font-semibold">Copy</button>
+                <button id="btnCopyXml" onclick="copyOfficeXml()" class="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-700 flex items-center gap-1 shadow-2xs">
+                  <span class="material-symbols-outlined text-[13px]">content_copy</span>
+                  <span>Sao chép</span>
+                </button>
               </div>
-              <pre id="xml-preview" class="p-2.5 rounded bg-slate-900 text-emerald-400 font-mono text-[10px] flex-1 overflow-y-auto leading-relaxed">
-&lt;Configuration&gt;
-  &lt;Add OfficeClientEdition="64" Channel="Current"&gt;
-    &lt;Product ID="ProPlus2021Volume"&gt;
-      &lt;Language ID="vi-vn"/&gt;
-      &lt;ExcludeApp ID="Access"/&gt;
-      &lt;ExcludeApp ID="OneNote"/&gt;
-    &lt;/Product&gt;
-  &lt;/Add&gt;
-&lt;/Configuration&gt;</pre>
+              <pre id="txtXmlPreview" class="p-3 rounded-lg bg-slate-900 text-sky-300 font-mono text-[11px] h-48 overflow-y-auto leading-relaxed border border-slate-800 select-all"></pre>
             </div>
 
-            <div class="flex items-center gap-2">
-              <button onclick="runToolkitAction('install_office')" class="flex-1 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-xs">Install Office</button>
-              <button onclick="runToolkitAction('download_office')" class="flex-1 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-xs text-slate-700">Download Only</button>
+            <!-- 10. Configuration Overview -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-xs mb-3 pb-1 border-b border-slate-100">10. Configuration Overview</div>
+              <div class="space-y-2 text-[11px]">
+                <div class="flex items-start gap-2">
+                  <span class="font-semibold text-slate-700 w-20 shrink-0">Version:</span>
+                  <span id="overview-version" class="text-slate-600 font-medium truncate">Microsoft 365 Home</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-slate-700 w-20 shrink-0">Architecture:</span>
+                  <span id="overview-arch" class="text-slate-600 font-medium">x64 (64-bit)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-slate-700 w-20 shrink-0">Channel:</span>
+                  <span id="overview-channel" class="text-slate-600 font-medium">Current</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-slate-700 w-20 shrink-0">Language:</span>
+                  <span id="overview-lang" class="text-slate-600 font-medium">English (en-us)</span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="font-semibold text-slate-700 w-20 shrink-0">Apps:</span>
+                  <span id="overview-apps" class="text-slate-600 font-medium leading-tight">Word, Excel, PowerPoint, Outlook</span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="font-semibold text-slate-700 w-20 shrink-0">Options:</span>
+                  <span id="overview-opts" class="text-slate-600 font-medium leading-tight">Remove existing Office, Create Desktop Shortcut</span>
+                </div>
+              </div>
             </div>
+
+            <!-- 11. Actions -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-xs mb-3">11. Actions</div>
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <button id="btn-office-download" onclick="downloadOffice()" class="py-2.5 px-3 rounded-xl bg-[#0A6ED1] hover:bg-[#085ab0] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
+                  <span class="material-symbols-outlined text-[16px]">download</span>
+                  <span>Download</span>
+                </button>
+                <button id="btn-run-deploy" onclick="installOffice()" class="py-2.5 px-3 rounded-xl bg-[#1D904E] hover:bg-[#167840] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
+                  <span class="material-symbols-outlined text-[16px]">play_circle</span>
+                  <span>Install</span>
+                </button>
+              </div>
+              <button onclick="exportOfficeXml()" class="w-full py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">file_download</span>
+                <span>Export XML</span>
+              </button>
+              <div class="text-[10px] text-slate-400 italic text-center mt-2">* Internet connection required to download and install.</div>
+            </div>
+
+            <!-- 12. Uninstall Office -->
+            <div class="p-3.5 rounded-xl bg-red-50/70 border border-red-200/80">
+              <div class="font-bold text-red-700 text-xs mb-1.5">12. Uninstall Office</div>
+              <div class="text-[11px] text-red-600 leading-tight mb-2">
+                Remove Microsoft Office, Visio, and Project currently installed on this machine.
+              </div>
+              <label class="flex items-center gap-2 mb-2.5 cursor-pointer text-[11px] text-red-700 font-medium">
+                <input type="checkbox" id="chk-confirm-uninstall-office" onchange="document.getElementById('btn-office-uninstall').disabled = !this.checked;" class="w-3.5 h-3.5 rounded text-red-600 accent-red-600"/>
+                <span>I understand this action will uninstall all Office products</span>
+              </label>
+              <button id="btn-office-uninstall" disabled onclick="uninstallOffice()" class="w-full py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
+                <span class="material-symbols-outlined text-[15px]">delete_forever</span>
+                <span>Uninstall Office</span>
+              </button>
+            </div>
+
+            <!-- Hidden test/terminal compatibility hook -->
+            <div id="terminal-body" class="hidden"></div>
           </div>
         </div>
       </div>
 
-      <!-- ========================================== -->
       <!-- VIEW 14: EXTEND FEATURES (view-tech-driver)-->
       <!-- ========================================== -->
       <div id="view-tech-driver" class="stitch-view">
@@ -1826,5 +2101,106 @@
 
   <!-- JS APP CONTROLLER -->
   <script src="app.js"></script>
+
+  <!-- SETTINGS & DONATION MODAL -->
+  <div id="modal-settings" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white/95 backdrop-blur-xl border border-white/80 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-sky-50/50 to-indigo-50/50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px]">settings</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">Cài Đặt &amp; Thông Tin Tác Giả</h3>
+            <p class="text-[11px] text-slate-500">VUONGTT Toolkit 2026 • Trương Thanh Vương</p>
+          </div>
+        </div>
+        <button onclick="closeSettingsModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-5 flex-1">
+        <!-- Language -->
+        <div class="p-4 rounded-xl bg-slate-50/80 border border-slate-200/70 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🌐</span>
+            <div>
+              <div class="font-bold text-slate-800 text-xs">Choose a language:</div>
+              <div class="text-[11px] text-slate-500">Select the best language for you</div>
+            </div>
+          </div>
+          <select class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 outline-none">
+            <option selected>Tiếng Việt</option>
+            <option>English</option>
+          </select>
+        </div>
+
+        <!-- Check Update -->
+        <div class="p-4 rounded-xl bg-slate-50/80 border border-slate-200/70 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-sky-600 text-[26px]">sync</span>
+            <div>
+              <div class="font-bold text-slate-800 text-xs">Check for updates</div>
+              <div class="text-[11px] text-slate-500">VERSION INFORMATION v20.5.909.152 Official</div>
+            </div>
+          </div>
+          <button onclick="runToolkitAction('check_update')" class="px-4 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs">
+            Check Update
+          </button>
+        </div>
+
+        <!-- About Author & Donation -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- About Author -->
+          <div class="p-4 rounded-xl bg-slate-50/80 border border-slate-200/70 flex flex-col justify-between">
+            <div>
+              <div class="font-bold text-slate-800 text-xs mb-1">About VUONGTT Toolkit</div>
+              <div class="text-[11px] text-slate-600 space-y-1 mb-3">
+                <div><strong>Tác giả:</strong> Trương Thanh Vương</div>
+                <div><strong>Phiên bản:</strong> v20.5.909.152 Official</div>
+                <div><strong>Nền tảng:</strong> Rust Native + WebView2 (0% CPU)</div>
+                <div><strong>Kho mã nguồn:</strong> truongthanhvuong/toolwindows</div>
+              </div>
+              <div class="text-[11px] text-slate-600 leading-relaxed mb-3">
+                Công cụ kỹ thuật viên đa năng hỗ trợ cài Win, cứu hộ máy tính, sửa lỗi mạng, tối ưu hệ điều hành và văn phòng.
+              </div>
+            </div>
+            <div class="flex items-center gap-2 pt-2">
+              <a href="https://facebook.com/truongthanhvuong" target="_blank" class="px-3 py-1 rounded-lg bg-sky-50 text-sky-600 text-xs font-semibold hover:bg-sky-100 transition-colors flex items-center gap-1">
+                <span>Facebook</span>
+              </a>
+              <a href="https://github.com/truongthanhvuong/toolwindows" target="_blank" class="px-3 py-1 rounded-lg bg-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-300 transition-colors flex items-center gap-1">
+                <span>GitHub</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Donation Card with MoMo 0328808425 -->
+          <div class="p-4 rounded-xl bg-white border border-rose-200/80 shadow-sm text-center">
+            <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-rose-100">
+              <span class="text-xs font-bold text-rose-600 uppercase tracking-wide flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">favorite</span>
+                <span>MoMo / VietQR</span>
+              </span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-600 font-semibold">Napas 247</span>
+            </div>
+
+            <!-- QR Code image -->
+            <div class="w-40 h-40 mx-auto bg-slate-50 border border-slate-200 rounded-lg flex flex-col items-center justify-center p-1.5 mb-2">
+              <img src="https://api.vietqr.io/image/970422-0328808425-compact2.jpg?accountName=TRUONG%20THANH%20VUONG&amount=0" alt="VietQR MoMo Truong Thanh Vuong 0328808425" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'160\' height=\'160\' viewBox=\'0 0 160 160\'><rect width=\'160\' height=\'160\' fill=\'%23f8fafc\'/><text x=\'50%\' y=\'40%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'12\' font-weight=\'bold\' fill=\'%23d946ef\'>MoMo / VietQR</text><text x=\'50%\' y=\'55%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'11\' font-weight=\'bold\' fill=\'%230284c7\'>0328808425</text><text x=\'50%\' y=\'70%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'10\' fill=\'%23334155\'>TRUONG THANH VUONG</text></svg>'"/>
+            </div>
+
+            <div class="text-xs font-bold text-slate-800">TRƯƠNG THANH VƯƠNG</div>
+            <div class="text-[11px] text-rose-600 font-mono font-bold mt-0.5">MoMo: 0328808425</div>
+            <div class="text-[11px] text-slate-600 font-mono">MBBank: 0328808425 - TRUONG THANH VUONG</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

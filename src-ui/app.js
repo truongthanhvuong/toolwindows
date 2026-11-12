@@ -3081,97 +3081,403 @@
     } catch (_) {}
   }
 
-  // --- 10. OFFICE M365 DEPLOYMENT CONTROLLER ---
+  // --- 10. OFFICE M365 & HYPERLIS OFFICE DEPLOYMENT CONTROLLER ---
+  const OFFICE_PRODUCTS = {
+    "365": [
+      { id: "365_Home", name: "Microsoft 365 Home", prodId: "O365HomePremRetail", channel: "Current" },
+      { id: "365_Business", name: "Microsoft 365 Apps for Business", prodId: "O365BusinessRetail", channel: "Current" },
+      { id: "365_Enterprise", name: "Microsoft 365 Apps for Enterprise", prodId: "O365ProPlusRetail", channel: "Current" }
+    ],
+    "2024": [
+      { id: "2024_Pro", name: "Office LTSC Pro Plus 2024", prodId: "ProPlus2024Volume", channel: "PerpetualVL2024" },
+      { id: "2024_Std", name: "Office LTSC Standard 2024", prodId: "Standard2024Volume", channel: "PerpetualVL2024" },
+      { id: "2024_HomeBusiness", name: "Office HomeBusiness 2024", prodId: "HomeBusiness2024Retail", channel: "Current" },
+      { id: "2024_HomeStudent", name: "Office HomeStudent LTSC 2024", prodId: "HomeStudent2024Retail", channel: "Current" }
+    ],
+    "2021": [
+      { id: "2021_Pro", name: "Office LTSC Pro Plus 2021", prodId: "ProPlus2021Volume", channel: "PerpetualVL2021" },
+      { id: "2021_Std", name: "Office LTSC Standard 2021", prodId: "Standard2021Volume", channel: "PerpetualVL2021" },
+      { id: "2021_HomeBusiness", name: "Office HomeBusiness 2021", prodId: "HomeBusiness2021Retail", channel: "Current" },
+      { id: "2021_HomeStudent", name: "Office HomeStudent LTSC 2021", prodId: "HomeStudent2021Retail", channel: "Current" }
+    ],
+    "2019": [
+      { id: "2019_Pro", name: "Office 2019 Professional Plus", prodId: "ProPlus2019Volume", channel: "PerpetualVL2019" },
+      { id: "2019_Std", name: "Office 2019 Standard", prodId: "Standard2019Volume", channel: "PerpetualVL2019" },
+      { id: "2019_HomeBusiness", name: "Office HomeBusiness 2019", prodId: "HomeBusiness2019Retail", channel: "Current" },
+      { id: "2019_HomeStudent", name: "Office HomeStudent 2019", prodId: "HomeStudent2019Retail", channel: "Current" }
+    ],
+    "2016": [
+      { id: "2016_Pro", name: "Office 2016 Professional Plus", prodId: "ProPlusRetail", channel: "Current" },
+      { id: "2016_Std", name: "Office 2016 Standard", prodId: "StandardRetail", channel: "Current" }
+    ],
+    "2013": [
+      { id: "2013_Pro", name: "Office 2013 Professional Plus", prodId: "ProPlusRetail", channel: "Current" },
+      { id: "2013_Std", name: "Office 2013 Standard", prodId: "StandardRetail", channel: "Current" }
+    ]
+  };
+
+  let currentOfficeVersion = "365";
+  let currentOfficeSubId = "365_Home";
+  let currentOfficeXml = "";
+
+  function logOffice(tag, msg, color = "text-on-surface-variant") {
+    const terminalBody = document.getElementById("terminal-body");
+    if (!terminalBody) return;
+    const now = new Date();
+    const timeStr = "[" + now.toTimeString().split(" ")[0] + "]";
+    const div = document.createElement("div");
+    div.className = "flex items-start gap-2 text-outline";
+    div.innerHTML = "<span>" + timeStr + "</span><span class=\"" + color + "\">[" + tag + "]</span><span class=\"text-on-surface\">" + msg + "</span>";
+    terminalBody.appendChild(div);
+    terminalBody.scrollTop = terminalBody.scrollHeight;
+  }
+
+  window.selectOfficeMainVersion = function(ver, el) {
+    currentOfficeVersion = ver;
+    document.querySelectorAll(".office-ver-card").forEach((card) => {
+      card.classList.remove("active", "border-sky-500", "bg-sky-50/70");
+      card.classList.add("border-slate-200/90", "bg-white/80");
+      const check = card.querySelector(".office-check");
+      if (check) check.classList.add("hidden");
+    });
+
+    if (el) {
+      el.classList.add("active", "border-sky-500", "bg-sky-50/70");
+      el.classList.remove("border-slate-200/90", "bg-white/80");
+      const check = el.querySelector(".office-check");
+      if (check) check.classList.remove("hidden");
+    }
+
+    const licVol = document.getElementById("odt-lic-volume");
+    const licRet = document.getElementById("odt-lic-retail");
+    if (ver === "365") {
+      if (licRet) licRet.checked = true;
+      if (licVol) licVol.disabled = true;
+    } else {
+      if (licVol) licVol.disabled = false;
+    }
+
+    const prods = OFFICE_PRODUCTS[ver] || [];
+    if (prods.length > 0) {
+      currentOfficeSubId = prods[0].id;
+    }
+    renderOfficeSubVersions();
+    window.updateOfficeConfig();
+  };
+
+  function renderOfficeSubVersions() {
+    const container = document.getElementById("office-sub-versions");
+    if (!container) return;
+    const prods = OFFICE_PRODUCTS[currentOfficeVersion] || [];
+    container.innerHTML = "";
+
+    prods.forEach((p, idx) => {
+      const isChecked = p.id === currentOfficeSubId || (idx === 0 && !currentOfficeSubId);
+      const label = document.createElement("label");
+      label.className = "flex items-center gap-2 cursor-pointer hover:text-sky-600 transition-colors";
+      label.innerHTML = `<input type="radio" name="odt_sub_ver" value="${p.id}" ${isChecked ? "checked" : ""} class="w-4 h-4 text-sky-600 accent-sky-600"/><span>${p.name}</span>`;
+      label.querySelector("input").addEventListener("change", () => {
+        currentOfficeSubId = p.id;
+        const channelSelect = document.getElementById("odt-channel");
+        if (channelSelect && p.channel) {
+          channelSelect.value = p.channel;
+        }
+        window.updateOfficeConfig();
+      });
+      container.appendChild(label);
+    });
+  }
+
+  window.toggleVisioPro = function(cb) {
+    if (cb && cb.checked) {
+      const vs = document.getElementById("app-visiostd");
+      if (vs) vs.checked = false;
+    }
+  };
+
+  window.toggleVisioStd = function(cb) {
+    if (cb && cb.checked) {
+      const vp = document.getElementById("app-visiopro");
+      if (vp) vp.checked = false;
+    }
+  };
+
+  window.quickSelectOfficeApps = function(preset) {
+    const appWord = document.getElementById("app-word");
+    const appExcel = document.getElementById("app-excel");
+    const appPpt = document.getElementById("app-powerpoint");
+    const appOutlook = document.getElementById("app-outlook");
+    const appOneNote = document.getElementById("app-onenote");
+    const appAccess = document.getElementById("app-access");
+    const appTeams = document.getElementById("app-teams");
+    const appOneDrive = document.getElementById("app-onedrive");
+    const appSkype = document.getElementById("app-skype");
+    const appVisioPro = document.getElementById("app-visiopro");
+    const appVisioStd = document.getElementById("app-visiostd");
+    const appProjectPro = document.getElementById("app-projectpro");
+
+    const all = [appWord, appExcel, appPpt, appOutlook, appOneNote, appAccess, appTeams, appOneDrive, appSkype, appVisioPro, appVisioStd, appProjectPro];
+    all.forEach((el) => { if (el) el.checked = false; });
+
+    if (preset === "min") {
+      if (appWord) appWord.checked = true;
+      if (appExcel) appExcel.checked = true;
+      if (appPpt) appPpt.checked = true;
+    } else if (preset === "rec") {
+      if (appWord) appWord.checked = true;
+      if (appExcel) appExcel.checked = true;
+      if (appPpt) appPpt.checked = true;
+      if (appOutlook) appOutlook.checked = true;
+      if (appTeams) appTeams.checked = true;
+      if (appOneDrive) appOneDrive.checked = true;
+    } else if (preset === "full") {
+      all.forEach((el) => { if (el) el.checked = true; });
+      if (appVisioStd) appVisioStd.checked = false;
+    }
+    window.updateOfficeConfig();
+  };
+
+  window.updateOfficeConfig = function() {
+    const prods = OFFICE_PRODUCTS[currentOfficeVersion] || [];
+    const prod = prods.find((p) => p.id === currentOfficeSubId) || prods[0];
+    if (!prod) return;
+
+    const archEl = document.querySelector("input[name='odt_arch']:checked");
+    const arch = archEl ? archEl.value : "64";
+    const channelSelect = document.getElementById("odt-channel");
+    const channel = channelSelect ? channelSelect.value : prod.channel;
+    const langSelect = document.getElementById("odt-language");
+    const lang = langSelect ? langSelect.value : "en-us";
+    const langText = langSelect && langSelect.options[langSelect.selectedIndex] ? langSelect.options[langSelect.selectedIndex].text : "English";
+
+    const isVolume = document.getElementById("odt-lic-volume")?.checked;
+    const licenseSuffix = isVolume ? "Volume" : "Retail";
+
+    let finalProdId = prod.prodId;
+    if (!finalProdId.startsWith("O365")) {
+      if (finalProdId.endsWith("Volume")) {
+        finalProdId = finalProdId.slice(0, -6) + licenseSuffix;
+      } else if (finalProdId.endsWith("Retail")) {
+        finalProdId = finalProdId.slice(0, -6) + licenseSuffix;
+      }
+    }
+
+    const appWord = document.getElementById("app-word")?.checked;
+    const appExcel = document.getElementById("app-excel")?.checked;
+    const appPpt = document.getElementById("app-powerpoint")?.checked;
+    const appOutlook = document.getElementById("app-outlook")?.checked;
+    const appOneNote = document.getElementById("app-onenote")?.checked;
+    const appAccess = document.getElementById("app-access")?.checked;
+    const appTeams = document.getElementById("app-teams")?.checked;
+    const appOneDrive = document.getElementById("app-onedrive")?.checked;
+    const appSkype = document.getElementById("app-skype")?.checked;
+    const appVisioPro = document.getElementById("app-visiopro")?.checked;
+    const appVisioStd = document.getElementById("app-visiostd")?.checked;
+    const appProjectPro = document.getElementById("app-projectpro")?.checked;
+
+    const optRemove = document.getElementById("odt-opt-remove")?.checked;
+    const optShortcut = document.getElementById("odt-opt-shortcut")?.checked;
+
+    let xml = "<Configuration>\n";
+    xml += `  <Add OfficeClientEdition="${arch}" Channel="${channel}">\n`;
+    xml += `    <Product ID="${finalProdId}" PIDKEY="">\n`;
+    xml += `      <Language ID="${lang}" />\n`;
+
+    if (!appWord) xml += '      <ExcludeApp ID="Word" />\n';
+    if (!appExcel) xml += '      <ExcludeApp ID="Excel" />\n';
+    if (!appPpt) xml += '      <ExcludeApp ID="PowerPoint" />\n';
+    if (!appOutlook) xml += '      <ExcludeApp ID="Outlook" />\n';
+    if (!appOneNote) xml += '      <ExcludeApp ID="OneNote" />\n';
+    if (!appAccess) xml += '      <ExcludeApp ID="Access" />\n';
+    if (!appOneDrive) xml += '      <ExcludeApp ID="OneDrive" />\n';
+    if (!appSkype) xml += '      <ExcludeApp ID="Lync" />\n';
+    xml += "    </Product>\n";
+
+    if (appVisioPro || appVisioStd) {
+      const vType = appVisioPro ? "Pro" : "Std";
+      const vYear = prod.name.includes("2024") ? "2024" : prod.name.includes("2021") ? "2021" : prod.name.includes("2019") ? "2019" : "";
+      const vId = `Visio${vType}${vYear}${licenseSuffix}`;
+      xml += `    <Product ID="${vId}">\n      <Language ID="${lang}" />\n    </Product>\n`;
+    }
+
+    if (appProjectPro) {
+      const pYear = prod.name.includes("2024") ? "2024" : prod.name.includes("2021") ? "2021" : prod.name.includes("2019") ? "2019" : "";
+      const pId = `ProjectPro${pYear}${licenseSuffix}`;
+      xml += `    <Product ID="${pId}">\n      <Language ID="${lang}" />\n    </Product>\n`;
+    }
+
+    xml += "  </Add>\n";
+    if (!optShortcut) {
+      xml += '  <Property Name="Icons" Value="0" />\n';
+    }
+    xml += '  <Property Name="SharedComputerLicensing" Value="0" />\n';
+    xml += '  <Property Name="FORCEAPPSHUTDOWN" Value="FALSE" />\n';
+    xml += '  <Property Name="DeviceBasedLicensing" Value="0" />\n';
+    xml += '  <Updates Enabled="TRUE" />\n';
+    if (optRemove) {
+      xml += "  <RemoveMSI />\n";
+    }
+    xml += "</Configuration>";
+
+    currentOfficeXml = xml;
+
+    const preview = document.getElementById("txtXmlPreview");
+    if (preview) preview.textContent = xml;
+
+    // Overview
+    const elVer = document.getElementById("overview-version");
+    if (elVer) elVer.textContent = prod.name;
+    const elArch = document.getElementById("overview-arch");
+    if (elArch) elArch.textContent = arch === "64" ? "x64 (64-bit)" : "x86 (32-bit)";
+    const elChan = document.getElementById("overview-channel");
+    if (elChan) elChan.textContent = channel;
+    const elLang = document.getElementById("overview-lang");
+    if (elLang) elLang.textContent = langText;
+
+    const selectedApps = [];
+    if (appWord) selectedApps.push("Word");
+    if (appExcel) selectedApps.push("Excel");
+    if (appPpt) selectedApps.push("PowerPoint");
+    if (appOutlook) selectedApps.push("Outlook");
+    if (appOneNote) selectedApps.push("OneNote");
+    if (appAccess) selectedApps.push("Access");
+    if (appTeams) selectedApps.push("Teams");
+    if (appOneDrive) selectedApps.push("OneDrive");
+    if (appVisioPro) selectedApps.push("Visio Pro");
+    if (appVisioStd) selectedApps.push("Visio Std");
+    if (appProjectPro) selectedApps.push("Project Pro");
+
+    const elApps = document.getElementById("overview-apps");
+    if (elApps) elApps.textContent = selectedApps.length > 0 ? selectedApps.join(", ") : "None";
+
+    const selectedOpts = [];
+    if (optRemove) selectedOpts.push("Remove existing Office");
+    if (optShortcut) selectedOpts.push("Create Desktop Shortcut");
+    selectedOpts.push("Include Updates");
+
+    const elOpts = document.getElementById("overview-opts");
+    if (elOpts) elOpts.textContent = selectedOpts.join(", ");
+  };
+
+  window.copyOfficeXml = function() {
+    if (currentOfficeXml) {
+      navigator.clipboard.writeText(currentOfficeXml).then(() => {
+        showToast("Sao chép XML", "Đã sao chép cấu hình XML vào bộ nhớ tạm!", "success");
+      }).catch(() => {
+        showToast("Sao chép XML", "Vui lòng chọn vùng text để sao chép.", "info");
+      });
+    }
+  };
+
+  window.exportOfficeXml = function() {
+    if (!currentOfficeXml) return;
+    const blob = new Blob([currentOfficeXml], { type: "text/xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "configuration.xml";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Xuất XML", "Đã tải xuống tệp configuration.xml thành công!", "success");
+  };
+
+  window.installOffice = async function() {
+    logOffice("START", "Khởi động tiến trình tải và cài đặt Office ODT...", "text-primary");
+    showToast("Cài Đặt Office", "Đang khởi tạo gói triển khai Office...", "info");
+    const arch = document.querySelector("input[name='odt_arch']:checked")?.value || "64";
+    const prods = OFFICE_PRODUCTS[currentOfficeVersion] || [];
+    const prod = prods.find((p) => p.id === currentOfficeSubId) || prods[0];
+    const lang = document.getElementById("odt-language")?.value || "en-us";
+
+    try {
+      const res = await invokeRust("run_system_action", {
+        actionId: "install_office",
+        edition: arch,
+        product: prod ? prod.prodId : "O365ProPlusRetail",
+        lang: lang,
+        xml: currentOfficeXml
+      });
+      if (res && res.success) {
+        logOffice("SUCCESS", res.message || "Tiến trình cài đặt Office ODT đang chạy ngầm thành công!", "text-tertiary");
+        showToast("Office M365", res.message || "Tiến trình cài đặt Office ODT đã khởi động!", "success");
+      } else {
+        logOffice("ERROR", (res && res.message) || "Không thể thực thi cài đặt Office", "text-error");
+        showToast("Lỗi Cài Office", res ? res.message : "Thất bại", "error");
+      }
+    } catch (e) {
+      logOffice("EXCEPTION", String(e), "text-error");
+      showToast("Lỗi", String(e), "error");
+    }
+  };
+
+  window.downloadOffice = async function() {
+    logOffice("DOWNLOAD", "Đang tải gói dữ liệu Office ODT từ máy chủ CDN Microsoft...", "text-secondary");
+    showToast("Tải Office", "Đang kết nối CDN Microsoft để tải gói cài đặt...", "info");
+    try {
+      const res = await invokeRust("run_system_action", {
+        actionId: "install_office",
+        downloadOnly: "true",
+        xml: currentOfficeXml
+      });
+      if (res && res.success) {
+        logOffice("SUCCESS", "Tiến trình tải dữ liệu Office đã hoàn tất!", "text-tertiary");
+        showToast("Tải Office", "Đã tải xong gói dữ liệu Office!", "success");
+      } else {
+        logOffice("ERROR", (res && res.message) || "Không thể tải gói Office", "text-error");
+        showToast("Lỗi Tải Office", res ? res.message : "Thất bại", "error");
+      }
+    } catch (e) {
+      logOffice("EXCEPTION", String(e), "text-error");
+      showToast("Lỗi", String(e), "error");
+    }
+  };
+
+  window.uninstallOffice = async function() {
+    const chk = document.getElementById("chk-confirm-uninstall-office");
+    if (!chk || !chk.checked) {
+      showToast("Cảnh báo", "Vui lòng tích xác nhận đồng ý gỡ bỏ Office!", "warning");
+      return;
+    }
+    logOffice("UNINSTALL", "Đang quét và tiến hành gỡ bỏ toàn bộ Office tồn dư...", "text-error");
+    showToast("Gỡ Office", "Đang kích hoạt quy trình gỡ bỏ Office sạch...", "warning");
+    try {
+      await invokeRust("run_system_action", { actionId: "uninstall_apps" });
+      showToast("Gỡ Office", "Đã gửi lệnh gỡ bỏ toàn bộ Office!", "success");
+    } catch (e) {
+      showToast("Lỗi", String(e), "error");
+    }
+  };
+
+  window.openSettingsModal = function() {
+    const modal = document.getElementById("modal-settings");
+    if (modal) modal.classList.remove("hidden");
+  };
+
+  window.closeSettingsModal = function() {
+    const modal = document.getElementById("modal-settings");
+    if (modal) modal.classList.add("hidden");
+  };
+
   function initOfficeController() {
     const officeView = document.getElementById("view-office-m365");
     if (!officeView) return;
 
-    const btnSelectAll = document.getElementById("btn-select-all-office");
-    const btnDefaultApps = document.getElementById("btn-default-apps-office");
-    const btnRunDeploy = document.getElementById("btn-run-deploy");
-    const btnDownload = document.getElementById("btn-office-download");
-    const btnUninstall = document.getElementById("btn-office-uninstall");
-    const btnClearLog = document.getElementById("btn-office-clear-log");
-    const terminalBody = document.getElementById("terminal-body");
+    renderOfficeSubVersions();
+    window.updateOfficeConfig();
 
-    function logOffice(tag, msg, color = "text-on-surface-variant") {
-      if (!terminalBody) return;
-      const now = new Date();
-      const timeStr = "[" + now.toTimeString().split(" ")[0] + "]";
-      const div = document.createElement("div");
-      div.className = "flex items-start gap-2 text-outline";
-      div.innerHTML = `<span>${timeStr}</span><span class="${color}">[${tag}]</span><span class="text-on-surface">${msg}</span>`;
-      terminalBody.appendChild(div);
-      terminalBody.scrollTop = terminalBody.scrollHeight;
-    }
-
-    if (btnSelectAll) {
-      btnSelectAll.addEventListener("click", () => {
-        officeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = true));
-        showToast("Cài Office", "Đã chọn toàn bộ các ứng dụng thành phần Office!", "info");
+    // Attach hover listeners for General tweaks Description & Mô tả
+    document.querySelectorAll("#view-general .tweak-item").forEach((item) => {
+      item.addEventListener("mouseenter", () => {
+        const descEn = item.getAttribute("data-desc-en");
+        const descVi = item.getAttribute("data-desc-vi");
+        const elEn = document.getElementById("general-desc-en");
+        const elVi = document.getElementById("general-desc-vi");
+        if (elEn && descEn) elEn.textContent = descEn;
+        if (elVi && descVi) elVi.textContent = descVi;
       });
-    }
-
-    if (btnDefaultApps) {
-      btnDefaultApps.addEventListener("click", () => {
-        const defaultNames = ["word", "excel", "powerpoint"];
-        officeView.querySelectorAll("label").forEach((label) => {
-          const cb = label.querySelector("input[type='checkbox']");
-          const text = (label.textContent || "").toLowerCase();
-          if (cb) {
-            cb.checked = defaultNames.some((d) => text.includes(d));
-          }
-        });
-        showToast("Cài Office", "Đã đặt về bộ ứng dụng cơ bản (Word, Excel, PowerPoint)!", "info");
-      });
-    }
-
-    if (btnClearLog && terminalBody) {
-      btnClearLog.addEventListener("click", () => {
-        terminalBody.innerHTML = '<div class="text-outline/70">[Clear] Đã làm sạch console ODT.</div>';
-      });
-    }
-
-    if (btnRunDeploy) {
-      btnRunDeploy.addEventListener("click", async () => {
-        logOffice("START", "Khởi động quy trình tải và cài đặt Office Deployment Tool...", "text-primary");
-        showToast("Triển Khai Office", "Đang gửi lệnh tải & cấu hình Office M365...", "info");
-        try {
-          const res = await invokeRust("run_system_action", {
-            actionId: "install_office",
-            edition: "64",
-            product: "O365ProPlusRetail",
-            lang: "MatchOS"
-          });
-          if (res && res.success) {
-            logOffice("SUCCESS", res.message || "Đã kích hoạt tiến trình cài đặt Office ODT thành công!", "text-tertiary");
-            showToast("Office M365", res.message, "success");
-          } else {
-            logOffice("ERROR", (res && res.message) || "Không thể thực thi cài đặt Office", "text-error");
-            showToast("Lỗi Cài Office", res ? res.message : "Thất bại", "error");
-          }
-        } catch (e) {
-          logOffice("EXCEPTION", String(e), "text-error");
-          showToast("Lỗi", String(e), "error");
-        }
-      });
-    }
-
-    if (btnDownload) {
-      btnDownload.addEventListener("click", async () => {
-        logOffice("DOWNLOAD", "Đang tải gói cài đặt Office ODT từ máy chủ CDN Microsoft...", "text-secondary");
-        showToast("Tải Office", "Đang tải gói dữ liệu Office...", "info");
-        await invokeRust("run_system_action", { actionId: "install_office", downloadOnly: "true" });
-      });
-    }
-
-    if (btnUninstall) {
-      btnUninstall.addEventListener("click", async () => {
-        logOffice("UNINSTALL", "Đang dọn dẹp và gỡ bỏ toàn bộ các phiên bản Office cũ...", "text-error");
-        showToast("Gỡ Office", "Đang quét và gỡ các bản Office tồn dư...", "warning");
-        await invokeRust("run_system_action", { actionId: "uninstall_apps" });
-      });
-    }
+    });
   }
 
   // --- 11. PRINTER, SCAN & LAN CONTROLLER ---

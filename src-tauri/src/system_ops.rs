@@ -1961,6 +1961,40 @@ th { background: #222a3d; color: #6ffbbe; }
             prod_id, client_edition, lang
         ));
 
+        let custom_xml = extract_json_field(params_json, "xml");
+        let xml_to_use = match custom_xml {
+            Some(x) if !x.trim().is_empty() => x.to_string(),
+            _ => format!(
+                "<Configuration>\n  <Add OfficeClientEdition=\"{client_edition}\" Channel=\"Current\">\n    <Product ID=\"{prod_id}\">\n      <Language ID=\"{lang}\" />\n      <Language ID=\"en-us\" />\n      <ExcludeApp ID=\"Groove\" />\n      <ExcludeApp ID=\"Lync\" />\n    </Product>\n  </Add>\n  <Property Name=\"SharedComputerLicensing\" Value=\"0\" />\n  <Property Name=\"FORCEAPPSHUTDOWN\" Value=\"TRUE\" />\n  <Property Name=\"DeviceBasedLicensing\" Value=\"0\" />\n  <Updates Enabled=\"TRUE\" />\n  <Display Level=\"Full\" AcceptEULA=\"TRUE\" />\n</Configuration>"
+            ),
+        };
+
+        // Chuyển XML sang Base64 để PowerShell giải mã an toàn tuyệt đối
+        let b64_xml = {
+            const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            let mut out = String::new();
+            let bytes = xml_to_use.as_bytes();
+            for chunk in bytes.chunks(3) {
+                let b0 = chunk[0];
+                let b1 = if chunk.len() > 1 { chunk[1] } else { 0 };
+                let b2 = if chunk.len() > 2 { chunk[2] } else { 0 };
+                let triple = ((b0 as u32) << 16) | ((b1 as u32) << 8) | (b2 as u32);
+                out.push(CHARSET[((triple >> 18) & 0x3F) as usize] as char);
+                out.push(CHARSET[((triple >> 12) & 0x3F) as usize] as char);
+                if chunk.len() > 1 {
+                    out.push(CHARSET[((triple >> 6) & 0x3F) as usize] as char);
+                } else {
+                    out.push('=');
+                }
+                if chunk.len() > 2 {
+                    out.push(CHARSET[(triple & 0x3F) as usize] as char);
+                } else {
+                    out.push('=');
+                }
+            }
+            out
+        };
+
         let ps_code = format!(
             r#"
             $tempDir = [System.IO.Path]::GetTempPath()
@@ -1968,23 +2002,9 @@ th { background: #222a3d; color: #6ffbbe; }
             $odtExe = Join-Path $tempDir "officedeploymenttool.exe"
             $setupExe = Join-Path $tempDir "setup.exe"
 
-            $xmlContent = @"
-<Configuration>
-  <Add OfficeClientEdition="{}" Channel="Current">
-    <Product ID="{}">
-      <Language ID="{}" />
-      <Language ID="en-us" />
-      <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
-    </Product>
-  </Add>
-  <Property Name="SharedComputerLicensing" Value="0" />
-  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
-  <Property Name="DeviceBasedLicensing" Value="0" />
-  <Updates Enabled="TRUE" />
-  <Display Level="Full" AcceptEULA="TRUE" />
-</Configuration>
-"@
+            $b64 = "{}"
+            $bytes = [System.Convert]::FromBase64String($b64)
+            $xmlContent = [System.Text.Encoding]::UTF8.GetString($bytes)
             [System.IO.File]::WriteAllText($configPath, $xmlContent, [System.Text.Encoding]::UTF8)
 
             # Tải và giải nén setup.exe từ Microsoft ODT nếu chưa tồn tại
@@ -2006,8 +2026,8 @@ th { background: #222a3d; color: #6ffbbe; }
                 $winget = Start-Process winget -ArgumentList "install --id Microsoft.Office -e --silent --accept-package-agreements --accept-source-agreements" -PassThru -NoNewWindow
                 Write-Output "WINGET_PID:$($winget.Id)"
             }}
-            "#,
-            odt_mode, client_edition, prod_id, lang
+            "#,
+            b64_xml, odt_mode
         );
 
         let mut cmd = Command::new("powershell");

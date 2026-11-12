@@ -274,9 +274,11 @@ if ($needDownload) {
             }
             # Dong bo sang ca cac thu muc repo neu ton tai
             foreach ($rDir in @("D:\toolwindows", "E:\toolwindows")) {
-                $repoExe = Join-Path $rDir "VUONGTT_Toolkit.exe"
-                if ((Test-Path $rDir) -and ($exePath -ne $repoExe)) {
+                if (Test-Path $rDir) {
+                    $repoExe = Join-Path $rDir "VUONGTT_Toolkit.exe"
+                    if ($exePath -ne $repoExe) {
                     try { Copy-Item -Path $exePath -Destination $repoExe -Force -ErrorAction SilentlyContinue } catch {}
+                    }
                 }
             }
             Write-Host "  -> Tai thanh cong VUONGTT Tool Pro ($sizeMb MB)!" -ForegroundColor Green
