@@ -12,6 +12,10 @@
   let currentPolicies = [];
   let currentVault = [];
 
+  try {
+    fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
+  } catch (_) {}
+
   // --- 1. RUST IPC INVOKER ---
   async function invokeRust(command, payload = {}) {
     try {

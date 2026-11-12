@@ -88,7 +88,7 @@ fn control_window(action: &str) -> (bool, &'static str) {
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-pub const APP_VERSION: &str = "20.5.909.147";
+pub const APP_VERSION: &str = "20.5.909.148";
 
 fn handle_client(
     mut stream: TcpStream,
@@ -498,7 +498,7 @@ fn main() {
             if has_connected.load(Ordering::SeqCst) {
                 // Sau khi client đã kết nối lần đầu:
                 // Nếu quá 10 giây không còn heartbeat/request -> Cửa sổ Edge đã đóng -> Tự động thoát sạch sẽ!
-                if elapsed > std::time::Duration::from_secs(10) {
+                if elapsed > std::time::Duration::from_secs(45) {
                     break;
                 }
             } else {
