@@ -375,6 +375,11 @@ Assert-Audit "Global" "Bo chuyen doi ngon ngu VN / EN hoat dong on dinh" {
     $appContent -match 'btn-lang-vn' -and $appContent -match 'btn-lang-en'
 }
 
+Assert-Audit "Global" "Tep src-ui/app.js khong chua bat ky loi cu phap JavaScript nao (node -c)" {
+    $res = cmd.exe /c "node -c src-ui\app.js 2>&1"
+    $LASTEXITCODE -eq 0
+}
+
 Assert-Audit "Global" "Live Terminal Buffer ghi log thoi gian thuc khong gay freeze UI" {
     $opsContent -match 'append_log' -and $opsContent -match 'get_logs'
 }

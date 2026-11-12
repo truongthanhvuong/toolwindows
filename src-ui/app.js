@@ -2369,6 +2369,18 @@
     }
   };
 
+  window.toggleSelectAppByIndex = function(index, checked) {
+    const app = currentFilteredApps[index];
+    if (app && app.name) {
+      if (checked) {
+        selectedAppNames.add(app.name);
+      } else {
+        selectedAppNames.delete(app.name);
+      }
+      window.updateBulkUninstallUI();
+    }
+  };
+
   window.toggleSelectApp = function(name, checked) {
     if (checked) {
       selectedAppNames.add(name);
@@ -2438,7 +2450,7 @@
       return `
         <tr class="hover:bg-surface-container transition-colors ${isSelected ? "bg-red-500/10" : ""}">
           <td class="p-3 text-center">
-            <input type="checkbox" class="chk-installed-app w-4 h-4 rounded border-outline/40 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600" ${isSelected ? "checked" : ""} onchange="window.toggleSelectApp(`${rawName.replace(/`/g, "\\`")}`, this.checked)" />
+            <input type="checkbox" class="chk-installed-app w-4 h-4 rounded border-outline/40 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600" ${isSelected ? "checked" : ""} onchange="window.toggleSelectAppByIndex(${index}, this.checked)" />
           </td>
           <td class="p-3 font-semibold text-on-surface">${nameEscaped}</td>
           <td class="p-3 text-on-surface-variant">${pubEscaped}</td>
