@@ -80,7 +80,7 @@
         <div data-tauri-drag-region class="flex items-center gap-space-xs">
           <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center font-headline-md text-on-primary-container shadow-sm">V</div>
           <span data-tauri-drag-region class="font-headline-md text-headline-md text-on-surface tracking-tight">VUONGTT Toolkit</span>
-          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.149</span>
+          <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.150</span>
         </div>
         <div class="hidden xl:flex items-center gap-2">
           <span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-tertiary flex items-center gap-1">
@@ -1136,7 +1136,7 @@
 <span class="px-2 py-0.5 rounded font-code-sm text-code-sm bg-tertiary-container text-on-tertiary-container font-medium">Tech Utilities Hub</span>
 </div>
 <div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
-<span id="tech-driver-build-badge">Build: v20.5.909.149</span>
+<span id="tech-driver-build-badge">Build: v20.5.909.150</span>
 <span>•</span>
 <span class="flex items-center gap-1 text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> PnP Kernel Ready</span>
 </div>
@@ -3648,7 +3648,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- Chrome (Pre-selected) -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="google-chrome">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">language</span>
@@ -3661,7 +3661,7 @@
 <input checked="" class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Firefox (Pre-selected) -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="firefox">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">local_fire_department</span>
@@ -3674,7 +3674,7 @@
 <input checked="" class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Microsoft Edge -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="edge">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">explore</span>
@@ -3687,7 +3687,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Brave -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="brave">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">shield</span>
@@ -3700,7 +3700,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Cốc Cốc -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="coccoc">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary-fixed-dim text-[20px]">travel_explore</span>
@@ -3713,7 +3713,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Vivaldi -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="vivaldi">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">view_quilt</span>
@@ -3726,7 +3726,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Opera One -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="opera">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">radio_button_checked</span>
@@ -3739,7 +3739,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Tor Browser -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="tor">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">vpn_lock</span>
@@ -3752,7 +3752,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Zen Browser -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="zen">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">spa</span>
@@ -3778,7 +3778,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- Zalo PC (Pre-selected) -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="zalo">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">chat</span>
@@ -3791,7 +3791,7 @@
 <input checked="" class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Telegram Desktop -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="telegram">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">send</span>
@@ -3804,7 +3804,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Discord -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="discord">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">headset_mic</span>
@@ -3817,7 +3817,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Messenger -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="messenger">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">maps_ugc</span>
@@ -3830,7 +3830,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Skype -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="skype">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">call</span>
@@ -3843,7 +3843,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Slack -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="slack">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">workspaces</span>
@@ -3856,7 +3856,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Microsoft Teams -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="teams">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">groups</span>
@@ -3869,7 +3869,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Viber -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="viber">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">ring_volume</span>
@@ -3882,7 +3882,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Zoom Workplace -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="zoom">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">videocam</span>
@@ -3908,7 +3908,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- VS Code -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="vscode">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">code</span>
@@ -3921,7 +3921,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Git -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="git">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">fork_right</span>
@@ -3934,7 +3934,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Docker Desktop -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="docker">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">view_in_ar</span>
@@ -3947,7 +3947,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Node.js (LTS) -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="nodejs">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">javascript</span>
@@ -3960,7 +3960,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Python 3 -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="python">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">data_object</span>
@@ -3973,7 +3973,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- DBeaver -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="dbeaver">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-outline text-[20px]">database</span>
@@ -3986,7 +3986,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Postman -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="postman">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">api</span>
@@ -3999,7 +3999,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Cursor AI -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="cursor">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">psychology</span>
@@ -4012,7 +4012,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Android Studio -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="android-studio">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">android</span>
@@ -4038,7 +4038,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- Office LTSC -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="office-ltsc">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">description</span>
@@ -4051,7 +4051,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- LibreOffice -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="libreoffice">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">article</span>
@@ -4064,7 +4064,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- WPS Office -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="wps-office">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">edit_document</span>
@@ -4077,7 +4077,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Foxit PDF Reader -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="foxitpdf">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">picture_as_pdf</span>
@@ -4090,7 +4090,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Adobe Acrobat Reader DC -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="acrobat">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">menu_book</span>
@@ -4103,7 +4103,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Adobe Photoshop -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="photoshop">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">photo_library</span>
@@ -4116,7 +4116,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Adobe Illustrator -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="illustrator">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">draw</span>
@@ -4129,7 +4129,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- CorelDRAW -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="coreldraw">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">palette</span>
@@ -4142,7 +4142,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Canva Desktop -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="canva">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">auto_awesome</span>
@@ -4169,7 +4169,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- Microsoft 365 -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="ms365">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">cloud_sync</span>
@@ -4182,7 +4182,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- OneDrive -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="onedrive">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">cloud</span>
@@ -4195,7 +4195,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- PowerToys -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="powertoys">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">build_circle</span>
@@ -4208,7 +4208,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- PC Manager -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="pcmanager">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">speed</span>
@@ -4221,7 +4221,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Visual C++ Redist AIO -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="vcredist">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">extension</span>
@@ -4234,7 +4234,7 @@
 <input checked="" class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- .NET Runtime -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="dotnet8">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">code_blocks</span>
@@ -4247,7 +4247,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- DirectX End-User Runtimes -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="directx">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">sports_esports</span>
@@ -4260,7 +4260,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Windows Terminal -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="wt">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-on-surface text-[20px]">terminal</span>
@@ -4273,7 +4273,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Sysinternals Suite -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="sysinternals">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">admin_panel_settings</span>
@@ -4300,7 +4300,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- Steam -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="steam">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">sports_esports</span>
@@ -4313,7 +4313,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Epic Games -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="epic-games">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">gamepad</span>
@@ -4326,7 +4326,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Garena PC -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="garena">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">military_tech</span>
@@ -4339,7 +4339,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Riot Client -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="riot">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">shield</span>
@@ -4352,7 +4352,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Roblox -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="roblox">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">view_in_ar</span>
@@ -4365,7 +4365,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- EA App -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="ea-app">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">videogame_asset</span>
@@ -4378,7 +4378,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Battle.net -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="battlenet">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">blur_on</span>
@@ -4391,7 +4391,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- LDPlayer 9 -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="ldplayer">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">phone_android</span>
@@ -4404,7 +4404,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Discord Gaming -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="discord">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">headset_mic</span>
@@ -4431,7 +4431,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- VLC -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="vlc">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">play_circle</span>
@@ -4444,7 +4444,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- K-Lite Mega Codec -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="klite">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">movie</span>
@@ -4457,7 +4457,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- PotPlayer -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="potplayer">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">smart_display</span>
@@ -4470,7 +4470,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- OBS Studio -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="obs">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">videocam</span>
@@ -4483,7 +4483,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- CapCut PC -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="capcut">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">movie_edit</span>
@@ -4496,7 +4496,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Audacity -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="audacity">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">graphic_eq</span>
@@ -4509,7 +4509,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Format Factory -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="formatfactory">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">transform</span>
@@ -4522,7 +4522,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- HandBrake -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="handbrake">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">compress</span>
@@ -4535,7 +4535,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Foobar2000 -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="foobar2000">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-outline text-[20px]">library_music</span>
@@ -4562,7 +4562,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- HTKK -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="htkk">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">calculate</span>
@@ -4575,7 +4575,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- iTaxViewer -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="itaxviewer">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">visibility</span>
@@ -4588,7 +4588,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- eSigner Java Plugin -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="esigner">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">vpn_key</span>
@@ -4601,7 +4601,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- MISA SME / meInvoice -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="misa">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">point_of_sale</span>
@@ -4614,7 +4614,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Plugin DVC -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="plugin-kyso">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">badge</span>
@@ -4627,7 +4627,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Viettel-CA -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="viettel-ca">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">usb</span>
@@ -4640,7 +4640,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- VNPT-CA -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="vnpt-ca">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">usb</span>
@@ -4653,7 +4653,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- FPT-CA -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="fpt-ca">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">usb</span>
@@ -4666,7 +4666,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- Foxit Sign -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="foxit-kyso">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">history_edu</span>
@@ -4693,7 +4693,7 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
 <!-- UniKey -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="unikey">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">keyboard</span>
@@ -4706,7 +4706,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- EVKey -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="evkey">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">spellcheck</span>
@@ -4719,7 +4719,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- WinRAR -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="winrar">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">folder_zip</span>
@@ -4732,7 +4732,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- 7-Zip -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="7zip">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-outline text-[20px]">archive</span>
@@ -4745,7 +4745,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- AnyDesk -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="anydesk">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-error text-[20px]">desktop_windows</span>
@@ -4758,7 +4758,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- UltraViewer -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="ultraviewer">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">support_agent</span>
@@ -4771,7 +4771,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- RustDesk -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="rustdesk">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">devices</span>
@@ -4784,7 +4784,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- CrystalDiskInfo -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="crystaldiskinfo">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-tertiary text-[20px]">hard_drive</span>
@@ -4797,7 +4797,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- CPU-Z -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="cpuz">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-primary text-[20px]">memory</span>
@@ -4810,7 +4810,7 @@
 <input class="app-checkbox w-4 h-4 rounded accent-primary cursor-pointer flex-shrink-0 ml-2" type="checkbox"/>
 </label>
 <!-- FastStone Capture -->
-<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
+<label class="app-card group flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm" data-app-id="faststone">
 <div class="flex items-center gap-3 min-w-0">
 <div class="w-8 h-8 rounded-lg bg-surface-container-lowest flex items-center justify-center flex-shrink-0">
 <span class="material-symbols-outlined text-secondary text-[20px]">screenshot_monitor</span>

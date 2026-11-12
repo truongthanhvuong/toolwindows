@@ -769,9 +769,7 @@
         storeView.querySelectorAll(".app-card").forEach((card) => {
           const cb = card.querySelector("input[type='checkbox']");
           if (cb && cb.checked) {
-            const titleEl = card.querySelector(".font-headline-md, .font-body-md, .font-label-md, div");
-            const appName = titleEl ? titleEl.textContent.trim() : "";
-            const appId = appMap[appName] || appName.toLowerCase().replace(/\s+/g, "-");
+            const appId = card.dataset.appId || card.getAttribute("data-app-id") || "";
             if (appId) selectedApps.push(appId);
           }
         });
