@@ -1,7 +1,13 @@
-﻿[
-  {"hostname":"TEST-PC-99","serialNumber":"TEST-BIOS-SN-99","ipAddress":"192.168.1.99","osCaption":"Windows 11 Test","lastSeen":"2026-11-12 14:00:15","hwid":"HWID-TEST-99","status":"Active"},
-  
-  
+[
+    {
+        "hostname":  "TEST-PC-99",
+        "serialNumber":  "TEST-BIOS-SN-99",
+        "ipAddress":  "192.168.1.99",
+        "osCaption":  "Windows 11 Test",
+        "lastSeen":  "2026-11-12 14:00:15",
+        "hwid":  "HWID-TEST-99",
+        "status":  "Active"
+    },
     {
         "hostname":  "DESKTOP-BJ38TQN",
         "serialNumber":  "VMware-56 4d e2 13 93 ef f7 37-ab c7 85 07 f9 03 fc ab",
@@ -11,19 +17,15 @@
         "hwid":  "87711021-0bf1-4d5f-b240-e3c3630cff17",
         "status":  "Active"
     },
-  
-  
     {
         "hostname":  "DESKTOP-DL5HRDO",
         "serialNumber":  "271MKG3",
         "ipAddress":  "172.16.171.128",
         "osCaption":  "Microsoft Windows 10 Pro",
-        "lastSeen":  "2026-11-12 12:19:28",
+        "lastSeen":  "2026-11-12 14:11:22",
         "hwid":  "ec3808da-ea56-4123-9d37-7d333115e72b",
         "status":  "Active"
     },
-  
-  
     {
         "hostname":  "VUONGTT",
         "serialNumber":  "SN-VUONGTT",
@@ -33,8 +35,6 @@
         "hwid":  "03560230-040F-056B-8006-180700080009",
         "status":  "Active"
     },
-  
-  
     {
         "hostname":  "VUONGTT-PRIMARY",
         "serialNumber":  "SYSTEM-PRIMARY-BIOS-001",
