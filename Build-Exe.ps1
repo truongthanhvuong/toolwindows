@@ -127,8 +127,12 @@ if (-not (Test-Path $cscPath)) {
 Write-Host ">>> Trinh bien dich C#: $cscPath" -ForegroundColor Cyan
 
 # Dam bao 100% cac file ma nguon ps1, xaml, json, cs deu co UTF-8 BOM tranh loi font/ky tu tieng Viet trong PowerShell va csc
+# Dam bao 100% cac file ma nguon ps1, xaml, json, cs deu co UTF-8 BOM tranh loi font/ky tu tieng Viet trong PowerShell va csc
+# NGOAI TRU win.ps1 va vuongtt.ps1 (chay qua irm ... | iex) BAT BUOC phai la UTF-8 No BOM de khong bi loi char 65279 (\uFEFF)
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)
-$textFilesToEnforce = Get-ChildItem -Path $RootDir -Recurse -Include "*.ps1", "*.xaml", "*.json", "*.cs" -File | Where-Object { $_.FullName -notmatch "\\\.git\\" }
+$textFilesToEnforce = Get-ChildItem -Path $RootDir -Recurse -Include "*.ps1", "*.xaml", "*.json", "*.cs" -File | Where-Object {
+    $_.FullName -notmatch "\\\.git\\" -and $_.Name -ne "win.ps1" -and $_.Name -ne "vuongtt.ps1"
+}
 foreach ($tf in $textFilesToEnforce) {
     try {
         $bytes = [System.IO.File]::ReadAllBytes($tf.FullName)
@@ -137,6 +141,17 @@ foreach ($tf in $textFilesToEnforce) {
             [System.IO.File]::WriteAllText($tf.FullName, $content, $utf8Bom)
         }
     } catch {}
+}
+
+# win.ps1 va vuongtt.ps1 la bootstrapper cloud duoc goi qua irm ... | iex.
+# BAT BUOC phai luu dang UTF-8 KHONG BOM (UTF-8 No BOM) de tranh loi parser char 65279 (\uFEFF) trong PowerShell 5.1!
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+@("win.ps1", "vuongtt.ps1") | ForEach-Object {
+    $fPath = Join-Path $RootDir $_
+    if (Test-Path $fPath) {
+        $rawText = [System.IO.File]::ReadAllText($fPath, [System.Text.Encoding]::UTF8)
+        [System.IO.File]::WriteAllText($fPath, $rawText, $utf8NoBom)
+    }
 }
 
 $outputExe = Join-Path $RootDir "VUONGTT_Toolkit_WPF.exe"
