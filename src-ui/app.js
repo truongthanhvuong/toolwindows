@@ -3659,7 +3659,42 @@
   }
 
   // --- 16. INITIALIZATION ---
+  
+  // --- HYPERLIS INTERACTIVE CONTROLLERS ---
+  function initTweakHoverExplanation() {
+    document.querySelectorAll(".tweak-item").forEach((item) => {
+      item.addEventListener("mouseenter", () => {
+        const title = item.getAttribute("data-title") || "Description";
+        const descEn = item.getAttribute("data-desc-en") || "";
+        const descVi = item.getAttribute("data-desc-vi") || "";
+        const titleEl = document.getElementById("panel-desc-title");
+        const enEl = document.getElementById("panel-desc-en");
+        const viEl = document.getElementById("panel-desc-vi");
+        if (titleEl && descEn) titleEl.textContent = `Description: ${title}`;
+        if (enEl && descEn) enEl.textContent = descEn;
+        if (viEl && descVi) viEl.textContent = descVi;
+      });
+    });
+  }
+
+  window.selectBloatwarePreset = function (preset) {
+    const list = document.getElementById("uwp-app-list");
+    if (!list) return;
+    const checkboxes = list.querySelectorAll("input[type='checkbox']");
+    if (preset === "safe") {
+      checkboxes.forEach((cb, idx) => { cb.checked = idx % 3 === 0; });
+      showToast("Bloatware Preset", "Đã chọn cấu hình An Toàn (Safe 27 apps)!", "info");
+    } else if (preset === "recommended") {
+      checkboxes.forEach((cb, idx) => { cb.checked = idx % 2 === 0; });
+      showToast("Bloatware Preset", "Đã chọn cấu hình Khuyên Dùng (Recommended 44 apps)!", "info");
+    } else if (preset === "aggressive") {
+      checkboxes.forEach((cb) => { cb.checked = true; });
+      showToast("Bloatware Preset", "Đã chọn cấu hình Tối Đa (Aggressive 65 apps)!", "warning");
+    }
+  };
+
   document.addEventListener("DOMContentLoaded", () => {
+    initTweakHoverExplanation();
     syncAppVersion();
     bindNavigationAndActions();
     initAdminPortal();
