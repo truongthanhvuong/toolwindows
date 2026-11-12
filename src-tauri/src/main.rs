@@ -87,8 +87,65 @@ fn control_window(action: &str) -> (bool, &'static str) {
 }
 
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
+const EMBEDDED_APPLICATIONS_JSON: &str = include_str!("../../src-ui/applications.json");
+const EMBEDDED_UWP_PRESETS_JSON: &str = include_str!("../../src-ui/uwp_presets.json");
+
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-pub const APP_VERSION: &str = "20.5.909.152";
+pub const APP_VERSION: &str = "20.5.909.153";
+
+fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
+    let clean = path.trim_start_matches('/').to_lowercase();
+    match clean.as_str() {
+        "images/office/office365.png" => Some((include_bytes!("../../src-ui/images/office/office365.png"), "image/png")),
+        "images/office/office2024.png" => Some((include_bytes!("../../src-ui/images/office/office2024.png"), "image/png")),
+        "images/office/office2021.png" => Some((include_bytes!("../../src-ui/images/office/office2021.png"), "image/png")),
+        "images/office/office2019.png" => Some((include_bytes!("../../src-ui/images/office/Office2019.png"), "image/png")),
+        "images/office/office2016.png" => Some((include_bytes!("../../src-ui/images/office/Office2016.png"), "image/png")),
+        "images/office/office2013.png" => Some((include_bytes!("../../src-ui/images/office/Office2013.png"), "image/png")),
+        "images/office/word.png" => Some((include_bytes!("../../src-ui/images/office/word.png"), "image/png")),
+        "images/office/excel.png" => Some((include_bytes!("../../src-ui/images/office/excel.png"), "image/png")),
+        "images/office/powerpoint.png" => Some((include_bytes!("../../src-ui/images/office/powerpoint.png"), "image/png")),
+        "images/office/outlook.png" => Some((include_bytes!("../../src-ui/images/office/outlook.png"), "image/png")),
+        "images/office/onenote.png" => Some((include_bytes!("../../src-ui/images/office/onenote.png"), "image/png")),
+        "images/office/access.png" => Some((include_bytes!("../../src-ui/images/office/access.png"), "image/png")),
+        "images/office/publisher.png" => Some((include_bytes!("../../src-ui/images/office/publisher.png"), "image/png")),
+        "images/office/teams.png" => Some((include_bytes!("../../src-ui/images/office/teams.png"), "image/png")),
+        "images/office/onedrive.png" => Some((include_bytes!("../../src-ui/images/office/onedrive.png"), "image/png")),
+        "images/office/skype.png" => Some((include_bytes!("../../src-ui/images/office/skype.png"), "image/png")),
+        "images/office/visio.png" => Some((include_bytes!("../../src-ui/images/office/visio.png"), "image/png")),
+        "images/office/project.png" => Some((include_bytes!("../../src-ui/images/office/project.png"), "image/png")),
+        "images/office/folder.png" => Some((include_bytes!("../../src-ui/images/office/folder.png"), "image/png")),
+        "images/office/info.png" => Some((include_bytes!("../../src-ui/images/office/info.png"), "image/png")),
+        _ => None,
+    }
+}
+
+fn get_disk_asset(path: &str) -> Option<(Vec<u8>, &'static str)> {
+    let clean = path.trim_start_matches('/');
+    let candidates = [
+        format!("src-ui/{}", clean),
+        format!("{}", clean),
+        format!("temp_hyperlis/{}", clean),
+        format!("temp_hyperlis/Images/{}", clean.trim_start_matches("images/")),
+    ];
+    for cand in candidates {
+        if let Ok(bytes) = std::fs::read(&cand) {
+            let mime = if cand.ends_with(".png") {
+                "image/png"
+            } else if cand.ends_with(".jpg") || cand.ends_with(".jpeg") {
+                "image/jpeg"
+            } else if cand.ends_with(".svg") {
+                "image/svg+xml"
+            } else if cand.ends_with(".json") {
+                "application/json"
+            } else {
+                "application/octet-stream"
+            };
+            return Some((bytes, mime));
+        }
+    }
+    None
+}
 
 fn handle_client(
     mut stream: TcpStream,
@@ -184,6 +241,32 @@ fn handle_client(
         let _ = stream.flush();
         return;
     }
+// 3.1 GET Static Assets & Images & JSON
+    if first_line.starts_with("GET /") && !first_line.starts_with("GET /api/") {
+        let req_path = first_line.split_whitespace().nth(1).unwrap_or("/").split('?').next().unwrap_or("/");
+        if let Some((bytes, mime)) = get_embedded_office_asset(req_path) {
+            let resp_header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: public, max-age=86400\r\nConnection: close\r\n\r\n",
+                mime, bytes.len()
+            );
+            let _ = stream.write_all(resp_header.as_bytes());
+            let _ = stream.write_all(bytes);
+            let _ = stream.flush();
+            return;
+        }
+
+        if let Some((bytes, mime)) = get_disk_asset(req_path) {
+            let resp_header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: public, max-age=86400\r\nConnection: close\r\n\r\n",
+                mime, bytes.len()
+            );
+            let _ = stream.write_all(resp_header.as_bytes());
+            let _ = stream.write_all(&bytes);
+            let _ = stream.flush();
+            return;
+        }
+    }
+
 
     // 4. POST Heartbeat
     if first_line.starts_with("POST /api/heartbeat") {
@@ -348,6 +431,28 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
     } else if cmd == "clear_install_logs" {
         system_ops::clear_logs();
         json_resp = r#"{"success":true,"message":"[]"}"#.to_string();
+    } else if cmd == "get_startup_apps" {
+        let apps = system_ops::collect_startup_apps();
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, apps);
+    } else if cmd == "toggle_startup_app" {
+        let name = system_ops::extract_json_field(body, "name").unwrap_or("");
+        let loc = system_ops::extract_json_field(body, "location").unwrap_or("");
+        let enabled = system_ops::extract_json_field(body, "enabled").unwrap_or("true") == "true";
+        let (ok, msg) = system_ops::toggle_startup_item(name, loc, enabled);
+        json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, escape_json_str(&msg));
+    } else if cmd == "get_uwp_apps" {
+        let apps = system_ops::collect_uwp_apps();
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, apps);
+    } else if cmd == "uninstall_uwp_app" {
+        let pkg = system_ops::extract_json_field(body, "packageName")
+            .or_else(|| system_ops::extract_json_field(body, "packageFullName"))
+            .unwrap_or("");
+        let (ok, msg) = system_ops::uninstall_uwp_package(pkg);
+        json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, escape_json_str(&msg));
+    } else if cmd == "get_store_applications" {
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, EMBEDDED_APPLICATIONS_JSON);
+    } else if cmd == "get_uwp_presets" {
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, EMBEDDED_UWP_PRESETS_JSON);
     } else if cmd == "get_installed_apps" {
         let (success, msg) = system_ops::execute_system_action("get_installed_apps", body);
         json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, if msg.is_empty() { "[]" } else { &msg });

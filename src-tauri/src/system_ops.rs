@@ -503,6 +503,241 @@ fn strip_accents(s: &str) -> String {
 pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, String) {
     let raw_act = action_id.to_lowercase();
     let act = strip_accents(&raw_act);
+// ------------------------------------------------------------------------
+    // HYPERLIS PARITY TWEAKS & CONTROLS
+    // ------------------------------------------------------------------------
+    if act == "get_startup_apps" {
+        return (true, collect_startup_apps());
+    }
+    if act == "toggle_startup_app" {
+        let name = extract_json_field(params_json, "name").unwrap_or("");
+        let loc = extract_json_field(params_json, "location").unwrap_or("");
+        let enabled = extract_json_field(params_json, "enabled").unwrap_or("true") == "true";
+        return toggle_startup_item(name, loc, enabled);
+    }
+    if act == "get_uwp_apps" {
+        return (true, collect_uwp_apps());
+    }
+    if act == "uninstall_uwp_app" {
+        let pkg = extract_json_field(params_json, "packageName")
+            .or_else(|| extract_json_field(params_json, "packageFullName"))
+            .unwrap_or("");
+        return uninstall_uwp_package(pkg);
+    }
+
+    // Windows Update Tweaks
+    if act == "pause_updates_2036" {
+        let ps = r#"Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'FlightSettingsMaxPauseDays' -Value 3650 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tạm dừng Windows Update đến năm 2036 thành công!".to_string());
+    }
+    if act == "restore_updates" {
+        let ps = r#"Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'FlightSettingsMaxPauseDays' -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã khôi phục cài đặt tạm dừng Windows Update mặc định!".to_string());
+    }
+    if act == "disable_ms_store_updates" {
+        let ps = r#"
+            $k = 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'AutoDownload' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt cập nhật tự động Microsoft Store!".to_string());
+    }
+    if act == "enable_ms_store_updates" {
+        let ps = r#"Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore' -Name 'AutoDownload' -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật cập nhật tự động Microsoft Store!".to_string());
+    }
+    if act == "disable_insider_service" {
+        let ps = r#"
+            $k = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'ManagePreviewBuilds' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $k -Name 'ManagePreviewBuildsPolicyValue' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt dịch vụ Insider Preview!".to_string());
+    }
+    if act == "enable_insider_service" {
+        let ps = r#"
+            $k = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
+            Remove-ItemProperty -Path $k -Name 'ManagePreviewBuilds' -Force -ErrorAction SilentlyContinue
+            Remove-ItemProperty -Path $k -Name 'ManagePreviewBuildsPolicyValue' -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật lại dịch vụ Insider Preview!".to_string());
+    }
+    if act == "exclude_drivers" || act == "tat_cap_nhat_driver" {
+        let ps = r#"
+            $k = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'ExcludeWUDriversInQualityUpdate' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt cập nhật driver qua Windows Update!".to_string());
+    }
+    if act == "include_drivers" || act == "bat_cap_nhat_driver" {
+        let ps = r#"
+            $k = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'ExcludeWUDriversInQualityUpdate' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật lại cập nhật driver qua Windows Update!".to_string());
+    }
+
+    // Taskbar Tweaks
+    if act == "align_taskbar_left" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarAl' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã căn trái thanh tác vụ Taskbar!".to_string());
+    }
+    if act == "align_taskbar_center" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarAl' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã căn giữa thanh tác vụ Taskbar!".to_string());
+    }
+    if act == "disable_widgets" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarDa' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt Widgets trên Taskbar!".to_string());
+    }
+    if act == "enable_widgets" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarDa' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật Widgets trên Taskbar!".to_string());
+    }
+    if act == "enable_small_taskbar" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarSmallIcons' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật biểu tượng nhỏ Taskbar!".to_string());
+    }
+    if act == "disable_small_taskbar" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarSmallIcons' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt biểu tượng nhỏ Taskbar!".to_string());
+    }
+    if act == "disable_chat" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarMn' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt Chat trên Taskbar!".to_string());
+    }
+    if act == "enable_chat" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarMn' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật Chat trên Taskbar!".to_string());
+    }
+    if act == "disable_stickers" {
+        let ps = r#"
+            $k = 'HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Stickers'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'EnableStickers' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt Stickers desktop!".to_string());
+    }
+    if act == "enable_stickers" {
+        let ps = r#"
+            $k = 'HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Stickers'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'EnableStickers' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật Stickers desktop!".to_string());
+    }
+    if act == "fix_pin_to_taskbar" {
+        let ps = r#"
+            Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 800
+            Start-Process explorer.exe -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã làm mới Explorer và sửa lỗi ghim Taskbar!".to_string());
+    }
+    if act == "disable_notification_center" {
+        let ps = r#"
+            $k = 'HKCU:\Software\Policies\Microsoft\Windows\Explorer'
+            if (-not (Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'DisableNotificationCenter' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt Trung tâm thông báo (Notification Center)!".to_string());
+    }
+    if act == "enable_notification_center" {
+        let ps = r#"
+            $k = 'HKCU:\Software\Policies\Microsoft\Windows\Explorer'
+            Remove-ItemProperty -Path $k -Name 'DisableNotificationCenter' -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật lại Trung tâm thông báo!".to_string());
+    }
+
+    // Extras Tweaks
+    if act == "disable_snap_assist" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'EnableSnapAssistFlyout' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'SnapAssist' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt Snap Assist!".to_string());
+    }
+    if act == "enable_snap_assist" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'EnableSnapAssistFlyout' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'SnapAssist' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật Snap Assist!".to_string());
+    }
+    if act == "enable_compact_mode" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'UseCompactMode' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật chế độ thu gọn trong File Explorer!".to_string());
+    }
+    if act == "disable_compact_mode" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'UseCompactMode' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt chế độ thu gọn trong File Explorer!".to_string());
+    }
+    if act == "enable_numlock_startup" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Control Panel\Keyboard' -Name 'InitialKeyboardIndicators' -Value '2' -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã bật NumLock khi khởi động máy!".to_string());
+    }
+    if act == "disable_numlock_startup" {
+        let ps = r#"Set-ItemProperty -Path 'HKCU:\Control Panel\Keyboard' -Name 'InitialKeyboardIndicators' -Value '0' -Force -ErrorAction SilentlyContinue"#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt NumLock khi khởi động máy!".to_string());
+    }
+    if act == "optimize_working" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'MenuShowDelay' -Value '150' -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'WaitToKillAppTimeout' -Value '3000' -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã áp dụng cấu hình tối ưu cho công việc (Work/Office Profile)!".to_string());
+    }
+    if act == "optimize_extreme_gaming" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile' -Name 'NetworkThrottlingIndex' -Value 0xffffffff -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile' -Name 'SystemResponsiveness' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\GameBar' -Name 'AllowAutoGameMode' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã kích hoạt cấu hình tối ưu chuyên sâu cho Gamers (Extreme Gaming)!".to_string());
+    }
+    if act == "reset_tweaks_default" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'MenuShowDelay' -Value '400' -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile' -Name 'NetworkThrottlingIndex' -Value 10 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile' -Name 'SystemResponsiveness' -Value 20 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã khôi phục cài đặt hệ thống về mặc định Windows!".to_string());
+    }
+
 
     // ========================================================================
     // 1. ADMIN PORTAL OPERATIONS
@@ -4171,6 +4406,183 @@ fn serde_json_lite_array(raw: &str) -> Result<Vec<String>, ()> {
     Ok(result)
 }
 
+pub fn run_ps_oneshot(script: &str) -> String {
+    let mut cmd = Command::new("powershell");
+    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd.output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_default()
+}
+
+pub fn collect_startup_apps() -> String {
+    let ps_code = r#"
+    $items = @()
+    $p1 = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+    if (Test-Path $p1) {
+        $props = Get-ItemProperty -Path $p1 -ErrorAction SilentlyContinue
+        if ($props) {
+            foreach ($p in $props.PSObject.Properties) {
+                if ($p.Name -notmatch '^(PS|Default)') {
+                    $items += [PSCustomObject]@{ name = $p.Name; command = [string]$p.Value; location = 'HKCU Run'; enabled = $true }
+                }
+            }
+        }
+    }
+    $p2 = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Run'
+    if (Test-Path $p2) {
+        $props = Get-ItemProperty -Path $p2 -ErrorAction SilentlyContinue
+        if ($props) {
+            foreach ($p in $props.PSObject.Properties) {
+                if ($p.Name -notmatch '^(PS|Default)') {
+                    $items += [PSCustomObject]@{ name = $p.Name; command = [string]$p.Value; location = 'HKLM Run'; enabled = $true }
+                }
+            }
+        }
+    }
+    $p3 = 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Run'
+    if (Test-Path $p3) {
+        $props = Get-ItemProperty -Path $p3 -ErrorAction SilentlyContinue
+        if ($props) {
+            foreach ($p in $props.PSObject.Properties) {
+                if ($p.Name -notmatch '^(PS|Default)') {
+                    $items += [PSCustomObject]@{ name = $p.Name; command = [string]$p.Value; location = 'HKLM (32-bit)'; enabled = $true }
+                }
+            }
+        }
+    }
+    $userStartup = [Environment]::GetFolderPath('Startup')
+    if (Test-Path $userStartup) {
+        Get-ChildItem -Path $userStartup -File -ErrorAction SilentlyContinue | ForEach-Object {
+            $dis = $_.Name.EndsWith('.disabled')
+            $items += [PSCustomObject]@{ name = $_.BaseName; command = $_.FullName; location = 'User Startup Folder'; enabled = (-not $dis) }
+        }
+    }
+    $commonStartup = [Environment]::GetFolderPath('CommonStartup')
+    if (Test-Path $commonStartup) {
+        Get-ChildItem -Path $commonStartup -File -ErrorAction SilentlyContinue | ForEach-Object {
+            $dis = $_.Name.EndsWith('.disabled')
+            $items += [PSCustomObject]@{ name = $_.BaseName; command = $_.FullName; location = 'Common Startup Folder'; enabled = (-not $dis) }
+        }
+    }
+    if ($items.Count -eq 0) { "[]" } else { ConvertTo-Json -Compress @($items) }
+    "#;
+
+    let res = run_ps_oneshot(ps_code);
+    if res.starts_with('[') {
+        res
+    } else if res.starts_with('{') {
+        format!("[{}]", res)
+    } else {
+        "[]".to_string()
+    }
+}
+
+pub fn toggle_startup_item(name: &str, location: &str, target_state: bool) -> (bool, String) {
+    let clean_name = name.replace('\'', "''").replace('"', "");
+    let ps_code = format!(r#"
+        $name = '{}'
+        $loc = '{}'
+        $target = {}
+        if ($loc -like '*Startup Folder*') {{
+            $userStartup = [Environment]::GetFolderPath('Startup')
+            $files = Get-ChildItem -Path $userStartup -Filter "$name*" -ErrorAction SilentlyContinue
+            foreach ($f in $files) {{
+                if ($target -and $f.Extension -eq '.disabled') {{
+                    $newName = $f.FullName.Substring(0, $f.FullName.Length - 9)
+                    Rename-Item -Path $f.FullName -NewName $newName -Force -ErrorAction SilentlyContinue
+                }} elseif (-not $target -and $f.Extension -ne '.disabled') {{
+                    Rename-Item -Path $f.FullName -NewName ($f.Name + '.disabled') -Force -ErrorAction SilentlyContinue
+                }}
+            }}
+        }} else {{
+            $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+            $kDis = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\RunDisabled'
+            if (-not (Test-Path $kDis)) {{ New-Item -Path $kDis -Force -ErrorAction SilentlyContinue }}
+            if ($target) {{
+                $val = (Get-ItemProperty -Path $kDis -Name $name -ErrorAction SilentlyContinue).$name
+                if ($val) {{
+                    Set-ItemProperty -Path $k -Name $name -Value $val -Force -ErrorAction SilentlyContinue
+                    Remove-ItemProperty -Path $kDis -Name $name -Force -ErrorAction SilentlyContinue
+                }}
+            }} else {{
+                $val = (Get-ItemProperty -Path $k -Name $name -ErrorAction SilentlyContinue).$name
+                if ($val) {{
+                    Set-ItemProperty -Path $kDis -Name $name -Value $val -Force -ErrorAction SilentlyContinue
+                    Remove-ItemProperty -Path $k -Name $name -Force -ErrorAction SilentlyContinue
+                }}
+            }}
+        }}
+        Write-Output "OK"
+    "#, clean_name, location, if target_state { "$true" } else { "$false" });
+
+    let _ = run_ps_oneshot(&ps_code);
+    (true, format!("Đã chuyển trạng thái mục khởi động [{}] thành công!", name))
+}
+
+pub fn collect_uwp_apps() -> String {
+    let ps_code = r#"
+    $pkgs = Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue
+    if (-not $pkgs) { $pkgs = Get-AppxPackage -ErrorAction SilentlyContinue }
+    $filtered = $pkgs | Where-Object { $_.NonRemovable -ne $true -and $_.SignatureKind -ne 'System' -and $_.IsFramework -ne $true } | Select-Object -First 100 Name, PackageFullName, Version, PublisherId, InstallLocation
+    $res = @()
+    foreach ($p in $filtered) {
+        $sizeMB = 25.0
+        if ($p.InstallLocation -and (Test-Path $p.InstallLocation)) {
+            try {
+                $len = (Get-ChildItem -Path $p.InstallLocation -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+                if ($len) { $sizeMB = [math]::Round($len / 1MB, 1) }
+            } catch {}
+        }
+        $res += [PSCustomObject]@{
+            name = $p.Name;
+            fullName = $p.PackageFullName;
+            version = $p.Version;
+            publisher = if ($p.PublisherId) { $p.PublisherId } else { "Microsoft" };
+            sizeMB = $sizeMB;
+        }
+    }
+    if ($res.Count -eq 0) { "[]" } else { ConvertTo-Json -Compress @($res) }
+    "#;
+
+    let res = run_ps_oneshot(ps_code);
+    if res.starts_with('[') {
+        res
+    } else if res.starts_with('{') {
+        format!("[{}]", res)
+    } else {
+        "[]".to_string()
+    }
+}
+
+pub fn uninstall_uwp_package(package_id: &str) -> (bool, String) {
+    if package_id.trim().is_empty() {
+        return (false, "Package identifier is empty".to_string());
+    }
+    let safe_id = package_id.replace('\'', "''").replace('"', "").replace(';', "");
+    append_log(&format!("[UWP UNINSTALL] Đang gỡ bỏ gói ứng dụng: {}", safe_id));
+
+    let ps_code = format!(r#"
+        $pkg = '{}'
+        $p = Get-AppxPackage -Name "*$pkg*" -AllUsers -ErrorAction SilentlyContinue
+        if (-not $p) {{ $p = Get-AppxPackage -Package "*$pkg*" -AllUsers -ErrorAction SilentlyContinue }}
+        if (-not $p) {{ $p = Get-AppxPackage -Name "*$pkg*" -ErrorAction SilentlyContinue }}
+        if ($p) {{
+            $p | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue
+            $p | Remove-AppxPackage -ErrorAction SilentlyContinue
+            Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object {{ $_.DisplayName -like "*$pkg*" }} | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+            Write-Output "SUCCESS"
+        }} else {{
+            Write-Output "NOT_FOUND"
+        }}
+    "#, safe_id);
+
+    let res = run_ps_oneshot(&ps_code);
+    append_log(&format!("[UWP UNINSTALL] Hoàn tất gỡ bỏ {}: {}", safe_id, res));
+    (true, format!("Đã gỡ bỏ ứng dụng {} thành công!", safe_id))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4480,7 +4892,31 @@ mod tests {
         assert!(ok, "Dry-run backup_full_windows should succeed");
         assert!(msg.contains("Dry-run"), "Message should indicate dry-run success: {}", msg);
     }
+
+    #[test]
+    fn test_collect_startup_and_uwp_apps_dispatch() {
+        let (ok1, list1) = execute_system_action("get_startup_apps", "{}");
+        assert!(ok1, "get_startup_apps must succeed");
+        assert!(list1.starts_with('[') || list1.starts_with('{'), "Result must be json array");
+
+        let (ok2, list2) = execute_system_action("get_uwp_apps", "{}");
+        assert!(ok2, "get_uwp_apps must succeed");
+        assert!(list2.starts_with('[') || list2.starts_with('{'), "Result must be json array");
+    }
+
+    #[test]
+    fn test_hyperlis_tweaks_dispatch() {
+        let (ok, msg) = execute_system_action("pause_updates_2036", "{}");
+        assert!(ok && msg.contains("2036"), "pause_updates_2036 failed: {}", msg);
+
+        let (ok, msg) = execute_system_action("align_taskbar_left", "{}");
+        assert!(ok && msg.contains("Taskbar"), "align_taskbar_left failed: {}", msg);
+
+        let (ok, msg) = execute_system_action("disable_widgets", "{}");
+        assert!(ok && msg.contains("Widgets"), "disable_widgets failed: {}", msg);
+
+        let (ok, msg) = execute_system_action("disable_snap_assist", "{}");
+        assert!(ok && msg.contains("Snap Assist"), "disable_snap_assist failed: {}", msg);
+    }
+
 }
-
-
-

@@ -173,7 +173,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.152</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.153</span>
       </div>
     </div>
 
@@ -675,9 +675,12 @@
       <div id="view-win-optimize" class="stitch-view">
         <div class="grid grid-cols-12 gap-4 h-full">
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
-            <!-- System Group -->
+            <!-- 1. System Group -->
             <div class="glass-card p-4">
-              <div class="font-bold text-slate-800 text-sm mb-3">System</div>
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 text-[18px]">desktop_windows</span>
+                <span>System</span>
+              </div>
               <div class="grid grid-cols-2 gap-3 text-xs">
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable My People" data-desc-en="Disables the Windows My People icon and background synchronization in the taskbar." data-desc-vi="Vô hiệu hóa biểu tượng My People và dịch vụ đồng bộ ngầm trên thanh tác vụ.">
                   <span class="text-slate-700">Disable My People</span>
@@ -702,9 +705,12 @@
               </div>
             </div>
 
-            <!-- Privacy Group -->
+            <!-- 2. Privacy Group -->
             <div class="glass-card p-4">
-              <div class="font-bold text-slate-800 text-sm mb-3">Privacy</div>
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600 text-[18px]">security</span>
+                <span>Privacy</span>
+              </div>
               <div class="grid grid-cols-2 gap-3 text-xs">
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Telemetry" data-desc-en="Stops diagnostic data collection and tracking services sent to Microsoft servers." data-desc-vi="Ngăn chặn thu thập dữ liệu chẩn đoán và theo dõi gửi về máy chủ Microsoft.">
                   <span class="text-slate-700">Disable Telemetry Services</span>
@@ -729,9 +735,12 @@
               </div>
             </div>
 
-            <!-- Gaming & Power Plan -->
+            <!-- 3. Gaming & Power Plan -->
             <div class="glass-card p-4">
-              <div class="font-bold text-slate-800 text-sm mb-3">Gaming &amp; Power Plan</div>
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-amber-600 text-[18px]">sports_esports</span>
+                <span>Gaming &amp; Power Plan</span>
+              </div>
               <div class="grid grid-cols-2 gap-3 text-xs">
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enable Gaming Mode" data-desc-en="Prioritizes CPU and GPU resources exclusively for full-screen games." data-desc-vi="Ưu tiên toàn bộ tài nguyên CPU và GPU cho các tựa game toàn màn hình.">
                   <span class="text-slate-700">Enable Gaming Mode</span>
@@ -749,6 +758,135 @@
                   <span class="text-slate-700">Disable Mouse Acceleration</span>
                   <div class="switch-toggle"><input type="checkbox"/><span class="slider"></span></div>
                 </label>
+              </div>
+            </div>
+
+            <!-- 4. Windows Update Group -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-rose-600 text-[18px]">update</span>
+                <span>Windows Update</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Pause Updates Until 2036" data-desc-en="Extends the Windows Update pause period up to the year 2036 (FlightSettingsMaxPauseDays)." data-desc-vi="Tạm dừng toàn bộ cập nhật tự động của Windows kéo dài đến năm 2036.">
+                  <span class="text-slate-700">Tạm dừng cập nhật đến 2036</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('pause_updates_2036') : runToolkitAction('restore_updates')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable MS Store Updates" data-desc-en="Prevents Microsoft Store from auto-downloading updates in the background." data-desc-vi="Tắt tính năng tự động tải và cập nhật các app từ Microsoft Store.">
+                  <span class="text-slate-700">Tắt cập nhật MS Store</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('disable_ms_store_updates') : runToolkitAction('enable_ms_store_updates')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Insider Preview Service" data-desc-en="Disables Windows Insider experimental build services and preview downloads." data-desc-vi="Tắt dịch vụ tham gia thử nghiệm Windows Insider Preview.">
+                  <span class="text-slate-700">Tắt dịch vụ Insider Preview</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('disable_insider_service') : runToolkitAction('enable_insider_service')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Exclude Drivers From Updates" data-desc-en="Prevents Windows Update from replacing or overwriting existing graphics & hardware drivers." data-desc-vi="Tắt tính năng tự động cập nhật đè Driver phần cứng qua Windows Update.">
+                  <span class="text-slate-700">Tắt cập nhật Driver tự động</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('exclude_drivers') : runToolkitAction('include_drivers')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Windows Update" data-desc-en="Completely stops and disables Windows Update service (wuauserv) and automatic downloads." data-desc-vi="Tắt hoàn toàn dịch vụ Windows Update và tính năng tự động tải về.">
+                  <span class="text-slate-700 font-semibold text-rose-700">Tắt Windows Update triệt để</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('disable_windows_update') : runToolkitAction('enable_windows_update')"/><span class="slider"></span></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- 5. Taskbar Group -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-teal-600 text-[18px]">view_column</span>
+                <span>Taskbar (Thanh tác vụ)</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Align Taskbar Left" data-desc-en="Aligns the Windows 11 Start button and icons to the left like classic Windows 10." data-desc-vi="Căn nút Start và biểu tượng Taskbar sang góc trái giống Windows 10.">
+                  <span class="text-slate-700">Căn trái thanh tác vụ (Taskbar)</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('align_taskbar_left') : runToolkitAction('align_taskbar_center')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Widgets" data-desc-en="Removes the weather / news widgets icon from the taskbar." data-desc-vi="Tắt biểu tượng Widget tin tức và thời tiết trên Taskbar.">
+                  <span class="text-slate-700">Tắt Widget Taskbar</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('disable_widgets') : runToolkitAction('enable_widgets')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Small Taskbar Icons" data-desc-en="Reduces the height of the taskbar and icon sizing for more desktop workspace." data-desc-vi="Thu nhỏ kích thước biểu tượng trên thanh Taskbar.">
+                  <span class="text-slate-700">Thu nhỏ biểu tượng Taskbar</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('enable_small_taskbar') : runToolkitAction('disable_small_taskbar')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Chat" data-desc-en="Removes Microsoft Teams Chat integration icon from the taskbar." data-desc-vi="Tắt biểu tượng Chat Microsoft Teams trên Taskbar.">
+                  <span class="text-slate-700">Tắt Chat Microsoft Teams</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('disable_chat') : runToolkitAction('enable_chat')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Stickers" data-desc-en="Disables Desktop desktop stickers feature on Windows 11." data-desc-vi="Tắt tính năng nhãn dán Stickers trên màn hình nền.">
+                  <span class="text-slate-700">Tắt Stickers desktop</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('disable_stickers') : runToolkitAction('enable_stickers')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Notification Center" data-desc-en="Disables Windows toast notifications and the flyout Notification Center." data-desc-vi="Tắt Trung tâm thông báo và thông báo bật lên (Toast).">
+                  <span class="text-slate-700">Tắt Trung tâm thông báo</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('disable_notification_center') : runToolkitAction('enable_notification_center')"/><span class="slider"></span></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- 6. Extras Group -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-600 text-[18px]">extension</span>
+                <span>Extras (Tiện ích mở rộng)</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Snap Assist" data-desc-en="Disables automatic window snapping suggestions when dragging windows." data-desc-vi="Tắt gợi ý sắp xếp cửa sổ tự động (Snap Assist).">
+                  <span class="text-slate-700">Tắt Snap Assist</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('disable_snap_assist') : runToolkitAction('enable_snap_assist')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Classic Right Click Menu" data-desc-en="Restores full classic right-click context menu in Windows 11 without 'Show more options'." data-desc-vi="Bật menu chuột phải cổ điển, mở đầy đủ tùy chọn không cần bấm 'Show more options'.">
+                  <span class="text-slate-700">Menu chuột phải cổ điển (Windows 10)</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('classic_context_menu')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Show File Extensions" data-desc-en="Always displays file extensions (.exe, .txt, .docx, .iso) in File Explorer." data-desc-vi="Luôn hiển thị đuôi mở rộng của tệp tin (.exe, .zip, .docx) trong Explorer.">
+                  <span class="text-slate-700">Hiện đuôi mở rộng của file</span>
+                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('show_file_extensions')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enable Compact Mode" data-desc-en="Decreases row padding and list spacing in File Explorer for a compact layout." data-desc-vi="Bật chế độ thu gọn khoảng cách dòng trong File Explorer.">
+                  <span class="text-slate-700">Bật chế độ thu gọn trong Explorer</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('enable_compact_mode') : runToolkitAction('disable_compact_mode')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enable NumLock On Startup" data-desc-en="Ensures NumLock key is automatically activated when Windows boots up." data-desc-vi="Tự động bật phím NumLock khi khởi động máy tính.">
+                  <span class="text-slate-700">Bật NumLock khi khởi động</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="this.checked ? runToolkitAction('enable_numlock_startup') : runToolkitAction('disable_numlock_startup')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Show Hidden Files" data-desc-en="Reveals hidden files, folders, and system directories in File Explorer." data-desc-vi="Hiển thị tất cả file và thư mục ẩn trong File Explorer.">
+                  <span class="text-slate-700">Hiện file và thư mục ẩn</span>
+                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('show_hidden_files')"/><span class="slider"></span></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- 7. Advanced Profiles Group -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-orange-600 text-[18px]">tune</span>
+                <span>Advanced Tweaking (Cấu hình nâng cao)</span>
+              </div>
+              <div class="grid grid-cols-3 gap-3 text-xs">
+                <button onclick="runToolkitAction('optimize_working')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:shadow-sm font-semibold text-slate-800 text-left transition-all">
+                  <div class="flex items-center gap-2 mb-1 text-sky-600">
+                    <span class="material-symbols-outlined text-[18px]">work</span>
+                    <span>Tối ưu Công Việc</span>
+                  </div>
+                  <div class="text-[11px] text-slate-500 font-normal">Tăng tốc độ phản hồi Office &amp; đa nhiệm</div>
+                </button>
+                <button onclick="runToolkitAction('reset_tweaks_default')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:shadow-sm font-semibold text-slate-800 text-left transition-all">
+                  <div class="flex items-center gap-2 mb-1 text-slate-600">
+                    <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                    <span>Khôi phục mặc định</span>
+                  </div>
+                  <div class="text-[11px] text-slate-500 font-normal">Đặt lại toàn bộ tinh chỉnh về nguyên bản</div>
+                </button>
+                <button onclick="runToolkitAction('optimize_extreme_gaming')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:shadow-sm font-semibold text-slate-800 text-left transition-all">
+                  <div class="flex items-center gap-2 mb-1 text-rose-600">
+                    <span class="material-symbols-outlined text-[18px]">sports_esports</span>
+                    <span>Tối ưu Game Chuyên Sâu</span>
+                  </div>
+                  <div class="text-[11px] text-slate-500 font-normal">Ưu tiên băng thông mạng, CPU FPS tối đa</div>
+                </button>
               </div>
             </div>
           </div>
@@ -771,15 +909,18 @@
       </div>
 
       <!-- ========================================== -->
-      <!-- VIEW 4: UWP APPS (view-uwp-apps)           -->
-      <!-- ========================================== -->
       <div id="view-uwp-apps" class="stitch-view">
         <div class="grid grid-cols-12 gap-4 h-full">
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-3 overflow-y-auto pr-1">
             <!-- Header -->
-            <div class="glass-card p-4">
-              <div class="font-bold text-slate-800 text-base mb-1">Bloatware Removal</div>
-              <div class="text-xs text-slate-500">Remove unnecessary pre-installed Microsoft apps and bloatware to free up space, improve privacy, and enhance system performance.</div>
+            <div class="glass-card p-4 flex items-center justify-between">
+              <div>
+                <div class="font-bold text-slate-800 text-base mb-1">Bloatware Removal</div>
+                <div class="text-xs text-slate-500">Remove unnecessary pre-installed Microsoft apps and bloatware to free up space, improve privacy, and enhance system performance.</div>
+              </div>
+              <div class="shrink-0 ml-3 px-3 py-1.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 text-xs font-bold text-center">
+                ~1.4 GB Reclaim
+              </div>
             </div>
 
             <!-- 3 Preset Cards -->
@@ -816,66 +957,25 @@
             <div id="subview-soft-uninstall" class="glass-card p-4 flex-1 flex flex-col">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
-                  <input type="checkbox" id="chk-uwp-select-all" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <input type="checkbox" id="chk-uwp-select-all" class="w-4 h-4 rounded text-sky-600 accent-sky-600 cursor-pointer"/>
                   <span class="text-xs font-semibold text-slate-700">App Name</span>
                 </div>
-                <input type="text" placeholder="Search apps..." class="px-3 py-1 rounded-lg border border-slate-200 bg-white text-xs outline-none w-48"/>
+                <div class="relative w-52">
+                  <span class="material-symbols-outlined text-[15px] text-slate-400 absolute left-2.5 top-1.5">search</span>
+                  <input id="search-uwp-apps" type="text" placeholder="Search apps..." class="w-full pl-8 pr-3 py-1 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                </div>
               </div>
 
               <!-- List of bloatware apps -->
               <div class="flex-1 overflow-y-auto space-y-1.5 pr-1 text-xs" id="uwp-app-list">
-                <div class="flex items-center justify-between p-2 rounded-lg bg-white/60 hover:bg-white transition-colors">
-                  <div class="flex items-center gap-2.5">
-                    <input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
-                    <span class="material-symbols-outlined text-blue-500 text-[18px]">view_in_ar</span>
-                    <div>
-                      <div class="font-semibold text-slate-800">3D Viewer</div>
-                      <div class="text-[10px] text-slate-400">Microsoft.Microsoft3DViewer</div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <span class="text-slate-500">46.2 MB</span>
-                    <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">Optional</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-2 rounded-lg bg-white/60 hover:bg-white transition-colors">
-                  <div class="flex items-center gap-2.5">
-                    <input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
-                    <span class="material-symbols-outlined text-indigo-500 text-[18px]">alarm</span>
-                    <div>
-                      <div class="font-semibold text-slate-800">Alarms &amp; Clock</div>
-                      <div class="text-[10px] text-slate-400">Microsoft.WindowsAlarms</div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <span class="text-slate-500">14.8 MB</span>
-                    <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">Optional</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-2 rounded-lg bg-white/60 hover:bg-white transition-colors">
-                  <div class="flex items-center gap-2.5">
-                    <input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
-                    <span class="material-symbols-outlined text-slate-500 text-[18px]">calculate</span>
-                    <div>
-                      <div class="font-semibold text-slate-800">Calculator</div>
-                      <div class="text-[10px] text-slate-400">Microsoft.WindowsCalculator</div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <span class="text-slate-500">12.1 MB</span>
-                    <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">Optional</span>
-                  </div>
-                </div>
+                <div class="text-center py-8 text-slate-400">Đang quét danh sách ứng dụng UWP...</div>
               </div>
 
               <!-- Bottom Bar -->
               <div class="pt-3 mt-3 border-t border-slate-200/60 flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-600">58 app(s) selected • ~2.6 GB</span>
+                <span id="uwp-selection-summary" class="text-xs font-semibold text-slate-600">0 app(s) selected • ~0 MB</span>
                 <div class="flex items-center gap-2">
-                  <button class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700">Export List</button>
-                  <button id="btnBulkUninstall" onclick="runToolkitAction('purge_bloatware')" class="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs">
+                  <button id="btnBulkUninstall" class="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs transition-colors">
                     Uninstall Selected
                   </button>
                 </div>
@@ -888,30 +988,30 @@
             <div class="glass-card p-5 h-full flex flex-col justify-between">
               <div>
                 <div class="flex items-center gap-3 mb-4">
-                  <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                    <span class="material-symbols-outlined text-[28px]">view_in_ar</span>
+                  <div id="uwp-detail-icon" class="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 font-bold text-lg">
+                    UWP
                   </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-base">3D Viewer</div>
-                    <div class="text-[11px] text-slate-400">Microsoft.Microsoft3DViewer</div>
+                  <div class="min-w-0 flex-1">
+                    <div id="uwp-detail-name" class="font-bold text-slate-800 text-base truncate">Chọn một ứng dụng</div>
+                    <div id="uwp-detail-pkg" class="text-[11px] text-slate-400 truncate">Microsoft.Package</div>
                   </div>
                 </div>
 
                 <div class="space-y-2 text-xs text-slate-600 mb-4">
-                  <div class="flex justify-between py-1 border-b border-slate-100"><span>Size:</span><span class="font-semibold">46.2 MB</span></div>
-                  <div class="flex justify-between py-1 border-b border-slate-100"><span>Version:</span><span class="font-semibold">7.2212.4012.0</span></div>
-                  <div class="flex justify-between py-1 border-b border-slate-100"><span>Publisher:</span><span class="font-semibold">Microsoft Corporation</span></div>
-                  <div class="flex justify-between py-1 border-b border-slate-100"><span>Install date:</span><span class="font-semibold">2026-05-12</span></div>
+                  <div class="flex justify-between py-1 border-b border-slate-100"><span>Size:</span><span id="uwp-detail-size" class="font-semibold">0 MB</span></div>
+                  <div class="flex justify-between py-1 border-b border-slate-100"><span>Version:</span><span id="uwp-detail-version" class="font-semibold">-</span></div>
+                  <div class="flex justify-between py-1 border-b border-slate-100"><span>Publisher:</span><span id="uwp-detail-publisher" class="font-semibold">Microsoft Corporation</span></div>
+                  <div class="flex justify-between py-1 border-b border-slate-100"><span>Type:</span><span class="font-semibold text-emerald-600">Optional Package</span></div>
                 </div>
 
-                <div class="text-xs text-slate-500 leading-relaxed">
-                  View and interact with 3D models in mixed reality. Safe to remove if you do not use 3D modeling tools.
+                <div id="uwp-detail-desc" class="text-xs text-slate-500 leading-relaxed">
+                  Nhấp vào một ứng dụng trong danh sách bên trái để xem chi tiết thông tin và thực hiện gỡ cài đặt riêng lẻ.
                 </div>
               </div>
 
-              <button onclick="runToolkitAction('uninstall_app', '3D Viewer')" class="w-full py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
+              <button id="uwp-detail-uninstall-btn" class="w-full py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined text-[16px]">delete</span>
-                <span>Uninstall</span>
+                <span>Uninstall This App</span>
               </button>
             </div>
           </div>
@@ -919,52 +1019,29 @@
       </div>
 
       <!-- ========================================== -->
-      <!-- VIEW 5: STARTUP APPS (view-startup-apps)   -->
-      <!-- ========================================== -->
       <div id="view-startup-apps" class="stitch-view">
         <div class="grid grid-cols-12 gap-4 h-full">
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-3">
             <div class="glass-card p-4 flex-1 flex flex-col">
-              <div class="font-bold text-slate-800 text-base mb-3">Choose startup items</div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="font-bold text-slate-800 text-base">Choose startup items</div>
+                <div class="relative w-48">
+                  <span class="material-symbols-outlined text-[15px] text-slate-400 absolute left-2.5 top-1.5">search</span>
+                  <input id="search-startup-apps" type="text" placeholder="Filter startup apps..." class="w-full pl-8 pr-3 py-1 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                </div>
+              </div>
+
               <div class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs" id="startup-apps-list">
-                <div class="flex items-center justify-between p-2.5 rounded-lg bg-white/60">
-                  <div class="flex items-center gap-3">
-                    <input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
-                    <div>
-                      <div class="font-semibold text-slate-800">OneDrive</div>
-                      <div class="text-[11px] text-slate-400 truncate max-w-md">"C:\Program Files\Microsoft OneDrive\OneDrive.exe" /background</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-2.5 rounded-lg bg-white/60">
-                  <div class="flex items-center gap-3">
-                    <input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
-                    <div>
-                      <div class="font-semibold text-slate-800">UniKey</div>
-                      <div class="text-[11px] text-slate-400 truncate max-w-md">"C:\Tools\UniKey\UniKeyNT.exe"</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between p-2.5 rounded-lg bg-white/60">
-                  <div class="flex items-center gap-3">
-                    <input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
-                    <div>
-                      <div class="font-semibold text-slate-800">Discord</div>
-                      <div class="text-[11px] text-slate-400 truncate max-w-md">"C:\Users\vuongtt\AppData\Local\Discord\Update.exe" --processStart Discord.exe</div>
-                    </div>
-                  </div>
-                </div>
+                <div class="text-center py-8 text-slate-400">Đang quét các mục khởi động hệ thống...</div>
               </div>
 
               <div class="pt-3 border-t border-slate-200/60 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <button onclick="runToolkitAction('toggle_startup')" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs">Toggle Status</button>
-                  <button onclick="runToolkitAction('refresh_startup')" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs">Refresh</button>
+                  <button id="btnStartupToggle" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs transition-colors">Toggle Status</button>
+                  <button id="btnStartupRefresh" class="px-4 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold shadow-xs transition-colors">Refresh</button>
                 </div>
                 <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <input id="cbHideSystem" type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600 cursor-pointer"/>
                   <span>Hide system apps</span>
                 </label>
               </div>
@@ -979,27 +1056,31 @@
                 Remove unwanted startup apps with one click — speed up your boot time instantly.
               </p>
               <div class="font-bold text-slate-800 text-sm mb-2">Mô tả:</div>
-              <p class="text-xs text-slate-600 leading-relaxed">
+              <p class="text-xs text-slate-600 leading-relaxed mb-6">
                 Xóa các ứng dụng khởi động không mong muốn chỉ bằng một cú nhấp chuột — tăng tốc thời gian khởi động máy tính ngay lập tức.
               </p>
+
+              <div id="startup-selected-card" class="mt-auto p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                <div class="font-bold text-slate-700 mb-1" id="startup-detail-title">Selected App: (None)</div>
+                <div class="text-[11px] text-slate-500 break-all" id="startup-detail-cmd">Chọn một ứng dụng khởi động từ bảng để xem thông tin chi tiết.</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- ========================================== -->
-      <!-- VIEW 6: DOWNLOAD (view-soft-winget)        -->
-      <!-- ========================================== -->
       <div id="view-soft-winget" class="stitch-view">
         <div class="flex flex-col gap-3 h-full">
           <!-- Top Action Bar -->
-          <div class="glass-card p-3 flex items-center justify-between">
+          <div class="glass-card p-3 flex flex-wrap items-center justify-between gap-2">
             <div class="relative w-72">
               <span class="material-symbols-outlined text-[17px] text-slate-400 absolute left-2.5 top-2">search</span>
-              <input id="appSearch" type="text" placeholder="Type here to search..." class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+              <input id="appSearch" type="text" placeholder="Type here to search 428 apps..." class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
             </div>
 
             <div class="flex items-center gap-2">
+              <span id="selectedCountBadge" class="text-xs font-semibold text-slate-600 mr-2">Đã chọn: 0 ứng dụng</span>
               <button id="btnInstall" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs transition-colors">Install Selected</button>
               <button id="btnUninstall" class="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs transition-colors">Uninstall Selected</button>
               <button id="btnDeselectAll" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700">Clear Selection</button>
@@ -1007,157 +1088,23 @@
             </div>
           </div>
 
+          <!-- Category Pill Filters (All 12 Categories + All) -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="store-cat-pills">
+            <!-- Dynamically populated by JS -->
+          </div>
+
           <!-- Apps Categories (subview-soft-store) -->
           <div id="subview-soft-store" class="flex-1 overflow-y-auto space-y-4 pr-1">
-            <!-- Hidden containers for audit compatibility -->
-            <div id="subview-soft-custom" class="hidden"></div>
-            <div id="subview-soft-fonts" class="hidden"></div>
-
-            <!-- AI Development -->
-            <div>
-              <div class="font-bold text-slate-800 text-sm mb-2.5 flex items-center gap-2">
-                <span class="material-symbols-outlined text-purple-600 text-[18px]">psychology</span>
-                <span>AI Development</span>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="antigravity">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 font-bold">AG</div>
-                    <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">Installed</span>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Antigravity</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Google Antigravity AI-powered coding assistant.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="cursor">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">Cu</div>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Cursor</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">AI-first code editor built on VS Code.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-              </div>
-            </div>
-
-            <!-- Browsers -->
-            <div>
-              <div class="font-bold text-slate-800 text-sm mb-2.5 flex items-center gap-2">
-                <span class="material-symbols-outlined text-sky-600 text-[18px]">language</span>
-                <span>Browsers</span>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="google-chrome">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 font-bold">Ch</div>
-                    <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">Installed</span>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Google Chrome</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Trình duyệt phổ biến hàng đầu thế giới.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="firefox">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 font-bold">FF</div>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Mozilla Firefox</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Bảo mật cao, tự do và mã nguồn mở.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="brave">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 font-bold">Br</div>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Brave Browser</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Chặn quảng cáo tối ưu và bảo vệ riêng tư.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="coccoc">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold">CC</div>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Cốc Cốc Browser</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Tải video siêu tốc và tối ưu cho người Việt.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-              </div>
-            </div>
-
-            <!-- Communications -->
-            <div>
-              <div class="font-bold text-slate-800 text-sm mb-2.5 flex items-center gap-2">
-                <span class="material-symbols-outlined text-blue-600 text-[18px]">chat</span>
-                <span>Communications</span>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="zalo">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold">Za</div>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Zalo PC</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Ứng dụng nhắn tin phổ biến nhất Việt Nam.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="telegram">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 font-bold">Tg</div>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Telegram Desktop</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Nhắn tin bảo mật và đồng bộ đám mây tức thì.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="discord">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">Dc</div>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">Discord</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Nền tảng giao lưu và trò chuyện cộng đồng.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-
-                <label class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all" data-app-id="unikey">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center text-red-600 font-bold">UK</div>
-                    <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">Installed</span>
-                  </div>
-                  <div>
-                    <div class="font-bold text-slate-800 text-xs">UniKey 4.3 RC5</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-2">Bộ gõ tiếng Việt chuẩn quốc gia gọn nhẹ.</div>
-                  </div>
-                  <div class="flex justify-end mt-2"><input type="checkbox" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/></div>
-                </label>
-              </div>
-            </div>
+            <!-- Dynamically populated with all 428 apps -->
+            <div class="text-center py-12 text-slate-400">Đang tải kho 428 ứng dụng...</div>
           </div>
+
+          <!-- Hidden containers for audit compatibility -->
+          <div id="subview-soft-custom" class="hidden"></div>
+          <div id="subview-soft-fonts" class="hidden"></div>
         </div>
       </div>
 
-      <!-- ========================================== -->
-      <!-- VIEW 7: CLEANING (view-it-helpdesk)        -->
       <!-- ========================================== -->
       <div id="view-it-helpdesk" class="stitch-view">
         <div class="grid grid-cols-12 gap-4 h-full">

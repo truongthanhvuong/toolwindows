@@ -1,3 +1,20 @@
+
+  // Global Image Error Fallback Handler
+  window.addEventListener("error", function (e) {
+    if (e.target && e.target.tagName === "IMG") {
+      e.target.style.display = "none";
+      const parent = e.target.parentElement;
+      if (parent && !parent.querySelector(".img-fallback-badge")) {
+        const alt = e.target.getAttribute("alt") || "App";
+        const initial = alt.charAt(0).toUpperCase();
+        const badge = document.createElement("div");
+        badge.className = "img-fallback-badge w-9 h-9 rounded-lg bg-sky-100 text-sky-700 font-bold flex items-center justify-center shrink-0 text-sm border border-sky-300 shadow-2xs";
+        badge.textContent = initial;
+        parent.insertBefore(badge, e.target);
+      }
+    }
+  }, true);
+
 /**
  * ============================================================================
  * VUONGTT TOOL PRO 2026 — FRONTEND ROUTER & RUST (TAURI V2) IPC CONTROLLER
@@ -657,155 +674,632 @@
     const storeView = document.getElementById("view-soft-winget");
     if (!storeView) return;
 
-    // Map application names to package identifiers
-    const appMap = {
-      "Google Chrome": "google-chrome",
-      "Zalo PC": "zalo",
-      "Mozilla Firefox": "firefox",
-      "Microsoft Edge": "edge",
-      "Brave Browser": "brave",
-      "Cốc Cốc Browser": "coccoc",
-      "Telegram Desktop": "telegram",
-      "Discord": "discord",
-      "Visual Studio Code": "vscode",
-      "Git for Windows": "git",
-      "NodeJS (LTS)": "nodejs",
-      "Python 3.12": "python",
-      "UltraViewer": "ultraviewer",
-      "UniKey": "unikey",
+    let allApps = [];
+    let currentCategory = "All";
+    let searchQuery = "";
+    const selectedAppIds = new Set();
+
+    const catIcons = {
+      "All": "apps",
+      "Browsers": "language",
+      "Communications": "chat",
+      "Development": "code",
+      "AI Development": "psychology",
+      "Document": "description",
+      "Multimedia Tools": "movie",
+      "For Designer & Video Editor": "draw",
+      "Utilities": "build",
+      "Microsoft Tools": "window",
+      "Pro Tools": "terminal",
+      "Games": "sports_esports",
+      "Ping & Latency Tools": "speed"
     };
 
     function updateCartCount() {
-      const checkedBoxes = storeView.querySelectorAll("input[type='checkbox']:checked");
       const selectionBadges = storeView.querySelectorAll("#selectedCountBadge, span");
       selectionBadges.forEach((s) => {
         if (s.id === "selectedCountBadge" || (s.textContent && s.textContent.includes("Đã chọn:"))) {
-          s.textContent = `Đã chọn: ${checkedBoxes.length} ứng dụng`;
+          s.textContent = "Đã chọn: " + selectedAppIds.size + " ứng dụng";
         }
       });
     }
 
-    // Toggle card on click
-    storeView.querySelectorAll(".grid > div").forEach((card) => {
-      const cb = card.querySelector("input[type='checkbox']");
-      if (!cb) return;
+    function renderCategoryPills(categories) {
+      const pillsContainer = document.getElementById("store-cat-pills");
+      if (!pillsContainer) return;
+      pillsContainer.innerHTML = "";
 
-      card.addEventListener("click", (e) => {
-        if (e.target.tagName !== "INPUT") {
-          cb.checked = !cb.checked;
-          updateCartCount();
-        }
-      });
-      cb.addEventListener("change", updateCartCount);
-    });
+      const catsWithCounts = [
+        { name: "All", count: allApps.length },
+        ...categories.map(c => ({
+          name: c,
+          count: allApps.filter(a => a.category === c).length
+        }))
+      ];
 
-    // Select All / Deselect All
-    const btnSelAll = document.getElementById("btnSelectAll");
-    const btnDeselAll = document.getElementById("btnDeselectAll");
+      catsWithCounts.forEach(cat => {
+        const btn = document.createElement("button");
+        const isActive = cat.name === currentCategory;
+        btn.className = "px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer " +
+          (isActive 
+            ? "bg-sky-500 text-white shadow-xs" 
+            : "bg-surface-container hover:bg-surface-container-high text-slate-700");
+        
+        const iconName = catIcons[cat.name] || "category";
+        btn.innerHTML = '<span class="material-symbols-outlined text-[15px]">' + iconName + '</span>' +
+          '<span>' + cat.name + '</span>' +
+          '<span class="text-[10px] px-1.5 py-0.2 rounded-full ' + (isActive ? "bg-white/25 text-white" : "bg-slate-200 text-slate-600") + '">' + cat.count + '</span>';
 
-    if (btnSelAll) {
-      btnSelAll.addEventListener("click", (e) => {
-        e.preventDefault();
-        storeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = true));
-        updateCartCount();
-        showToast("Kho Phần Mềm", "Đã chọn toàn bộ danh sách phần mềm!", "info");
-      });
-    }
-
-    if (btnDeselAll) {
-      btnDeselAll.addEventListener("click", (e) => {
-        e.preventDefault();
-        storeView.querySelectorAll("input[type='checkbox']").forEach((cb) => (cb.checked = false));
-        updateCartCount();
-        showToast("Kho Phần Mềm", "Đã bỏ chọn toàn bộ phần mềm.", "info");
-      });
-    }
-
-    // Category Filter Pills Handler (Sử dụng trực tiếp thuộc tính data-cat)
-    const filterPills = storeView.querySelectorAll(".mb-space-lg button");
-    const categoryContainers = storeView.querySelectorAll(".category-pod, .xl\\:col-span-9 > div");
-
-    filterPills.forEach((pill) => {
-      pill.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        filterPills.forEach((p) => {
-          p.className = "px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors flex-shrink-0 cursor-pointer";
+        btn.addEventListener("click", () => {
+          currentCategory = cat.name;
+          renderCategoryPills(categories);
+          renderApps();
         });
-        pill.className = "px-3 py-1.5 rounded-full font-label-md text-label-md bg-primary-container text-on-primary-container shadow-sm flex-shrink-0 flex items-center gap-1.5 font-bold cursor-pointer";
+        pillsContainer.appendChild(btn);
+      });
+    }
 
-        const cat = pill.getAttribute("data-cat") || "all";
+    function renderApps() {
+      const container = document.getElementById("subview-soft-store");
+      if (!container) return;
 
-        categoryContainers.forEach((pod) => {
-          const podCat = pod.getAttribute("data-cat") || "";
-          if (cat === "all" || podCat === cat) {
-            pod.style.display = "";
-          } else {
-            pod.style.display = "none";
+      const q = searchQuery.toLowerCase().trim();
+      const filtered = allApps.filter(app => {
+        const matchCat = (currentCategory === "All") || (app.category === currentCategory);
+        if (!matchCat) return false;
+        if (!q) return true;
+        return (app.content && app.content.toLowerCase().includes(q)) ||
+               (app.description && app.description.toLowerCase().includes(q)) ||
+               (app.winget && app.winget.toLowerCase().includes(q)) ||
+               (app.category && app.category.toLowerCase().includes(q));
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="text-center py-12 text-slate-400 text-xs">Không tìm thấy ứng dụng phù hợp với từ khóa "' + searchQuery + '"</div>';
+        return;
+      }
+
+      // Group by category if All, or single category
+      let html = "";
+      const grouped = {};
+      filtered.forEach(app => {
+        const cat = app.category || "Utilities";
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(app);
+      });
+
+      Object.keys(grouped).forEach(cat => {
+        const appsInCat = grouped[cat];
+        const iconName = catIcons[cat] || "folder";
+        html += '<div class="mb-4">' +
+          '<div class="font-bold text-slate-800 text-sm mb-2.5 flex items-center gap-2">' +
+            '<span class="material-symbols-outlined text-sky-600 text-[18px]">' + iconName + '</span>' +
+            '<span>' + cat + '</span>' +
+            '<span class="text-[11px] font-normal text-slate-400">(' + appsInCat.length + ')</span>' +
+          '</div>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">';
+
+        appsInCat.forEach(app => {
+          const isChecked = selectedAppIds.has(app.id);
+          const initial = (app.content || "A").substring(0, 2).toUpperCase();
+          const pkg = app.winget || app.choco || app.id;
+          
+          html += '<div class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all ' + (isChecked ? 'ring-2 ring-sky-500/50 bg-sky-50/40' : '') + '" data-app-key="' + app.id + '">' +
+            '<div class="flex items-start justify-between mb-2">' +
+              '<div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-100 text-sky-700 font-bold text-xs flex items-center justify-center shrink-0 border border-sky-200/60 shadow-2xs">' +
+                initial +
+              '</div>' +
+              '<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold text-[10px] truncate max-w-[100px]">' + (app.category || 'App') + '</span>' +
+            '</div>' +
+            '<div class="min-w-0 flex-1">' +
+              '<div class="font-bold text-slate-800 text-xs truncate" title="' + (app.content || '') + '">' + (app.content || app.id) + '</div>' +
+              '<div class="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-snug" title="' + (app.description || '') + '">' + (app.description || pkg) + '</div>' +
+            '</div>' +
+            '<div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">' +
+              '<span class="text-[10px] text-slate-400 font-mono truncate max-w-[120px]">' + pkg + '</span>' +
+              '<input type="checkbox" ' + (isChecked ? 'checked' : '') + ' class="w-4 h-4 rounded text-sky-600 accent-sky-600 cursor-pointer app-checkbox" data-app-key="' + app.id + '"/>' +
+            '</div>' +
+          '</div>';
+        });
+
+        html += '</div></div>';
+      });
+
+      container.innerHTML = html;
+
+      // Event listeners for app cards and checkboxes
+      container.querySelectorAll(".app-card").forEach(card => {
+        const key = card.getAttribute("data-app-key");
+        const cb = card.querySelector(".app-checkbox");
+
+        card.addEventListener("click", (e) => {
+          if (e.target.tagName !== "INPUT") {
+            if (selectedAppIds.has(key)) {
+              selectedAppIds.delete(key);
+              cb.checked = false;
+              card.classList.remove("ring-2", "ring-sky-500/50", "bg-sky-50/40");
+            } else {
+              selectedAppIds.add(key);
+              cb.checked = true;
+              card.classList.add("ring-2", "ring-sky-500/50", "bg-sky-50/40");
+            }
+            updateCartCount();
           }
         });
-      });
-    });
 
-    // Realtime Search Filter
+        if (cb) {
+          cb.addEventListener("change", () => {
+            if (cb.checked) {
+              selectedAppIds.add(key);
+              card.classList.add("ring-2", "ring-sky-500/50", "bg-sky-50/40");
+            } else {
+              selectedAppIds.delete(key);
+              card.classList.remove("ring-2", "ring-sky-500/50", "bg-sky-50/40");
+            }
+            updateCartCount();
+          });
+        }
+      });
+    }
+
+    async function loadStoreData() {
+      try {
+        const resp = await invokeRust("get_store_applications");
+        let rawData = null;
+        if (resp && resp.data) {
+          rawData = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+        } else {
+          const fetchResp = await fetch("applications.json");
+          rawData = await fetchResp.json();
+        }
+
+        if (rawData) {
+          allApps = Object.keys(rawData).map(k => ({
+            id: k,
+            ...rawData[k]
+          }));
+
+          const categories = Array.from(new Set(allApps.map(a => a.category).filter(Boolean)));
+          renderCategoryPills(categories);
+          renderApps();
+        }
+      } catch (err) {
+        console.warn("Could not load applications dynamically:", err);
+      }
+    }
+
+    // Search bar
     const searchInput = document.getElementById("appSearch");
     if (searchInput) {
       searchInput.addEventListener("input", (e) => {
-        const query = (e.target.value || "").toLowerCase().trim();
-        storeView.querySelectorAll(".app-card").forEach((card) => {
-          const cardText = card.textContent.toLowerCase();
-          card.style.display = cardText.includes(query) ? "" : "none";
-        });
+        searchQuery = e.target.value;
+        renderApps();
       });
     }
 
-    // Action button: Cài Đặt / Update
+    // Select All
+    const btnSelAll = document.getElementById("btnSelectAll");
+    if (btnSelAll) {
+      btnSelAll.addEventListener("click", (e) => {
+        e.preventDefault();
+        allApps.forEach(a => selectedAppIds.add(a.id));
+        renderApps();
+        updateCartCount();
+        showToast("Kho Phần Mềm", "Đã chọn toàn bộ " + allApps.length + " ứng dụng!", "info");
+      });
+    }
+
+    // Deselect All
+    const btnDeselAll = document.getElementById("btnDeselectAll");
+    if (btnDeselAll) {
+      btnDeselAll.addEventListener("click", (e) => {
+        e.preventDefault();
+        selectedAppIds.clear();
+        renderApps();
+        updateCartCount();
+        showToast("Kho Phần Mềm", "Đã bỏ chọn toàn bộ ứng dụng.", "info");
+      });
+    }
+
+    // Install Selected
     const btnInstall = document.getElementById("btnInstall");
     if (btnInstall) {
       btnInstall.addEventListener("click", async (e) => {
         e.preventDefault();
-        const selectedApps = [];
-        storeView.querySelectorAll(".app-card").forEach((card) => {
-          const cb = card.querySelector("input[type='checkbox']");
-          if (cb && cb.checked) {
-            const appId = card.dataset.appId || card.getAttribute("data-app-id") || "";
-            if (appId) selectedApps.push(appId);
-          }
-        });
-
-        if (selectedApps.length === 0) {
-          showToast("Kho Phần Mềm", "Vui lòng tích chọn ít nhất 1 ứng dụng để cài đặt!", "warning");
+        if (selectedAppIds.size === 0) {
+          showToast("Cài Đặt", "Vui lòng chọn ít nhất 1 ứng dụng để cài đặt!", "warning");
           return;
         }
 
-        showToast("Đang Cài Đặt", `Đang gửi lệnh cài đặt ${selectedApps.length} ứng dụng tới nhân Windows...`, "info");
-        const res = await invokeRust("run_system_action", {
-          actionId: "install_apps",
-          apps: selectedApps,
-          params: { apps: selectedApps },
-        });
+        const selectedApps = allApps.filter(a => selectedAppIds.has(a.id));
+        const appNames = selectedApps.map(a => a.content || a.id).join(", ");
+        showToast("Cài Đặt", "Đang tiến hành cài đặt " + selectedApps.length + " ứng dụng qua Winget...", "info");
 
-        if (res && res.success) {
-          showToast("Đang Tiến Hành", res.message, "success");
-        } else {
-          showToast("Lỗi Cài Đặt", (res && res.message) || "Không thể thực thi lệnh cài đặt", "error");
+        for (const app of selectedApps) {
+          const pkgId = app.winget || app.choco || app.id;
+          try {
+            await invokeRust("install_apps", { app: pkgId, name: app.content || pkgId });
+          } catch (ex) {
+            console.error("Install failed for", pkgId, ex);
+          }
         }
+        showToast("Hoàn Tất", "Đã kích hoạt quá trình cài đặt hàng loạt!", "success");
       });
     }
 
-    // Action button: Gỡ Cài Đặt
+    // Uninstall Selected
     const btnUninstall = document.getElementById("btnUninstall");
     if (btnUninstall) {
       btnUninstall.addEventListener("click", async (e) => {
         e.preventDefault();
-        showToast("Gỡ Ứng Dụng", "Đang mở trình gỡ cài đặt Programs and Features...", "info");
-        await invokeRust("run_system_action", { actionId: "uninstall_apps" });
+        if (selectedAppIds.size === 0) {
+          showToast("Gỡ Ứng Dụng", "Vui lòng chọn ít nhất 1 ứng dụng để gỡ bỏ!", "warning");
+          return;
+        }
+        const selectedApps = allApps.filter(a => selectedAppIds.has(a.id));
+        showToast("Gỡ Ứng Dụng", "Đang thực hiện gỡ cài đặt " + selectedApps.length + " ứng dụng...", "warning");
+        for (const app of selectedApps) {
+          const pkgId = app.winget || app.choco || app.id;
+          await invokeRust("run_system_action", { actionId: "uninstall_app", target: pkgId });
+        }
+        showToast("Hoàn Tất", "Đã gửi yêu cầu gỡ bỏ các ứng dụng được chọn!", "info");
       });
+    }
+
+    loadStoreData();
+  }
+
+  // --- STARTUP APPS DYNAMIC CONTROLLER ---
+  let gAllStartupItems = [];
+  async function loadStartupApps() {
+    const listEl = document.getElementById("startup-apps-list");
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">Đang quét danh sách ứng dụng khởi động từ Registry &amp; Startup folder...</div>';
+
+    try {
+      const resp = await invokeRust("get_startup_apps");
+      let items = [];
+      if (resp && resp.data) {
+        items = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+      }
+      gAllStartupItems = Array.isArray(items) ? items : [items];
+      renderStartupApps();
+    } catch (err) {
+      listEl.innerHTML = '<div class="text-center py-8 text-rose-500 text-xs">Lỗi khi tải danh sách khởi động: ' + err + '</div>';
     }
   }
 
-  // --- 7. DISK S.M.A.R.T REALTIME CONTROLLER ---
+  function renderStartupApps() {
+    const listEl = document.getElementById("startup-apps-list");
+    if (!listEl) return;
+
+    const hideSys = document.getElementById("cbHideSystem") ? document.getElementById("cbHideSystem").checked : true;
+    const filterQuery = (document.getElementById("search-startup-apps") ? document.getElementById("search-startup-apps").value : "").toLowerCase().trim();
+
+    const filtered = gAllStartupItems.filter(item => {
+      const name = (item.name || "").toLowerCase();
+      const cmd = (item.command || "").toLowerCase();
+      if (hideSys) {
+        if (cmd.includes("\windows\system32") || cmd.includes("\windows\syswow64") || name.includes("securityhealth") || name.includes("ctfmon")) {
+          return false;
+        }
+      }
+      if (filterQuery) {
+        return name.includes(filterQuery) || cmd.includes(filterQuery);
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">Không có mục khởi động nào phù hợp.</div>';
+      return;
+    }
+
+    let html = "";
+    filtered.forEach((item, idx) => {
+      const isDis = item.enabled === false;
+      const locBadge = item.location || "Registry";
+      html += '<div class="startup-item-row flex items-center justify-between p-2.5 rounded-lg bg-white/70 hover:bg-white cursor-pointer border border-slate-100 transition-all" data-idx="' + idx + '" data-name="' + (item.name || '') + '" data-loc="' + (item.location || '') + '" data-cmd="' + (item.command || '').replace(/"/g, '&quot;') + '" data-enabled="' + (item.enabled !== false) + '">' +
+        '<div class="flex items-center gap-3 min-w-0 flex-1">' +
+          '<input type="checkbox" class="w-4 h-4 rounded text-sky-600 accent-sky-600 cursor-pointer startup-cb" data-name="' + (item.name || '') + '" data-loc="' + (item.location || '') + '"/>' +
+          '<div class="min-w-0 flex-1">' +
+            '<div class="font-semibold text-slate-800 text-xs flex items-center gap-2">' +
+              '<span>' + (item.name || 'Startup Item') + '</span>' +
+              '<span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-normal">' + locBadge + '</span>' +
+            '</div>' +
+            '<div class="text-[11px] text-slate-400 truncate max-w-lg mt-0.5" title="' + (item.command || '') + '">' + (item.command || '') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-2 shrink-0 ml-3">' +
+          (isDis 
+            ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 font-semibold">Disabled</span>'
+            : '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">Enabled</span>') +
+          '<button class="px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ' + (isDis ? 'bg-sky-50 hover:bg-sky-100 text-sky-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700') + ' btn-item-toggle" data-name="' + (item.name || '') + '" data-loc="' + (item.location || '') + '" data-target="' + (isDis ? 'true' : 'false') + '">' +
+            (isDis ? 'Bật' : 'Tắt') +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    });
+
+    listEl.innerHTML = html;
+
+    // Hover & Click Details
+    listEl.querySelectorAll(".startup-item-row").forEach(row => {
+      row.addEventListener("mouseenter", () => {
+        const titleEl = document.getElementById("startup-detail-title");
+        const cmdEl = document.getElementById("startup-detail-cmd");
+        if (titleEl) titleEl.textContent = "Selected: " + row.getAttribute("data-name") + " (" + row.getAttribute("data-loc") + ")";
+        if (cmdEl) cmdEl.textContent = row.getAttribute("data-cmd") || "";
+      });
+
+      row.querySelector(".btn-item-toggle").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const name = e.target.getAttribute("data-name");
+        const loc = e.target.getAttribute("data-loc");
+        const targetState = e.target.getAttribute("data-target") === "true";
+        showToast("Startup Apps", "Đang chuyển trạng thái " + name + "...", "info");
+        await invokeRust("toggle_startup_app", { name, location: loc, enabled: targetState });
+        await loadStartupApps();
+      });
+    });
+  }
+
+  function initStartupAppsController() {
+    const btnToggle = document.getElementById("btnStartupToggle");
+    const btnRefresh = document.getElementById("btnStartupRefresh");
+    const cbHide = document.getElementById("cbHideSystem");
+    const searchInput = document.getElementById("search-startup-apps");
+
+    if (btnRefresh) {
+      btnRefresh.addEventListener("click", () => {
+        showToast("Startup Apps", "Đang làm mới danh sách khởi động...", "info");
+        loadStartupApps();
+      });
+    }
+
+    if (cbHide) {
+      cbHide.addEventListener("change", () => renderStartupApps());
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener("input", () => renderStartupApps());
+    }
+
+    if (btnToggle) {
+      btnToggle.addEventListener("click", async () => {
+        const checked = document.querySelectorAll(".startup-cb:checked");
+        if (checked.length === 0) {
+          showToast("Startup Apps", "Vui lòng tích chọn ít nhất 1 mục để chuyển trạng thái!", "warning");
+          return;
+        }
+        for (const cb of checked) {
+          const name = cb.getAttribute("data-name");
+          const loc = cb.getAttribute("data-loc");
+          await invokeRust("toggle_startup_app", { name, location: loc, enabled: false });
+        }
+        showToast("Startup Apps", "Đã cập nhật trạng thái các mục được chọn!", "success");
+        await loadStartupApps();
+      });
+    }
+
+    loadStartupApps();
+  }
+
+  // --- UWP BLOATWARE REMOVAL DYNAMIC CONTROLLER ---
+  let gAllUwpApps = [];
+  let gUwpPresets = { safe: [], recommended: [] };
+  let gSelectedUwpNames = new Set();
+  let gCurrentUwpDetail = null;
+
+  async function loadUwpApps() {
+    const listEl = document.getElementById("uwp-app-list");
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">Đang quét các gói UWP AppX từ hệ thống...</div>';
+
+    try {
+      const [appResp, presetResp] = await Promise.all([
+        invokeRust("get_uwp_apps"),
+        invokeRust("get_uwp_presets")
+      ]);
+
+      if (presetResp && presetResp.data) {
+        gUwpPresets = typeof presetResp.data === "string" ? JSON.parse(presetResp.data) : presetResp.data;
+      }
+
+      let apps = [];
+      if (appResp && appResp.data) {
+        apps = typeof appResp.data === "string" ? JSON.parse(appResp.data) : appResp.data;
+      }
+      gAllUwpApps = Array.isArray(apps) ? apps : [apps];
+      
+      // Default select safe preset
+      selectBloatwarePreset("safe");
+    } catch (err) {
+      listEl.innerHTML = '<div class="text-center py-8 text-rose-500 text-xs">Lỗi tải UWP Apps: ' + err + '</div>';
+    }
+  }
+
+  function updateUwpSummary() {
+    const summaryEl = document.getElementById("uwp-selection-summary");
+    if (!summaryEl) return;
+    let totalMB = 0;
+    gAllUwpApps.forEach(a => {
+      if (gSelectedUwpNames.has(a.name) || gSelectedUwpNames.has(a.fullName)) {
+        totalMB += (a.sizeMB || 25);
+      }
+    });
+    const sizeStr = totalMB > 1024 ? (totalMB / 1024).toFixed(1) + " GB" : Math.round(totalMB) + " MB";
+    summaryEl.textContent = gSelectedUwpNames.size + " app(s) selected • ~" + sizeStr;
+  }
+
+  function updateUwpDetailPanel(app) {
+    gCurrentUwpDetail = app;
+    const nameEl = document.getElementById("uwp-detail-name");
+    const pkgEl = document.getElementById("uwp-detail-pkg");
+    const sizeEl = document.getElementById("uwp-detail-size");
+    const verEl = document.getElementById("uwp-detail-version");
+    const pubEl = document.getElementById("uwp-detail-publisher");
+    const descEl = document.getElementById("uwp-detail-desc");
+    const iconEl = document.getElementById("uwp-detail-icon");
+
+    if (!app) return;
+    if (nameEl) nameEl.textContent = app.name || "UWP Application";
+    if (pkgEl) pkgEl.textContent = app.fullName || app.name;
+    if (sizeEl) sizeEl.textContent = (app.sizeMB || 25) + " MB";
+    if (verEl) verEl.textContent = app.version || "1.0.0.0";
+    if (pubEl) pubEl.textContent = app.publisher || "Microsoft Corporation";
+    if (descEl) descEl.textContent = "Gói ứng dụng Windows Universal AppX. Có thể gỡ bỏ an toàn để giải phóng dung lượng đĩa và tài nguyên chạy ngầm.";
+    if (iconEl) iconEl.textContent = (app.name || "U").substring(0, 2).toUpperCase();
+  }
+
+  function renderUwpApps() {
+    const listEl = document.getElementById("uwp-app-list");
+    if (!listEl) return;
+
+    const q = (document.getElementById("search-uwp-apps") ? document.getElementById("search-uwp-apps").value : "").toLowerCase().trim();
+    const filtered = gAllUwpApps.filter(app => {
+      if (!q) return true;
+      return (app.name && app.name.toLowerCase().includes(q)) ||
+             (app.fullName && app.fullName.toLowerCase().includes(q));
+    });
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">Không tìm thấy ứng dụng UWP nào.</div>';
+      return;
+    }
+
+    let html = "";
+    filtered.forEach((app, idx) => {
+      const isChecked = gSelectedUwpNames.has(app.name) || gSelectedUwpNames.has(app.fullName);
+      const sizeStr = (app.sizeMB || 25) + " MB";
+      const shortName = app.name.replace(/^Microsoft\./, "").replace(/^MicrosoftCorporationII\./, "");
+
+      html += '<div class="uwp-item-row flex items-center justify-between p-2 rounded-lg bg-white/60 hover:bg-white cursor-pointer transition-colors border border-slate-100 ' + (isChecked ? 'bg-sky-50/50' : '') + '" data-name="' + app.name + '" data-idx="' + idx + '">' +
+        '<div class="flex items-center gap-2.5 min-w-0 flex-1">' +
+          '<input type="checkbox" ' + (isChecked ? 'checked' : '') + ' class="w-4 h-4 rounded text-sky-600 accent-sky-600 cursor-pointer uwp-cb" data-name="' + app.name + '"/>' +
+          '<div class="min-w-0 flex-1">' +
+            '<div class="font-semibold text-slate-800 text-xs truncate">' + shortName + '</div>' +
+            '<div class="text-[10px] text-slate-400 truncate">' + app.name + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-3 shrink-0 ml-2">' +
+          '<span class="text-slate-500 font-mono text-[11px]">' + sizeStr + '</span>' +
+          '<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">Optional</span>' +
+        '</div>' +
+      '</div>';
+    });
+
+    listEl.innerHTML = html;
+
+    if (filtered.length > 0 && !gCurrentUwpDetail) {
+      updateUwpDetailPanel(filtered[0]);
+    }
+
+    // Row selection and checkbox handlers
+    listEl.querySelectorAll(".uwp-item-row").forEach(row => {
+      const name = row.getAttribute("data-name");
+      const app = gAllUwpApps.find(a => a.name === name);
+      const cb = row.querySelector(".uwp-cb");
+
+      row.addEventListener("click", (e) => {
+        if (app) updateUwpDetailPanel(app);
+        if (e.target.tagName !== "INPUT") {
+          cb.checked = !cb.checked;
+          if (cb.checked) gSelectedUwpNames.add(name);
+          else gSelectedUwpNames.delete(name);
+          updateUwpSummary();
+        }
+      });
+
+      if (cb) {
+        cb.addEventListener("change", () => {
+          if (cb.checked) gSelectedUwpNames.add(name);
+          else gSelectedUwpNames.delete(name);
+          updateUwpSummary();
+        });
+      }
+    });
+
+    updateUwpSummary();
+  }
+
+  window.selectBloatwarePreset = function(preset) {
+    gSelectedUwpNames.clear();
+    const safeList = gUwpPresets.safe || [];
+    const recList = gUwpPresets.recommended || [];
+
+    if (preset === "safe") {
+      gAllUwpApps.forEach(a => {
+        if (safeList.some(s => a.name.toLowerCase().includes(s.toLowerCase()))) {
+          gSelectedUwpNames.add(a.name);
+        }
+      });
+      showToast("Bloatware Preset", "Đã chọn cấu hình An Toàn (Safe 27 apps)!", "info");
+    } else if (preset === "recommended") {
+      gAllUwpApps.forEach(a => {
+        if (recList.some(r => a.name.toLowerCase().includes(r.toLowerCase()))) {
+          gSelectedUwpNames.add(a.name);
+        }
+      });
+      showToast("Bloatware Preset", "Đã chọn cấu hình Khuyên Dùng (Recommended 44 apps)!", "info");
+    } else if (preset === "aggressive") {
+      gAllUwpApps.forEach(a => gSelectedUwpNames.add(a.name));
+      showToast("Bloatware Preset", "Đã chọn cấu hình Tối Đa (Aggressive Debloat All)!", "warning");
+    }
+    renderUwpApps();
+  };
+
+  function initUwpAppsController() {
+    const searchInput = document.getElementById("search-uwp-apps");
+    const chkSelectAll = document.getElementById("chk-uwp-select-all");
+    const btnBulk = document.getElementById("btnBulkUninstall");
+    const btnSingle = document.getElementById("uwp-detail-uninstall-btn");
+
+    if (searchInput) {
+      searchInput.addEventListener("input", () => renderUwpApps());
+    }
+
+    if (chkSelectAll) {
+      chkSelectAll.addEventListener("change", () => {
+        if (chkSelectAll.checked) {
+          gAllUwpApps.forEach(a => gSelectedUwpNames.add(a.name));
+        } else {
+          gSelectedUwpNames.clear();
+        }
+        renderUwpApps();
+      });
+    }
+
+    if (btnSingle) {
+      btnSingle.addEventListener("click", async () => {
+        if (!gCurrentUwpDetail) return;
+        const name = gCurrentUwpDetail.name;
+        showToast("Gỡ Ứng Dụng", "Đang gỡ bỏ gói " + name + "...", "warning");
+        await invokeRust("uninstall_uwp_app", { packageName: name, packageFullName: gCurrentUwpDetail.fullName });
+        showToast("Thành Công", "Đã gỡ bỏ " + name + "!", "success");
+        await loadUwpApps();
+      });
+    }
+
+    if (btnBulk) {
+      btnBulk.addEventListener("click", async () => {
+        if (gSelectedUwpNames.size === 0) {
+          showToast("Gỡ Ứng Dụng", "Vui lòng chọn ít nhất 1 ứng dụng UWP để gỡ bỏ!", "warning");
+          return;
+        }
+        showToast("Gỡ Hàng Loạt", "Bắt đầu gỡ bỏ " + gSelectedUwpNames.size + " ứng dụng bloatware...", "warning");
+        for (const name of Array.from(gSelectedUwpNames)) {
+          await invokeRust("uninstall_uwp_app", { packageName: name });
+        }
+        showToast("Hoàn Tất", "Đã gỡ bỏ toàn bộ ứng dụng bloatware được chọn!", "success");
+        await loadUwpApps();
+      });
+    }
+
+    loadUwpApps();
+  }
+
+
   function initDiskSmartController() {
     const diskView = document.getElementById("view-disk-smart");
     if (!diskView) return;
@@ -4005,6 +4499,8 @@
     bindNavigationAndActions();
     initAdminPortal();
     initAppStoreController();
+    initStartupAppsController();
+    initUwpAppsController();
     initWinOptimizeTwoStep();
     initDiskSmartController();
     initCpuMainController();
