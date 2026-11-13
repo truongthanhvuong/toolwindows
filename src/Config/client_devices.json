@@ -1,5 +1,14 @@
 [
     {
+        "hostname":  "HCM-AGGLT069",
+        "serialNumber":  "5DBWGB3",
+        "ipAddress":  "172.16.171.22",
+        "osCaption":  "Microsoft Windows 11 Pro",
+        "lastSeen":  "2026-11-13 09:16:19",
+        "hwid":  "b604fb14-4862-49bf-a397-6cd5963f0b42",
+        "status":  "Active"
+    },
+    {
         "hostname":  "TEST-PC-99",
         "serialNumber":  "TEST-BIOS-SN-99",
         "ipAddress":  "192.168.1.99",
