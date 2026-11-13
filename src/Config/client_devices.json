@@ -1,5 +1,14 @@
 [
     {
+        "hostname":  "DESKTOP-BJ38TQN",
+        "serialNumber":  "SN-DESKTOP-BJ38TQN",
+        "ipAddress":  "127.0.0.1",
+        "osCaption":  "Windows 11 Pro 64-bit",
+        "lastSeen":  "2026-11-13 12:59:08",
+        "hwid":  "HWID-SN-DESKTOP-BJ38TQN",
+        "status":  "Active"
+    },
+    {
         "hostname":  "TEST-PC-99",
         "serialNumber":  "TEST-BIOS-SN-99",
         "ipAddress":  "192.168.1.99",
