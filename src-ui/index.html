@@ -173,7 +173,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.153</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.154</span>
       </div>
     </div>
 
@@ -387,14 +387,14 @@
                   <div class="relative w-24 h-24 mb-2">
                     <svg class="w-full h-full" viewBox="0 0 36 36">
                       <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                      <path id="gauge-cpu" class="circle-val stroke-sky-500" stroke-dasharray="18, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                      <path id="gauge-cpu" class="circle-val stroke-sky-500" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                      <span id="metric-cpu-percent" class="text-base font-bold text-slate-800">18%</span>
-                      <span id="metric-cpu-ghz" class="text-[10px] text-slate-400">3.2 GHz</span>
+                      <span id="metric-cpu-percent" class="text-base font-bold text-slate-800">--%</span>
+                      <span id="metric-cpu-ghz" class="text-[10px] text-slate-400">-- GHz</span>
                     </div>
                   </div>
-                  <span id="metric-cpu-name" class="text-xs font-medium text-slate-700 truncate max-w-[140px]">Intel Core i5-14400</span>
+                  <span id="metric-cpu-name" class="text-xs font-medium text-slate-700 truncate max-w-[140px]">Đang đọc CPU...</span>
                 </div>
 
                 <!-- RAM -->
@@ -406,13 +406,13 @@
                   <div class="relative w-24 h-24 mb-2">
                     <svg class="w-full h-full" viewBox="0 0 36 36">
                       <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                      <path id="gauge-ram" class="circle-val stroke-blue-600" stroke-dasharray="52, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                      <path id="gauge-ram" class="circle-val stroke-blue-600" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                      <span id="metric-ram-percent" class="text-base font-bold text-slate-800">52%</span>
+                      <span id="metric-ram-percent" class="text-base font-bold text-slate-800">--%</span>
                     </div>
                   </div>
-                  <span id="metric-ram-usage" class="text-xs font-medium text-slate-700">16.5 / 32.0 GB</span>
+                  <span id="metric-ram-usage" class="text-xs font-medium text-slate-700">-- / -- GB</span>
                 </div>
 
                 <!-- GPU -->
@@ -424,14 +424,14 @@
                   <div class="relative w-24 h-24 mb-2">
                     <svg class="w-full h-full" viewBox="0 0 36 36">
                       <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                      <path id="gauge-gpu" class="circle-val stroke-indigo-500" stroke-dasharray="8, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                      <path id="gauge-gpu" class="circle-val stroke-indigo-500" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                      <span id="metric-gpu-percent" class="text-base font-bold text-slate-800">8%</span>
-                      <span class="text-[10px] text-slate-400">1.2/8.0 GB</span>
+                      <span id="metric-gpu-percent" class="text-base font-bold text-slate-800">--%</span>
+                      <span id="metric-gpu-sub" class="text-[10px] text-slate-400">--</span>
                     </div>
                   </div>
-                  <span id="metric-gpu-name" class="text-xs font-medium text-slate-700 truncate max-w-[140px]">Intel(R) UHD Graphics</span>
+                  <span id="metric-gpu-name" class="text-xs font-medium text-slate-700 truncate max-w-[140px]">Đang đọc GPU...</span>
                 </div>
               </div>
             </div>
@@ -449,38 +449,11 @@
                 </button>
               </div>
 
-              <!-- Drives list -->
-              <div class="flex flex-col gap-3">
-                <!-- C: Drive -->
-                <div class="p-2.5 rounded-xl bg-white/60 border border-slate-100 flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600 flex-shrink-0">
-                    <span class="material-symbols-outlined text-[20px]">window</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1">
-                      <span>Local Disk (C:)</span>
-                      <span class="text-slate-500 font-normal">213 GB / 237 GB (90%)</span>
-                    </div>
-                    <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-sky-400 to-sky-600 rounded-full" style="width: 90%"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- D: Drive -->
-                <div class="p-2.5 rounded-xl bg-white/60 border border-slate-100 flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
-                    <span class="material-symbols-outlined text-[20px]">storage</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1">
-                      <span>Data (D:)</span>
-                      <span class="text-slate-500 font-normal">425 GB / 932 GB (46%)</span>
-                    </div>
-                    <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full" style="width: 46%"></div>
-                    </div>
-                  </div>
+              <!-- Dynamic Drives list -->
+              <div id="dashboard-drives-list" class="flex flex-col gap-2.5">
+                <div class="p-2.5 rounded-xl bg-white/60 border border-slate-100 flex items-center gap-3 text-xs text-slate-400">
+                  <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                  <span>Đang tải thông tin ổ đĩa thực tế...</span>
                 </div>
               </div>
             </div>
@@ -1343,42 +1316,42 @@
 
               <div>
                 <div class="font-bold text-slate-700">Operating System</div>
-                <div class="text-slate-500 font-mono mt-0.5" id="hw-os">Microsoft Windows 11 Pro (64-bit) • Laptop (VUONGTT)</div>
+                <div class="text-slate-500 font-mono mt-0.5" id="hw-os">Đang tải thông tin hệ điều hành...</div>
               </div>
 
               <div>
                 <div class="font-bold text-slate-700">Processors</div>
-                <div class="text-slate-500 font-mono mt-0.5" id="hw-cpu">Intel(R) Core(TM) i5-14400 (10 Cores, 16 Threads)</div>
+                <div class="text-slate-500 font-mono mt-0.5" id="hw-cpu">Đang tải thông tin CPU...</div>
               </div>
 
               <div>
                 <div class="font-bold text-slate-700">Memory</div>
-                <div class="text-slate-500 font-mono mt-0.5" id="hw-ram">32 GiB DDR4 @ 3200 MHz</div>
+                <div class="text-slate-500 font-mono mt-0.5" id="hw-ram">Đang tải thông tin RAM...</div>
               </div>
 
               <div>
                 <div class="font-bold text-slate-700">Motherboards</div>
-                <div class="text-slate-500 font-mono mt-0.5" id="hw-board">Gigabyte Technology Co., Ltd. (H610M H V3 DDR4)</div>
+                <div class="text-slate-500 font-mono mt-0.5" id="hw-board">Đang tải thông tin Bo mạch chủ...</div>
               </div>
 
               <div>
                 <div class="font-bold text-slate-700">Graphics</div>
-                <div class="text-slate-500 font-mono mt-0.5" id="hw-gpu">Intel(R) UHD Graphics 730 • NVIDIA GeForce RTX 3050</div>
+                <div class="text-slate-500 font-mono mt-0.5" id="hw-gpu">Đang tải thông tin Card đồ họa...</div>
               </div>
 
               <div>
                 <div class="font-bold text-slate-700">Disk Drives</div>
-                <div class="text-slate-500 font-mono mt-0.5" id="hw-disk">Kingmax PCIe SSD 256GB • TOSHIBA MQ04ABF100 (1TB)</div>
+                <div class="text-slate-500 font-mono mt-0.5" id="hw-disk">Đang tải thông tin Ổ cứng &amp; Phân vùng...</div>
               </div>
 
               <div>
                 <div class="font-bold text-slate-700">Network Adapters</div>
-                <div class="text-slate-500 font-mono mt-0.5">Realtek PCIe GbE Family Controller • Wi-Fi 6 AX201</div>
+                <div class="text-slate-500 font-mono mt-0.5" id="hw-net">Đang tải thông tin Mạng...</div>
               </div>
 
               <div>
                 <div class="font-bold text-slate-700">BIOS</div>
-                <div class="text-slate-500 font-mono mt-0.5">American Megatrends International, LLC. F7</div>
+                <div class="text-slate-500 font-mono mt-0.5" id="hw-bios">Đang tải thông tin BIOS...</div>
               </div>
             </div>
           </div>

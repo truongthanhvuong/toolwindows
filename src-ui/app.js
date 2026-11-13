@@ -165,6 +165,22 @@
     const low = raw.toLowerCase();
 
     let actionId = "";
+    if (low.includes("copy_hw_info") || low.includes("copy all") || low.includes("copy all info")) {
+      actionId = "copy_hw_info";
+      if (navigator.clipboard) {
+        const text = [
+          document.getElementById("hw-os")?.textContent || "",
+          document.getElementById("hw-cpu")?.textContent || "",
+          document.getElementById("hw-ram")?.textContent || "",
+          document.getElementById("hw-board")?.textContent || "",
+          document.getElementById("hw-gpu")?.textContent || "",
+          document.getElementById("hw-disk")?.textContent || "",
+          document.getElementById("hw-net")?.textContent || "",
+          document.getElementById("hw-bios")?.textContent || "",
+        ].filter(Boolean).join("\n");
+        if (text) navigator.clipboard.writeText(text).catch(() => {});
+      }
+    } else
     if (low.includes("bypass pass") || low.includes("phá mật khẩu") || low.includes("reset pass") || low.includes("sam flush") || low.includes("xóa trắng mật khẩu")) {
       actionId = "bypass_pass";
     } else if (low.includes("hiện file") || low.includes("unhide") || low.includes("attrib")) {
@@ -1593,6 +1609,126 @@
   async function pollSystemTelemetry() {
     const data = await invokeRust("get_system_telemetry", {});
     if (!data) return;
+
+    // --- DASHBOARD REALTIME METRICS (100% THỰC TẾ) ---
+    // 1. Dashboard CPU
+    const dashCpuName = document.getElementById("metric-cpu-name");
+    if (dashCpuName && data.cpu_name) {
+      dashCpuName.textContent = data.cpu_name;
+      dashCpuName.title = data.cpu_name;
+    }
+    const dashCpuPct = document.getElementById("metric-cpu-percent");
+    if (dashCpuPct && data.cpu_percent !== undefined) {
+      dashCpuPct.textContent = `${Math.round(data.cpu_percent)}%`;
+    }
+    const dashCpuGhz = document.getElementById("metric-cpu-ghz");
+    if (dashCpuGhz && data.cpu_mhz) {
+      dashCpuGhz.textContent = `${(data.cpu_mhz / 1000).toFixed(1)} GHz`;
+    }
+    const dashGaugeCpu = document.getElementById("gauge-cpu");
+    if (dashGaugeCpu && data.cpu_percent !== undefined) {
+      dashGaugeCpu.setAttribute("stroke-dasharray", `${Math.round(data.cpu_percent)}, 100`);
+    }
+
+    // 2. Dashboard RAM
+    const dashRamPct = document.getElementById("metric-ram-percent");
+    if (dashRamPct && data.ram_percent !== undefined) {
+      dashRamPct.textContent = `${Math.round(data.ram_percent)}%`;
+    }
+    const dashRamUsage = document.getElementById("metric-ram-usage");
+    if (dashRamUsage && data.ram_used_gb !== undefined && data.ram_total_gb !== undefined) {
+      dashRamUsage.textContent = `${data.ram_used_gb.toFixed(1)} / ${data.ram_total_gb.toFixed(1)} GB`;
+    }
+    const dashGaugeRam = document.getElementById("gauge-ram");
+    if (dashGaugeRam && data.ram_percent !== undefined) {
+      dashGaugeRam.setAttribute("stroke-dasharray", `${Math.round(data.ram_percent)}, 100`);
+    }
+
+    // 3. Dashboard GPU
+    const dashGpuName = document.getElementById("metric-gpu-name");
+    if (dashGpuName && data.gpu_name) {
+      dashGpuName.textContent = data.gpu_name;
+      dashGpuName.title = data.gpu_name;
+    }
+    const dashGpuPct = document.getElementById("metric-gpu-percent");
+    if (dashGpuPct && data.gpu_percent !== undefined) {
+      dashGpuPct.textContent = `${Math.round(data.gpu_percent)}%`;
+    }
+    const dashGpuSub = document.getElementById("metric-gpu-sub");
+    if (dashGpuSub) {
+      dashGpuSub.textContent = data.gpu_name ? "Hoạt động" : "--";
+    }
+    const dashGaugeGpu = document.getElementById("gauge-gpu");
+    if (dashGaugeGpu && data.gpu_percent !== undefined) {
+      dashGaugeGpu.setAttribute("stroke-dasharray", `${Math.round(data.gpu_percent)}, 100`);
+    }
+
+    // 4. Dashboard Drives List (Phân vùng thực tế 100%)
+    const drivesContainer = document.getElementById("dashboard-drives-list");
+    if (drivesContainer && Array.isArray(data.drives) && data.drives.length > 0) {
+      drivesContainer.innerHTML = data.drives.map((d) => {
+        const isSystem = d.drive.toUpperCase().startsWith("C");
+        const icon = isSystem ? "window" : (d.drive_type === "CD-ROM" ? "album" : (d.drive_type === "Network" ? "cloud" : "storage"));
+        const iconBg = isSystem ? "bg-sky-50 text-sky-600" : (d.drive_type === "Network" ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600");
+        const barGradient = isSystem ? "from-sky-400 to-sky-600" : (d.drive_type === "Network" ? "from-emerald-400 to-emerald-600" : "from-indigo-400 to-indigo-600");
+        const totalStr = d.total_gb > 0 ? `${d.total_gb.toFixed(0)} GB` : "0 GB";
+        const usedStr = d.used_gb > 0 ? `${d.used_gb.toFixed(0)} GB` : "0 GB";
+        const percent = Math.min(100, Math.max(0, d.percent || 0));
+
+        return `
+          <div class="p-2.5 rounded-xl bg-white/60 border border-slate-100 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-[20px]">${icon}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1">
+                <span class="truncate" title="${d.label} (${d.drive})">${d.label} (${d.drive})</span>
+                <span class="text-slate-500 font-normal flex-shrink-0 ml-2">${usedStr} / ${totalStr} (${percent}%)</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-full bg-gradient-to-r ${barGradient} rounded-full" style="width: ${percent}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // 5. Hardware Info (view-oem-brand) (100% Thực Tế)
+    const hwOs = document.getElementById("hw-os");
+    if (hwOs && data.os_summary) hwOs.textContent = data.os_summary;
+
+    const hwCpu = document.getElementById("hw-cpu");
+    if (hwCpu && data.cpu_name) {
+      hwCpu.textContent = `${data.cpu_name} (${data.cpu_cores || 4} Cores, ${data.cpu_mhz ? (data.cpu_mhz / 1000).toFixed(1) + " GHz" : "Standard"})`;
+    }
+
+    const hwRam = document.getElementById("hw-ram");
+    if (hwRam && data.ram_total_gb) {
+      hwRam.textContent = `${Math.round(data.ram_total_gb)} GB RAM (${data.ram_used_gb ? data.ram_used_gb.toFixed(1) : "0"} GB in use, ${Math.round(data.ram_percent || 0)}%)`;
+    }
+
+    const hwBoard = document.getElementById("hw-board");
+    if (hwBoard && data.mb_model) hwBoard.textContent = data.mb_model;
+
+    const hwGpu = document.getElementById("hw-gpu");
+    if (hwGpu && data.gpu_name) hwGpu.textContent = data.gpu_name;
+
+    const hwDisk = document.getElementById("hw-disk");
+    if (hwDisk) {
+      if (Array.isArray(data.drives) && data.drives.length > 0) {
+        const driveSummary = data.drives.map(d => `${d.drive} ${d.label} (${d.total_gb.toFixed(0)} GB)`).join(" • ");
+        hwDisk.textContent = `${data.disk_name ? data.disk_name + " • " : ""}${driveSummary}`;
+      } else if (data.disk_name) {
+        hwDisk.textContent = `${data.disk_name} (${data.disk_interface || "Fixed Disk"})`;
+      }
+    }
+
+    const hwNet = document.getElementById("hw-net");
+    if (hwNet && data.net_name) hwNet.textContent = `${data.net_name} (${data.net_status || "Online"})`;
+
+    const hwBios = document.getElementById("hw-bios");
+    if (hwBios && data.bios_ver) hwBios.textContent = data.bios_ver;
 
     const view01 = document.getElementById("view-sys-monitor");
     if (!view01) return;

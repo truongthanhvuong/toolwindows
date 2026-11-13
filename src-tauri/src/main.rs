@@ -91,7 +91,7 @@ const EMBEDDED_APPLICATIONS_JSON: &str = include_str!("../../src-ui/applications
 const EMBEDDED_UWP_PRESETS_JSON: &str = include_str!("../../src-ui/uwp_presets.json");
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-pub const APP_VERSION: &str = "20.5.909.153";
+pub const APP_VERSION: &str = "20.5.909.154";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();

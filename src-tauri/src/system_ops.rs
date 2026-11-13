@@ -1550,6 +1550,28 @@ if act == "uninstall_app" || act == "uninstall_apps" || act == "bulk_uninstall_a
         return (true, ip);
     }
 
+    if act == "copy_hw_info" {
+        let telem = crate::telemetry::collect_telemetry();
+        let summary = format!(
+            "Operating System: {}\nCPU: {}\nMemory: {}\nMotherboard: {}\nGraphics: {}\nDisk: {}\nNetwork: {}\nBIOS: {}",
+            telem.os_summary,
+            telem.cpu_name,
+            telem.ram_name,
+            telem.mb_model,
+            telem.gpu_name,
+            telem.disk_name,
+            telem.net_name,
+            telem.bios_ver
+        );
+        let ps_code = format!("Set-Clipboard -Value @'\n{}\n'@", summary);
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        return (true, "Đã sao chép toàn bộ thông tin phần cứng vào Clipboard thành công.".to_string());
+    }
+
     if act == "export_helpdesk_report" || act == "export_report" {
         let ps_code = r#"
             $desktop = [Environment]::GetFolderPath("Desktop")
@@ -2261,8 +2283,10 @@ th { background: #222a3d; color: #6ffbbe; }
                 $winget = Start-Process winget -ArgumentList "install --id Microsoft.Office -e --silent --accept-package-agreements --accept-source-agreements" -PassThru -NoNewWindow
                 Write-Output "WINGET_PID:$($winget.Id)"
             }}
-            "#,
-            b64_xml, odt_mode
+            "#,
+
+            b64_xml, odt_mode
+
         );
 
         let mut cmd = Command::new("powershell");

@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "20.5.909.153",
-    "releaseDate":  "12/11/2026",
+    "version":  "20.5.909.154",
+    "releaseDate":  "13/11/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
                       "Nâng cấp toàn diện Microsoft Office Setup chuẩn HyperLis 1:1, Tái cấu trúc Tab General \u0026 Mô tả song ngữ, Khắc phục triệt để lỗi PowerShell trên máy không có ổ E:, Cập nhật MoMo 0328808425 Trương Thanh Vương: (1) Office Setup hoàn chỉnh 12 phân mục chuẩn HyperLis (Image 2): 6 thẻ phiên bản Office (Microsoft 365, Office 2024, LTSC 2021, 2019, 2016, 2013), chọn phiên bản chi tiết (Home, Business, Enterprise), kiến trúc 64/32-bit, kênh cập nhật, 12 ứng dụng Microsoft kèm biểu tượng trực quan, ngôn ngữ đa quốc gia, bản quyền Volume/Retail, tùy chọn nâng cao, khung xem trước XML thời gian thực kèm nút Sao chép, tổng quan cấu hình, nút Tải/Cài đặt Office ODT thực tế và Gỡ cài đặt Office; (2) Tái thiết lập tab General chuẩn xác với 4 phân nhóm (System, Disk drives, Privacy, Apps) kèm bảng giải thích song ngữ (Description \u0026 Mô tả) hiển thị tức thì khi rê chuột; (3) Cập nhật toàn bộ thông tin MoMo và VietQR sang số điện thoại 0328808425, tên tài khoản TRƯƠNG THANH VƯƠNG, MBBank 0328808425; (4) Khắc phục triệt để lỗi DriveNotFoundException trên máy chỉ có ổ C: khi chạy lệnh Cloud Bootstrapper (irm tinyurl.com/vuongwin | iex); (5) Vượt qua 100% toàn bộ 42/42 bài kiểm thử tự động của hệ thống và 71/71 tiêu chuẩn kiểm thử toàn diện 15 phân hệ.",
