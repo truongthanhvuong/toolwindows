@@ -91,7 +91,7 @@ const EMBEDDED_APPLICATIONS_JSON: &str = include_str!("../../src-ui/applications
 const EMBEDDED_UWP_PRESETS_JSON: &str = include_str!("../../src-ui/uwp_presets.json");
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-pub const APP_VERSION: &str = "20.5.909.155";
+pub const APP_VERSION: &str = "20.5.909.156";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -289,6 +289,7 @@ fn handle_client(
     // 5. POST Exit (Triggered on beforeunload)
     if first_line.starts_with("POST /api/exit") {
         is_running.store(false, Ordering::SeqCst);
+        let _ = system_ops::cleanup_desktop_shortcuts();
         let body = "{\"status\":\"exiting\"}";
         let resp = format!(
             "HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n{}",
@@ -384,6 +385,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         let action = system_ops::extract_json_field(body, "action").unwrap_or("");
         if action == "close" {
             is_running.store(false, Ordering::SeqCst);
+            let _ = system_ops::cleanup_desktop_shortcuts();
             json_resp = "{\"success\":true,\"message\":\"Closing\"}".to_string();
         } else if action == "minimize" {
             let (ok, msg) = control_window("minimize");
@@ -602,8 +604,8 @@ fn main() {
             let elapsed = act.elapsed();
             if has_connected.load(Ordering::SeqCst) {
                 // Sau khi client đã kết nối lần đầu:
-                // Nếu quá 10 giây không còn heartbeat/request -> Cửa sổ Edge đã đóng -> Tự động thoát sạch sẽ!
-                if elapsed > std::time::Duration::from_secs(45) {
+                // Nếu quá 6 giây không còn heartbeat/request -> Cửa sổ Edge đã đóng -> Tự động thoát sạch sẽ!
+                if elapsed > std::time::Duration::from_secs(6) {
                     break;
                 }
             } else {
@@ -614,6 +616,9 @@ fn main() {
             }
         }
     }
+
+    // CLEANUP ON EXIT: Don dep sach se tat ca shortcuts tren Desktop va Programs khi dung xong tat ung dung
+    let _ = system_ops::cleanup_desktop_shortcuts();
 }
 
 #[cfg(test)]

