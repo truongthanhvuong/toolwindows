@@ -6417,13 +6417,14 @@ th { background: #222a3d; color: #6ffbbe; }
         let current_exe = std::env::current_exe()
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_else(|_| "E:\\toolwindows\\VUONGTT_Toolkit.exe".to_string());
+        let current_exe_clean = current_exe.replace('\'', "''");
 
         let ps_code = format!(
             r#"
             [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8;
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13 -bor [Net.SecurityProtocolType]::Tls
-            
-            $currExe = @'{current_exe}'@
+
+            $currExe = '{current_exe_clean}'
             if (-not $currExe -or -not (Test-Path $currExe) -or $currExe -match "powershell|cmd\.exe|cargo|target|rustc") {{
                 if (Test-Path "E:\toolwindows\VUONGTT_Toolkit.exe") {{
                     $currExe = "E:\toolwindows\VUONGTT_Toolkit.exe"
@@ -6464,33 +6465,30 @@ th { background: #222a3d; color: #6ffbbe; }
 
             # Tao runner cmd an toan doc lap de thay the binary va khoi dong lai
             $runnerBat = Join-Path $env:TEMP "vuongtt_update_runner.cmd"
-            $batContent = @"
-@echo off
-setlocal enabledelayedexpansion
-timeout /t 2 /nobreak >nul
-taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
-taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
-timeout /t 1 /nobreak >nul
-
-set RETRY=0
-:RETRY_LOOP
-copy /Y "%~1" "%~2" >nul 2>&1
-if not errorlevel 1 goto DONE_COPY
-set /a RETRY+=1
-if %RETRY% geq 20 goto DONE_COPY
-timeout /t 1 /nobreak >nul
-goto RETRY_LOOP
-
-:DONE_COPY
-if exist "E:\toolwindows\VUONGTT_Toolkit.exe" copy /Y "%~1" "E:\toolwindows\VUONGTT_Toolkit.exe" >nul 2>&1
-if exist "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "%~1" "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1
-
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path '%~2' -ErrorAction SilentlyContinue; Start-Process -FilePath '%~2' -Verb RunAs" -WindowStyle Hidden
-timeout /t 1 /nobreak >nul
-del /f /q "%~1" >nul 2>&1
-(goto) 2>nul & del "%~f0"
-"@
-            [System.IO.File]::WriteAllText($runnerBat, $batContent, [System.Text.Encoding]::ASCII)
+            $lines = @(
+                '@echo off',
+                'setlocal enabledelayedexpansion',
+                'timeout /t 2 /nobreak >nul',
+                'taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1',
+                'taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1',
+                'timeout /t 1 /nobreak >nul',
+                'set RETRY=0',
+                ':RETRY_LOOP',
+                'copy /Y "%~1" "%~2" >nul 2>&1',
+                'if not errorlevel 1 goto DONE_COPY',
+                'set /a RETRY+=1',
+                'if %RETRY% geq 20 goto DONE_COPY',
+                'timeout /t 1 /nobreak >nul',
+                'goto RETRY_LOOP',
+                ':DONE_COPY',
+                'if exist "E:\toolwindows\VUONGTT_Toolkit.exe" copy /Y "%~1" "E:\toolwindows\VUONGTT_Toolkit.exe" >nul 2>&1',
+                'if exist "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "%~1" "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1',
+                'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path ''%~2'' -ErrorAction SilentlyContinue; Start-Process -FilePath ''%~2'' -Verb RunAs" -WindowStyle Hidden',
+                'timeout /t 1 /nobreak >nul',
+                'del /f /q "%~1" >nul 2>&1',
+                '(goto) 2>nul & del "%~f0"'
+            )
+            [System.IO.File]::WriteAllLines($runnerBat, $lines, [System.Text.Encoding]::ASCII)
 
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = "cmd.exe"
@@ -6501,7 +6499,7 @@ del /f /q "%~1" >nul 2>&1
 
             Write-Output "UPDATE_READY"
         "#,
-            current_exe = current_exe
+            current_exe_clean = current_exe_clean
         );
 
         let mut cmd = Command::new("powershell");
@@ -6516,12 +6514,10 @@ del /f /q "%~1" >nul 2>&1
             if trimmed.contains("UPDATE_READY") {
                 "Đã tải thành công bản cập nhật mới nhất từ GitHub! Hệ thống đang tự động nâng cấp và khởi động lại...".to_string()
             } else {
-                "Không thể tải bản cập nhật tự động. Vui lòng kiểm tra kết nối mạng và thử lại sau!".to_string()
+                format!("Không thể tải bản cập nhật tự động (Mã phản hồi: '{}'). Vui lòng kiểm tra kết nối mạng và thử lại sau!", trimmed)
             },
         );
     }
-
-
 
     if act == "reset_oem_branding" || act == "reset_oem" || act == "khoi phuc oem" {
 
