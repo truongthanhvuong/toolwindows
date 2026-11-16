@@ -147,6 +147,9 @@
     if (targetId === "view-clean-uninstaller") {
       setTimeout(() => { if (typeof window.refreshInstalledApps === "function") window.refreshInstalledApps(); }, 50);
     }
+    if (targetId === "view-backup-windows") {
+      setTimeout(() => { if (typeof window.scanWimBackups === "function") window.scanWimBackups(); }, 50);
+    }
     if (targetId === "view-win-deploy" || targetId === "view-cai-windows") {
       setTimeout(() => {
         if (window.checkBiosLicense) window.checkBiosLicense();
@@ -3678,6 +3681,214 @@
   }
   window.backupSystemFromDeploy = backupSystemFromDeploy;
 
+  // --- 13.1B VIEW 16 BACKUP & RESTORE WINDOWS CONTROLLER ---
+  let isRestoringSystemWim = false;
+  async function restoreSystemWim() {
+    if (isRestoringSystemWim) return;
+    const btn = document.getElementById("btn-restore-wim-system");
+    const label = document.getElementById("btn-restore-wim-label");
+    const desc = document.getElementById("restore-system-target-desc");
+    const sel = document.getElementById("sel-restore-wim-file");
+    const wimPath = sel ? sel.value : "";
+
+    if (!wimPath) {
+      showToast("Chưa Chọn Bản Sao Lưu", "Vui lòng chọn hoặc duyệt tìm file .wim trước khi thực hiện phục hồi!", "warning");
+      return;
+    }
+
+    if (!confirm(`Bạn có chắc chắn muốn phục hồi hệ thống Windows từ bản sao lưu:\n${wimPath}\n\nLưu ý: Quá trình sẽ bung bản chụp WIM và chuẩn bị phục hồi hệ thống an toàn.`)) {
+      return;
+    }
+
+    isRestoringSystemWim = true;
+    if (btn) btn.disabled = true;
+    if (label) label.innerText = "Đang Phục Hồi...";
+    showToast("Phục Hồi Hệ Thống Windows", "Đang nạp cấu hình phục hồi WIM...", "info");
+
+    try {
+      const res = await invokeRust("run_system_action", {
+        actionId: "restore_full_windows",
+        wim_path: wimPath,
+        wimPath: wimPath,
+        target_drive: "C:"
+      });
+      if (res && res.success) {
+        showToast("Phục Hồi Thành Công", res.message || "Đã chuẩn bị hoàn tất phục hồi Windows!", "success");
+        if (label) label.innerText = "✓ Đã Phục Hồi";
+        if (desc) desc.innerText = res.message;
+      } else {
+        showToast("Lỗi Phục Hồi", (res && res.message) || "Không thể thực hiện phục hồi.", "error");
+        if (label) label.innerText = "Phục Hồi Bản Chụp WIM";
+        if (desc) desc.innerText = "Lỗi: " + ((res && res.message) || "Thất bại");
+      }
+    } catch (e) {
+      showToast("Lỗi Hệ Thống", "Gặp lỗi: " + e, "error");
+      if (label) label.innerText = "Phục Hồi Bản Chụp WIM";
+    } finally {
+      if (btn) btn.disabled = false;
+      isRestoringSystemWim = false;
+    }
+  }
+  window.restoreSystemWim = restoreSystemWim;
+
+  async function browseWimFile() {
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "browse_wim" });
+      if (res && res.success && res.message) {
+        const path = res.message.trim();
+        const sel = document.getElementById("sel-restore-wim-file");
+        if (sel) {
+          let found = false;
+          for (let opt of sel.options) {
+            if (opt.value === path) {
+              opt.selected = true;
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            const opt = document.createElement("option");
+            opt.value = path;
+            opt.text = path;
+            opt.selected = true;
+            sel.appendChild(opt);
+          }
+        }
+        const desc = document.getElementById("restore-system-target-desc");
+        if (desc) desc.innerText = "Đã chọn: " + path;
+        showToast("Đã Chọn Tệp WIM", path, "success");
+      }
+    } catch (e) {
+      showToast("Lỗi Chọn File", "" + e, "error");
+    }
+  }
+  window.browseWimFile = browseWimFile;
+
+  async function scanWimBackups() {
+    const sel = document.getElementById("sel-restore-wim-file");
+    const desc = document.getElementById("restore-system-target-desc");
+    if (!sel) return;
+    sel.innerHTML = `<option value="">-- Đang quét tìm các bản sao lưu WIM... --</option>`;
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "scan_wim_backups" });
+      if (res && res.success && res.message) {
+        let items = [];
+        try {
+          items = JSON.parse(res.message);
+        } catch (_) {}
+
+        sel.innerHTML = "";
+        if (Array.isArray(items) && items.length > 0) {
+          items.forEach(it => {
+            const opt = document.createElement("option");
+            opt.value = it.path;
+            opt.text = `${it.name} (${it.size} - ${it.date}) -> ${it.path}`;
+            sel.appendChild(opt);
+          });
+          if (desc) desc.innerText = `Tìm thấy ${items.length} bản sao lưu WIM trên các phân vùng ổ đĩa.`;
+        } else {
+          sel.innerHTML = `<option value="">(Chưa tìm thấy bản backup WIM tự động - Hãy bấm 'Chọn File WIM...')</option>`;
+          if (desc) desc.innerText = "Chưa phát hiện bản sao lưu tự động. Bạn có thể bấm 'Chọn File WIM...' để duyệt file.";
+        }
+      }
+    } catch (e) {
+      sel.innerHTML = `<option value="">(Lỗi quét: ${e})</option>`;
+    }
+  }
+  window.scanWimBackups = scanWimBackups;
+
+  async function bootToWinRE() {
+    if (!confirm("Bạn có muốn khởi động lại máy tính vào môi trường cứu hộ Windows RE (Troubleshoot & Recovery) ngay bây giờ?")) {
+      return;
+    }
+    showToast("Khởi Động WinRE", "Đang chuyển tiếp hệ thống vào Windows Recovery Environment...", "info");
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "boot_to_winre" });
+      if (res && res.success) {
+        showToast("WinRE", res.message || "Đang khởi động lại máy...", "success");
+      } else {
+        showToast("Lỗi WinRE", (res && res.message) || "Không thể kích hoạt WinRE.", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi Hệ Thống", "" + e, "error");
+    }
+  }
+  window.bootToWinRE = bootToWinRE;
+
+  async function openSystemRestore() {
+    showToast("System Restore", "Đang mở trình phục hồi hệ thống rstrui.exe...", "info");
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "open_system_restore" });
+      if (res && res.success) {
+        showToast("System Restore", res.message || "Đã mở rstrui.exe!", "success");
+      }
+    } catch (e) {
+      showToast("Lỗi", "" + e, "error");
+    }
+  }
+  window.openSystemRestore = openSystemRestore;
+
+  async function createRestorePoint() {
+    showToast("System Restore", "Đang tạo điểm khôi phục (Restore Point)...", "info");
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "create_restore_point" });
+      if (res && res.success) {
+        showToast("Điểm Khôi Phục", res.message || "Đã tạo thành công điểm khôi phục!", "success");
+      } else {
+        showToast("Lỗi", (res && res.message) || "Không thể tạo điểm khôi phục.", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi", "" + e, "error");
+    }
+  }
+  window.createRestorePoint = createRestorePoint;
+
+  async function checkOrRepairWinRE() {
+    showToast("Kiểm Tra WinRE", "Đang kiểm tra và kích hoạt Windows RE...", "info");
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "repair_winre" });
+      if (res && res.success) {
+        showToast("Windows RE", res.message || "Đã bật WinRE!", "success");
+      } else {
+        showToast("Lỗi", (res && res.message) || "Lỗi kiểm tra WinRE.", "error");
+      }
+    } catch (e) {
+      showToast("Lỗi", "" + e, "error");
+    }
+  }
+  window.checkOrRepairWinRE = checkOrRepairWinRE;
+
+  function initWindowsRestoreController() {
+    const bindEl = (id, fn) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          fn();
+        });
+      }
+    };
+    bindEl("btn-scan-wim-backups", () => scanWimBackups());
+    bindEl("btn-browse-wim-file", () => browseWimFile());
+    bindEl("btn-restore-wim-system", () => restoreSystemWim());
+    bindEl("btn-boot-winre", () => bootToWinRE());
+    bindEl("btn-open-system-restore", () => openSystemRestore());
+    bindEl("btn-create-restore-point", () => createRestorePoint());
+    bindEl("btn-check-winre", () => checkOrRepairWinRE());
+
+    const sel = document.getElementById("sel-restore-wim-file");
+    if (sel) {
+      sel.addEventListener("change", () => {
+        const desc = document.getElementById("restore-system-target-desc");
+        if (desc && sel.value) {
+          desc.innerText = "Đã chọn bản sao lưu: " + sel.value;
+        }
+      });
+    }
+  }
+  window.initWindowsRestoreController = initWindowsRestoreController;
+
+
   async function initWinDeployEnv() {
     try {
       const res = await invokeRust("run_system_action", { actionId: "detect_win_install_env" });
@@ -5104,6 +5315,7 @@
     initHwidController();
     initHelpdeskController();
     initBitLockerController();
+    initWindowsRestoreController();
     initHeaderControls();
     initAutoUpdateOnStartup();
     if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState();

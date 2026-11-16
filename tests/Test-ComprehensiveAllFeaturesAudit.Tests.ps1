@@ -121,6 +121,14 @@ Assert-Audit "View 02" "Tich hop Sao Luu Toan Bo Windows ra anh WIM (backup_full
     $opsContent -match 'backup_full_windows' -and $opsContent -match 'DISM.*Capture-Image'
 }
 
+Assert-Audit "View 02" "Tich hop Phuc Hoi Toan Bo Windows tu anh WIM va WinRE (restore_full_windows)" {
+    $opsContent -match 'restore_full_windows' -and $opsContent -match 'Apply-Image' -and $htmlContent -match 'btn-restore-wim-system'
+}
+
+Assert-Audit "View 02" "Ho tro Khoi dong vao WinRE cuu ho va mo System Restore (boot_to_winre / rstrui)" {
+    $opsContent -match 'boot_to_winre' -and $opsContent -match 'open_system_restore' -and $htmlContent -match 'btn-boot-winre'
+}
+
 # -------------------------------------------------------------------------
 # NHOM 4: VIEW 03 - TIEN ICH KY THUAT & DRIVER VAULT
 # -------------------------------------------------------------------------

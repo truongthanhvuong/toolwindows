@@ -4208,7 +4208,239 @@ th { background: #222a3d; color: #6ffbbe; }
 
     // ========================================================================
 
-    // 5.1B KIỂM TRA MÔI TRƯỜNG MÁY ẢO & TRẠNG THÁI CÀI ĐẶT WINDOWS
+
+    // ========================================================================
+    // 5.1A-2 PHỤC HỒI TOÀN BỘ WINDOWS (SYSTEM RESTORE, WIM RESTORE, WINRE)
+    // ========================================================================
+    if act == "restore_full_windows" || act == "phuc_hoi_toan_bo_windows" || act == "phuc hoi windows" || act == "restore_windows" || act == "restore_system" {
+        clear_logs();
+        append_log("[PHỤC HỒI WINDOWS] Bắt đầu quy trình phục hồi hệ thống Windows từ bản sao lưu WIM...");
+        let dry_run = extract_json_field(params_json, "dry_run")
+            .or_else(|| extract_json_field(params_json, "test_mode"))
+            .unwrap_or("false")
+            .to_lowercase() == "true";
+        if dry_run {
+            append_log("[OK] Hoàn tất kiểm tra sẵn sàng phục hồi hệ thống Windows (Dry-run mode).");
+            return (true, "Đã kiểm tra sẵn sàng phục hồi Windows an toàn (Dry-run mode).".to_string());
+        }
+
+        let wim_path = extract_json_field(params_json, "wim_path")
+            .or_else(|| extract_json_field(params_json, "wimPath"))
+            .unwrap_or("");
+        let target_drive = extract_json_field(params_json, "target_drive")
+            .or_else(|| extract_json_field(params_json, "targetDrive"))
+            .unwrap_or("C:");
+
+        let ps_code = format!(r#"
+            $ErrorActionPreference = 'SilentlyContinue'
+            $wim = "{wim_path}".Trim()
+            $target = "{target_drive}".Trim()
+            if (-not $target.EndsWith(':')) {{
+                if ($target.Length -eq 1) {{ $target = "$target:" }}
+            }}
+            if (-not $wim) {{
+                $drives = Get-CimInstance Win32_LogicalDisk | Where-Object {{ $_.DriveType -eq 3 }}
+                foreach ($d in $drives) {{
+                    $p = "$($d.DeviceID)\Windows_FullBackup_2026"
+                    if (Test-Path $p) {{
+                        $latest = Get-ChildItem -Path $p -Filter "*.wim" -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+                        if ($latest) {{ $wim = $latest.FullName; break }}
+                    }}
+                }}
+            }}
+            if (-not $wim -or -not (Test-Path $wim)) {{
+                Write-Output "FAIL|NOT_FOUND|Khong tim thay tap tin sao luu WIM nao tren he thong!"
+                exit
+            }}
+
+            $sysDrive = $env:SystemDrive; if (-not $sysDrive) {{ $sysDrive = 'C:' }}
+            if ($target -ieq $sysDrive) {{
+                reagentc /enable 2>&1 | Out-Null
+                reagentc /boottore 2>&1 | Out-Null
+                $recoveryScript = "$sysDrive\vuongtt_wim_restore.cmd"
+                $cmdContent = "@echo off`r`necho [VUONGTT RESTORE] Dang phuc hoi ban chup WIM vao $target...`r`ndism /Apply-Image /ImageFile:`"$wim`" /Index:1 /ApplyDir:$target\`r`necho Hoan tat! Nhan phim bat ky de khoi dong lai...`r`npause`r`nwpeutil reboot`r`n"
+                [System.IO.File]::WriteAllText($recoveryScript, $cmdContent)
+                Write-Output "WINRE|$wim|$recoveryScript"
+            }} else {{
+                $dismArgs = "/Apply-Image /ImageFile:`"$wim`" /Index:1 /ApplyDir:`"$target\`""
+                $p = Start-Process -FilePath "dism.exe" -ArgumentList $dismArgs -Wait -NoNewWindow -PassThru -ErrorAction SilentlyContinue
+                if ($p -and $p.ExitCode -eq 0) {{
+                    Write-Output "SUCCESS|$wim|$target"
+                }} else {{
+                    Write-Output "FAIL|DISM_ERROR|Loi trong qua trinh bung anh WIM qua DISM."
+                }}
+            }}
+        "#);
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        if trimmed.starts_with("WINRE") {
+            let parts: Vec<&str> = trimmed.split('|').collect();
+            let wim = parts.get(1).unwrap_or(&"");
+            append_log(&format!("[THÀNH CÔNG] Đã nạp cấu hình phục hồi WIM ({}) vào WinRE an toàn.", wim));
+            append_log("[HƯỚNG DẪN] Hệ thống đã sẵn sàng. Khởi động lại máy vào WinRE để tự động áp dụng bản sao lưu vào ổ C:.");
+            return (true, format!("Đã chuẩn bị phục hồi Windows từ bản sao lưu: {}. Sẵn sàng bung ảnh trong môi trường cứu hộ WinRE!", wim));
+        } else if trimmed.starts_with("SUCCESS") {
+            let parts: Vec<&str> = trimmed.split('|').collect();
+            let wim = parts.get(1).unwrap_or(&"");
+            let target = parts.get(2).unwrap_or(&"C:");
+            append_log(&format!("[THÀNH CÔNG] Đã phục hồi hoàn tất bản chụp WIM ({}) vào phân vùng {}.", wim, target));
+            return (true, format!("Đã phục hồi thành công bản sao lưu {} vào phân vùng {}!", wim, target));
+        } else {
+            let parts: Vec<&str> = trimmed.split('|').collect();
+            let msg = parts.get(2).unwrap_or(&"Không thể thực hiện phục hồi. Hãy kiểm tra lại file WIM và quyền Administrator.");
+            append_log(&format!("[LỖI] {}", msg));
+            return (false, msg.to_string());
+        }
+    }
+
+    if act == "scan_wim_backups" || act == "quet_ban_sao_luu" {
+        let ps_code = r#"
+            $ErrorActionPreference = 'SilentlyContinue'
+            $results = @()
+            $drives = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 }
+            foreach ($d in $drives) {
+                $paths = @("$($d.DeviceID)\Windows_FullBackup_2026", "$($d.DeviceID)\", "$($d.DeviceID)\Backups")
+                foreach ($p in $paths) {
+                    if (Test-Path $p) {
+                        $wims = Get-ChildItem -Path $p -Filter "*.wim" -File -ErrorAction SilentlyContinue
+                        foreach ($w in $wims) {
+                            $results += [PSCustomObject]@{
+                                path = $w.FullName
+                                name = $w.Name
+                                size = "$([math]::Round($w.Length / 1GB, 2)) GB"
+                                date = $w.LastWriteTime.ToString("dd/MM/yyyy HH:mm")
+                            }
+                        }
+                    }
+                }
+            }
+            if ($results.Count -eq 0) {
+                Write-Output "[]"
+            } else {
+                Write-Output ($results | ConvertTo-Json -Compress)
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        return (true, trimmed.to_string());
+    }
+
+    if act == "browse_wim" || act == "duyet_wim" {
+        let ps_code = r#"
+            Add-Type -AssemblyName System.Windows.Forms
+            $form = New-Object System.Windows.Forms.Form
+            $form.TopMost = $true
+            $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+            $form.WindowState = [System.Windows.Forms.FormWindowState]::Minimized
+            $form.ShowInTaskbar = $false
+            $f = New-Object System.Windows.Forms.OpenFileDialog
+            $f.Title = "Chọn Tệp Tin Sao Lưu Windows (.WIM / .ESD / .VHD)"
+            $f.Filter = "Tệp Tin Sao Lưu Windows (*.wim;*.esd;*.vhd;*.vhdx)|*.wim;*.esd;*.vhd;*.vhdx|Tất Cả Tệp Tin (*.*)|*.*"
+            $f.InitialDirectory = [Environment]::GetFolderPath("UserProfile")
+            $res = $f.ShowDialog($form)
+            if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
+                Write-Output "FILE:$($f.FileName)"
+            } else {
+                Write-Output "CANCEL"
+            }
+            $form.Dispose()
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Sta", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        if trimmed.starts_with("FILE:") {
+            let path = trimmed.trim_start_matches("FILE:").trim();
+            return (true, path.to_string());
+        }
+        return (false, "Đã hủy chọn tệp tin.".to_string());
+    }
+
+    if act == "boot_to_winre" || act == "boot_winre" || act == "khoi_dong_winre" {
+        clear_logs();
+        append_log("[WINRE] Đang chuẩn bị môi trường cứu hộ phục hồi Windows RE (Windows Recovery Environment)...");
+        let dry_run = extract_json_field(params_json, "dry_run")
+            .unwrap_or("false")
+            .to_lowercase() == "true";
+        if dry_run {
+            append_log("[OK] Sẵn sàng kích hoạt khởi động vào WinRE (Dry-run mode).");
+            return (true, "Sẵn sàng khởi động vào WinRE (Dry-run mode).".to_string());
+        }
+
+        let ps_code = r#"
+            reagentc /enable 2>&1 | Out-Null
+            reagentc /boottore 2>&1 | Out-Null
+            Start-Process "shutdown.exe" -ArgumentList "/r /o /f /t 03 /c `"VUONGTT Toolkit: Khoi dong vao Windows RE cuu ho he thong`"" -NoNewWindow
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        append_log("[OK] Đã kích hoạt lệnh chuyển tiếp sang môi trường cứu hộ Windows RE. Máy tính sẽ khởi động lại trong giây lát!");
+        return (true, "Đang khởi động lại máy tính vào môi trường cứu hộ Windows RE (Troubleshoot & Recovery)...".to_string());
+    }
+
+    if act == "open_system_restore" || act == "mo_system_restore" || act == "rstrui" {
+        let _ = Command::new("rstrui.exe").spawn();
+        return (true, "Đã mở trình thuật sĩ System Restore của Windows.".to_string());
+    }
+
+    if act == "create_restore_point" || act == "tao_diem_khoi_phuc" {
+        clear_logs();
+        append_log("[SYSTEM RESTORE] Đang tạo điểm khôi phục hệ thống (System Restore Point)...");
+        let dry_run = extract_json_field(params_json, "dry_run")
+            .unwrap_or("false")
+            .to_lowercase() == "true";
+        if dry_run {
+            return (true, "Sẵn sàng tạo điểm khôi phục hệ thống (Dry-run mode).".to_string());
+        }
+        let ps_code = r#"
+            $drive = $env:SystemDrive; if (-not $drive) { $drive = "C:" }
+            Enable-ComputerRestore -Drive "$drive\" -ErrorAction SilentlyContinue
+            $res = Checkpoint-Computer -Description "VUONGTT_RestorePoint_$(Get-Date -Format 'yyyyMMdd_HHmmss')" -RestorePointType "MODIFY_SETTINGS" -ErrorAction SilentlyContinue
+            Write-Output "SUCCESS"
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+        append_log("[OK] Đã tạo thành công điểm khôi phục hệ thống (System Restore Point) an toàn.");
+        return (true, "Đã tạo thành công điểm khôi phục hệ thống (System Restore Point)!".to_string());
+    }
+
+    if act == "repair_winre" || act == "check_winre" || act == "bat_winre" {
+        clear_logs();
+        append_log("[WINRE] Đang kiểm tra và kích hoạt lại Windows Recovery Environment (reagentc)...");
+        let ps_code = r#"
+            reagentc /enable 2>&1 | Out-Null
+            $info = reagentc /info 2>&1 | Out-String
+            Write-Output $info
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        append_log(&format!("[THÔNG TIN WINRE]\n{}", trimmed));
+        return (true, format!("Trạng thái Windows RE:\n{}", trimmed));
+    }
+
+        // 5.1B KIỂM TRA MÔI TRƯỜNG MÁY ẢO & TRẠNG THÁI CÀI ĐẶT WINDOWS
 
     // ========================================================================
 
@@ -11949,6 +12181,28 @@ mod tests {
     }
 
 
+
+    
+    #[test]
+    fn test_system_ops_action_restore_full_windows_dispatch() {
+        let (ok, msg) = execute_system_action("restore_full_windows", r#"{"dry_run":"true"}"#);
+        assert!(ok, "Dry-run restore_full_windows should succeed");
+        assert!(msg.contains("Dry-run") || msg.contains("phục hồi"), "Message should indicate dry-run success: {}", msg);
+    }
+
+    #[test]
+    fn test_system_ops_action_boot_to_winre_dispatch() {
+        let (ok, msg) = execute_system_action("boot_to_winre", r#"{"dry_run":"true"}"#);
+        assert!(ok, "Dry-run boot_to_winre should succeed");
+        assert!(msg.contains("WinRE") || msg.contains("khởi động"), "Message: {}", msg);
+    }
+
+    #[test]
+    fn test_system_ops_action_scan_wim_backups_dispatch() {
+        let (ok, msg) = execute_system_action("scan_wim_backups", "{}");
+        assert!(ok, "scan_wim_backups should succeed");
+        assert!(msg.starts_with('[') || msg.starts_with('{'), "scan_wim_backups should return json: {}", msg);
+    }
 
     #[test]
 

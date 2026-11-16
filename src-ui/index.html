@@ -281,7 +281,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.160</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.161</span>
       </div>
     </div>
 
@@ -2619,7 +2619,66 @@
               </button>
             </div>
 
-            <!-- Card 2: Driver Backup & Export -->
+            <!-- Card 2: Windows System Restore & Recovery -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-2 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-rose-500 text-[18px]">restore_page</span>
+                  <span>Phục Hồi Hệ Thống Windows (Windows System &amp; Image Restore)</span>
+                </div>
+                <button id="btn-scan-wim-backups" onclick="scanWimBackups()" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-[11px] font-medium flex items-center gap-1 shadow-2xs">
+                  <span class="material-symbols-outlined text-[14px]">sync</span>
+                  <span>Quét Bản Backup</span>
+                </button>
+              </div>
+              <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+                Khôi phục Windows từ file ảnh sao lưu (.wim/.vhd), khởi động vào môi trường cứu hộ Windows RE để sửa lỗi hoặc mở trình khôi phục điểm sao lưu System Restore (rstrui).
+              </p>
+              
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3 text-xs">
+                <div class="flex-1">
+                  <label class="block text-slate-500 font-medium mb-1">Chọn Bản Sao Lưu WIM Đã Có:</label>
+                  <select id="sel-restore-wim-file" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-mono outline-none">
+                    <option value="">-- Đang tìm kiếm bản sao lưu .wim... --</option>
+                  </select>
+                </div>
+                <div class="sm:self-end">
+                  <button id="btn-browse-wim-file" onclick="browseWimFile()" class="w-full sm:w-auto px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center justify-center gap-1.5 shadow-2xs">
+                    <span class="material-symbols-outlined text-[16px]">folder_open</span>
+                    <span>Chọn File WIM...</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs text-slate-600 mb-3 font-mono">
+                <span id="restore-system-target-desc">Trạng thái phục hồi: Sẵn sàng khôi phục hệ thống Windows C:</span>
+              </div>
+
+              <div class="flex items-center flex-wrap gap-2">
+                <button id="btn-restore-wim-system" onclick="restoreSystemWim()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">system_update_alt</span>
+                  <span id="btn-restore-wim-label">Phục Hồi Bản Chụp WIM</span>
+                </button>
+                <button id="btn-boot-winre" onclick="bootToWinRE()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5" title="Khởi động vào chế độ cứu hộ Windows RE">
+                  <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                  <span>Khởi Động Vào WinRE</span>
+                </button>
+                <button id="btn-open-system-restore" onclick="openSystemRestore()" class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">history</span>
+                  <span>Mở System Restore</span>
+                </button>
+                <button id="btn-create-restore-point" onclick="createRestorePoint()" class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">add_task</span>
+                  <span>Tạo Điểm Khôi Phục</span>
+                </button>
+                <button id="btn-check-winre" onclick="checkOrRepairWinRE()" class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">build_circle</span>
+                  <span>Sửa &amp; Bật WinRE</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Card 3: Driver Backup & Export -->
             <div class="glass-card p-4">
               <div class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">
                 <span class="material-symbols-outlined text-sky-500 text-[18px]">devices</span>
