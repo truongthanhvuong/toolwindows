@@ -6434,9 +6434,10 @@ th { background: #222a3d; color: #6ffbbe; }
                 }}
             }}
 
+            $ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
             $urls = @(
-                "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
-                "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe"
+                "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe?t=$ts",
+                "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe?t=$ts"
             )
 
             $tempExe = Join-Path $env:TEMP "VUONGTT_Toolkit_latest.exe"
@@ -6466,7 +6467,7 @@ th { background: #222a3d; color: #6ffbbe; }
             $batContent = @"
 @echo off
 setlocal enabledelayedexpansion
-timeout /t 1 /nobreak >nul
+timeout /t 2 /nobreak >nul
 taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
 taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
 timeout /t 1 /nobreak >nul
@@ -6476,7 +6477,7 @@ set RETRY=0
 copy /Y "%~1" "%~2" >nul 2>&1
 if not errorlevel 1 goto DONE_COPY
 set /a RETRY+=1
-if %RETRY% geq 15 goto DONE_COPY
+if %RETRY% geq 20 goto DONE_COPY
 timeout /t 1 /nobreak >nul
 goto RETRY_LOOP
 
@@ -6484,12 +6485,7 @@ goto RETRY_LOOP
 if exist "E:\toolwindows\VUONGTT_Toolkit.exe" copy /Y "%~1" "E:\toolwindows\VUONGTT_Toolkit.exe" >nul 2>&1
 if exist "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "%~1" "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Unblock-File -Path '%~2' -ErrorAction SilentlyContinue"
-if exist "%~2" (
-    start "" "%~2"
-) else if exist "E:\toolwindows\VUONGTT_Toolkit.exe" (
-    start "" "E:\toolwindows\VUONGTT_Toolkit.exe"
-)
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path '%~2' -ErrorAction SilentlyContinue; Start-Process -FilePath '%~2' -Verb RunAs" -WindowStyle Hidden
 timeout /t 1 /nobreak >nul
 del /f /q "%~1" >nul 2>&1
 (goto) 2>nul & del "%~f0"

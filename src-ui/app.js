@@ -85,35 +85,37 @@
   }
   window.invokeRust = invokeRust;
 
-  // --- 2. TOAST NOTIFICATION SYSTEM ---
+  // --- 2. TOAST NOTIFICATION SYSTEM (RO NET 100% ULTRA CONTRAST) ---
   function showToast(title, message, type = "info") {
     const container = document.getElementById("rust-toast-container");
     if (!container) return;
 
     const iconMap = {
-      info: { icon: "bolt", color: "#b4c5ff" },
-      success: { icon: "check_circle", color: "#4edea3" },
-      warning: { icon: "warning", color: "#f59e0b" },
-      error: { icon: "error", color: "#ffb4ab" },
+      info: { icon: "bolt", color: "#38bdf8", border: "border-sky-500/50" },
+      success: { icon: "check_circle", color: "#34d399", border: "border-emerald-500/50" },
+      warning: { icon: "warning", color: "#fbbf24", border: "border-amber-500/50" },
+      error: { icon: "error", color: "#f87171", border: "border-rose-500/50" },
     };
     const cfg = iconMap[type] || iconMap.info;
 
     const toast = document.createElement("div");
-    toast.className = "rust-toast";
+    toast.className = `rust-toast ${cfg.border}`;
     toast.innerHTML = `
-      <span class="material-symbols-outlined" style="color:${cfg.color};font-size:20px">${cfg.icon}</span>
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:12.5px;color:#dae2fd">${title}</div>
-        <div style="font-size:11.5px;color:#c3c6d7;margin-top:2px">${message}</div>
+      <span class="material-symbols-outlined shrink-0" style="color:${cfg.color};font-size:22px">${cfg.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div class="toast-title">${title}</div>
+        <div class="toast-msg">${message}</div>
       </div>
+      <button type="button" class="text-slate-400 hover:text-white transition-colors cursor-pointer text-xs p-1 ml-1 leading-none shrink-0" onclick="this.parentElement.remove()" title="Đóng">✕</button>
     `;
     container.appendChild(toast);
 
     setTimeout(() => {
       toast.style.opacity = "0";
-      toast.style.transition = "opacity 0.25s ease";
+      toast.style.transform = "translateY(8px)";
+      toast.style.transition = "opacity 0.25s ease, transform 0.25s ease";
       setTimeout(() => toast.remove(), 260);
-    }, 3800);
+    }, 4500);
   }
   window.showRustToast = showToast;
   window.showToast = showToast;
@@ -5167,11 +5169,17 @@ getAppIconMarkup(app) +
   let isUpdatingInProgress = false;
 
   window.triggerManualUpdate = async function () {
+    const updateBtn = document.getElementById("btn-header-update");
     if (isUpdatingInProgress) {
-      showToast("Đang Cập Nhật", "Hệ thống đang tải dữ liệu cập nhật, vui lòng đợi trong giây lát...", "info");
+      showToast("Đang Xử Lý Cập Nhật", "Hệ thống đang tải dữ liệu từ GitHub, vui lòng chờ trong giây lát...", "info");
       return;
     }
     isUpdatingInProgress = true;
+    if (updateBtn) {
+      updateBtn.disabled = true;
+      updateBtn.innerHTML = '<span class="material-symbols-outlined text-[15px] animate-spin text-sky-400">sync</span><span>Đang Tải...</span>';
+    }
+
     showToast("Kiểm Tra Cập Nhật", "Đang kết nối GitHub để kiểm tra phiên bản mới nhất...", "info");
 
     try {
@@ -5187,7 +5195,7 @@ getAppIconMarkup(app) +
       if (updateInfo && updateInfo.has_update) {
         showToast("Phát Hiện Bản Mới", `Phát hiện bản nâng cấp v${newVer} (hiện tại: v${curVer})! Đang tự động tải và cài đặt...`, "info");
       } else {
-        showToast("Tải Bản Mới Nhất", `Đang tải và cập nhật phiên bản mới nhất từ GitHub...`, "info");
+        showToast("Tải Bản Mới Nhất", `Đang tải bản mới nhất trực tiếp từ GitHub...`, "info");
       }
 
       const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
@@ -5197,12 +5205,18 @@ getAppIconMarkup(app) +
           invokeRust("window_control", { action: "close" }).catch(() => {});
         }, 1800);
       } else {
-        isUpdatingInProgress = false;
         showToast("Thông Báo Cập Nhật", (applyRes && applyRes.message) || "Không thể tải bản cập nhật tự động. Vui lòng kiểm tra lại kết nối mạng!", "warning");
       }
     } catch (err) {
-      isUpdatingInProgress = false;
       showToast("Lỗi Cập Nhật", String(err), "error");
+    } finally {
+      setTimeout(() => {
+        isUpdatingInProgress = false;
+        if (updateBtn) {
+          updateBtn.disabled = false;
+          updateBtn.innerHTML = '<span class="material-symbols-outlined text-[15px]">cloud_download</span><span>Cập Nhật</span>';
+        }
+      }, 3500);
     }
   };
 
