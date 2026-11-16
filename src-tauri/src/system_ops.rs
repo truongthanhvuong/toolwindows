@@ -6346,130 +6346,108 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
     if act == "apply_update" || act == "download_and_apply_update" || act == "tu_dong_cap_nhat" {
-
         let ps_code = r#"
-
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13 -bor [Net.SecurityProtocolType]::Tls
-
-            $currExe = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
-
+            
+            $currExe = ""
+            try {
+                $currExe = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+            } catch {}
+            
             if (-not $currExe -or $currExe -match "cargo|target|rustc") {
-
-                $currExe = "E:	oolwindows\VUONGTT_Toolkit.exe"
-
+                if (Test-Path "E:\toolwindows\VUONGTT_Toolkit.exe") {
+                    $currExe = "E:\toolwindows\VUONGTT_Toolkit.exe"
+                } elseif (Test-Path "$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe") {
+                    $currExe = "$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe"
+                } else {
+                    $currExe = "E:\toolwindows\VUONGTT_Toolkit.exe"
+                }
             }
 
-            $targetDir = Split-Path $currExe
-
-            $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe"
+            $urls = @(
+                "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
+                "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe",
+                "https://cdn.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/VUONGTT_Toolkit.exe"
+            )
 
             $tempExe = Join-Path $env:TEMP "VUONGTT_Toolkit_latest.exe"
+            if (Test-Path $tempExe) { Remove-Item $tempExe -Force -ErrorAction SilentlyContinue }
 
-
-
-            try {
-
-                $wc = New-Object System.Net.WebClient
-
-                $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
-
-                $wc.DownloadFile($url, $tempExe)
-
-
-
-                if ((Test-Path $tempExe) -and ((Get-Item $tempExe).Length -gt 1000000)) {
-
-                    $runnerBat = Join-Path $env:TEMP "vuongtt_update_runner.cmd"
-
-                    $batContent = @"
-
-@echo off
-
-timeout /t 1 /nobreak >nul
-
-taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
-
-taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
-
-timeout /t 1 /nobreak >nul
-
-copy /Y "$tempExe" "$currExe" >nul 2>&1
-
-if exist "E:	oolwindows\VUONGTT_Toolkit.exe" copy /Y "$tempExe" "E:	oolwindows\VUONGTT_Toolkit.exe" >nul 2>&1
-
-if exist "$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "$tempExe" "$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1
-
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path '$currExe' -ErrorAction SilentlyContinue"
-
-start "" "$currExe"
-
-del /f /q "$tempExe" >nul 2>&1
-
-del /f /q "%~f0" >nul 2>&1
-
-"@
-
-                    [System.IO.File]::WriteAllText($runnerBat, $batContent, [System.Text.Encoding]::ASCII)
-
-                    Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$runnerBat`""
-
-                    Write-Output "UPDATE_READY"
-
-                } else {
-
-                    Write-Output "DOWNLOAD_FAILED"
-
-                }
-
-            } catch {
-
+            $downloaded = $false
+            foreach ($url in $urls) {
                 try {
+                    $wc = New-Object System.Net.WebClient
+                    $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                    $wc.DownloadFile($url, $tempExe)
 
-                    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex`"" -Verb RunAs
-
-                    Write-Output "UPDATE_READY"
-
-                } catch {
-
-                    Write-Output "UPDATE_FAILED: $($_.Exception.Message)"
-
-                }
-
+                    if ((Test-Path $tempExe) -and ((Get-Item $tempExe).Length -gt 1000000)) {
+                        $downloaded = $true
+                        break
+                    }
+                } catch {}
             }
 
+            if (-not $downloaded) {
+                Write-Output "DOWNLOAD_FAILED"
+                return
+            }
+
+            # Tao runner bat doc lap va an toan (khong hien console den)
+            $runnerBat = Join-Path $env:TEMP "vuongtt_update_runner.cmd"
+            $batContent = @"
+@echo off
+timeout /t 2 /nobreak >nul
+taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
+taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+set RETRY=0
+:RETRY_LOOP
+copy /Y "%~1" "%~2" >nul 2>&1
+if not errorlevel 1 goto DONE_COPY
+set /a RETRY+=1
+if %RETRY% geq 15 goto DONE_COPY
+timeout /t 1 /nobreak >nul
+goto RETRY_LOOP
+
+:DONE_COPY
+if exist "E:\toolwindows\VUONGTT_Toolkit.exe" copy /Y "%~1" "E:\toolwindows\VUONGTT_Toolkit.exe" >nul 2>&1
+if exist "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "%~1" "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Unblock-File -Path '%~2' -ErrorAction SilentlyContinue"
+start "" "%~2"
+timeout /t 1 /nobreak >nul
+del /f /q "%~1" >nul 2>&1
+del /f /q "%~f0" >nul 2>&1
+"@
+            [System.IO.File]::WriteAllText($runnerBat, $batContent, [System.Text.Encoding]::ASCII)
+
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = "cmd.exe"
+            $psi.Arguments = "/c `"$runnerBat`" `"$tempExe`" `"$currExe`""
+            $psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+            $psi.CreateNoWindow = $true
+            [System.Diagnostics.Process]::Start($psi) | Out-Null
+
+            Write-Output "UPDATE_READY"
         "#;
 
         let mut cmd = Command::new("powershell");
-
         cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
-
         #[cfg(windows)]
-
         cmd.creation_flags(CREATE_NO_WINDOW);
-
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
-
         let trimmed = out.trim();
 
         return (
-
             trimmed.contains("UPDATE_READY"),
-
             if trimmed.contains("UPDATE_READY") {
-
-                "Đang tải bản mới nhất từ GitHub và tự động cập nhật hệ thống...".to_string()
-
+                "Đã tải thành công bản cập nhật mới nhất từ GitHub! Hệ thống đang tự động nâng cấp và khởi động lại...".to_string()
             } else {
-
-                format!("Không thể kích hoạt cập nhật: {}", trimmed)
-
+                "Không thể tải bản cập nhật tự động. Vui lòng kiểm tra kết nối mạng và thử lại sau!".to_string()
             },
-
         );
-
     }
-
-
 
     if act == "restart_app" || act == "exit_app" {
 

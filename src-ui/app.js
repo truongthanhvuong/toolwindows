@@ -5035,8 +5035,16 @@
   }
 
   // --- 15. HEADER CONTROLS & AUTO-UPDATE ENGINE ---
-  window.triggerManualUpdate = async function() {
-    showToast("Kiểm Tra Cập Nhật", "Đang kết nối GitHub kiểm tra phiên bản mới nhất...", "info");
+  let isUpdatingInProgress = false;
+
+  window.triggerManualUpdate = async function () {
+    if (isUpdatingInProgress) {
+      showToast("Đang Cập Nhật", "Hệ thống đang tải dữ liệu cập nhật, vui lòng đợi trong giây lát...", "info");
+      return;
+    }
+    isUpdatingInProgress = true;
+    showToast("Cập Nhật Hệ Thống", "Đang kết nối GitHub và kiểm tra bản phát hành mới...", "info");
+
     try {
       const res = await invokeRust("run_system_action", { actionId: "check_update" });
       let updateInfo = null;
@@ -5044,21 +5052,23 @@
         if (res && res.message) updateInfo = JSON.parse(res.message);
       } catch (_) {}
 
-      if (updateInfo && updateInfo.has_update) {
-        const newVer = updateInfo.latest_version;
-        const curVer = updateInfo.current_version;
-        showToast("Phát Hiện Bản Mới", `Đang tự động tải VUONGTT Toolkit v${newVer} từ GitHub và nâng cấp...`, "info");
-        const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
-        if (applyRes && applyRes.success) {
-          showToast("Đang Cập Nhật", "Tải bản mới thành công! Ứng dụng sẽ tự động khởi động lại sau giây lát.", "success");
-        } else {
-          showToast("Cập Nhật", (applyRes && applyRes.message) || "Đang thực hiện cập nhật...", "info");
-        }
+      const curVer = (updateInfo && updateInfo.current_version) || "2026";
+      const newVer = (updateInfo && updateInfo.latest_version) || curVer;
+
+      showToast("Đang Tải Bản Mới", `Đang tải bản cập nhật mới nhất (v${newVer}) trực tiếp từ GitHub...`, "info");
+
+      const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
+      if (applyRes && applyRes.success) {
+        showToast("Cập Nhật Thành Công", "Đã tải bản mới nhất! Ứng dụng đang tự động thay thế và khởi động lại sau 2 giây...", "success");
+        setTimeout(() => {
+          invokeRust("window_control", { action: "close" }).catch(() => {});
+        }, 1800);
       } else {
-        const curVer = (updateInfo && updateInfo.current_version) || "mới nhất";
-        showToast("Phiên Bản Mới Nhất", `Bạn đang ở phiên bản mới nhất (v${curVer}) từ GitHub!`, "success");
+        isUpdatingInProgress = false;
+        showToast("Thông Báo", (applyRes && applyRes.message) || "Không thể tải bản cập nhật tự động. Vui lòng kiểm tra lại kết nối mạng!", "warning");
       }
     } catch (err) {
+      isUpdatingInProgress = false;
       showToast("Lỗi Cập Nhật", String(err), "error");
     }
   };
@@ -5090,10 +5100,16 @@
           btnHeaderUpdate.classList.add("animate-pulse");
           btnHeaderUpdate.title = `Có bản cập nhật mới v${newVer}! Bấm để nâng cấp ngay.`;
         }
-        // Tu dong tai va cap nhat len ban moi nhat
+        // Tự động tải và cập nhật lên bản mới nhất
         setTimeout(async () => {
-          await invokeRust("run_system_action", { actionId: "apply_update" });
-        }, 1500);
+          const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
+          if (applyRes && applyRes.success) {
+            showToast("Đang Cập Nhật", "Tải bản mới thành công! Ứng dụng đang tự khởi động lại...", "success");
+            setTimeout(() => {
+              invokeRust("window_control", { action: "close" }).catch(() => {});
+            }, 1800);
+          }
+        }, 2500);
       }
     } catch (_) {}
   }
@@ -5120,11 +5136,16 @@
         showToast("Language", "English language interface selected!", "info");
       });
     }
-    const triggerUpdate = () => checkForUpdate(true);
-    if (btnHeaderUpdate) {
+    const triggerUpdate = (e) => {
+      if (e) e.preventDefault();
+      checkForUpdate(true);
+    };
+    if (btnHeaderUpdate && !btnHeaderUpdate._hasUpdateListener) {
+      btnHeaderUpdate._hasUpdateListener = true;
       btnHeaderUpdate.addEventListener("click", triggerUpdate);
     }
-    if (btnCheckUpdate) {
+    if (btnCheckUpdate && !btnCheckUpdate._hasUpdateListener) {
+      btnCheckUpdate._hasUpdateListener = true;
       btnCheckUpdate.addEventListener("click", triggerUpdate);
     }
   }

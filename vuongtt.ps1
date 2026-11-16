@@ -228,15 +228,7 @@ if ($needDownload) {
     $tempDownload = Join-Path $installDir "VUONGTT_Toolkit_dl.exe"
     if (Test-Path $tempDownload) { Remove-Item $tempDownload -Force -ErrorAction SilentlyContinue }
 
-    # Dung tien trinh cu neu dang chay
-    taskkill /F /IM "VUONGTT_Toolkit.exe" /T 2>&1 | Out-Null
-    taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T 2>&1 | Out-Null
-    $stopAttempts = 5
-    while ((Get-Process -Name "VUONGTT_Toolkit*" -ErrorAction SilentlyContinue) -and ($stopAttempts -gt 0)) {
-        Get-Process -Name "VUONGTT_Toolkit*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Milliseconds 300
-        $stopAttempts--
-    }
+    # Chi dung tien trinh cu khi da tai xong ban moi thanh cong
 
     foreach ($url in $urls) {
         try {
