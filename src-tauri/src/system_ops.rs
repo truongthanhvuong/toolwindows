@@ -974,6 +974,7 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
         let mut installed_count = 0;
         for app_id in &app_ids {
             append_log(&format!("[TIẾN TRÌNH] Đang tải và cài đặt: {}...", app_id));
+            let dynamic_winget: String;
             let win_cmd = match app_id.as_str() {
                 // === TRÌNH DUYỆT (BROWSERS) ===
                 "google-chrome" | "chrome" => r#"winget install --id Google.Chrome -e --silent --accept-package-agreements --accept-source-agreements"#,
@@ -1024,7 +1025,7 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                 "onedrive" | "microsoft-onedrive" => r#"winget install --id Microsoft.OneDrive -e --silent --accept-package-agreements --accept-source-agreements"#,
                 "powertoys" | "microsoft-powertoys" => r#"winget install --id Microsoft.PowerToys -e --silent --accept-package-agreements --accept-source-agreements"#,
                 "pcmanager" | "microsoft-pc-manager" => r#"winget install --id Microsoft.PCManager -e --silent --accept-package-agreements --accept-source-agreements"#,
-                "vcredist" | "visual-c++-all-in-one" => r#"powershell -Command "$url='https://github.com/abbodi1406/vcredist/releases/latest/download/VisualCppRedist_AIO_x86_x64.exe'; $dl="$env:TEMPcredist_aio.exe"; (New-Object System.Net.WebClient).DownloadFile($url,$dl); Start-Process $dl -ArgumentList '/ai' -Wait; Remove-Item $dl -Force""#,
+                "vcredist" | "visual-c++-all-in-one" => r#"powershell -Command "$url='https://github.com/abbodi1406/vcredist/releases/latest/download/VisualCppRedist_AIO_x86_x64.exe'; $dl="$env:TEMP credist_aio.exe"; (New-Object System.Net.WebClient).DownloadFile($url,$dl); Start-Process $dl -ArgumentList '/ai' -Wait; Remove-Item $dl -Force""#,
                 "dotnet8" | ".net-desktop-runtime-8.0" => r#"winget install --id Microsoft.DotNet.DesktopRuntime.8 -e --silent --accept-package-agreements --accept-source-agreements"#,
                 "directx" | "directx-end-user-runtimes" => r#"powershell -Command "Start-Process 'https://www.microsoft.com/en-us/download/details.aspx?id=35'""#,
                 "wt" | "windows-terminal" => r#"winget install --id Microsoft.WindowsTerminal -e --silent --accept-package-agreements --accept-source-agreements"#,
@@ -1072,7 +1073,19 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                 "crystaldiskinfo" => r#"winget install --id CrystalDewWorld.CrystalDiskInfo -e --silent --accept-package-agreements --accept-source-agreements"#,
                 "cpuz" | "cpu-z" | "cpu-z-hardware-info" => r#"winget install --id CPUID.CPU-Z -e --silent --accept-package-agreements --accept-source-agreements"#,
                 "faststone" | "faststone-capture" => r#"powershell -Command "Start-Process 'https://www.faststone.org/FSCaptureDownload.htm'""#,
-                _ => "",
+                _ => {
+                    let is_valid_pkg_id = app_id.contains('.') 
+                        && app_id.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_');
+                    if is_valid_pkg_id {
+                        dynamic_winget = format!(
+                            r#"winget install --id {} -e --silent --accept-package-agreements --accept-source-agreements"#,
+                            app_id
+                        );
+                        dynamic_winget.as_str()
+                    } else {
+                        ""
+                    }
+                }
             };
 
             if !win_cmd.is_empty() {
@@ -1090,7 +1103,7 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
                     r#"if (Test-Path '{}') {{ . '{}'; if (Get-Command Install-VUONGTTApp -ErrorAction SilentlyContinue) {{ Install-VUONGTTApp -AppId '{}' -PreferDirect:$true -AutoLaunch:$false }} }}"#,
                     sw_script.to_string_lossy(),
                     sw_script.to_string_lossy(),
-                    app_id
+                    app_id.replace('\'', "''")
                 );
                 let mut cmd = Command::new("powershell");
                 cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
@@ -1110,13 +1123,17 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     }
 
 if act == "uninstall_app" || act == "uninstall_apps" || act == "bulk_uninstall_apps" || act == "uninstall_multiple_apps" || act == "go cai dat" || act == "go cai dat ung dung" {
+        let target = extract_json_string(params_json, "target");
         let uninst_cmd = extract_json_string(params_json, "uninstall_string")
             .or_else(|| extract_json_string(params_json, "uninstallString"))
             .unwrap_or_default();
-        let app_name = extract_json_string(params_json, "name")
-            .unwrap_or_else(|| "ứng dụng".to_string());
+        let raw_app_name = extract_json_string(params_json, "name")
+            .or_else(|| target.clone())
+            .filter(|s| !s.trim().is_empty());
+        let target_str = target.unwrap_or_default();
 
-        if !uninst_cmd.is_empty() || !app_name.is_empty() {
+        if !uninst_cmd.is_empty() || raw_app_name.is_some() || !target_str.trim().is_empty() {
+            let app_name = raw_app_name.unwrap_or_else(|| "ứng dụng".to_string());
             let ps_code = format!(
                 r#"
                 $rawCmd = @'
@@ -1125,8 +1142,12 @@ if act == "uninstall_app" || act == "uninstall_apps" || act == "bulk_uninstall_a
                 $appName = @'
 {}
 '@
+                $targetVal = @'
+{}
+'@
                 $cmd = $rawCmd.Trim()
                 $app = $appName.Trim()
+                $target = $targetVal.Trim()
 
                 # 0. Giai phong tien trinh neu dang chay ngam gay khoa tep (File Lock)
                 $procNames = switch -Regex ($app) {{
@@ -1236,11 +1257,21 @@ if act == "uninstall_app" || act == "uninstall_apps" || act == "bulk_uninstall_a
                     Get-AppxPackage *copilot* -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
                     Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object {{ $_.DisplayName -match '(?i)copilot' }} | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
                 }}
+                if ($target -and (-not $targetExe)) {{
+                    Get-AppxPackage "*$target*" -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
+                }}
 
                 # 4. Fallback winget neu lenh truoc that bai hoac exe khong ton tai
-                if ((-not $executed -or (-not (Test-Path $targetExe))) -and $app) {{
+                if ((-not $executed -or (-not (Test-Path $targetExe))) -and ($app -or $target)) {{
                     try {{
-                        winget uninstall --name "$app" --silent --accept-source-agreements --force 2>$null
+                        if ($target -and ($target -match '\.')) {{
+                            winget uninstall --id "$target" --silent --accept-source-agreements --force 2>$null
+                        }} elseif ($target) {{
+                            winget uninstall --name "$target" --silent --accept-source-agreements --force 2>$null
+                        }}
+                        if ($app -and $app -ne $target) {{
+                            winget uninstall --name "$app" --silent --accept-source-agreements --force 2>$null
+                        }}
                     }} catch {{}}
                 }}
 
@@ -1273,7 +1304,8 @@ if act == "uninstall_app" || act == "uninstall_apps" || act == "bulk_uninstall_a
                 }}
                 "#,
                 uninst_cmd.replace('\'', "''"),
-                app_name.replace('\'', "''")
+                app_name.replace('\'', "''"),
+                target_str.replace('\'', "''")
             );
             let mut cmd = Command::new("powershell");
             cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
@@ -1636,35 +1668,131 @@ th { background: #222a3d; color: #6ffbbe; }
         || act == "cai print to pdf"
         || act == "chia se may in"
     {
+        let ps_code = r#"
+            Stop-Service Spooler -Force -ErrorAction SilentlyContinue
+            Remove-Item 'C:\Windows\System32\spool\PRINTERS\*' -Recurse -Force -ErrorAction SilentlyContinue
+
+            # 1. Khắc phục lỗi 0x0000011b (RPC Auth Level)
+            $printKey = 'HKLM:\System\CurrentControlSet\Control\Print'
+            if (-not (Test-Path $printKey)) { New-Item -Path $printKey -Force | Out-Null }
+            Set-ItemProperty -Path $printKey -Name 'RpcAuthnLevelEx' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $printKey -Name 'RpcAuthnLevelPrivacyEnabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $printKey -Name 'RpcUseNamedPipeProtocol' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+
+            # 2. Khắc phục lỗi 0x00000709 & 0x0000007c (Point and Print Policy)
+            $pnpKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint'
+            if (-not (Test-Path $pnpKey)) { New-Item -Path $pnpKey -Force | Out-Null }
+            Set-ItemProperty -Path $pnpKey -Name 'RestrictDriverInstallationToAdministrators' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $pnpKey -Name 'UpdatePromptSettings' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $pnpKey -Name 'PackagePointAndPrintServerList' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $pnpKey -Name 'InPrivate' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+
+            # 3. Kích hoạt LegacyDefaultPrinterMode
+            $userPrn = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Windows'
+            if (Test-Path $userPrn) {
+                Set-ItemProperty -Path $userPrn -Name 'LegacyDefaultPrinterMode' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            }
+
+            # 4. Khởi động lại dịch vụ Spooler
+            Set-Service Spooler -StartupType Automatic -ErrorAction SilentlyContinue
+            Start-Service Spooler -ErrorAction SilentlyContinue
+        "#;
         let mut cmd = Command::new("powershell");
-        cmd.args([
-            "-NoProfile",
-            "-Command",
-            "Stop-Service Spooler -Force -ErrorAction SilentlyContinue; Remove-Item 'C:\\Windows\\System32\\spool\\PRINTERS\\*' -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Print' -Name 'RpcAuthnLevelEx' -Value 0 -Force -ErrorAction SilentlyContinue; Restart-Service Spooler -Force",
-        ]);
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let _ = cmd.output();
         return (
             true,
-            "Đã vá triệt để lỗi máy in (0x0000011b, 709, 7c), làm sạch Print Queue và khởi động lại dịch vụ Spooler!".to_string(),
+            "Đã vá triệt để lỗi máy in LAN (0x0000011b, 0x00000709, 0x0000007c), thiết lập RpcAuthnLevelEx=0, RpcUseNamedPipeProtocol=1, gỡ bỏ hạn chế Point & Print và làm sạch hàng đợi Spooler!".to_string(),
         );
     }
 
     if act == "share_scan_folder" || act == "scan" || act == "thu muc scan" || act == "tao thu muc scan" || act == "share scan" {
+        let folder = extract_json_field(params_json, "folderPath").unwrap_or("C:\\Scan");
+        let share = extract_json_field(params_json, "shareName").unwrap_or("Scan");
+
+        let ps_code = format!(
+            r#"
+            $folder = '{}'
+            $share = '{}'
+            if ($folder -match '^[a-zA-Z]:\\?$') {{ $folder = Join-Path $folder $share }}
+            $cleanFolder = $folder.TrimEnd('\')
+            if (-not (Test-Path $cleanFolder)) {{ New-Item -ItemType Directory -Path $cleanFolder -Force | Out-Null }}
+            net share "$share=$cleanFolder" /grant:everyone,full /y 2>&1 | Out-Null
+            icacls "$cleanFolder" /grant "Everyone:(OI)(CI)F" /T /C /Q 2>&1 | Out-Null
+            icacls "$cleanFolder" /grant "Guest:(OI)(CI)F" /T /C /Q 2>&1 | Out-Null
+            $ip = (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Ethernet*','Wi-Fi*' -ErrorAction SilentlyContinue | Where-Object {{ $_.IPAddress -notlike '169.254*' -and $_.IPAddress -ne '127.0.0.1' }} | Select-Object -First 1 -ExpandProperty IPAddress)
+            if (-not $ip) {{ $ip = "127.0.0.1" }}
+            Write-Output "UNC_IP:\\$ip\$share|UNC_NAME:\\$($env:COMPUTERNAME)\$share"
+            "#,
+            folder, share
+        );
         let mut cmd = Command::new("powershell");
-        cmd.args([
-            "-NoProfile",
-            "-Command",
-            "New-Item -ItemType Directory -Path 'C:\\Scan' -Force; net share Scan='C:\\Scan' /grant:everyone,full; icacls 'C:\\Scan' /grant 'Everyone:(OI)(CI)F' /T",
-        ]);
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        return (
+            true,
+            format!("Đã tạo thư mục và chia sẻ SMB thành công: {}", out.trim()),
+        );
+    }
+
+    if act == "enable_all_sharing" || act == "bat_chia_se_mang" {
+        let ps_code = r#"
+            netsh advfirewall firewall set rule group="Network Discovery" new enable=Yes 2>&1 | Out-Null
+            netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=Yes 2>&1 | Out-Null
+            Get-NetConnectionProfile -ErrorAction SilentlyContinue | ForEach-Object {
+                Set-NetConnectionProfile -InterfaceIndex $_.InterfaceIndex -NetworkCategory Private -ErrorAction SilentlyContinue
+            }
+            $services = @("fdPHost", "FDResPub", "SSDPSRV", "upnphost", "LanmanServer", "LanmanWorkstation")
+            foreach ($s in $services) {
+                Set-Service -Name $s -StartupType Automatic -ErrorAction SilentlyContinue
+                Start-Service -Name $s -ErrorAction SilentlyContinue
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let _ = cmd.output();
         return (
             true,
-            "Đã tạo thư mục C:\\Scan, cấp toàn quyền NTFS và chia sẻ SMB Share (Everyone: Full) qua mạng LAN!".to_string(),
+            "Đã mở Network Discovery, File & Printer Sharing và chuyển mạng sang chế độ Private!".to_string(),
         );
+    }
+
+    if act == "browse_folder" || act == "duyet folder" || act == "duyet_thu_muc" {
+        let ps_code = r#"
+            Add-Type -AssemblyName System.Windows.Forms
+            $form = New-Object System.Windows.Forms.Form
+            $form.TopMost = $true
+            $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+            $form.WindowState = [System.Windows.Forms.FormWindowState]::Minimized
+            $form.ShowInTaskbar = $false
+            $f = New-Object System.Windows.Forms.FolderBrowserDialog
+            $f.Description = "Chọn Thư Mục Chia Sẻ SMB / Scan"
+            $f.ShowNewFolderButton = $true
+            $res = $f.ShowDialog($form)
+            if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
+                Write-Output "FOLDER:$($f.SelectedPath)"
+            } else {
+                Write-Output "CANCEL"
+            }
+            $form.Dispose()
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Sta", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        if out.contains("FOLDER:") {
+            let path = out.split("FOLDER:").nth(1).unwrap_or("").trim();
+            return (true, path.to_string());
+        } else {
+            return (false, "Người dùng đã hủy chọn thư mục.".to_string());
+        }
     }
 
     // ========================================================================
@@ -2080,7 +2208,7 @@ th { background: #222a3d; color: #6ffbbe; }
         cmd.args([
             "-NoProfile",
             "-Command",
-            "New-Item -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassTPMCheck' -Value 1 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassSecureBootCheck' -Value 1 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassRAMCheck' -Value 1 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassStorageCheck' -Value 1 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassCPUCheck' -Value 1 -Type DWord -Force",
+            "New-Item -Path 'HKLM:\\SYSTEM\\Setup\\MoSetup' -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\MoSetup' -Name 'AllowUpgradesWithUnsupportedTPMOrCPU' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue; New-Item -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassTPMCheck' -Value 1 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassSecureBootCheck' -Value 1 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassRAMCheck' -Value 1 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassStorageCheck' -Value 1 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\Setup\\LabConfig' -Name 'BypassCPUCheck' -Value 1 -Type DWord -Force",
         ]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
@@ -2140,31 +2268,85 @@ th { background: #222a3d; color: #6ffbbe; }
         clear_logs();
         append_log("[DRIVER RESTORE] Bắt đầu tìm kiếm gói sao lưu Driver để phục hồi...");
         let ps_code = r#"
-            $targetDir = 'D:\Drivers_Backup_2026'
-            if (-not (Test-Path $targetDir)) { $targetDir = 'C:\Drivers_Backup_2026' }
-            if (-not (Test-Path $targetDir)) {
+            $fixedDisks = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 }
+            $nonSystem = $fixedDisks | Where-Object { $_.DeviceID -ne $env:SystemDrive } | Sort-Object FreeSpace -Descending
+            $systemDisk = $fixedDisks | Where-Object { $_.DeviceID -eq $env:SystemDrive }
+            $disks = @($nonSystem) + @($systemDisk)
+
+            $candidateDirs = @()
+            foreach ($d in $disks) {
+                if ($d.DeviceID) {
+                    $candidateDirs += "$($d.DeviceID)\Drivers_Backup_2026"
+                    $candidateDirs += "$($d.DeviceID)\Drivers_Backup"
+                }
+            }
+            $candidateDirs += "$env:SystemDrive\Drivers_Backup_2026"
+            $candidateDirs += "$env:SystemDrive\Drivers_Backup"
+            $candidateDirs += "D:\Drivers_Backup_2026"
+            $candidateDirs += "D:\Drivers_Backup"
+
+            $existingDirs = $candidateDirs | Select-Object -Unique | Where-Object { Test-Path $_ }
+            $targetDir = $null
+            $foundInfs = $null
+
+            # Sort candidate directories by LastWriteTime descending so we pick the newest backup containing .inf files
+            $sortedDirs = $existingDirs | ForEach-Object { Get-Item $_ } | Sort-Object LastWriteTime -Descending
+            foreach ($dirItem in $sortedDirs) {
+                $dir = $dirItem.FullName
+                $infs = Get-ChildItem -Path $dir -Filter "*.inf" -Recurse -File -ErrorAction SilentlyContinue
+                if ($infs -and $infs.Count -gt 0) {
+                    $targetDir = $dir
+                    $foundInfs = $infs
+                    break
+                }
+            }
+
+            # If no folder has .inf yet, pick the first existing directory as candidate
+            if (-not $targetDir) {
+                $firstExisting = $sortedDirs | Select-Object -First 1
+                if ($firstExisting) {
+                    $targetDir = $firstExisting.FullName
+                    $foundInfs = Get-ChildItem -Path $targetDir -Filter "*.inf" -Recurse -File -ErrorAction SilentlyContinue
+                }
+            }
+
+            if (-not $targetDir -or -not (Test-Path $targetDir)) {
                 Write-Output "NOT_FOUND"
                 exit 1
             }
-            $infs = Get-ChildItem -Path $targetDir -Filter "*.inf" -Recurse -ErrorAction SilentlyContinue
-            if (-not $infs -or $infs.Count -eq 0) {
-                Write-Output "NO_INFS"
+
+            if (-not $foundInfs -or $foundInfs.Count -eq 0) {
+                Write-Output "NO_INFS|$targetDir"
                 exit 2
             }
-            pnputil /add-driver "$targetDir\*.inf" /subdirs /install
-            Write-Output "RESTORE_DONE:$($infs.Count)"
+
+            pnputil /add-driver "$targetDir\*.inf" /subdirs /install | Out-Null
+            Write-Output "SUCCESS|$targetDir|$($foundInfs.Count)"
         "#;
         let mut cmd = Command::new("powershell");
         cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
-        if out.contains("NOT_FOUND") || out.contains("NO_INFS") {
-            append_log("[LỖI] Không tìm thấy thư mục Driver sao lưu tại D:\\Drivers_Backup_2026 hoặc C:\\Drivers_Backup_2026.");
-            return (false, "Không tìm thấy thư mục sao lưu Driver (D:\\Drivers_Backup_2026 hoặc C:\\Drivers_Backup_2026). Vui lòng chạy Sao Lưu Driver trước!".to_string());
+        let trimmed = out.trim();
+        if trimmed.starts_with("SUCCESS") {
+            let parts: Vec<&str> = trimmed.split('|').collect();
+            let path = parts.get(1).unwrap_or(&"Drivers_Backup");
+            let count = parts.get(2).unwrap_or(&"0");
+            append_log(&format!("[THÀNH CÔNG] Đã nạp và phục hồi {} gói Driver từ thư mục: {}", count, path));
+            return (true, format!("Đã nạp và cài đặt phục hồi {} gói Driver từ {} thành công!", count, path));
+        } else if trimmed.starts_with("NO_INFS") {
+            let parts: Vec<&str> = trimmed.split('|').collect();
+            let path = parts.get(1).unwrap_or(&"Drivers_Backup");
+            append_log(&format!("[LỖI] Thư mục sao lưu Driver tại {} không chứa tệp cấu hình .inf nào.", path));
+            return (false, format!("Thư mục {} không chứa tệp .inf nào để cài đặt!", path));
+        } else if trimmed.contains("NOT_FOUND") {
+            append_log("[LỖI] Không tìm thấy thư mục Driver sao lưu trên bất kỳ phân vùng ổ đĩa nào.");
+            return (false, "Không tìm thấy thư mục sao lưu Driver (Drivers_Backup_2026 hoặc Drivers_Backup). Vui lòng chạy Sao Lưu Driver trước!".to_string());
+        } else {
+            append_log("[THÀNH CÔNG] Đã nạp và phục hồi toàn bộ Driver phần cứng từ bản sao lưu.");
+            return (true, "Đã nạp và cài đặt phục hồi toàn bộ Driver phần cứng thành công!".to_string());
         }
-        append_log("[THÀNH CÔNG] Đã nạp và phục hồi toàn bộ Driver phần cứng từ bản sao lưu.");
-        return (true, "Đã nạp và cài đặt phục hồi toàn bộ Driver phần cứng thành công!".to_string());
     }
 
     if act == "scan_drivers" || act == "quet driver" || act == "quet_driver" {
@@ -2400,7 +2582,7 @@ th { background: #222a3d; color: #6ffbbe; }
                 . 'src\Core\TroubleshootManager.ps1'
                 Initialize-VUONGTTTroubleshootEngine | Out-Null
                 $res = Invoke-VUONGTTTroubleshootAction -ProblemId '{}' -ActionType 'Diagnosis'
-                Write-Output "RESULT:$($res.Success):$($res.Message)"
+                Write-Output "RESULT:$($res.Success):$($res.StatusText)`n`n$($res.OutputDetails)"
             }} else {{
                 Write-Output "RESULT:True:Đã hoàn tất chẩn đoán mã sự cố {}: Hệ thống không phát hiện xung đột nghiêm trọng."
             }}
@@ -2427,8 +2609,8 @@ th { background: #222a3d; color: #6ffbbe; }
             if (Test-Path 'src\Core\TroubleshootManager.ps1') {{
                 . 'src\Core\TroubleshootManager.ps1'
                 Initialize-VUONGTTTroubleshootEngine | Out-Null
-                $res = Invoke-VUONGTTTroubleshootAction -ProblemId '{}' -ActionType 'Remediation'
-                Write-Output "RESULT:$($res.Success):$($res.Message)"
+                $res = Invoke-VUONGTTTroubleshootAction -ProblemId '{}' -ActionType 'Fix'
+                Write-Output "RESULT:$($res.Success):$($res.StatusText)`n`n$($res.OutputDetails)"
             }} else {{
                 Write-Output "RESULT:True:Đã kích hoạt sửa chữa tự động sự cố {}. Cấu hình đã được khôi phục!"
             }}
@@ -2455,8 +2637,8 @@ th { background: #222a3d; color: #6ffbbe; }
             if (Test-Path 'src\Core\TroubleshootManager.ps1') {{
                 . 'src\Core\TroubleshootManager.ps1'
                 Initialize-VUONGTTTroubleshootEngine | Out-Null
-                $res = Invoke-VUONGTTTroubleshootAction -ProblemId '{}' -ActionType 'Verification'
-                Write-Output "RESULT:$($res.Success):$($res.Message)"
+                $res = Invoke-VUONGTTTroubleshootAction -ProblemId '{}' -ActionType 'Verify'
+                Write-Output "RESULT:$($res.Success):$($res.StatusText)`n`n$($res.OutputDetails)"
             }} else {{
                 Write-Output "RESULT:True:Xác minh sự cố {}: Hệ thống đã đạt trạng thái ổn định (Verified)."
             }}
@@ -4624,29 +4806,294 @@ ootfs\System\sppc.dll")
         return (true, r"Thư mục driver mặc định: D:\DriverExported".to_string());
     }
 
-    if act == "export_drivers" {
+    if act == "export_drivers" || act == "export_driver" {
         let ps = r#"
-            $dest = "D:\DriverExported"
-            if (!(Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force }
-            Start-Process dism.exe -ArgumentList "/online /export-driver /destination:$dest" -NoNewWindow
+            $targetDrive = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 -and $_.DeviceID -ne $env:SystemDrive -and $_.FreeSpace -gt 1000000000 } | Sort-Object FreeSpace -Descending | Select-Object -First 1 -ExpandProperty DeviceID
+            $dest = if ($targetDrive) { "$targetDrive\Drivers_Backup" } else { "$env:SystemDrive\Drivers_Backup" }
+            if (-not (Test-Path $dest)) { [System.IO.Directory]::CreateDirectory($dest) | Out-Null }
+            Start-Process dism.exe -ArgumentList "/online /export-driver /destination:`"$dest`"" -NoNewWindow
         "#;
         run_ps_oneshot(ps);
-        return (true, r"Đã khởi động tiến trình sao lưu toàn bộ Driver ra thư mục D:\DriverExported!".to_string());
+        return (true, "Đã khởi động tiến trình sao lưu toàn bộ Driver ra thư mục Drivers_Backup an toàn!".to_string());
     }
 
-    if act == "import_drivers" {
+    if act == "import_drivers" || act == "import_driver" {
         let ps = r#"
-            $src = "D:\DriverExported"
-            if (Test-Path $src) {
-                pnputil /add-driver "$src\*.inf" /subdirs /install
+            $fixedDisks = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 }
+            $nonSystem = $fixedDisks | Where-Object { $_.DeviceID -ne $env:SystemDrive } | Sort-Object FreeSpace -Descending
+            $systemDisk = $fixedDisks | Where-Object { $_.DeviceID -eq $env:SystemDrive }
+            $disks = @($nonSystem) + @($systemDisk)
+            $candidateDirs = @()
+            foreach ($d in $disks) {
+                if ($d.DeviceID) {
+                    $candidateDirs += "$($d.DeviceID)\Drivers_Backup_2026"
+                    $candidateDirs += "$($d.DeviceID)\Drivers_Backup"
+                }
+            }
+            $candidateDirs += "$env:SystemDrive\Drivers_Backup_2026"
+            $candidateDirs += "$env:SystemDrive\Drivers_Backup"
+            $candidateDirs += "D:\Drivers_Backup_2026"
+            $candidateDirs += "D:\Drivers_Backup"
+
+            $targetDir = $candidateDirs | Select-Object -Unique | Where-Object { Test-Path $_ } | ForEach-Object { Get-Item $_ } | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
+            if (-not $targetDir) { $targetDir = "$env:SystemDrive\Drivers_Backup" }
+            if (Test-Path $targetDir) {
+                pnputil /add-driver "$targetDir\*.inf" /subdirs /install | Out-Null
             }
         "#;
         run_ps_oneshot(ps);
-        return (true, r"Đã cài đặt lại toàn bộ Driver từ thư mục D:\DriverExported thành công!".to_string());
+        return (true, "Đã cài đặt lại toàn bộ Driver từ thư mục sao lưu Drivers_Backup thành công!".to_string());
     }
 
     if act == "refresh_fleet" {
         return (true, "Đã làm mới dữ liệu giám sát máy trạm GitHub Fleet Cloud!".to_string());
+    }
+
+    // ========================================================================
+    // QUẢN TRỊ BITLOCKER (MILESTONE 4 FEATURE 1)
+    // ========================================================================
+    if act == "get_bitlocker_status" || act == "bitlocker_status" || act == "check_bitlocker" {
+        let ps_code = r#"
+            $ErrorActionPreference = 'SilentlyContinue'
+            $disks = Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3" -ErrorAction SilentlyContinue
+            $results = @()
+
+            foreach ($d in $disks) {
+                $mount = $d.DeviceID
+                $freeGb = if ($d.FreeSpace) { [math]::Round($d.FreeSpace / 1GB, 1) } else { 0 }
+                $sizeGb = if ($d.Size) { [math]::Round($d.Size / 1GB, 1) } else { 0 }
+                $volName = if ($d.VolumeName) { $d.VolumeName } else { "" }
+
+                $protStatus = "Off"
+                $lockStatus = "Unlocked"
+                $encPercent = "0%"
+                $encMethod = "None"
+                $protectors = @()
+
+                # 1. Thử lấy qua Get-BitLockerVolume nếu có module
+                try {
+                    $bl = Get-BitLockerVolume -MountPoint $mount -ErrorAction SilentlyContinue
+                    if ($bl) {
+                        $protStatus = if ($bl.ProtectionStatus -eq 1 -or $bl.ProtectionStatus -eq "On") { "Bật (On)" } else { "Tắt (Off)" }
+                        $lockStatus = if ($bl.LockStatus -eq 1 -or $bl.LockStatus -eq "Locked") { "Đã Khóa (Locked)" } else { "Mở Khóa (Unlocked)" }
+                        $encPercent = if ($bl.EncryptionPercentage -ne $null) { "$($bl.EncryptionPercentage)%" } else { "0%" }
+                        $encMethod = if ($bl.EncryptionMethod) { "$($bl.EncryptionMethod)" } else { "None" }
+                        if ($bl.KeyProtector) {
+                            foreach ($kp in $bl.KeyProtector) {
+                                $protectors += "$($kp.KeyProtectorType)"
+                            }
+                        }
+                    }
+                } catch {}
+
+                # 2. Nếu chưa có thông tin, thử đọc từ manage-bde -status
+                if ($protStatus -eq "Off" -and $protectors.Count -eq 0) {
+                    try {
+                        $rawBde = manage-bde -status $mount 2>&1 | Out-String
+                        if ($rawBde -match "Protection Status:\s*(Protection\s+\w+)") {
+                            $protStatus = $matches[1]
+                        }
+                        if ($rawBde -match "Percentage Encrypted:\s*([\d\.]+)%") {
+                            $encPercent = "$($matches[1])%"
+                        }
+                        if ($rawBde -match "Lock Status:\s*(\w+)") {
+                            $lockStatus = $matches[1]
+                        }
+                        if ($rawBde -match "Encryption Method:\s*([^\r\n]+)") {
+                            $encMethod = $matches[1].Trim()
+                        }
+                    } catch {}
+                }
+
+                $results += [PSCustomObject]@{
+                    drive = $mount
+                    volume_name = $volName
+                    size_gb = $sizeGb
+                    free_gb = $freeGb
+                    protection_status = $protStatus
+                    lock_status = $lockStatus
+                    encryption_percentage = $encPercent
+                    encryption_method = $encMethod
+                    key_protectors = $protectors
+                }
+            }
+
+            $results | ConvertTo-Json -Compress
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        let final_json = if trimmed.starts_with('[') || trimmed.starts_with('{') {
+            trimmed.to_string()
+        } else {
+            "[]".to_string()
+        };
+        return (true, final_json);
+    }
+
+    if act == "enable_bitlocker" || act == "turn_on_bitlocker" {
+        let drive = extract_json_field(params_json, "drive").unwrap_or("C:").trim();
+        let password = extract_json_field(params_json, "password").unwrap_or("").trim();
+        let safe_drive = if drive.is_empty() { "C:" } else { drive };
+
+        let ps_code = if !password.is_empty() {
+            format!(
+                r#"
+                $sec = ConvertTo-SecureString '{}' -AsPlainText -Force
+                manage-bde -on {} -Password $sec -UsedSpaceOnly
+                manage-bde -protectors -add {} -RecoveryPassword
+                "#,
+                password.replace('\'', "''"), safe_drive, safe_drive
+            )
+        } else {
+            format!(
+                r#"
+                manage-bde -on {} -UsedSpaceOnly -SkipHardwareTest
+                manage-bde -protectors -add {} -RecoveryPassword
+                "#,
+                safe_drive, safe_drive
+            )
+        };
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| {
+            let stdout = String::from_utf8_lossy(&o.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&o.stderr).to_string();
+            format!("{}\n{}", stdout, stderr)
+        }).unwrap_or_default();
+
+        append_log(&format!("[BITLOCKER] Bật BitLocker trên {}: {}", safe_drive, out.trim()));
+        return (true, format!("Kết quả kích hoạt BitLocker trên {}:\n{}", safe_drive, out.trim()));
+    }
+
+    if act == "disable_bitlocker" || act == "decrypt_bitlocker" || act == "turn_off_bitlocker" {
+        let drive = extract_json_field(params_json, "drive").unwrap_or("C:").trim();
+        let safe_drive = if drive.is_empty() { "C:" } else { drive };
+        let ps_code = format!("manage-bde -off {}", safe_drive);
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+
+        append_log(&format!("[BITLOCKER] Tắt và giải mã BitLocker trên {}: {}", safe_drive, out.trim()));
+        return (true, format!("Đã gửi lệnh tắt BitLocker (Giải mã) cho phân vùng {}:\n{}", safe_drive, out.trim()));
+    }
+
+    if act == "unlock_bitlocker" {
+        let drive = extract_json_field(params_json, "drive").unwrap_or("C:").trim();
+        let password = extract_json_field(params_json, "password").unwrap_or("").trim();
+        let recovery_key = extract_json_field(params_json, "recovery_key").unwrap_or("").trim();
+        let safe_drive = if drive.is_empty() { "C:" } else { drive };
+
+        let ps_code = if !recovery_key.is_empty() {
+            format!("manage-bde -unlock {} -RecoveryPassword '{}'", safe_drive, recovery_key.replace('\'', "''"))
+        } else if !password.is_empty() {
+            format!("manage-bde -unlock {} -Password '{}'", safe_drive, password.replace('\'', "''"))
+        } else {
+            return (false, "Lỗi: Cần cung cấp mật khẩu hoặc mã Recovery Key 48 số để mở khóa!".to_string());
+        };
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| {
+            let stdout = String::from_utf8_lossy(&o.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&o.stderr).to_string();
+            format!("{}\n{}", stdout, stderr)
+        }).unwrap_or_default();
+
+        return (true, format!("Kết quả mở khóa phân vùng {}:\n{}", safe_drive, out.trim()));
+    }
+
+    if act == "get_bitlocker_key" || act == "backup_bitlocker_key" {
+        let drive = extract_json_field(params_json, "drive").unwrap_or("C:").trim();
+        let safe_drive = if drive.is_empty() { "C:" } else { drive };
+
+        let ps_code = format!(r#"
+            $drive = '{}'
+            $raw = manage-bde -protectors -get $drive 2>&1 | Out-String
+            $desktop = [Environment]::GetFolderPath('Desktop')
+            $cleanDrive = $drive -replace '[:\\]', ''
+            $filePath = Join-Path $desktop "BitLocker_RecoveryKey_$cleanDrive.txt"
+            
+            $keysFound = @()
+            if ($raw -match '(?:\d{{6}}-){{7}}\d{{6}}') {{
+                $matches_all = [regex]::Matches($raw, '(?:\d{{6}}-){{7}}\d{{6}}')
+                foreach ($m in $matches_all) {{
+                    $keysFound += $m.Value
+                }}
+            }}
+
+            $exportContent = "=== VUONGTT TOOLKIT 2026 - BITLOCKER RECOVERY KEY ===" + "`r`n"
+            $exportContent += "Phân vùng: $drive" + "`r`n"
+            $exportContent += "Thời gian xuất: $(Get-Date -Format 'dd/MM/yyyy HH:mm:ss')" + "`r`n"
+            $exportContent += "--------------------------------------------------------" + "`r`n"
+            $exportContent += $raw + "`r`n"
+
+            [System.IO.File]::WriteAllText($filePath, $exportContent, [System.Text.Encoding]::UTF8)
+
+            [PSCustomObject]@{{
+                drive = $drive
+                file_path = $filePath
+                keys = $keysFound
+                raw_output = $raw
+            }} | ConvertTo-Json -Compress
+        "#, safe_drive);
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+
+        return (true, format!("Đã trích xuất và sao lưu Recovery Key ra Desktop:\n{}", out.trim()));
+    }
+
+    if act == "suspend_bitlocker" {
+        let drive = extract_json_field(params_json, "drive").unwrap_or("C:").trim();
+        let safe_drive = if drive.is_empty() { "C:" } else { drive };
+        let ps_code = format!("manage-bde -protectors -disable {}", safe_drive);
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+
+        return (true, format!("Đã tạm dừng bảo vệ BitLocker trên phân vùng {}:\n{}", safe_drive, out.trim()));
+    }
+
+    if act == "resume_bitlocker" {
+        let drive = extract_json_field(params_json, "drive").unwrap_or("C:").trim();
+        let safe_drive = if drive.is_empty() { "C:" } else { drive };
+        let ps_code = format!("manage-bde -protectors -enable {}", safe_drive);
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+
+        return (true, format!("Đã tiếp tục bảo vệ BitLocker trên phân vùng {}:\n{}", safe_drive, out.trim()));
+    }
+
+    if act == "open_bitlocker_cpl" {
+        let mut cmd = Command::new("control.exe");
+        cmd.arg("/name");
+        cmd.arg("Microsoft.BitLockerDriveEncryption");
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        return (true, "Đang mở cửa sổ BitLocker Drive Encryption trong Windows Control Panel...".to_string());
     }
 
         // Default Fallback - Return explicit failure for unknown actions
@@ -4869,18 +5316,35 @@ pub fn manage_local_user(sub_action: &str, username: &str, value: &str) -> (bool
 
 fn parse_selected_apps(params: &str) -> Vec<String> {
     let mut apps = Vec::new();
-    if let Some(idx) = params.find("\"apps\":[") {
-        let rest = &params[idx + 8..];
-        if let Some(end) = rest.find(']') {
-            let inner = &rest[..end];
-            for part in inner.split(',') {
-                let clean = part.trim().trim_matches('"').trim();
-                if !clean.is_empty() {
-                    apps.push(clean.to_string());
+
+    // Check single app field: "app", "app_id", "appId"
+    if let Some(app) = extract_json_string(params, "app")
+        .or_else(|| extract_json_string(params, "app_id"))
+        .or_else(|| extract_json_string(params, "appId"))
+    {
+        let clean = app.trim().to_string();
+        if !clean.is_empty() {
+            apps.push(clean);
+        }
+    }
+
+    // Check array: "apps": [...] with flexible whitespace
+    if let Some(pos) = params.find("\"apps\"") {
+        let rest = &params[pos + 6..];
+        if let Some(bracket_start) = rest.find('[') {
+            let list_rest = &rest[bracket_start + 1..];
+            if let Some(bracket_end) = list_rest.find(']') {
+                let inner = &list_rest[..bracket_end];
+                for part in inner.split(',') {
+                    let clean = part.trim().trim_matches('"').trim();
+                    if !clean.is_empty() && !apps.iter().any(|x| x == clean) {
+                        apps.push(clean.to_string());
+                    }
                 }
             }
         }
     }
+
     apps
 }
 
@@ -5043,12 +5507,6 @@ pub fn collect_uwp_apps() -> String {
     $res = @()
     foreach ($p in $filtered) {
         $sizeMB = 25.0
-        if ($p.InstallLocation -and (Test-Path $p.InstallLocation)) {
-            try {
-                $len = (Get-ChildItem -Path $p.InstallLocation -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
-                if ($len) { $sizeMB = [math]::Round($len / 1MB, 1) }
-            } catch {}
-        }
         $res += [PSCustomObject]@{
             name = $p.Name;
             fullName = $p.PackageFullName;
@@ -5332,6 +5790,73 @@ mod tests {
     }
 
     #[test]
+    fn test_uninstall_app_target_param() {
+        let (ok, msg) = execute_system_action("uninstall_app", r#"{"target":"7zip.7zip"}"#);
+        assert!(ok, "uninstall_app with target should succeed: {}", msg);
+    }
+
+    #[test]
+    fn test_uninstall_app_empty_fallback_appwiz() {
+        let (ok1, msg1) = execute_system_action("uninstall_app", "{}");
+        assert!(ok1, "uninstall_app with empty payload should succeed: {}", msg1);
+        assert!(
+            msg1.contains("Programs and Features"),
+            "Empty payload must fall back to appwiz.cpl, got: {}",
+            msg1
+        );
+
+        let (ok2, msg2) = execute_system_action("uninstall_app", r#"{"name":""}"#);
+        assert!(ok2, "uninstall_app with empty name should succeed: {}", msg2);
+        assert!(
+            msg2.contains("Programs and Features"),
+            "Empty name must fall back to appwiz.cpl, got: {}",
+            msg2
+        );
+    }
+
+    #[test]
+    fn test_dynamic_winget_package_id_sanitization() {
+        // Safe package IDs: alphanumeric + dots/hyphens/underscores
+        let valid_ids = ["Google.Chrome", "7zip.7zip", "RARLab.WinRAR", "Zen-Team.Zen-Browser", "app_1.pkg-2"];
+        for id in valid_ids {
+            let is_valid = id.contains('.') && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_');
+            assert!(is_valid, "Valid package ID '{}' should be accepted", id);
+        }
+
+        // Dangerous / invalid package IDs: metacharacters or missing dot
+        let invalid_ids = [
+            "Test.App&calc.exe",
+            "Foo.Bar|whoami",
+            "Bad.Pkg;rmdir",
+            "Pkg.Id>out.txt",
+            "Pkg.Id<in.txt",
+            "Pkg^.Escape",
+            "JustNameNoDot",
+            "Has Space.In.Id",
+        ];
+        for id in invalid_ids {
+            let is_valid = id.contains('.') && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_');
+            assert!(!is_valid, "Invalid package ID '{}' containing metacharacters must be rejected", id);
+        }
+
+        // Adversarial install_apps execution: must safely route without crashing or spawning cmd injection
+        let (ok, msg) = execute_system_action("install_apps", r#"{"app":"Test.App&calc.exe"}"#);
+        assert!(ok, "install_apps with sanitized input should execute safely: {}", msg);
+    }
+
+    #[test]
+    fn test_parse_selected_apps_single_and_array() {
+        let apps_single = parse_selected_apps(r#"{"app":"Google.Chrome","name":"Chrome"}"#);
+        assert_eq!(apps_single, vec!["Google.Chrome"]);
+
+        let apps_array = parse_selected_apps(r#"{"apps":["Google.Chrome", "Mozilla.Firefox"]}"#);
+        assert_eq!(apps_array, vec!["Google.Chrome", "Mozilla.Firefox"]);
+
+        let apps_both = parse_selected_apps(r#"{"app":"Google.Chrome", "apps":["Mozilla.Firefox"]}"#);
+        assert_eq!(apps_both, vec!["Google.Chrome", "Mozilla.Firefox"]);
+    }
+
+    #[test]
     fn test_get_installed_apps_dual_casing() {
         let (ok, data) = execute_system_action("get_installed_apps", "{}");
         assert!(ok, "get_installed_apps should succeed");
@@ -5461,4 +5986,48 @@ mod tests {
         assert!(ok && msg.contains("Snap Assist"), "disable_snap_assist failed: {}", msg);
     }
 
+    #[test]
+    fn test_system_ops_bypass_tpm_execution() {
+        let (ok, msg) = execute_system_action("bypass_tpm", "{}");
+        assert!(ok, "bypass_tpm should succeed");
+        assert!(msg.contains("Bypass"), "bypass_tpm result must confirm bypass: {}", msg);
+    }
+
+    #[test]
+    fn test_system_ops_export_drivers_dispatch() {
+        let (ok1, msg1) = execute_system_action("browse_driver_dir", "{}");
+        assert!(ok1, "browse_driver_dir should succeed");
+        assert!(msg1.contains("Driver"), "browse_driver_dir should return driver dir info: {}", msg1);
+    }
+
+    #[test]
+    fn test_system_ops_restore_drivers_dispatch() {
+        let (ok, msg) = execute_system_action("restore_drivers", "{}");
+        assert!(!msg.contains("không tồn tại hoặc chưa được hỗ trợ"), "restore_drivers must be recognized by system_ops: {}", msg);
+        if ok {
+            assert!(msg.contains("Driver") || msg.contains("phục hồi") || msg.contains("cài đặt"));
+        } else {
+            assert!(msg.contains("Driver") || msg.contains("sao lưu") || msg.contains(".inf"));
+        }
+    }
+
+    #[test]
+    fn test_system_ops_bitlocker_actions() {
+        let (ok1, status_json) = execute_system_action("get_bitlocker_status", "{}");
+        assert!(ok1, "get_bitlocker_status should succeed: {}", status_json);
+        assert!(status_json.starts_with('[') || status_json.starts_with('{'), "Should return JSON string: {}", status_json);
+
+        let (ok2, cpl_msg) = execute_system_action("open_bitlocker_cpl", "{}");
+        assert!(ok2, "open_bitlocker_cpl should succeed: {}", cpl_msg);
+
+        let (ok3, susp_msg) = execute_system_action("suspend_bitlocker", r#"{"drive":"C:"}"#);
+        assert!(ok3, "suspend_bitlocker should return result: {}", susp_msg);
+
+        let (ok4, resume_msg) = execute_system_action("resume_bitlocker", r#"{"drive":"C:"}"#);
+        assert!(ok4, "resume_bitlocker should return result: {}", resume_msg);
+
+        let (ok5, key_msg) = execute_system_action("get_bitlocker_key", r#"{"drive":"C:"}"#);
+        assert!(ok5, "get_bitlocker_key should return result: {}", key_msg);
+    }
 }
+

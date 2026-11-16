@@ -89,9 +89,10 @@ fn control_window(action: &str) -> (bool, &'static str) {
 const EMBEDDED_HTML: &str = include_str!("../../src-ui/index.html");
 const EMBEDDED_APPLICATIONS_JSON: &str = include_str!("../../src-ui/applications.json");
 const EMBEDDED_UWP_PRESETS_JSON: &str = include_str!("../../src-ui/uwp_presets.json");
+const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/TroubleshootDatabase.json");
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-pub const APP_VERSION: &str = "20.5.909.156";
+pub const APP_VERSION: &str = "20.5.909.157";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -154,8 +155,8 @@ fn handle_client(
     has_connected: Arc<AtomicBool>,
 ) {
     let _ = stream.set_nonblocking(false);
-    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(3)));
-    let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(3)));
+    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(120)));
+    let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(120)));
 
     let mut buffer = Vec::with_capacity(8192);
     let mut chunk = [0u8; 4096];
@@ -241,9 +242,43 @@ fn handle_client(
         let _ = stream.flush();
         return;
     }
-// 3.1 GET Static Assets & Images & JSON
+    // 3.1 GET Static Assets & Images & JSON
     if first_line.starts_with("GET /") && !first_line.starts_with("GET /api/") {
         let req_path = first_line.split_whitespace().nth(1).unwrap_or("/").split('?').next().unwrap_or("/");
+        let clean_path = req_path.trim_start_matches('/');
+        if clean_path == "applications.json" {
+            let sanitized = EMBEDDED_APPLICATIONS_JSON.trim_start_matches('\u{feff}');
+            let resp_header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-cache, no-store, must-revalidate\r\nConnection: close\r\n\r\n",
+                sanitized.len()
+            );
+            let _ = stream.write_all(resp_header.as_bytes());
+            let _ = stream.write_all(sanitized.as_bytes());
+            let _ = stream.flush();
+            return;
+        }
+        if clean_path == "uwp_presets.json" {
+            let sanitized = EMBEDDED_UWP_PRESETS_JSON.trim_start_matches('\u{feff}');
+            let resp_header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-cache, no-store, must-revalidate\r\nConnection: close\r\n\r\n",
+                sanitized.len()
+            );
+            let _ = stream.write_all(resp_header.as_bytes());
+            let _ = stream.write_all(sanitized.as_bytes());
+            let _ = stream.flush();
+            return;
+        }
+        if clean_path == "TroubleshootDatabase.json" || clean_path == "Data/TroubleshootDatabase.json" || clean_path == "src/Data/TroubleshootDatabase.json" {
+            let sanitized = EMBEDDED_TROUBLESHOOT_DB.trim_start_matches('\u{feff}');
+            let resp_header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-cache, no-store, must-revalidate\r\nConnection: close\r\n\r\n",
+                sanitized.len()
+            );
+            let _ = stream.write_all(resp_header.as_bytes());
+            let _ = stream.write_all(sanitized.as_bytes());
+            let _ = stream.flush();
+            return;
+        }
         if let Some((bytes, mime)) = get_embedded_office_asset(req_path) {
             let resp_header = format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: public, max-age=86400\r\nConnection: close\r\n\r\n",
@@ -366,8 +401,9 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         let db_path = "src/Data/TroubleshootDatabase.json";
         let content = std::fs::read_to_string(db_path)
             .or_else(|_| std::fs::read_to_string("../src/Data/TroubleshootDatabase.json"))
-            .unwrap_or_else(|_| "{\"Categories\":[],\"Problems\":[]}".to_string());
-        json_resp = format!(r#"{{"success":true,"data":{}}}"#, content);
+            .unwrap_or_else(|_| EMBEDDED_TROUBLESHOOT_DB.to_string());
+        let sanitized = content.trim_start_matches('\u{feff}');
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, sanitized);
     } else if cmd == "get_local_users" {
         let users = system_ops::collect_local_users();
         json_resp = format!(r#"{{"success":true,"data":{}}}"#, users);
@@ -452,9 +488,11 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         let (ok, msg) = system_ops::uninstall_uwp_package(pkg);
         json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, escape_json_str(&msg));
     } else if cmd == "get_store_applications" {
-        json_resp = format!(r#"{{"success":true,"data":{}}}"#, EMBEDDED_APPLICATIONS_JSON);
+        let sanitized = EMBEDDED_APPLICATIONS_JSON.trim_start_matches('\u{feff}');
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, sanitized);
     } else if cmd == "get_uwp_presets" {
-        json_resp = format!(r#"{{"success":true,"data":{}}}"#, EMBEDDED_UWP_PRESETS_JSON);
+        let sanitized = EMBEDDED_UWP_PRESETS_JSON.trim_start_matches('\u{feff}');
+        json_resp = format!(r#"{{"success":true,"data":{}}}"#, sanitized);
     } else if cmd == "get_installed_apps" {
         let (success, msg) = system_ops::execute_system_action("get_installed_apps", body);
         json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, if msg.is_empty() { "[]" } else { &msg });
@@ -703,5 +741,34 @@ mod tests {
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":false"), "verify_office_license must return success=false: {}", resp);
         assert!(resp.contains("không tồn tại"), "Expected action not found error: {}", resp);
+    }
+
+    #[test]
+    fn test_get_store_applications_sanitized_no_bom() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"get_store_applications\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":true"), "get_store_applications should succeed: {}", resp);
+        assert!(!resp.contains("\u{feff}"), "Response must not contain UTF-8 BOM");
+        assert!(resp.contains("\"data\":{"), "Response must contain valid data object");
+    }
+
+    #[test]
+    fn test_get_uwp_presets_sanitized_no_bom() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"get_uwp_presets\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":true"), "get_uwp_presets should succeed: {}", resp);
+        assert!(!resp.contains("\u{feff}"), "Response must not contain UTF-8 BOM");
+    }
+
+    #[test]
+    fn test_get_troubleshoot_database_embedded() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"get_troubleshoot_database\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":true"), "get_troubleshoot_database should succeed: {}", resp);
+        assert!(!resp.contains("\u{feff}"), "Response must not contain UTF-8 BOM");
+        assert!(resp.contains("\"Problems\""), "Response should contain Problems array");
     }
 }

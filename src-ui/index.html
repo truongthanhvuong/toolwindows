@@ -173,7 +173,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.156</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.157</span>
       </div>
     </div>
 
@@ -301,6 +301,41 @@
         <button data-target="view-tech-driver" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">menu</span>
           <span>Extend Features</span>
+        </button>
+
+        <!-- 15. Cài Windows -->
+        <button data-target="view-cai-windows" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">install_desktop</span>
+          <span>Cài Windows</span>
+        </button>
+
+        <!-- 16. Backup Windows -->
+        <button data-target="view-backup-windows" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">cloud_sync</span>
+          <span>Backup Windows</span>
+        </button>
+
+        <!-- 17. Sửa Máy In LAN -->
+        <button data-target="view-printer-lan" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">print</span>
+          <span>Sửa Máy In LAN</span>
+        </button>
+
+        <!-- 18. IT Helpdesk 547 Sự Cố -->
+        <button data-target="view-helpdesk-troubleshoot" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">support_agent</span>
+          <span>IT Helpdesk (547 Sự Cố)</span>
+        </button>
+
+        <!-- 19. Quản Trị BitLocker -->
+        <button data-target="view-bitlocker-mgmt" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">lock</span>
+          <span>Quản Trị BitLocker</span>
+        </button>
+              <!-- 20. Gỡ Cài Đặt Sạch (Clean Uninstaller) -->
+        <button data-target="view-clean-uninstaller" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-rose-500">delete_sweep</span>
+          <span>Gỡ Cài Đặt Sạch</span>
         </button>
       </nav>
 
@@ -510,6 +545,27 @@
         <div class="grid grid-cols-12 gap-4 h-full">
           <!-- Left 8 Cols: Tweak switches -->
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
+            <!-- BIOS License Recognition Banner -->
+            <div id="bios-license-card" class="glass-card p-4 rounded-xl border border-sky-200/70 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-2">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-xl bg-sky-100 flex items-center justify-center text-sky-600 shrink-0">
+                  <span class="material-symbols-outlined text-[20px]">verified_user</span>
+                </div>
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-xs text-slate-800">Bản Quyền Nhúng BIOS (MSDM / OA3x)</span>
+                    <span id="bios-license-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600">Đang kiểm tra...</span>
+                  </div>
+                  <div id="bios-license-key" class="text-xs font-mono text-sky-700 font-semibold">Chưa phát hiện key BIOS (Cần quét)</div>
+                  <div id="bios-license-note" class="text-[11px] text-slate-500">Hệ thống sẽ tự động kích hoạt Windows nếu bo mạch chủ có nhúng sẵn key OEM.</div>
+                </div>
+              </div>
+              <button onclick="checkBiosLicense()" type="button" class="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">search</span>
+                <span>Quét Key BIOS</span>
+              </button>
+            </div>
+
             <!-- SYSTEM SECTION -->
             <div class="glass-card p-4">
               <div class="font-bold text-slate-800 text-sm mb-3">System</div>
@@ -648,6 +704,162 @@
       <div id="view-win-optimize" class="stitch-view">
         <div class="grid grid-cols-12 gap-4 h-full">
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
+            <!-- CẤU HÌNH TỐI ƯU SIÊU NHẸ 2026 (SUPER LEAN PRO) KÈM NÚT HOÀN TÁC -->
+            <div class="glass-card p-4 rounded-2xl border-2 border-sky-400/40 shadow-sm flex flex-col gap-3 relative overflow-hidden">
+              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 relative z-10">
+                <div class="space-y-1 max-w-xl">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500 text-white flex items-center gap-1 shadow-xs">
+                      <span class="material-symbols-outlined text-[14px]">speed</span>
+                      SUPER LEAN PRO 2026
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 border border-sky-200">
+                      ⚡ 1-Click Tối Ưu Toàn Diện
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                      🛡️ Giữ Edge &amp; Defender
+                    </span>
+                    <span id="super-lean-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                      ⚪ Chuẩn Windows (Mặc Định)
+                    </span>
+                  </div>
+                  <h2 class="text-base font-bold text-slate-800 tracking-tight">
+                    Gói Cấu Hình Tối Ưu Siêu Nhẹ 2026 &amp; Debloat Sạch 28 App Rác
+                  </h2>
+                  <p class="text-xs text-slate-600 leading-relaxed">
+                    Tự động nén CompactOS, dọn WinSxS, giải phóng RAM 1.5 - 1.8GB, hiện 4 icon Desktop, phím PrtSc mở Snipping Tool, Control Panel hiển thị sẵn icon, tắt Copilot &amp; AI Recall, tắt Fax &amp; Hyper-V. <strong>Hỗ trợ 1-Click Hoàn Tác về cài đặt chuẩn Windows bất cứ lúc nào!</strong>
+                  </p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                  <button id="btn-apply-super-lean" onclick="applySuperLeanProfile()" type="button" class="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs shadow-md shadow-sky-500/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">bolt</span>
+                    <span>ÁP DỤNG CẤU HÌNH SIÊU NHẸ</span>
+                  </button>
+                  <button id="btn-revert-super-lean" onclick="revertSuperLeanProfile()" type="button" class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px]">undo</span>
+                    <span>HOÀN TÁC VỀ MẶC ĐỊNH</span>
+                  </button>
+                  <button onclick="runToolkitAction('optimize_ram')" type="button" class="px-3 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer" title="Giải phóng bộ nhớ RAM Working Set ngay lập tức">
+                    <span class="material-symbols-outlined text-[17px]">memory</span>
+                    <span>Dọn RAM</span>
+                  </button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-500 font-medium">Chế độ tối ưu:</span>
+                  <span id="active-preset-label" class="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-semibold text-[11px]">Super Lean Pro 2026</span>
+                </div>
+                <button id="btn-apply-tweaks" onclick="runToolkitAction('apply_tweaks')" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs">
+                  Áp Dụng Tùy Chọn
+                </button>
+              </div>
+            </div>
+
+            <!-- QUẢN TRỊ 5 GÓI NGUỒN ĐIỆN & CHẾ ĐỘ 24/7 NEVER SLEEP -->
+            <div class="glass-card p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <span class="material-symbols-outlined text-amber-500 text-[18px]">bolt</span>
+                  <span>Quản Trị Gói Nguồn Điện &amp; Chế Độ 24/7</span>
+                </div>
+                <span id="active-power-badge" class="px-2 py-0.5 rounded font-mono text-xs font-bold uppercase bg-sky-100 text-sky-700">Đang nhận diện...</span>
+              </div>
+
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2" id="power-plans-grid">
+                <!-- Ultimate Performance -->
+                <button data-plan="ultimate" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer" onclick="selectPowerPlan(this, 'Ultimate Performance')" type="button">
+                  <div class="flex items-center justify-between">
+                    <span class="material-symbols-outlined text-rose-500 text-[20px]">local_fire_department</span>
+                  </div>
+                  <div class="font-bold text-xs leading-tight">Ultimate Perf</div>
+                  <div class="text-[11px] text-slate-500">Full Core Clocks 100%</div>
+                </button>
+                <!-- High Performance -->
+                <button data-plan="high" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer" onclick="selectPowerPlan(this, 'High Performance')" type="button">
+                  <div class="flex items-center justify-between">
+                    <span class="material-symbols-outlined text-sky-500 text-[20px]">flash_on</span>
+                  </div>
+                  <div class="font-bold text-xs leading-tight">High Performance</div>
+                  <div class="text-[11px] text-slate-500">Hiệu năng máy bàn cao</div>
+                </button>
+                <!-- Balanced -->
+                <button data-plan="balanced" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer" onclick="selectPowerPlan(this, 'Balanced (Cân Bằng)')" type="button">
+                  <div class="flex items-center justify-between">
+                    <span class="material-symbols-outlined text-teal-600 text-[20px]">balance</span>
+                  </div>
+                  <div class="font-bold text-xs leading-tight">Balanced</div>
+                  <div class="text-[11px] text-slate-500">Cân bằng tự động</div>
+                </button>
+                <!-- Power Saver -->
+                <button data-plan="saver" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer" onclick="selectPowerPlan(this, 'Power Saver (Tiết Kiệm)')" type="button">
+                  <div class="flex items-center justify-between">
+                    <span class="material-symbols-outlined text-emerald-600 text-[20px]">eco</span>
+                  </div>
+                  <div class="font-bold text-xs leading-tight">Power Saver</div>
+                  <div class="text-[11px] text-slate-500">Tiết kiệm pin Laptop</div>
+                </button>
+                <!-- Never Sleep (Chạy 24/7) -->
+                <button data-plan="never_sleep" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer col-span-2 md:col-span-2" onclick="selectPowerPlan(this, 'Never Sleep (Chạy 24/7)')" type="button">
+                  <div class="flex items-center justify-between">
+                    <span class="material-symbols-outlined text-amber-500 text-[20px]">bedtime_off</span>
+                    <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold">24/7 NON-STOP</span>
+                  </div>
+                  <div class="font-bold text-xs leading-tight text-amber-600">Chạy 24/7 (Never Sleep)</div>
+                  <div class="text-[11px] text-slate-500">Tắt Sleep, Hibernate &amp; Đĩa, Máy chạy 24/7 không gián đoạn</div>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 pt-2">
+                <button class="py-1.5 px-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-center justify-center gap-1 transition-all cursor-pointer" onclick="triggerAction('Đã đặt lại cấu hình nguồn mặc định!'); selectPowerPlan(null, 'Khôi Phục Mặc Định');" type="button">
+                  <span class="material-symbols-outlined text-[15px]">settings_backup_restore</span>
+                  <span>Khôi Phục Mặc Định</span>
+                </button>
+                <button class="py-1.5 px-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer" onclick="toggleNeverSleep()" type="button" title="Tắt hoàn toàn chế độ Sleep, Hibernate và tắt đĩa để máy tính chạy 24/7">
+                  <span class="material-symbols-outlined text-[15px]">bedtime_off</span>
+                  <span>⚡ Tắt Sleep 24/7</span>
+                </button>
+                <button class="py-1.5 px-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-center justify-center gap-1 transition-all cursor-pointer" onclick="runToolkitAction('open_power_cpl', 'Mở Windows Control Panel Power Options (powercfg.cpl)...')" type="button">
+                  <span class="material-symbols-outlined text-[15px]">open_in_new</span>
+                  <span>Mở Power Options (cpl)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- ĐỔI MÁY CHỦ DNS NHANH THỜI GIAN THỰC -->
+            <div class="glass-card p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sky-500 text-[18px]">language</span>
+                  <span>Đổi DNS Phân Giải Nhanh</span>
+                </div>
+                <span id="active-dns-badge" class="px-2 py-0.5 rounded font-mono text-xs bg-sky-50 text-sky-700 font-semibold border border-sky-200">Đang nhận diện...</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="relative flex-1">
+                  <select id="dns-selector" class="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-medium focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 outline-none appearance-none transition-all">
+                    <option value="cloudflare">Cloudflare DNS (1.1.1.1 - 1.0.0.1) [Nhanh nhất]</option>
+                    <option value="google">Google Public DNS (8.8.8.8 - 8.8.4.4) [Ổn định]</option>
+                    <option value="quad9">Quad9 Security (9.9.9.9 - 149.112.112.112) [Bảo mật]</option>
+                    <option value="adguard">AdGuard DNS (94.140.14.14 - 94.140.15.15) [Chặn QC]</option>
+                    <option value="dhcp">DHCP Tự Động (Nhận từ Router mạng)</option>
+                  </select>
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 flex items-center">
+                    <span class="material-symbols-outlined text-[18px]">expand_more</span>
+                  </div>
+                </div>
+                <button class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1 shadow-xs transition-all cursor-pointer shrink-0" onclick="changeDns(document.getElementById('dns-selector').value)" type="button">
+                  <span class="material-symbols-outlined text-[16px]">check</span>
+                  <span>Gán DNS</span>
+                </button>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-500 pt-2" id="active-dns-info">
+                <span id="dns-primary-text">Primary: Đang nhận diện...</span>
+                <span id="dns-secondary-text">Secondary: ...</span>
+                <span class="text-sky-600 font-medium" id="dns-adapter-text">Card mạng: Đang kiểm tra...</span>
+              </div>
+            </div>
+
             <!-- 1. System Group -->
             <div class="glass-card p-4">
               <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
@@ -673,7 +885,7 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enable Long Paths" data-desc-en="Removes the 260 character limit for file paths in Windows." data-desc-vi="Bỏ giới hạn 260 ký tự cho đường dẫn tệp tin trong Windows.">
                   <span class="text-slate-700">Enable Long Paths</span>
-                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('enable_long_paths')"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="toggle-long-paths" checked onchange="runToolkitAction('enable_long_paths')"/><span class="slider"></span></div>
                 </label>
               </div>
             </div>
@@ -811,11 +1023,11 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Classic Right Click Menu" data-desc-en="Restores full classic right-click context menu in Windows 11 without 'Show more options'." data-desc-vi="Bật menu chuột phải cổ điển, mở đầy đủ tùy chọn không cần bấm 'Show more options'.">
                   <span class="text-slate-700">Menu chuột phải cổ điển (Windows 10)</span>
-                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('classic_context_menu')"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="toggle-classic-context" checked onchange="this.checked ? runToolkitAction('classic_context_menu') : runToolkitAction('modern_context_menu')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Show File Extensions" data-desc-en="Always displays file extensions (.exe, .txt, .docx, .iso) in File Explorer." data-desc-vi="Luôn hiển thị đuôi mở rộng của tệp tin (.exe, .zip, .docx) trong Explorer.">
                   <span class="text-slate-700">Hiện đuôi mở rộng của file</span>
-                  <div class="switch-toggle"><input type="checkbox" checked onchange="runToolkitAction('show_file_extensions')"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="toggle-show-ext" checked onchange="runToolkitAction('show_file_extensions')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enable Compact Mode" data-desc-en="Decreases row padding and list spacing in File Explorer for a compact layout." data-desc-vi="Bật chế độ thu gọn khoảng cách dòng trong File Explorer.">
                   <span class="text-slate-700">Bật chế độ thu gọn trong Explorer</span>
@@ -827,7 +1039,11 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Show Hidden Files" data-desc-en="Reveals hidden files, folders, and system directories in File Explorer." data-desc-vi="Hiển thị tất cả file và thư mục ẩn trong File Explorer.">
                   <span class="text-slate-700">Hiện file và thư mục ẩn</span>
-                  <div class="switch-toggle"><input type="checkbox" onchange="runToolkitAction('show_hidden_files')"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="toggle-show-hidden" onchange="runToolkitAction('show_hidden_files')"/><span class="slider"></span></div>
+                </label>
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Dark Theme" data-desc-en="Enables Windows Dark Theme mode across apps and system shell." data-desc-vi="Bật chế độ giao diện tối (Dark Mode) cho Windows và ứng dụng.">
+                  <span class="text-slate-700">Giao diện tối (Dark Theme)</span>
+                  <div class="switch-toggle"><input type="checkbox" id="toggle-dark-theme" onchange="this.checked ? runToolkitAction('toggle_dark_theme') : runToolkitAction('toggle_dark_theme')"/><span class="slider"></span></div>
                 </label>
               </div>
             </div>
@@ -926,8 +1142,8 @@
               </div>
             </div>
 
-            <!-- Table Container (subview-soft-uninstall) -->
-            <div id="subview-soft-uninstall" class="glass-card p-4 flex-1 flex flex-col">
+            <!-- Table Container (uwp-app-container) -->
+            <div id="uwp-app-container" class="glass-card p-4 flex-1 flex flex-col">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
                   <input type="checkbox" id="chk-uwp-select-all" class="w-4 h-4 rounded text-sky-600 accent-sky-600 cursor-pointer"/>
@@ -948,7 +1164,7 @@
               <div class="pt-3 mt-3 border-t border-slate-200/60 flex items-center justify-between">
                 <span id="uwp-selection-summary" class="text-xs font-semibold text-slate-600">0 app(s) selected • ~0 MB</span>
                 <div class="flex items-center gap-2">
-                  <button id="btnBulkUninstall" class="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs transition-colors">
+                  <button id="btnUwpBulkUninstall" class="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs transition-colors">
                     Uninstall Selected
                   </button>
                 </div>
@@ -1074,6 +1290,7 @@
 
           <!-- Hidden containers for audit compatibility -->
           <div id="subview-soft-custom" class="hidden"></div>
+          <div id="subview-soft-uninstall" class="hidden"></div>
           <div id="subview-soft-fonts" class="hidden"></div>
         </div>
       </div>
@@ -1154,7 +1371,6 @@
       <!-- VIEW 8: NETWORK (view-vpn-proxy)           -->
       <!-- ========================================== -->
       <div id="view-vpn-proxy" class="stitch-view">
-        <div id="view-printer-lan" class="hidden"></div>
         <div class="grid grid-cols-12 gap-4 h-full">
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
             <!-- Adapter & DNS -->
@@ -1940,16 +2156,28 @@
               </div>
             </div>
 
-            <!-- Export / Import Driver -->
-            <div class="glass-card p-4">
-              <div class="font-bold text-slate-800 text-sm mb-2">Export / Import Driver from specific directory</div>
+            <!-- Export / Import Driver (driver-backup-vault) -->
+            <div id="driver-backup-vault" class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-500 text-[18px]">devices</span>
+                <span>Export / Import Driver (Driver Backup Vault)</span>
+              </div>
+              <div class="text-xs text-slate-500 mb-2 font-mono" id="driver-target-path">
+                Thư mục sao lưu: Drivers_Backup (Tự động lưu vào phân vùng an toàn)
+              </div>
               <div class="flex items-center gap-2 mb-3">
-                <input id="input-driver-dir" type="text" value="D:\DriverExported" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-mono outline-none"/>
+                <input id="input-driver-dir" type="text" value="D:\Drivers_Backup" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-mono outline-none"/>
                 <button onclick="runToolkitAction('browse_driver_dir')" class="px-4 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold">Browse</button>
               </div>
               <div class="flex items-center gap-2">
-                <button onclick="runToolkitAction('export_drivers')" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold">Export</button>
-                <button onclick="runToolkitAction('import_drivers')" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold">Import</button>
+                <button id="btn-export-drivers" onclick="exportDrivers()" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px]">file_download</span>
+                  <span>Export Driver</span>
+                </button>
+                <button id="btn-restore-drivers" onclick="restoreDrivers()" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px]">restore</span>
+                  <span>Restore Driver</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2013,10 +2241,965 @@
         </div>
       </div>
 
-    </main>
+      <!-- ========================================== -->
+      <!-- VIEW 15: CÀI WINDOWS (view-cai-windows)    -->
+      <!-- ========================================== -->
+      <div id="view-cai-windows" class="stitch-view">
+        <div class="grid grid-cols-12 gap-4 h-full">
+          <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
+
+            <!-- Sub-tabs Navigation Header -->
+            <div class="glass-card p-2 flex items-center gap-2 overflow-x-auto text-xs">
+              <button id="tab-deploy-cai-win" onclick="switchView('view-cai-windows')" class="px-3 py-1.5 rounded-lg bg-sky-500 text-white font-semibold flex items-center gap-1.5 shadow-xs">
+                <span class="material-symbols-outlined text-[16px]">install_desktop</span>
+                <span>Cài Windows (Bypass)</span>
+              </button>
+              <button id="tab-deploy-hwid" onclick="switchView('view-win-activate')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">key</span>
+                <span>Kích Hoạt HWID</span>
+              </button>
+              <button id="tab-deploy-bitlocker" onclick="switchView('view-disk-bitlocker')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">lock_open</span>
+                <span>Tắt BitLocker</span>
+              </button>
+              <button id="tab-deploy-backup-driver" onclick="switchView('view-backup-windows')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
+                <span>Sao Lưu Win / Driver</span>
+              </button>
+            </div>
+
+            <!-- Environment Detection Card -->
+            <div class="glass-card p-4">
+              <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sky-500 text-[18px]">memory</span>
+                  <span>Kiểm Tra Môi Trường Cài Đặt (Auto-Detection)</span>
+                </div>
+                <button onclick="initWinDeployEnv()" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">refresh</span>
+                  <span>Quét lại</span>
+                </button>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/60 flex flex-col gap-1">
+                  <span class="text-slate-500 font-medium">Chuẩn Khởi Động:</span>
+                  <span id="deploy-boot-mode" class="font-bold text-slate-800 flex items-center gap-1 text-sm text-sky-600">
+                    <span class="material-symbols-outlined text-[16px]">check_circle</span> UEFI (GPT)
+                  </span>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/60 flex flex-col gap-1">
+                  <span class="text-slate-500 font-medium">Môi Trường Hệ Thống:</span>
+                  <div id="deploy-env-badge" class="font-bold text-slate-800 flex items-center gap-1 text-sm text-emerald-600">
+                    <span class="material-symbols-outlined text-[16px]">computer</span> Máy Vật Lý
+                  </div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/60 flex flex-col gap-1">
+                  <span class="text-slate-500 font-medium">Trạng Thái TPM 2.0:</span>
+                  <div id="deploy-tpm-status" class="font-bold text-slate-800 flex items-center gap-1 text-sm text-indigo-600">
+                    <span class="material-symbols-outlined text-[16px]">verified_user</span> Auto-Bypassed (Sẵn Sàng)
+                  </div>
+                </div>
+              </div>
+              <!-- Readiness status bar -->
+              <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span id="readiness-c-free" class="font-medium">Ổ C: Đang kiểm tra...</span>
+                <span id="readiness-power" class="font-medium">Nguồn: 100% Cắm sạc</span>
+                <span id="readiness-env" class="font-medium">Hệ thống: Sẵn sàng</span>
+              </div>
+            </div>
+
+            <!-- ISO Selection Card -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined text-amber-500 text-[18px]">album</span>
+                <span>Chọn Tệp ISO Windows Cần Cài Đặt</span>
+              </div>
+              <div class="mb-3">
+                <select id="os-selector" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 outline-none mb-2">
+                  <option value="custom-iso" selected>Duyệt chọn file ISO trên máy tính (.iso / setup.exe)...</option>
+                  <option value="Windows 11 24H2 64-bit (Official ISO)">Windows 11 24H2 64-bit (Official ISO)</option>
+                  <option value="Windows 11 LTSC 2024">Windows 11 LTSC 2024</option>
+                  <option value="Windows 10 22H2 64-bit">Windows 10 22H2 64-bit</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-2 mb-2">
+                <input id="input-iso-path" type="text" placeholder="Đường dẫn file ISO hoặc chọn file qua nút Duyệt ISO..." class="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-mono outline-none"/>
+                <button id="btn-browse-iso" onclick="browseIsoFile()" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">folder_open</span>
+                  <span>Duyệt ISO</span>
+                </button>
+                <button id="btn-copy-iso-path" onclick="copyIsoPath()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1" title="Copy đường dẫn">
+                  <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <div class="text-[11px] text-slate-500 font-mono flex items-center gap-1">
+                <span>Đường dẫn đang chọn:</span>
+                <span id="iso-path-text" class="text-sky-600 font-semibold truncate">Chưa chọn file ISO</span>
+              </div>
+            </div>
+
+            <!-- Setup Mode Selection Cards -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-500 text-[18px]">tune</span>
+                <span>Chọn Chế Độ Triển Khai Windows (Deployment Mode)</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Card 1: Upgrade / Keep Files -->
+                <div id="card-mode-upgrade" onclick="selectDeployMode('upgrade')" class="p-3.5 rounded-xl border-2 border-primary bg-primary-container/15 cursor-pointer hover:border-sky-500 transition-all">
+                  <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2">
+                      <input type="radio" id="radio-mode-upgrade" name="deploy-mode" value="upgrade" checked class="accent-sky-500 w-4 h-4"/>
+                      <label for="radio-mode-upgrade" class="font-bold text-slate-800 text-xs cursor-pointer">Cài Đè Giữ Dữ Liệu</label>
+                    </div>
+                    <span id="dot-mode-upgrade" class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 mt-2 pl-6 leading-relaxed">
+                    Nâng cấp trực tiếp Windows trong môi trường hiện tại. Giữ nguyên 100% tài liệu cá nhân, ứng dụng và cấu hình máy tính.
+                  </p>
+                </div>
+
+                <!-- Card 2: Clean Install -->
+                <div id="card-mode-clean" onclick="selectDeployMode('clean')" class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 cursor-pointer hover:border-sky-500 transition-all">
+                  <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2">
+                      <input type="radio" id="radio-mode-clean" name="deploy-mode" value="clean" class="accent-sky-500 w-4 h-4"/>
+                      <label for="radio-mode-clean" class="font-bold text-slate-800 text-xs cursor-pointer">Cài Mới Sạch Sẽ</label>
+                    </div>
+                    <span id="dot-mode-clean" class="w-2.5 h-2.5 rounded-full"></span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 mt-2 pl-6 leading-relaxed">
+                    Cài đặt mới hoàn toàn phân vùng hệ thống ổ C:. Format sạch sẽ, loại bỏ triệt để virus, rác và phần mềm độc hại.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hardware Bypass & Action Options -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-500 text-[18px]">verified</span>
+                <span>Cấu Hình Tự Động Bypass &amp; An Toàn Dữ Liệu</span>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mb-4">
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/50 cursor-pointer">
+                  <input type="checkbox" id="cb-deploy-bypass-tpm" checked class="accent-sky-500 w-4 h-4"/>
+                  <span class="font-medium text-slate-700">Bypass TPM 2.0</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/50 cursor-pointer">
+                  <input type="checkbox" id="cb-deploy-bypass-sb" checked class="accent-sky-500 w-4 h-4"/>
+                  <span class="font-medium text-slate-700">Bypass SecureBoot</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/50 cursor-pointer">
+                  <input type="checkbox" id="cb-deploy-bypass-ram" checked class="accent-sky-500 w-4 h-4"/>
+                  <span class="font-medium text-slate-700">Bypass RAM Check</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/50 cursor-pointer">
+                  <input type="checkbox" id="cb-deploy-bypass-cpu" checked class="accent-sky-500 w-4 h-4"/>
+                  <span class="font-medium text-slate-700">Bypass CPU Check</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/50 cursor-pointer">
+                  <input type="checkbox" id="cb-deploy-disable-bitlocker" checked class="accent-sky-500 w-4 h-4"/>
+                  <span class="font-medium text-slate-700">Tắt BitLocker tự động</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/50 cursor-pointer">
+                  <input type="checkbox" id="cb-deploy-backup-drivers" checked class="accent-sky-500 w-4 h-4"/>
+                  <span class="font-medium text-slate-700">Tự động sao lưu Driver</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/50 cursor-pointer">
+                  <input type="checkbox" id="cb-deploy-backup-system" class="accent-sky-500 w-4 h-4"/>
+                  <span class="font-medium text-slate-700">Sao lưu Full Windows (WIM)</span>
+                </label>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <button id="btn-pre-check" onclick="checkDiskPartitions()" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 shadow-xs">
+                  <span class="material-symbols-outlined text-[17px]">storage</span>
+                  <span>Kiểm Tra Phân Vùng Ổ Đĩa</span>
+                </button>
+                <button id="btn-start-deploy" onclick="startWinDeploy()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2">
+                  <span class="material-symbols-outlined text-[18px]">play_circle</span>
+                  <span>Bắt Đầu Cài Đặt Windows Ngay</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Description Panel -->
+          <div class="col-span-12 lg:col-span-4 h-full">
+            <div class="glass-card p-5 h-full flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-sky-500 text-[18px]">info</span>
+                  <span>Thông Tin Triển Khai Windows:</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                  Tính năng Cài Windows Trực Tiếp cho phép kỹ thuật viên nạp nhanh bộ cài Windows 10/11 từ file ISO mà không cần khởi động lại vào WinPE.
+                </p>
+                <div class="font-bold text-slate-800 text-xs mb-2">Quy trình tự động hóa:</div>
+                <ol class="text-xs text-slate-500 space-y-1.5 list-decimal list-inside">
+                  <li>Mount file ISO vào ổ đĩa ảo bằng PowerShell Native</li>
+                  <li>Tiêm toàn bộ cờ Bypass TPM 2.0 &amp; CPU vào Registry</li>
+                  <li>Tự động sao lưu Driver phần cứng ra phân vùng an toàn</li>
+                  <li>Khởi chạy Setup.exe với tùy chọn cài đặt tối ưu</li>
+                </ol>
+              </div>
+              <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200/60 text-[11px] text-amber-800 font-medium">
+                ⚠️ Lưu ý: Giữ nguồn máy tính hoặc cắm sạc laptop trong suốt quá trình cài đặt Windows.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 16: BACKUP WINDOWS (view-backup-windows) -->
+      <!-- ========================================== -->
+      <div id="view-backup-windows" class="stitch-view">
+        <div class="grid grid-cols-12 gap-4 h-full">
+          <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
+
+            <!-- Subtabs navigation -->
+            <div class="glass-card p-2 flex items-center gap-2 text-xs">
+              <button onclick="switchView('view-cai-windows')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">install_desktop</span>
+                <span>Cài Windows</span>
+              </button>
+              <button class="px-3 py-1.5 rounded-lg bg-sky-500 text-white font-semibold flex items-center gap-1.5 shadow-xs">
+                <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
+                <span>Backup Windows &amp; Driver</span>
+              </button>
+              <button onclick="switchView('view-disk-part')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">storage</span>
+                <span>Quản Lý Phân Vùng</span>
+              </button>
+            </div>
+
+            <!-- Card 1: WIM Full Backup -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-500 text-[18px]">archive</span>
+                <span>Sao Lưu Toàn Bộ Hệ Thống Windows C: (WIM Image Backup)</span>
+              </div>
+              <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+                Tạo bản chụp WIM (DISM Capture-Image) nén nhanh toàn bộ phân vùng ổ C: và xuất file ảnh sang phân vùng ổ đĩa dữ liệu an toàn.
+              </p>
+              <div class="flex items-center gap-3 mb-3 text-xs">
+                <div class="flex-1">
+                  <label class="block text-slate-500 font-medium mb-1">Ổ Đĩa Lưu Trữ Bản Backup:</label>
+                  <select id="sel-backup-wim-drive" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-mono outline-none">
+                    <option value="D:">Ổ D:\ (Dung lượng trống ưu tiên)</option>
+                    <option value="E:">Ổ E:\</option>
+                    <option value="C:">Ổ C:\ (Mặc định)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs text-slate-600 mb-3 font-mono">
+                <span id="deploy-system-target-desc">Đích sao lưu: Tự động chọn ổ đĩa trống nhiều nhất (D:\Windows_FullBackup_2026 hoặc C:\)</span>
+              </div>
+              <button id="btn-quick-backup-system" onclick="backupSystemFromDeploy()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+                <span id="btn-quick-backup-system-label">Sao Lưu Hệ Thống Ngay</span>
+              </button>
+            </div>
+
+            <!-- Card 2: Driver Backup & Export -->
+            <div class="glass-card p-4">
+              <div class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-500 text-[18px]">devices</span>
+                <span>Sao Lưu &amp; Xuất Driver Hệ Thống (Driver Backup Vault)</span>
+              </div>
+              <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+                Tự động quét và trích xuất toàn bộ file cấu hình Driver phần cứng (.inf) ra thư mục sao lưu Drivers_Backup an toàn để cài lại bất cứ lúc nào.
+              </p>
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs text-slate-600 mb-3 font-mono">
+                <span id="driver-target-path-backup">Thư mục sao lưu: Drivers_Backup (Tự động lưu vào ổ đĩa không phải hệ thống)</span>
+                <div id="deploy-driver-target-desc" class="text-slate-500 mt-1">Đường dẫn: D:\Drivers_Backup_2026 hoặc C:\Drivers_Backup_2026</div>
+              </div>
+              <div class="flex items-center flex-wrap gap-2">
+                <button id="btn-quick-backup-drivers" onclick="backupDriverFromDeploy()" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-xs flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">save</span>
+                  <span id="btn-quick-backup-label">Sao Lưu Driver Ngay</span>
+                </button>
+                <button id="btn-deploy-backup-now" onclick="backupDriverFromDeploy()" class="px-4 py-2 rounded-xl border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">backup</span>
+                  <span>Sao Lưu Ngay</span>
+                </button>
+                <button id="btn-export-drivers-vault" onclick="exportDrivers()" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">file_download</span>
+                  <span>Export Driver</span>
+                </button>
+                <button id="btn-restore-drivers-vault" onclick="restoreDrivers()" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">restore</span>
+                  <span>Phục Hồi Driver</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Description Panel -->
+          <div class="col-span-12 lg:col-span-4 h-full">
+            <div class="glass-card p-5 h-full flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-sky-500 text-[18px]">verified_user</span>
+                  <span>Bảo Toàn Dữ Liệu &amp; Driver:</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                  Trước khi cài đặt hoặc nâng cấp hệ điều hành Windows, kỹ thuật viên nên chủ động sao lưu toàn bộ Driver phần cứng và tạo bản chụp hệ thống. Điều này đảm bảo máy tính không bị mất mạng (LAN/Wi-Fi), mất âm thanh hoặc hiển thị độ phân giải thấp sau khi cài mới.
+                </p>
+                <div class="font-bold text-slate-800 text-xs mb-2">Tính năng an toàn:</div>
+                <ul class="text-xs text-slate-500 space-y-1.5 list-disc list-inside">
+                  <li>Tự động nhận diện phân vùng ổ cứng D:, E: an toàn</li>
+                  <li>Trích xuất trực tiếp bằng PnPUtil &amp; DISM Native</li>
+                  <li>Không bao giờ ghi đè lên dữ liệu cá nhân</li>
+                  <li>Hỗ trợ phục hồi 1-click không cần Internet</li>
+                </ul>
+              </div>
+              <div class="p-3 rounded-xl bg-sky-50/70 border border-sky-200/60 text-[11px] text-sky-800 font-medium">
+                💡 Mẹo: Bản sao lưu Driver sẽ tự động nạp lại khi chạy Setup Windows nếu tích chọn "Tự động sao lưu Driver".
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 17: SỬA MÁY IN & SCAN LAN (view-printer-lan) -->
+      <!-- ========================================== -->
+      <div id="view-printer-lan" class="stitch-view">
+        <div class="space-y-4 pr-1">
+          <!-- Hero Card -->
+          <div class="glass-card p-5 relative overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
+                  <span class="material-symbols-outlined text-[28px]">print</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h2 class="text-lg font-bold text-slate-800">Sửa Lỗi Máy In &amp; Chia Sẻ Mạng LAN</h2>
+                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold">Pro Fix 2026</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-0.5">Khắc phục triệt để lỗi 0x0000011b, 0x00000709, 0x0000007c, chia sẻ thư mục Scan SMB và dò tìm IP trong mạng LAN.</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button id="btn-fix-selected-codes" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-semibold shadow-md flex items-center gap-2 text-xs transition-all">
+                  <span class="material-symbols-outlined text-[18px]">build</span>
+                  <span>Vá Lỗi Máy In Tự Động (0x11b, 709, 7c)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <button class="tool-btn glass-card p-3 rounded-xl hover:border-sky-400 transition-all text-left flex flex-col gap-2 group" data-action="spooler_restart">
+              <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-800">Reset Spooler</div>
+                <div class="text-[10px] text-slate-500">Khởi động lại Print Spooler</div>
+              </div>
+            </button>
+
+            <button class="tool-btn glass-card p-3 rounded-xl hover:border-sky-400 transition-all text-left flex flex-col gap-2 group" data-action="sua loi set mac dinh 0x709">
+              <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[18px]">rule_settings</span>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-800">Sửa Lỗi 0x709</div>
+                <div class="text-[10px] text-slate-500">LegacyDefaultPrinterMode</div>
+              </div>
+            </button>
+
+            <button class="tool-btn glass-card p-3 rounded-xl hover:border-sky-400 transition-all text-left flex flex-col gap-2 group" data-action="fix comm error 2900 - 3000">
+              <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[18px]">wifi_tethering_error</span>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-800">Lỗi 2900 - 3000</div>
+                <div class="text-[10px] text-slate-500">Giao tiếp cổng in mạng</div>
+              </div>
+            </button>
+
+            <button class="tool-btn glass-card p-3 rounded-xl hover:border-sky-400 transition-all text-left flex flex-col gap-2 group" data-action="cai print to pdf">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-800">Print to PDF</div>
+                <div class="text-[10px] text-slate-500">Cài máy in ảo PDF</div>
+              </div>
+            </button>
+
+            <button class="tool-btn glass-card p-3 rounded-xl hover:border-sky-400 transition-all text-left flex flex-col gap-2 group" data-action="scan_lan">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[18px]">radar</span>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-800">Quét Mạng LAN</div>
+                <div class="text-[10px] text-slate-500">Dò thiết bị &amp; IP máy in</div>
+              </div>
+            </button>
+
+            <button class="tool-btn glass-card p-3 rounded-xl hover:border-sky-400 transition-all text-left flex flex-col gap-2 group" data-action="share_scan_folder">
+              <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-[18px]">folder_shared</span>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-800">Tạo C:\Scan</div>
+                <div class="text-[10px] text-slate-500">Chia sẻ SMB không pass</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Two Column: 9 Error Codes & Scan Folder SMB -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <!-- 9 Common Printer Error Codes -->
+            <div class="lg:col-span-7 glass-card p-4 space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[18px] text-sky-600">checklist</span>
+                  <span class="font-bold text-slate-800 text-xs">Các Mã Lỗi Máy In Thường Gặp (Checklist)</span>
+                </div>
+                <span class="text-[11px] text-slate-400">Tự động cấu hình Registry</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-700">
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60">
+                  <input type="checkbox" id="chkErr0x11b" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">0x0000011b (RPC Auth)</div>
+                    <div class="text-[10px] text-slate-400">RpcAuthnLevelEx = 0</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60">
+                  <input type="checkbox" id="chkErr0x709" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">0x00000709 (Default Printer)</div>
+                    <div class="text-[10px] text-slate-400">Point and Print / NamedPipe</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60">
+                  <input type="checkbox" id="chkErr0x7c" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">0x0000007c (Package Policy)</div>
+                    <div class="text-[10px] text-slate-400">PackagePointAndPrint = 0</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60">
+                  <input type="checkbox" id="chkErr0xbc4" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">0x00000bc4 (Named Pipes)</div>
+                    <div class="text-[10px] text-slate-400">RpcOverNamedPipes = 1</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60">
+                  <input type="checkbox" id="chkErr0x4005" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">0x00004005 (CSR Rendering)</div>
+                    <div class="text-[10px] text-slate-400">RemovePrintersAtLogoff = 0</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60">
+                  <input type="checkbox" id="chkErr0xbcb" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">0x00000bcb (Restricted PnP)</div>
+                    <div class="text-[10px] text-slate-400">Gỡ bỏ giới hạn Point&amp;Print</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60">
+                  <input type="checkbox" id="chkErr0x6d9" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">0x000006d9 (Firewall Rule)</div>
+                    <div class="text-[10px] text-slate-400">Mở cổng Tường lửa in ấn</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60">
+                  <input type="checkbox" id="chkErr0x012" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">0x00000012 (SMB Guest)</div>
+                    <div class="text-[10px] text-slate-400">Bỏ yêu cầu đăng nhập mật khẩu</div>
+                  </div>
+                </label>
+
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200/60 sm:col-span-2">
+                  <input type="checkbox" id="chkErrPolicyInEffect" checked class="w-4 h-4 rounded text-sky-600 accent-sky-600"/>
+                  <div>
+                    <div class="font-semibold text-slate-800">Policy: RestrictDriverInstallationToAdministrators = 0</div>
+                    <div class="text-[10px] text-slate-400">Cho phép người dùng máy trạm tự động nạp Driver từ máy chủ mạng LAN</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Scan Folder SMB Share Setup -->
+            <div class="lg:col-span-5 glass-card p-4 space-y-3">
+              <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <span class="material-symbols-outlined text-[18px] text-purple-600">snippet_folder</span>
+                <span class="font-bold text-slate-800 text-xs">Chia Sẻ Thư Mục Scan SMB (Scan to Folder)</span>
+              </div>
+
+              <div class="space-y-2 text-xs">
+                <div>
+                  <label class="text-slate-600 font-medium block mb-1">Đường dẫn thư mục:</label>
+                  <div class="flex gap-2">
+                    <input type="text" id="txtScanFolderPath" value="C:\Scan" class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-mono text-xs outline-none focus:border-sky-500"/>
+                    <button id="btnBrowseScanFolder" onclick="browseScanFolder()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Duyệt...</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-slate-600 font-medium block mb-1">Tên SMB Share:</label>
+                  <input type="text" id="txtScanShareName" value="Scan" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-mono text-xs outline-none focus:border-sky-500"/>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                  <button id="btnCreateScanFolder" onclick="createScanFolderShare()" class="flex-1 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-xs transition-all">
+                    Tạo &amp; Chia Sẻ Thư Mục
+                  </button>
+                  <button id="btnEnableAllFileSharing" onclick="enableAllSharingNoPassword()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors" title="Bật Network Discovery &amp; Tắt Mật Khẩu">
+                    Mở Toàn Quyền LAN
+                  </button>
+                </div>
+
+                <!-- UNC Path Display -->
+                <div class="mt-3 p-2.5 rounded-lg bg-purple-50/60 border border-purple-200/50 space-y-1.5 font-mono text-[11px]">
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-500">UNC IP:</span>
+                    <div class="flex items-center gap-1.5">
+                      <span id="txtScanUncIp" class="font-bold text-purple-900 select-all">\\127.0.0.1\Scan</span>
+                      <button id="btnCopyScanUncIp" onclick="copyUncPath('txtScanUncIp')" class="px-2 py-0.5 rounded bg-white text-purple-700 border border-purple-200 text-[10px] hover:bg-purple-100">Copy</button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-500">UNC Host:</span>
+                    <div class="flex items-center gap-1.5">
+                      <span id="txtScanUncName" class="font-bold text-purple-900 select-all">\\VUONGTT-HOST\Scan</span>
+                      <button id="btnCopyScanUncName" onclick="copyUncPath('txtScanUncName')" class="px-2 py-0.5 rounded bg-white text-purple-700 border border-purple-200 text-[10px] hover:bg-purple-100">Copy</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terminal Output Log -->
+          <div class="glass-card p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[17px] text-slate-500">terminal</span>
+                <span class="font-bold text-slate-800 text-xs">Nhật Ký Thực Thi Máy In &amp; Mạng LAN</span>
+              </div>
+              <button onclick="document.getElementById('printer-action-log').innerText = ''" class="text-[11px] text-slate-400 hover:text-slate-600">Xóa log</button>
+            </div>
+            <div id="printer-action-log" class="font-mono text-xs p-3.5 bg-slate-900 text-slate-100 rounded-xl overflow-y-auto max-h-40 border border-slate-700 whitespace-pre-wrap leading-relaxed">
+[SẴN SÀNG] Bộ công cụ sửa máy in &amp; chia sẻ SMB LAN 2026 đã sẵn sàng.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 18: IT HELPDESK 547 SỰ CỐ (view-helpdesk-troubleshoot) -->
+      <!-- ========================================== -->
+      <div id="view-helpdesk-troubleshoot" class="stitch-view">
+        <div class="space-y-4 pr-1">
+          <!-- Hero Banner & Filter Bar -->
+          <div class="glass-card p-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-100">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-rose-500/20">
+                  <span class="material-symbols-outlined text-[24px]">support_agent</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h2 class="text-base font-bold text-slate-800">Trung Tâm Cứu Hộ IT Helpdesk 2026</h2>
+                    <span id="helpdeskTotalBadge" class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-xs">547 Mã Lỗi</span>
+                  </div>
+                  <p class="text-[11px] text-slate-500">Cơ sở dữ liệu 547 sự cố thực tế thuộc 7 danh mục chuyên sâu với 4 chế độ xử lý.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Search & Category Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div class="md:col-span-7 relative">
+                <span class="material-symbols-outlined absolute left-3 top-2.5 text-[18px] text-slate-400">search</span>
+                <input type="text" id="helpdeskSearchInput" placeholder="Tìm theo mã sự cố (PERF-012, 0x80070002), từ khóa (RAM, Spooler, TiWorker)..." class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:border-rose-500 transition-colors shadow-2xs"/>
+              </div>
+              <div class="md:col-span-5">
+                <select id="helpdeskCategoryFilter" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 outline-none focus:border-rose-500 transition-colors shadow-2xs">
+                  <option value="all">⚡ Tất Cả 7 Danh Mục IT Helpdesk</option>
+                  <option value="01">01. Windows / Operating System (Hệ thống &amp; Hiệu năng)</option>
+                  <option value="02">02. Network &amp; Remote Access (Mạng, VPN, RDP)</option>
+                  <option value="03">03. Printer &amp; LAN Share (Máy in, Spooler, SMB)</option>
+                  <option value="04">04. Account &amp; Active Directory (Tài khoản, GPO, Domain)</option>
+                  <option value="05">05. Microsoft Office &amp; M365 (Word, Excel, Outlook, Teams)</option>
+                  <option value="06">06. Application &amp; Browser (Phần mềm, DLL, Trình duyệt)</option>
+                  <option value="07">07. Hardware &amp; Peripherals (Phần cứng, Audio, Màn hình, USB)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Two-Column Problem Explorer & Remediation Suite -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <!-- Left: Scrollable Problem List (547 Items) -->
+            <div class="lg:col-span-5 glass-card p-3 flex flex-col">
+              <div class="flex items-center justify-between px-2 pb-2 mb-2 border-b border-slate-100 text-xs">
+                <span class="font-bold text-slate-700">Danh Sách Sự Cố</span>
+                <span class="text-slate-400 text-[11px]">Click để chọn mã lỗi</span>
+              </div>
+              <div id="helpdeskProblemList" class="flex-1 overflow-y-auto space-y-1.5 pr-1" style="max-height: 520px;">
+                <div class="p-6 text-center text-slate-400 text-xs">Đang nạp cơ sở dữ liệu 547 sự cố...</div>
+              </div>
+            </div>
+
+            <!-- Right: Problem Detail & 4 Action Buttons -->
+            <div class="lg:col-span-7 flex flex-col gap-4">
+              <!-- Selected Problem Detail Card -->
+              <div class="glass-card p-4 space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div class="flex items-center gap-2">
+                    <span id="detailProbId" class="px-2.5 py-0.5 rounded-lg bg-rose-500 text-white font-mono font-bold text-xs">SYS-001</span>
+                    <span id="detailProbCat" class="text-xs font-semibold text-slate-500">01. Windows / Operating System</span>
+                  </div>
+                  <span class="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Remediation Ready</span>
+                </div>
+
+                <div>
+                  <h3 id="detailProbTitle" class="text-sm font-bold text-slate-800 leading-snug">Vui lòng chọn một sự cố từ danh sách bên trái</h3>
+                  <p id="detailProbCause" class="text-xs text-slate-600 mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200/60 leading-relaxed">
+                    Hệ thống sẽ hiển thị phân tích nguyên nhân tiềm ẩn và kịch bản khắc phục tự động.
+                  </p>
+                </div>
+
+                <!-- 4 Action Buttons -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  <button id="btnHelpdeskDiagnose" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all">
+                    <span class="material-symbols-outlined text-[16px]">stethoscope</span>
+                    <span>Chẩn Đoán</span>
+                  </button>
+
+                  <button id="btnHelpdeskAutoFix" class="px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all">
+                    <span class="material-symbols-outlined text-[16px]">auto_fix_high</span>
+                    <span>Sửa Tự Động</span>
+                  </button>
+
+                  <button id="btnHelpdeskVerify" class="px-3 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all">
+                    <span class="material-symbols-outlined text-[16px]">verified</span>
+                    <span>Xác Minh</span>
+                  </button>
+
+                  <button id="btnHelpdeskReport" class="px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all">
+                    <span class="material-symbols-outlined text-[16px]">description</span>
+                    <span>Xuất Báo Cáo</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Action Output Console -->
+              <div class="glass-card p-4 flex-1 flex flex-col space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[17px] text-slate-500">terminal</span>
+                    <span class="font-bold text-slate-800 text-xs">Kết Quả Đo Lường Thời Gian Thực (Live Telemetry &amp; Log)</span>
+                  </div>
+                  <button onclick="document.getElementById('helpdeskActionOutput').innerHTML = '<span class=\'text-slate-400\'>Chưa có nhật ký thực thi.</span>'" class="text-[11px] text-slate-400 hover:text-slate-600">Xóa log</button>
+                </div>
+                <div id="helpdeskActionOutput" class="flex-1 font-mono text-xs p-3.5 bg-slate-900 text-slate-100 rounded-xl overflow-y-auto max-h-64 border border-slate-700 whitespace-pre-wrap leading-relaxed">
+<span class="text-emerald-400">[HỆ THỐNG]</span> Động cơ chẩn đoán &amp; cứu hộ 547 sự cố IT Helpdesk đã sẵn sàng.
+Chọn mã sự cố và nhấn nút tác vụ tương ứng.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 19: QUẢN TRỊ BITLOCKER               -->
+      <!-- ========================================== -->
+      <div id="view-bitlocker-mgmt" class="stitch-view">
+        <div class="flex flex-col gap-3 h-full overflow-y-auto pr-1">
+
+          <!-- Header Hero Card -->
+          <div class="glass-card p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-[24px]">lock</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="font-bold text-slate-800 text-[15px]">Quản Trị Mã Hóa Ổ Đĩa BitLocker &amp; Bảo Mật</h2>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">manage-bde Core</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">Kiểm tra tình trạng mã hóa các phân vùng (C:, D:, E:...), Bật/Tắt bảo vệ, Mở khóa phân vùng và Sao lưu khóa khôi phục 48 chữ số.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button id="btn-bitlocker-refresh" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition-colors">
+                <span class="material-symbols-outlined text-[16px]">refresh</span>
+                <span>Làm Mới Trạng Thái</span>
+              </button>
+              <button id="btn-bitlocker-open-cpl" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition-colors">
+                <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+                <span>BitLocker Control Panel</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary Badges (3 Cột) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="glass-card p-3 flex items-center justify-between">
+              <div>
+                <span class="text-[11px] text-slate-500 font-medium">Tình Trạng Tổng Thể</span>
+                <div id="bitlocker-summary-status" class="font-bold text-slate-800 text-sm mt-0.5">Đang kiểm tra...</div>
+              </div>
+              <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+                <span class="material-symbols-outlined text-[18px]">verified_user</span>
+              </div>
+            </div>
+            <div class="glass-card p-3 flex items-center justify-between">
+              <div>
+                <span class="text-[11px] text-slate-500 font-medium">Ổ Hệ Thống (C:)</span>
+                <div id="bitlocker-summary-c" class="font-bold text-slate-800 text-sm mt-0.5">--</div>
+              </div>
+              <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                <span class="material-symbols-outlined text-[18px]">hard_drive</span>
+              </div>
+            </div>
+            <div class="glass-card p-3 flex items-center justify-between">
+              <div>
+                <span class="text-[11px] text-slate-500 font-medium">Khóa Khôi Phục (Recovery Key)</span>
+                <div id="bitlocker-summary-keys" class="font-bold text-slate-800 text-sm mt-0.5">Sẵn sàng trích xuất</div>
+              </div>
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <span class="material-symbols-outlined text-[18px]">key</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bảng Danh Sách Phân Vùng Ổ Đĩa (Drive Status Table) -->
+          <div class="glass-card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-slate-600 text-[18px]">storage</span>
+                <h3 class="font-bold text-slate-800 text-xs">Danh Sách Phân Vùng Ổ Đĩa &amp; Trạng Thái Mã Hóa</h3>
+              </div>
+              <span id="bitlocker-drives-count" class="text-[11px] text-slate-400">0 ổ đĩa</span>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-200/80">
+              <table id="table-bitlocker-drives" class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold">
+                    <th class="p-2.5">Phân Vùng</th>
+                    <th class="p-2.5">Dung Lượng</th>
+                    <th class="p-2.5">Trạng Thái Mã Hóa</th>
+                    <th class="p-2.5">Tình Trạng Khóa</th>
+                    <th class="p-2.5">Phương Thức Bảo Vệ</th>
+                    <th class="p-2.5">Tiến Trình (%)</th>
+                    <th class="p-2.5 text-right">Thao Tác Nhanh</th>
+                  </tr>
+                </thead>
+                <tbody id="bitlocker-drives-body" class="divide-y divide-slate-100 font-normal text-slate-700">
+                  <tr>
+                    <td colspan="7" class="p-4 text-center text-slate-400 italic">Đang tải trạng thái phân vùng BitLocker...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Interactive Operations Control Panel -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            <!-- Left: Action Controls Form (7 cols) -->
+            <div class="lg:col-span-7 glass-card p-4 flex flex-col gap-3">
+              <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <span class="material-symbols-outlined text-sky-600 text-[18px]">tune</span>
+                <h3 class="font-bold text-slate-800 text-xs">Thao Tác Quản Lý Phân Vùng BitLocker</h3>
+              </div>
+
+              <!-- Drive Selector & Input Form -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-700 mb-1">Chọn Ổ Đĩa Thao Tác:</label>
+                  <select id="select-bitlocker-target-drive" class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 font-medium outline-none focus:border-sky-500">
+                    <option value="C:">Ổ C: (Hệ Điều Hành)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-700 mb-1">Mật Khẩu (Password mở khóa / đặt mới):</label>
+                  <input type="password" id="input-bitlocker-password" placeholder="Nhập mật khẩu (nếu cần)..." class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 outline-none focus:border-sky-500"/>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Khóa Khôi Phục Recovery Key (48 chữ số):</label>
+                <input type="text" id="input-bitlocker-recovery-key" placeholder="Ví dụ: 123456-789012-345678-..." class="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-slate-200 bg-white text-slate-800 outline-none focus:border-sky-500"/>
+              </div>
+
+              <!-- Action Buttons Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                <!-- 1. Bật BitLocker -->
+                <button id="btn-bitlocker-enable" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">lock</span>
+                  <span>Bật BitLocker</span>
+                </button>
+
+                <!-- 2. Tắt BitLocker -->
+                <button id="btn-bitlocker-disable" class="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">lock_open</span>
+                  <span>Tắt BitLocker</span>
+                </button>
+
+                <!-- 3. Mở Khóa Phân Vùng -->
+                <button id="btn-bitlocker-unlock" class="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">key</span>
+                  <span>Mở Khóa Ổ Đĩa</span>
+                </button>
+
+                <!-- 4. Sao Lưu Recovery Key -->
+                <button id="btn-bitlocker-backup-key" class="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">save</span>
+                  <span>Sao Lưu Khóa</span>
+                </button>
+
+                <!-- 5. Tạm Dừng Bảo Vệ -->
+                <button id="btn-bitlocker-suspend" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">pause_circle</span>
+                  <span>Tạm Dừng</span>
+                </button>
+
+                <!-- 6. Tiếp Tục Bảo Vệ -->
+                <button id="btn-bitlocker-resume" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors">
+                  <span class="material-symbols-outlined text-[16px]">play_circle</span>
+                  <span>Tiếp Tục</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Real-time Terminal Output Console (5 cols) -->
+            <div class="lg:col-span-5 glass-card p-4 flex flex-col space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[17px] text-slate-500">terminal</span>
+                  <span class="font-bold text-slate-800 text-xs">Nhật Ký Thực Thi (manage-bde Console)</span>
+                </div>
+                <button id="btn-bitlocker-clear-log" class="text-[11px] text-slate-400 hover:text-slate-600">Xóa log</button>
+              </div>
+              <div id="bitlocker-action-output" class="flex-1 font-mono text-[11px] p-3 bg-slate-900 text-slate-100 rounded-xl overflow-y-auto min-h-[180px] max-h-[220px] border border-slate-700 whitespace-pre-wrap leading-relaxed">
+<span class="text-emerald-400">[HỆ THỐNG]</span> Động cơ quản trị BitLocker đã sẵn sàng.
+Chọn phân vùng và thao tác mong muốn...
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
   </div>
 
-  <!-- TOAST CONTAINER -->
+      <!-- ========================================== -->
+      <!-- VIEW 20: GỠ CÀI ĐẶT SẠCH (view-clean-uninstaller) -->
+      <!-- ========================================== -->
+      <div id="view-clean-uninstaller" class="stitch-view">
+        <div class="flex flex-col gap-3 h-full overflow-y-auto pr-1">
+
+          <!-- Header Hero Card -->
+          <div class="glass-card p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-[24px]">delete_sweep</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="font-bold text-slate-800 text-[15px]">Trung Tâm Gỡ Cài Đặt Hàng Loạt &amp; Sạch Sẽ (Clean Uninstaller)</h2>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">Win32 Registry Engine</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">Quét toàn bộ phần mềm cài đặt từ Registry Uninstall (HKLM/HKCU x86 &amp; x64), hỗ trợ gỡ cài đặt sạch triệt để, gỡ hàng loạt và tích hợp Geek/BCU.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button onclick="window.refreshInstalledApps()" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition-colors">
+                <span class="material-symbols-outlined text-[16px]">refresh</span>
+                <span>Quét Danh Sách Máy</span>
+              </button>
+              <button onclick="window.openUninstallerTool('appwiz')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition-colors" title="Mở Programs and Features của Windows">
+                <span class="material-symbols-outlined text-[16px]">apps</span>
+                <span>AppWiz.cpl</span>
+              </button>
+              <button onclick="window.openUninstallerTool('geek')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition-colors" title="Mở Geek Uninstaller chuyên sâu">
+                <span class="material-symbols-outlined text-[16px]">build</span>
+                <span>Geek</span>
+              </button>
+              <button onclick="window.openUninstallerTool('bcu')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition-colors" title="Mở Bulk Crap Uninstaller">
+                <span class="material-symbols-outlined text-[16px]">auto_delete</span>
+                <span>BCU</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls Bar -->
+          <div class="glass-card p-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="relative w-80">
+              <span class="material-symbols-outlined text-[17px] text-slate-400 absolute left-2.5 top-2">search</span>
+              <input id="txtUninstallSearch" type="text" placeholder="Tìm kiếm phần mềm đã cài đặt trên máy..." oninput="window.filterInstalledApps(this.value)" class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none focus:border-sky-500"/>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span id="badgeInstalledCount" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-semibold">0 Ứng Dụng</span>
+              <button id="btnBulkUninstall" onclick="window.bulkUninstallSelectedApps()" disabled class="px-3.5 py-2 rounded-lg bg-red-600/40 text-white/50 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-not-allowed">
+                <span class="material-symbols-outlined text-[16px]">delete_sweep</span>
+                <span id="txtBulkUninstallLabel">Gỡ Hàng Loạt (0)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Apps Table Container -->
+          <div class="glass-card p-4 flex-1 flex flex-col">
+            <div class="overflow-x-auto rounded-xl border border-slate-200/80">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 sticky top-0">
+                  <tr>
+                    <th class="p-3 w-12 text-center">
+                      <input type="checkbox" id="chkSelectAllInstalledApps" onchange="window.toggleSelectAllInstalledApps(this.checked)" class="w-4 h-4 rounded text-red-600 accent-red-600 cursor-pointer"/>
+                    </th>
+                    <th class="p-3">Tên Ứng Dụng</th>
+                    <th class="p-3">Nhà Phát Triển</th>
+                    <th class="p-3">Phiên Bản</th>
+                    <th class="p-3 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyInstalledApps" class="divide-y divide-slate-100 bg-white">
+                  <tr>
+                    <td colspan="5" class="p-6 text-center text-slate-400 font-medium">
+                      Bấm nút "Quét Danh Sách Máy" ở trên để tải toàn bộ phần mềm đã cài đặt trên máy tính này.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    <!-- TOAST CONTAINER -->
   <div id="rust-toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- JS APP CONTROLLER -->

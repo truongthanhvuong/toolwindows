@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>M2 Empirical Test Harness</title>
+</head>
+<body>
+  <!-- Container with deploy elements from index.html -->
+  <div id="view-cai-windows">
+    <!-- ISO Selection -->
+    <select id="os-selector">
+      <option value="custom-iso" selected>Duyệt chọn file ISO...</option>
+      <option value="Windows 11 24H2 64-bit (Official ISO)">Windows 11 24H2 64-bit (Official ISO)</option>
+    </select>
+    <input id="input-iso-path" type="text" value="" />
+    <button id="btn-browse-iso">Duyệt ISO</button>
+    <button id="btn-copy-iso-path">Copy</button>
+    <span id="iso-path-text">Chưa chọn file ISO</span>
+
+    <!-- Mode Cards -->
+    <div id="card-mode-upgrade" class="p-3.5 rounded-xl border-2 border-primary bg-primary-container/15">
+      <input type="radio" id="radio-mode-upgrade" name="deploy-mode" value="upgrade" checked />
+      <span id="dot-mode-upgrade" class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+    </div>
+
+    <div id="card-mode-clean" class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+      <input type="radio" id="radio-mode-clean" name="deploy-mode" value="clean" />
+      <span id="dot-mode-clean" class="w-2.5 h-2.5 rounded-full"></span>
+    </div>
+
+    <!-- Checkboxes -->
+    <input type="checkbox" id="cb-deploy-bypass-tpm" checked />
+    <input type="checkbox" id="cb-deploy-bypass-sb" checked />
+    <input type="checkbox" id="cb-deploy-backup-drivers" checked />
+    <input type="checkbox" id="cb-deploy-backup-system" checked />
+    <input type="checkbox" id="cb-deploy-disable-bitlocker" checked />
+
+    <button id="btn-start-deploy">Bắt Đầu Cài Đặt</button>
+    <button id="btn-quick-backup-system">Sao Lưu Hệ Thống Ngay</button>
+    <button id="btn-quick-backup-drivers">Sao Lưu Driver Ngay</button>
+    <button id="btn-export-drivers">Export Driver</button>
+    <button id="btn-restore-drivers">Restore Driver</button>
+    <span id="btn-quick-backup-label"></span>
+    <span id="deploy-driver-target-desc"></span>
+    <span id="btn-quick-backup-system-label"></span>
+    <span id="deploy-system-target-desc"></span>
+    <span id="deploy-boot-mode"></span>
+    <span id="deploy-env-badge"></span>
+    <span id="readiness-c-free"></span>
+    <span id="readiness-power"></span>
+    <span id="readiness-env"></span>
+  </div>
+
+  <div id="test-results" style="white-space: pre; font-family: monospace;">RUNNING_TESTS...</div>
+
+  <script>
+    // Mock environment for testing
+    window.__toasts = [];
+    window.showToast = function(title, msg, type) {
+      window.__toasts.push({ title, msg, type });
+    };
+
+    window.__invocations = [];
+    window.mockBrowseIsoPath = "D:\\ISOs\\Windows11_24H2_Pro.iso";
+    window.invokeRust = async function(cmd, args) {
+      window.__invocations.push({ cmd, args });
+      if (args && args.actionId === "browse_iso") {
+        return { success: true, file_path: window.mockBrowseIsoPath, message: window.mockBrowseIsoPath };
+      }
+      if (args && args.actionId === "start_win_deploy") {
+        return { success: true, message: "Deploy started with ISO: " + args.iso_path };
+      }
+      return { success: true, message: "OK" };
+    };
+  </script>
+
+  <!-- Load application code -->
+  <script src="../src-ui/app.js"></script>
+
+  <script>
+    async function runEmpiricalM2Tests() {
+      const results = [];
+      function assert(desc, condition, details = "") {
+        if (condition) {
+          results.push({ test: desc, status: "PASS", details });
+        } else {
+          results.push({ test: desc, status: "FAIL", details });
+        }
+      }
+
+      try {
+        // Ensure deploy mode switcher is initialized
+        if (typeof initDeployModeSwitcher === "function") {
+          initDeployModeSwitcher();
+        }
+
+        const cardUpgrade = document.getElementById("card-mode-upgrade");
+        const cardClean = document.getElementById("card-mode-clean");
+        const radioUpgrade = document.getElementById("radio-mode-upgrade");
+        const radioClean = document.getElementById("radio-mode-clean");
+        const dotUpgrade = document.getElementById("dot-mode-upgrade");
+        const dotClean = document.getElementById("dot-mode-clean");
+        const btnBrowse = document.getElementById("btn-browse-iso");
+        const inputIso = document.getElementById("input-iso-path");
+        const textIso = document.getElementById("iso-path-text");
+
+        // --- TEST 1: Default Mode Selection is Upgrade ---
+        assert("Initial mode is upgrade", radioUpgrade.checked === true && radioClean.checked === false);
+        assert("Initial upgrade card has active border", cardUpgrade.classList.contains("border-primary"));
+
+        // --- TEST 2: Switch to Clean Install Mode ---
+        cardClean.click();
+        assert("After clicking Clean, radio Clean is checked", radioClean.checked === true && radioUpgrade.checked === false);
+        assert("Clean card has border-secondary class", cardClean.classList.contains("border-secondary"));
+        assert("Upgrade card no longer has border-primary", !cardUpgrade.classList.contains("border-primary"));
+        assert("Clean card dot is active", dotClean.classList.contains("bg-secondary-container"));
+
+        // --- TEST 3: Switch back to Upgrade Mode ---
+        cardUpgrade.click();
+        assert("After clicking Upgrade, radio Upgrade is checked", radioUpgrade.checked === true && radioClean.checked === false);
+        assert("Upgrade card has border-primary class", cardUpgrade.classList.contains("border-primary"));
+        assert("Clean card no longer has border-secondary", !cardClean.classList.contains("border-secondary"));
+        assert("Upgrade card dot is active", dotUpgrade.classList.contains("bg-primary-container"));
+
+        // --- TEST 4: Stress-test Rapid Alternation (10 cycles) ---
+        let stressOk = true;
+        for (let i = 0; i < 10; i++) {
+          cardClean.click();
+          if (!radioClean.checked || radioUpgrade.checked) { stressOk = false; break; }
+          cardUpgrade.click();
+          if (!radioUpgrade.checked || radioClean.checked) { stressOk = false; break; }
+        }
+        assert("Rapid alternating clicks between upgrade and clean preserve state integrity", stressOk);
+
+        // --- TEST 5: btn-browse-iso sets BOTH input-iso-path and iso-path-text ---
+        window.mockBrowseIsoPath = "E:\\ISOs\\Win11_Enterprise_24H2.iso";
+        btnBrowse.click();
+        // Allow microtasks to complete async browseIsoFile
+        await new Promise(r => setTimeout(r, 50));
+
+        assert("btn-browse-iso sets input-iso-path value", inputIso.value === "E:\\ISOs\\Win11_Enterprise_24H2.iso", "Got: " + inputIso.value);
+        assert("btn-browse-iso sets iso-path-text innerText", textIso.innerText === "E:\\ISOs\\Win11_Enterprise_24H2.iso", "Got: " + textIso.innerText);
+
+        // --- TEST 6: User manual edit of input-iso-path ---
+        inputIso.value = "D:\\Custom_Images\\My_Custom_Win11.iso";
+        // Call startWinDeploy to see what ISO path it sends to Rust backend
+        await startWinDeploy();
+        const lastInvoke = window.__invocations[window.__invocations.length - 1];
+        assert("startWinDeploy reads manual input-iso-path override",
+          lastInvoke && lastInvoke.args && lastInvoke.args.iso_path === "D:\\Custom_Images\\My_Custom_Win11.iso",
+          "Sent iso_path: " + (lastInvoke && lastInvoke.args ? lastInvoke.args.iso_path : "none"));
+
+        // --- TEST 7: browseIso with spaces and special characters ---
+        window.mockBrowseIsoPath = "C:\\Install Media\\Windows 11 (Vietnamese Edition) - 2026.iso";
+        await browseIsoFile();
+        assert("browse_iso handles paths with spaces & parentheses in input-iso-path",
+          inputIso.value === "C:\\Install Media\\Windows 11 (Vietnamese Edition) - 2026.iso", "Got: " + inputIso.value);
+        assert("browse_iso handles paths with spaces & parentheses in iso-path-text",
+          textIso.innerText === "C:\\Install Media\\Windows 11 (Vietnamese Edition) - 2026.iso", "Got: " + textIso.innerText);
+
+      } catch (err) {
+        results.push({ test: "Exception during test run", status: "FAIL", details: String(err) });
+      }
+
+      const totalTests = results.length;
+      const passCount = results.filter(r => r.status === "PASS").length;
+      const failCount = results.filter(r => r.status === "FAIL").length;
+
+      const summaryText = `M2_BROWSER_SUITE_COMPLETE|TOTAL:${totalTests}|PASS:${passCount}|FAIL:${failCount}\n` +
+        JSON.stringify(results, null, 2);
+
+      document.getElementById("test-results").innerText = summaryText;
+      window.__SUITE_FINISHED__ = true;
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      // Small timeout to allow app.js DOMContentLoaded to complete first
+      setTimeout(runEmpiricalM2Tests, 100);
+    });
+  </script>
+</body>
+</html>

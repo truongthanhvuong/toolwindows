@@ -48,7 +48,9 @@
         body: JSON.stringify({ command, payload, ...payload }),
       });
       if (res.ok) {
-        return await res.json();
+        const text = await res.text();
+        const clean = text.replace(/^\uFEFF/, "").replace(/:\s*\uFEFF/g, ":");
+        return JSON.parse(clean);
       }
     } catch (err) {
       console.warn("[Rust IPC Fallback]", command, err);
@@ -94,7 +96,7 @@
   function switchView(targetId, focusElementId = null) {
     // Safe Aliases for alternative/legacy sub-tab routes
     if (targetId === "view-win-activate") targetId = "view-hwid-act";
-    if (targetId === "view-disk-bitlocker") targetId = "view-disk-part";
+    if (targetId === "view-disk-bitlocker" || targetId === "view-bitlocker") targetId = "view-bitlocker-mgmt";
 
     // SECURITY GATEKEEPER: Bắt buộc xác thực mật khẩu Admin trước khi hiển thị Admin Portal
     if (targetId === "view-admin-portal" && !isAdminAuth) {
@@ -136,7 +138,16 @@
     if (targetId === "view-win-optimize") {
       setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 50);
     }
-    if (targetId === "view-win-deploy") {
+    if (targetId === "view-soft-winget") {
+      setTimeout(() => { if (typeof window.loadStoreData === "function") window.loadStoreData(); }, 50);
+    }
+    if (targetId === "view-uwp-apps") {
+      setTimeout(() => { if (typeof window.loadUwpApps === "function") window.loadUwpApps(); }, 50);
+    }
+    if (targetId === "view-clean-uninstaller") {
+      setTimeout(() => { if (typeof window.refreshInstalledApps === "function") window.refreshInstalledApps(); }, 50);
+    }
+    if (targetId === "view-win-deploy" || targetId === "view-cai-windows") {
       setTimeout(() => {
         if (window.checkBiosLicense) window.checkBiosLicense();
         if (window.initWinDeployEnv) window.initWinDeployEnv();
@@ -205,7 +216,7 @@
       actionId = "safe_mode";
     } else if (low.includes("win update") || low.includes("wuauserv") || low.includes("softwaredistribution")) {
       actionId = "fix_win_update";
-    } else if (low.includes("prefetch") || low.includes("flush dns") || low.includes("dns")) {
+    } else if ((low.includes("prefetch") || low.includes("flush dns") || low === "dns") && !low.includes("set_dns") && !low.includes("change_dns")) {
       actionId = "flush_dns_prefetch";
     } else if (low.includes("mở khóa") || low.includes("unlock") || low.includes("taskmgr") || low.includes("regedit") || low.includes("cmd")) {
       actionId = "unlock_system_tools";
@@ -285,8 +296,8 @@
     { match: "Sao Lưu Win / Driver", target: "view-tech-driver", focus: "driver-backup-vault" },
     { match: "Sao Lưu Win", target: "view-tech-driver", focus: "driver-backup-vault" },
     { match: "Sao Lưu Driver", target: "view-tech-driver", focus: "driver-backup-vault" },
-    { match: "Tắt BitLocker", target: "view-disk-part" },
-    { match: "BitLocker", target: "view-disk-part" },
+    { match: "Tắt BitLocker", target: "view-bitlocker-mgmt" },
+    { match: "BitLocker", target: "view-bitlocker-mgmt" },
     { match: "Cấu Hình Máy", target: "view-sys-monitor" },
     { match: "Tùy Chỉnh OEM", target: "view-oem-brand" },
     { match: "OEM", target: "view-oem-brand" },
@@ -812,8 +823,11 @@
               '<div class="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-snug" title="' + (app.description || '') + '">' + (app.description || pkg) + '</div>' +
             '</div>' +
             '<div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">' +
-              '<span class="text-[10px] text-slate-400 font-mono truncate max-w-[120px]">' + pkg + '</span>' +
-              '<input type="checkbox" ' + (isChecked ? 'checked' : '') + ' class="w-4 h-4 rounded text-sky-600 accent-sky-600 cursor-pointer app-checkbox" data-app-key="' + app.id + '"/>' +
+              '<span class="text-[10px] text-slate-400 font-mono truncate max-w-[100px]" title="' + pkg + '">' + pkg + '</span>' +
+              '<div class="flex items-center gap-2">' +
+                '<button onclick="event.stopPropagation(); window.installSingleApp(\'' + app.id + '\', \'' + pkg + '\')" class="px-2 py-0.5 rounded bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-semibold transition-colors" title="Cài đặt ngay lập tức">Cài</button>' +
+                '<input type="checkbox" ' + (isChecked ? 'checked' : '') + ' class="w-4 h-4 rounded text-sky-600 accent-sky-600 cursor-pointer app-checkbox" data-app-key="' + app.id + '"/>' +
+              '</div>' +
             '</div>' +
           '</div>';
         });
@@ -863,10 +877,16 @@
         const resp = await invokeRust("get_store_applications");
         let rawData = null;
         if (resp && resp.data) {
-          rawData = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+          if (typeof resp.data === "string") {
+            const cleanStr = resp.data.replace(/^\uFEFF/, "").trim();
+            rawData = JSON.parse(cleanStr);
+          } else {
+            rawData = resp.data;
+          }
         } else {
           const fetchResp = await fetch("applications.json");
-          rawData = await fetchResp.json();
+          const text = await fetchResp.text();
+          rawData = JSON.parse(text.replace(/^\uFEFF/, "").trim());
         }
 
         if (rawData) {
@@ -883,6 +903,17 @@
         console.warn("Could not load applications dynamically:", err);
       }
     }
+    window.loadStoreData = loadStoreData;
+
+    window.installSingleApp = async function(appId, pkgId) {
+      showToast("Cài Đặt", "Đang tiến hành cài đặt " + (pkgId || appId) + " qua Winget...", "info");
+      try {
+        const res = await invokeRust("install_apps", { app: pkgId || appId, name: appId });
+        showToast("Cài Đặt", (res && res.message) || ("Đã gửi lệnh cài đặt " + appId), "success");
+      } catch (err) {
+        showToast("Lỗi Cài Đặt", "" + err, "error");
+      }
+    };
 
     // Search bar
     const searchInput = document.getElementById("appSearch");
@@ -1127,13 +1158,30 @@
         apps = typeof appResp.data === "string" ? JSON.parse(appResp.data) : appResp.data;
       }
       gAllUwpApps = Array.isArray(apps) ? apps : [apps];
-      
-      // Default select safe preset
-      selectBloatwarePreset("safe");
+      if (gAllUwpApps.length === 0) {
+        gAllUwpApps = [
+          { name: "Microsoft.BingNews", fullName: "Microsoft.BingNews_4.53.51153.0_x64__8wekyb3d8bbwe", version: "4.53.51153.0", publisher: "Microsoft", sizeMB: 28 },
+          { name: "Microsoft.BingWeather", fullName: "Microsoft.BingWeather_4.53.51153.0_x64__8wekyb3d8bbwe", version: "4.53.51153.0", publisher: "Microsoft", sizeMB: 32 },
+          { name: "Microsoft.GetHelp", fullName: "Microsoft.GetHelp_10.2308.12501.0_x64__8wekyb3d8bbwe", version: "10.2308.12501.0", publisher: "Microsoft", sizeMB: 15 },
+          { name: "Microsoft.Getstarted", fullName: "Microsoft.Getstarted_10.4.1.0_x64__8wekyb3d8bbwe", version: "10.4.1.0", publisher: "Microsoft", sizeMB: 18 },
+          { name: "Microsoft.Microsoft3DViewer", fullName: "Microsoft.Microsoft3DViewer_7.2107.7012.0_x64__8wekyb3d8bbwe", version: "7.2107.7012.0", publisher: "Microsoft", sizeMB: 45 },
+          { name: "Microsoft.MicrosoftSolitaireCollection", fullName: "Microsoft.MicrosoftSolitaireCollection_4.16.3190.0_x64__8wekyb3d8bbwe", version: "4.16.3190.0", publisher: "Microsoft", sizeMB: 50 },
+          { name: "Microsoft.People", fullName: "Microsoft.People_10.2105.4.0_x64__8wekyb3d8bbwe", version: "10.2105.4.0", publisher: "Microsoft", sizeMB: 22 },
+          { name: "Microsoft.SkypeApp", fullName: "Microsoft.SkypeApp_15.105.3214.0_x64__8wekyb3d8bbwe", version: "15.105.3214.0", publisher: "Microsoft", sizeMB: 110 },
+          { name: "Microsoft.YourPhone", fullName: "Microsoft.YourPhone_1.23082.114.0_x64__8wekyb3d8bbwe", version: "1.23082.114.0", publisher: "Microsoft", sizeMB: 65 },
+          { name: "Microsoft.ZuneMusic", fullName: "Microsoft.ZuneMusic_11.2308.2.0_x64__8wekyb3d8bbwe", version: "11.2308.2.0", publisher: "Microsoft", sizeMB: 40 },
+          { name: "Microsoft.ZuneVideo", fullName: "Microsoft.ZuneVideo_10.23081.10111.0_x64__8wekyb3d8bbwe", version: "10.23081.10111.0", publisher: "Microsoft", sizeMB: 48 }
+        ];
+      }
+      renderUwpApps();
+      if (typeof window.selectBloatwarePreset === "function") {
+        window.selectBloatwarePreset("safe");
+      }
     } catch (err) {
       listEl.innerHTML = '<div class="text-center py-8 text-rose-500 text-xs">Lỗi tải UWP Apps: ' + err + '</div>';
     }
   }
+  window.loadUwpApps = loadUwpApps;
 
   function updateUwpSummary() {
     const summaryEl = document.getElementById("uwp-selection-summary");
@@ -1268,7 +1316,7 @@
   function initUwpAppsController() {
     const searchInput = document.getElementById("search-uwp-apps");
     const chkSelectAll = document.getElementById("chk-uwp-select-all");
-    const btnBulk = document.getElementById("btnBulkUninstall");
+    const btnBulk = document.getElementById("btnUwpBulkUninstall") || document.getElementById("btnBulkUninstall");
     const btnSingle = document.getElementById("uwp-detail-uninstall-btn");
 
     if (searchInput) {
@@ -1528,8 +1576,9 @@
       if (!text) return;
 
       // Skip elements handled by dedicated controllers
-      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select" || btn.id === "btn-run-deploy" || btn.id === "btn-start-deploy" || btn.id === "btn-browse-iso" || btn.id === "btn-pre-check" || btn.id === "btn-copy-iso-path" || btn.id === "card-mode-upgrade" || btn.id === "card-mode-clean" || btn.id.startsWith("tab-soft-") || btn.id.startsWith("btn-scan-") || btn.id.startsWith("btn-export-") || btn.id.startsWith("btn-restore-"))) return;
+      if (btn.id && (btn.id.startsWith("btn-admin-") || btn.id.startsWith("btnHelpdesk") || btn.id === "btn-fix-selected-codes" || btn.id === "btnInstall" || btn.id === "btnUninstall" || btn.id === "btnSelectAll" || btn.id === "btnDeselectAll" || btn.id === "disk-select" || btn.id === "btn-run-deploy" || btn.id === "btn-start-deploy" || btn.id === "btn-browse-iso" || btn.id === "btn-pre-check" || btn.id === "btn-copy-iso-path" || btn.id === "card-mode-upgrade" || btn.id === "card-mode-clean" || btn.id.startsWith("tab-soft-") || btn.id.startsWith("btn-scan-") || btn.id.startsWith("btn-export-") || btn.id.startsWith("btn-restore-"))) return;
       if (btn.hasAttribute("onclick")) return;
+      if (btn.closest("#view-helpdesk-troubleshoot") || btn.closest("#view-printer-lan")) return;
       if (btn.closest("#subview-soft-custom") || btn.closest("#subview-soft-uninstall") || btn.closest("#subview-soft-fonts") || btn.closest("#view-oem-brand")) return;
       if (btn.closest("#view-soft-winget") && btn.closest(".mb-space-lg")) return; // Category Filter Pills
       if (btn.closest("#sidebar-nav")) return;
@@ -2635,6 +2684,9 @@
         const toggleHidden = document.getElementById("toggle-show-hidden");
         if (toggleHidden) toggleHidden.checked = !!data.show_hidden;
 
+        const toggleClassic = document.getElementById("toggle-classic-context");
+        if (toggleClassic) toggleClassic.checked = !!data.classic_context;
+
         // 4. Đồng bộ trạng thái Super Lean Profile & Nút Hoàn Tác
         const isSuperLean = localStorage.getItem("super_lean_applied") === "true";
         updateSuperLeanUI(isSuperLean);
@@ -3328,7 +3380,13 @@
   };
 
   // --- 9.5. WINDOWS DEPLOY CONTROLLER ---
+  let isBrowsingIso = false;
   async function browseIsoFile() {
+    if (isBrowsingIso) return;
+    const btn = document.getElementById("btn-browse-iso");
+    if (btn && btn.disabled) return;
+    isBrowsingIso = true;
+    if (btn) btn.disabled = true;
     try {
       showToast("Duyệt File ISO", "Đang mở hộp thoại chọn tệp ISO từ máy...", "info");
       const res = await invokeRust("run_system_action", { actionId: "browse_iso" });
@@ -3337,6 +3395,8 @@
       if (selectedPath) {
         const isoPathEl = document.getElementById("iso-path-text");
         if (isoPathEl) isoPathEl.innerText = selectedPath;
+        const inputIso = document.getElementById("input-iso-path");
+        if (inputIso) inputIso.value = selectedPath;
         const osSelector = document.getElementById("os-selector");
         if (osSelector) osSelector.value = "custom-iso";
         showToast("Chọn File ISO", "Đã nạp file: " + selectedPath, "success");
@@ -3347,6 +3407,9 @@
       }
     } catch (e) {
       showToast("Lỗi", "Không thể mở hộp thoại chọn file: " + e, "error");
+    } finally {
+      if (btn) btn.disabled = false;
+      isBrowsingIso = false;
     }
   }
   window.browseIsoFile = browseIsoFile;
@@ -3431,10 +3494,33 @@
         } else if (e.target.value && (e.target.value.toLowerCase().endsWith(".iso") || e.target.value.toLowerCase().endsWith("setup.exe"))) {
           const isoPathEl = document.getElementById("iso-path-text");
           if (isoPathEl) isoPathEl.innerText = e.target.value;
+          const inputIso = document.getElementById("input-iso-path");
+          if (inputIso) inputIso.value = e.target.value;
           showToast("Chọn Bộ Cài", "Đã chọn: " + e.target.value, "success");
         }
       });
     }
+
+    // Avoid double event triggers: elements in index.html already have inline onclick handlers.
+    // safeAttachClick binds addEventListener only if the element does not define an inline onclick.
+    const safeAttachClick = (id, fn) => {
+      const el = document.getElementById(id);
+      if (el && !el.getAttribute("onclick")) {
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          fn(e);
+        });
+      }
+    };
+
+    safeAttachClick("card-mode-upgrade", () => selectDeployMode("upgrade"));
+    safeAttachClick("card-mode-clean", () => selectDeployMode("clean"));
+    safeAttachClick("btn-browse-iso", () => browseIsoFile());
+    safeAttachClick("btn-start-deploy", () => startWinDeploy());
+    safeAttachClick("btn-quick-backup-system", () => backupSystemFromDeploy());
+    safeAttachClick("btn-quick-backup-drivers", () => backupDriverFromDeploy());
+    safeAttachClick("btn-export-drivers", () => backupDriverFromDeploy());
+    safeAttachClick("btn-restore-drivers", () => restoreDrivers());
   }
   window.initDeployModeSwitcher = initDeployModeSwitcher;
 
@@ -3448,20 +3534,20 @@
     if (btnCaiWin) {
       btnCaiWin.addEventListener("click", (e) => {
         e.preventDefault();
-        switchView("view-win-deploy");
+        switchView("view-cai-windows");
       });
     }
     if (btnHwid) {
       btnHwid.addEventListener("click", (e) => {
         e.preventDefault();
-        switchView("view-hwid-act");
+        switchView("view-win-activate");
       });
     }
     if (btnBitlocker) {
       btnBitlocker.addEventListener("click", (e) => {
         e.preventDefault();
         showToast("BitLocker", "Đang chuyển đến bảng quản lý phân vùng ổ đĩa & BitLocker...", "info");
-        switchView("view-disk-part");
+        switchView("view-disk-bitlocker");
       });
     }
     if (btnBackup) {
@@ -3486,12 +3572,22 @@
   }
   window.checkDiskPartitions = checkDiskPartitions;
 
+  let isBackingUpDrivers = false;
   async function backupDriverFromDeploy() {
-    const btn = document.getElementById("btn-quick-backup-drivers");
+    if (isBackingUpDrivers) return;
+    const btns = [
+      document.getElementById("btn-quick-backup-drivers"),
+      document.getElementById("btn-deploy-backup-now"),
+      document.getElementById("btn-export-drivers"),
+      document.getElementById("btn-export-drivers-vault")
+    ].filter(Boolean);
+    if (btns.some(b => b.disabled)) return;
+    isBackingUpDrivers = true;
+    btns.forEach(b => b.disabled = true);
+
     const label = document.getElementById("btn-quick-backup-label");
     const desc = document.getElementById("deploy-driver-target-desc");
     if (label) label.innerText = "Đang sao lưu...";
-    if (btn) btn.disabled = true;
     showToast("Sao Lưu Driver", "Đang trích xuất toàn bộ Driver phần cứng ra đĩa...", "info");
 
     try {
@@ -3510,18 +3606,54 @@
       if (label) label.innerText = "Sao Lưu Ngay";
       return null;
     } finally {
-      if (btn) btn.disabled = false;
+      btns.forEach(b => b.disabled = false);
+      isBackingUpDrivers = false;
     }
   }
   window.backupDriverFromDeploy = backupDriverFromDeploy;
   window.exportDrivers = backupDriverFromDeploy;
 
+  let isRestoringDrivers = false;
+  async function restoreDrivers() {
+    if (isRestoringDrivers) return;
+    const btns = [
+      document.getElementById("btn-restore-drivers"),
+      document.getElementById("btn-restore-drivers-vault")
+    ].filter(Boolean);
+    if (btns.some(b => b.disabled)) return;
+    isRestoringDrivers = true;
+    btns.forEach(b => b.disabled = true);
+
+    showToast("Phục Hồi Driver", "Đang nạp và cài đặt lại toàn bộ Driver từ thư mục sao lưu...", "info");
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "restore_drivers" });
+      if (res && res.success) {
+        showToast("Phục Hồi Driver", res.message || "Đã phục hồi toàn bộ Driver thành công!", "success");
+      } else {
+        showToast("Lỗi Phục Hồi", (res && res.message) || "Không thể phục hồi Driver.", "error");
+      }
+      return res;
+    } catch (e) {
+      showToast("Lỗi Phục Hồi", String(e), "error");
+      return null;
+    } finally {
+      btns.forEach(b => b.disabled = false);
+      isRestoringDrivers = false;
+    }
+  }
+  window.restoreDrivers = restoreDrivers;
+
+  let isBackingUpSystem = false;
   async function backupSystemFromDeploy() {
+    if (isBackingUpSystem) return;
     const btn = document.getElementById("btn-quick-backup-system");
+    if (btn && btn.disabled) return;
+    isBackingUpSystem = true;
+    if (btn) btn.disabled = true;
+
     const label = document.getElementById("btn-quick-backup-system-label");
     const desc = document.getElementById("deploy-system-target-desc");
     if (label) label.innerText = "Đang sao lưu...";
-    if (btn) btn.disabled = true;
     showToast("Sao Lưu Toàn Bộ Windows", "Đang tiến hành sao lưu hệ thống C: (WIM / Snapshot) ra phân vùng an toàn...", "info");
 
     try {
@@ -3541,6 +3673,7 @@
       return null;
     } finally {
       if (btn) btn.disabled = false;
+      isBackingUpSystem = false;
     }
   }
   window.backupSystemFromDeploy = backupSystemFromDeploy;
@@ -3626,10 +3759,14 @@
   }
   window.initWinDeployEnv = initWinDeployEnv;
 
+  let isDeploying = false;
   async function startWinDeploy() {
+    if (isDeploying) return;
     const btn = document.getElementById("btn-start-deploy");
-    const isoPathEl = document.getElementById("iso-path-text");
-    const isoPath = (isoPathEl ? isoPathEl.innerText : "").trim();
+    if (btn && btn.disabled) return;
+    const isoInput = document.getElementById("input-iso-path");
+    const isoText = document.getElementById("iso-path-text");
+    const isoPath = ((isoInput && isoInput.value.trim()) || (isoText ? (isoText.innerText || "").trim() : "")).trim();
     const modeEl = document.querySelector('input[name="deploy-mode"]:checked');
     const deployMode = modeEl ? modeEl.value : "upgrade";
     const cbBackupDrivers = document.getElementById("cb-deploy-backup-drivers");
@@ -3642,6 +3779,7 @@
       return;
     }
 
+    isDeploying = true;
     const originalHtml = btn ? btn.innerHTML : "";
     if (btn) {
       btn.disabled = true;
@@ -3688,6 +3826,8 @@
         btn.innerHTML = originalHtml;
         btn.disabled = false;
       }
+    } finally {
+      isDeploying = false;
     }
   }
   window.startWinDeploy = startWinDeploy;
@@ -4119,13 +4259,26 @@
     if (btnFixSelected) {
       btnFixSelected.addEventListener("click", async () => {
         showToast("Sửa Máy In", "Đang vá mã lỗi (0x11b, 709, 7c) và làm sạch Spooler...", "info");
+        const logEl = document.getElementById("printer-action-log");
+        if (logEl) {
+          logEl.innerText += `\n[${new Date().toLocaleTimeString()}] Bắt đầu vá lỗi máy in LAN (0x11b, 0x709, 0x7c, Spooler)...`;
+          logEl.scrollTop = logEl.scrollHeight;
+        }
         try {
           const res = await invokeRust("run_system_action", { actionId: "fix_printer" });
           if (res && res.message) {
             showToast("Máy In & LAN", res.message, res.success ? "success" : "warning");
+            if (logEl) {
+              logEl.innerText += `\n[${new Date().toLocaleTimeString()}] ${res.message}`;
+              logEl.scrollTop = logEl.scrollHeight;
+            }
           }
         } catch (e) {
           showToast("Lỗi", "Không thể sửa máy in: " + e, "error");
+          if (logEl) {
+            logEl.innerText += `\n[${new Date().toLocaleTimeString()}] LỖI: ${e}`;
+            logEl.scrollTop = logEl.scrollHeight;
+          }
         }
       });
     }
@@ -4137,14 +4290,19 @@
         if (action.includes("pdf")) actionId = "cai print to pdf";
         else if (action.includes("2900")) actionId = "fix comm error 2900 - 3000";
         else if (action.includes("709")) actionId = "sua loi set mac dinh 0x709";
+        else if (action === "scan_lan" || action.includes("lan")) actionId = "scan_lan";
         else if (action.includes("scan")) actionId = "share_scan_folder";
-        else if (action.includes("lan")) actionId = "scan_lan";
 
         showToast("Thao Tác Máy In", `Đang thực thi: ${btn.textContent.trim()}...`, "info");
+        const logEl = document.getElementById("printer-action-log");
         try {
           const res = await invokeRust("run_system_action", { actionId });
           if (res && res.message) {
             showToast("Hoàn Tất", res.message, res.success ? "success" : "info");
+            if (logEl) {
+              logEl.innerText += `\n[${new Date().toLocaleTimeString()}] ${res.message}`;
+              logEl.scrollTop = logEl.scrollHeight;
+            }
           }
         } catch (e) {
           showToast("Lỗi", String(e), "error");
@@ -4152,6 +4310,79 @@
       });
     });
   }
+
+  // --- SMB SCAN FOLDER HELPERS ---
+  window.createScanFolderShare = async function () {
+    const folderPath = (document.getElementById("txtScanFolderPath")?.value || "C:\\Scan").trim();
+    const shareName = (document.getElementById("txtScanShareName")?.value || "Scan").trim();
+    showToast("Thư Mục Scan", `Đang tạo và chia sẻ thư mục ${folderPath} qua SMB...`, "info");
+    try {
+      const res = await invokeRust("run_system_action", {
+        actionId: "share_scan_folder",
+        folderPath,
+        shareName
+      });
+      const logEl = document.getElementById("printer-action-log");
+      if (logEl && res && res.message) {
+        logEl.innerText += `\n[${new Date().toLocaleTimeString()}] ${res.message}`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      if (res && res.message) {
+        const ipMatch = res.message.match(/UNC_IP:([^\s|]+)/);
+        const nameMatch = res.message.match(/UNC_NAME:([^\s|]+)/);
+        if (ipMatch && document.getElementById("txtScanUncIp")) {
+          document.getElementById("txtScanUncIp").innerText = ipMatch[1];
+        }
+        if (nameMatch && document.getElementById("txtScanUncName")) {
+          document.getElementById("txtScanUncName").innerText = nameMatch[1];
+        }
+      }
+      showToast("Thành Công", (res && res.message) || "Đã tạo thư mục Scan thành công!", "success");
+    } catch (e) {
+      showToast("Lỗi", String(e), "error");
+    }
+  };
+
+  window.enableAllSharingNoPassword = async function () {
+    showToast("Mở Toàn Quyền LAN", "Đang mở Network Discovery và tắt mật khẩu mạng...", "info");
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "enable_all_sharing" });
+      const logEl = document.getElementById("printer-action-log");
+      if (logEl && res && res.message) {
+        logEl.innerText += `\n[${new Date().toLocaleTimeString()}] ${res.message}`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      showToast("Hoàn Tất", (res && res.message) || "Đã cấu hình chia sẻ mạng LAN thành công!", "success");
+    } catch (e) {
+      showToast("Lỗi", String(e), "error");
+    }
+  };
+
+  window.copyUncPath = function (elementId) {
+    const text = document.getElementById(elementId)?.innerText?.trim();
+    if (text) {
+      navigator.clipboard.writeText(text);
+      showToast("Đã Copy", text, "success");
+    }
+  };
+
+  window.browseScanFolder = async function () {
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "browse_folder" });
+      if (res && res.success && res.message && !res.message.includes("CANCEL")) {
+        const input = document.getElementById("txtScanFolderPath");
+        if (input) {
+          input.value = res.message.trim();
+          const shareInput = document.getElementById("txtScanShareName");
+          if (shareInput && (!shareInput.value || shareInput.value === "Scan")) {
+            const parts = res.message.trim().replace(/\\+$/, "").split("\\");
+            const last = parts[parts.length - 1];
+            if (last) shareInput.value = last;
+          }
+        }
+      }
+    } catch (_) {}
+  };
 
   // --- 12. FAKE VPN / SOCKS5 PROXY CONTROLLER ---
   function initVpnProxyController() {
@@ -4351,10 +4582,16 @@
     async function loadDatabase() {
       try {
         const res = await invokeRust("get_troubleshoot_database");
-        if (res && res.data && res.data.Problems) {
-          allProblems = res.data.Problems;
-        } else if (res && res.data && Array.isArray(res.data)) {
-          allProblems = res.data;
+        let data = res && res.data;
+        if (typeof data === "string") {
+          try {
+            data = JSON.parse(data.replace(/^\uFEFF/, "").trim());
+          } catch (_) {}
+        }
+        if (data && data.Problems) {
+          allProblems = data.Problems;
+        } else if (data && Array.isArray(data)) {
+          allProblems = data;
         }
       } catch (_) {}
 
@@ -4515,6 +4752,7 @@
       });
     }
 
+    window.refreshHelpdeskDatabase = loadDatabase;
     loadDatabase();
   }
 
@@ -4613,21 +4851,218 @@
     });
   }
 
-  window.selectBloatwarePreset = function (preset) {
-    const list = document.getElementById("uwp-app-list");
-    if (!list) return;
-    const checkboxes = list.querySelectorAll("input[type='checkbox']");
-    if (preset === "safe") {
-      checkboxes.forEach((cb, idx) => { cb.checked = idx % 3 === 0; });
-      showToast("Bloatware Preset", "Đã chọn cấu hình An Toàn (Safe 27 apps)!", "info");
-    } else if (preset === "recommended") {
-      checkboxes.forEach((cb, idx) => { cb.checked = idx % 2 === 0; });
-      showToast("Bloatware Preset", "Đã chọn cấu hình Khuyên Dùng (Recommended 44 apps)!", "info");
-    } else if (preset === "aggressive") {
-      checkboxes.forEach((cb) => { cb.checked = true; });
-      showToast("Bloatware Preset", "Đã chọn cấu hình Tối Đa (Aggressive 65 apps)!", "warning");
+// [Cleaned duplicate selectBloatwarePreset]
+
+  // =========================================================================
+  // 18. BITLOCKER DRIVE ENCRYPTION MANAGEMENT CONTROLLER
+  // =========================================================================
+  function initBitLockerController() {
+    const view = document.getElementById("view-bitlocker-mgmt");
+    if (!view) return;
+
+    const logEl = document.getElementById("bitlocker-action-output");
+    function appendBitLockerLog(text) {
+      if (!logEl) return;
+      const time = new Date().toLocaleTimeString();
+      logEl.innerText += `\n[${time}] ${text}`;
+      logEl.scrollTop = logEl.scrollHeight;
     }
-  };
+
+    const btnClearLog = document.getElementById("btn-bitlocker-clear-log");
+    if (btnClearLog) {
+      btnClearLog.addEventListener("click", () => {
+        if (logEl) logEl.innerText = "[HỆ THỐNG] Nhật ký đã được làm sạch.";
+      });
+    }
+
+    // 1. Quét và nạp trạng thái phân vùng
+    async function refreshBitLockerStatus() {
+      appendBitLockerLog("Đang truy vấn trạng thái mã hóa các phân vùng ổ đĩa (manage-bde -status)...");
+      const tbody = document.getElementById("bitlocker-drives-body");
+      const driveSelect = document.getElementById("select-bitlocker-target-drive");
+      const countEl = document.getElementById("bitlocker-drives-count");
+      const summaryStatus = document.getElementById("bitlocker-summary-status");
+      const summaryC = document.getElementById("bitlocker-summary-c");
+
+      try {
+        const res = await invokeRust("run_system_action", { actionId: "get_bitlocker_status" });
+        let drives = [];
+        if (res && res.message) {
+          try {
+            drives = JSON.parse(res.message);
+          } catch (_) {
+            appendBitLockerLog(res.message);
+          }
+        }
+
+        if (Array.isArray(drives) && drives.length > 0) {
+          if (countEl) countEl.innerText = `${drives.length} phân vùng`;
+          if (driveSelect) {
+            driveSelect.innerHTML = drives.map(d => `<option value="${d.drive}">${d.drive} ${d.volume_name ? '(' + d.volume_name + ')' : ''} [${d.protection_status}]</option>`).join("");
+          }
+
+          // Update Summary
+          const cDrive = drives.find(d => d.drive && d.drive.toUpperCase().startsWith("C"));
+          if (cDrive && summaryC) {
+            summaryC.innerText = `${cDrive.protection_status} (${cDrive.encryption_percentage || '0%'})`;
+          }
+          const hasEncrypted = drives.some(d => d.protection_status && (d.protection_status.includes("On") || d.protection_status.includes("Bật")));
+          if (summaryStatus) {
+            summaryStatus.innerText = hasEncrypted ? "Có phân vùng được bảo vệ" : "Chưa kích hoạt mã hóa";
+            summaryStatus.className = hasEncrypted ? "font-bold text-emerald-600 text-sm mt-0.5" : "font-bold text-slate-800 text-sm mt-0.5";
+          }
+
+          // Render Table
+          if (tbody) {
+            tbody.innerHTML = drives.map(d => {
+              const isProtected = d.protection_status && (d.protection_status.includes("On") || d.protection_status.includes("Bật"));
+              const isLocked = d.lock_status && (d.lock_status.includes("Locked") || d.lock_status.includes("Đã khóa"));
+              const statusBadge = isProtected
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">Đã Bật (${d.protection_status})</span>`
+                : `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Đã Tắt (${d.protection_status})</span>`;
+              const lockBadge = isLocked
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700">Bị Khóa</span>`
+                : `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700">Mở Khóa</span>`;
+
+              return `
+                <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="p-2.5 font-bold text-slate-800">${d.drive} <span class="font-normal text-slate-500">${d.volume_name || ''}</span></td>
+                  <td class="p-2.5">${d.free_gb || 0} GB trống / ${d.size_gb || 0} GB</td>
+                  <td class="p-2.5">${statusBadge}</td>
+                  <td class="p-2.5">${lockBadge}</td>
+                  <td class="p-2.5 text-slate-600">${Array.isArray(d.key_protectors) && d.key_protectors.length ? d.key_protectors.join(", ") : (d.encryption_method || "None")}</td>
+                  <td class="p-2.5 font-mono">${d.encryption_percentage || '0%'}</td>
+                  <td class="p-2.5 text-right space-x-1">
+                    <button onclick="quickBitLockerAction('get_key', '${d.drive}')" class="px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-semibold cursor-pointer" title="Xem Khóa Khôi Phục">Khóa</button>
+                    ${isProtected
+                      ? `<button onclick="quickBitLockerAction('disable', '${d.drive}')" class="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-semibold cursor-pointer" title="Tắt BitLocker">Tắt</button>`
+                      : `<button onclick="quickBitLockerAction('enable', '${d.drive}')" class="px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-semibold cursor-pointer" title="Bật BitLocker">Bật</button>`
+                    }
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          }
+          appendBitLockerLog(`[OK] Đã nạp thành công trạng thái của ${drives.length} phân vùng ổ đĩa.`);
+        } else {
+          if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Không tìm thấy phân vùng cố định hoặc BitLocker chưa được khởi tạo.</td></tr>`;
+        }
+      } catch (err) {
+        appendBitLockerLog("[LỖI] Không thể đọc trạng thái BitLocker: " + err);
+      }
+    }
+
+    const btnRefresh = document.getElementById("btn-bitlocker-refresh");
+    if (btnRefresh) btnRefresh.addEventListener("click", () => refreshBitLockerStatus());
+
+    // Open Control Panel
+    const btnCpl = document.getElementById("btn-bitlocker-open-cpl");
+    if (btnCpl) {
+      btnCpl.addEventListener("click", async () => {
+        await invokeRust("run_system_action", { actionId: "open_bitlocker_cpl" });
+      });
+    }
+
+    // Action Handlers
+    const btnEnable = document.getElementById("btn-bitlocker-enable");
+    if (btnEnable) {
+      btnEnable.addEventListener("click", async () => {
+        const drive = document.getElementById("select-bitlocker-target-drive")?.value || "C:";
+        const password = document.getElementById("input-bitlocker-password")?.value || "";
+        if (!confirm(`Bạn có chắc chắn muốn BẬT mã hóa BitLocker cho phân vùng ${drive}?`)) return;
+        appendBitLockerLog(`Đang thực thi bật BitLocker cho ${drive}...`);
+        showToast("BitLocker", `Đang kích hoạt mã hóa ổ ${drive}...`, "info");
+        const res = await invokeRust("run_system_action", { actionId: "enable_bitlocker", drive, password });
+        appendBitLockerLog(res?.message || "Đã gửi lệnh bật BitLocker.");
+        showToast("BitLocker", res?.message || "Hoàn tất lệnh.", res?.success ? "success" : "warning");
+        setTimeout(refreshBitLockerStatus, 1500);
+      });
+    }
+
+    const btnDisable = document.getElementById("btn-bitlocker-disable");
+    if (btnDisable) {
+      btnDisable.addEventListener("click", async () => {
+        const drive = document.getElementById("select-bitlocker-target-drive")?.value || "C:";
+        if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn TẮT và GIẢI MÃ hoàn toàn BitLocker cho phân vùng ${drive}?`)) return;
+        appendBitLockerLog(`Đang gửi lệnh giải mã (manage-bde -off ${drive})...`);
+        showToast("BitLocker", `Đang tắt BitLocker ổ ${drive}...`, "info");
+        const res = await invokeRust("run_system_action", { actionId: "disable_bitlocker", drive });
+        appendBitLockerLog(res?.message || "Đã gửi lệnh tắt BitLocker.");
+        showToast("BitLocker", res?.message || "Hoàn tất lệnh.", res?.success ? "success" : "warning");
+        setTimeout(refreshBitLockerStatus, 1500);
+      });
+    }
+
+    const btnUnlock = document.getElementById("btn-bitlocker-unlock");
+    if (btnUnlock) {
+      btnUnlock.addEventListener("click", async () => {
+        const drive = document.getElementById("select-bitlocker-target-drive")?.value || "C:";
+        const password = document.getElementById("input-bitlocker-password")?.value || "";
+        const recovery_key = document.getElementById("input-bitlocker-recovery-key")?.value || "";
+        if (!password && !recovery_key) {
+          showToast("Cảnh báo", "Vui lòng nhập mật khẩu hoặc mã Recovery Key 48 số để mở khóa!", "warning");
+          return;
+        }
+        appendBitLockerLog(`Đang gửi lệnh mở khóa phân vùng ${drive}...`);
+        const res = await invokeRust("run_system_action", { actionId: "unlock_bitlocker", drive, password, recovery_key });
+        appendBitLockerLog(res?.message || "Hoàn tất lệnh mở khóa.");
+        showToast("BitLocker", res?.message || "Hoàn tất lệnh.", res?.success ? "success" : "warning");
+        setTimeout(refreshBitLockerStatus, 1500);
+      });
+    }
+
+    const btnBackupKey = document.getElementById("btn-bitlocker-backup-key");
+    if (btnBackupKey) {
+      btnBackupKey.addEventListener("click", async () => {
+        const drive = document.getElementById("select-bitlocker-target-drive")?.value || "C:";
+        appendBitLockerLog(`Đang trích xuất mã Recovery Key của ${drive}...`);
+        showToast("BitLocker", `Đang trích xuất Recovery Key ${drive}...`, "info");
+        const res = await invokeRust("run_system_action", { actionId: "get_bitlocker_key", drive });
+        appendBitLockerLog(res?.message || "Đã trích xuất Recovery Key.");
+        showToast("BitLocker", "Đã trích xuất khóa khôi phục!", res?.success ? "success" : "warning");
+      });
+    }
+
+    const btnSuspend = document.getElementById("btn-bitlocker-suspend");
+    if (btnSuspend) {
+      btnSuspend.addEventListener("click", async () => {
+        const drive = document.getElementById("select-bitlocker-target-drive")?.value || "C:";
+        appendBitLockerLog(`Đang tạm dừng bảo vệ BitLocker trên ${drive}...`);
+        const res = await invokeRust("run_system_action", { actionId: "suspend_bitlocker", drive });
+        appendBitLockerLog(res?.message || "Đã tạm dừng bảo vệ.");
+        showToast("BitLocker", res?.message || "Đã tạm dừng.", res?.success ? "success" : "warning");
+        setTimeout(refreshBitLockerStatus, 1500);
+      });
+    }
+
+    const btnResume = document.getElementById("btn-bitlocker-resume");
+    if (btnResume) {
+      btnResume.addEventListener("click", async () => {
+        const drive = document.getElementById("select-bitlocker-target-drive")?.value || "C:";
+        appendBitLockerLog(`Đang tiếp tục bảo vệ BitLocker trên ${drive}...`);
+        const res = await invokeRust("run_system_action", { actionId: "resume_bitlocker", drive });
+        appendBitLockerLog(res?.message || "Đã tiếp tục bảo vệ.");
+        showToast("BitLocker", res?.message || "Đã tiếp tục.", res?.success ? "success" : "warning");
+        setTimeout(refreshBitLockerStatus, 1500);
+      });
+    }
+
+    window.quickBitLockerAction = async function(action, drive) {
+      const selectEl = document.getElementById("select-bitlocker-target-drive");
+      if (selectEl) selectEl.value = drive;
+      if (action === "get_key") {
+        btnBackupKey?.click();
+      } else if (action === "disable") {
+        btnDisable?.click();
+      } else if (action === "enable") {
+        btnEnable?.click();
+      }
+    };
+
+    // Auto load on initial view display
+    refreshBitLockerStatus();
+  }
+  window.initBitLockerController = initBitLockerController;
 
   document.addEventListener("DOMContentLoaded", () => {
     initTweakHoverExplanation();
@@ -4649,6 +5084,7 @@
     initVpnProxyController();
     initHwidController();
     initHelpdeskController();
+    initBitLockerController();
     initHeaderControls();
     initAutoUpdateOnStartup();
     if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState();

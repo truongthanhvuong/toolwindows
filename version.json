@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "20.5.909.156",
-    "releaseDate":  "13/11/2026",
+    "version":  "20.5.909.157",
+    "releaseDate":  "16/11/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
                       "Hoàn thiện trải nghiệm Portable sạch sẽ: Tuyệt đối không tạo shortcut trên màn hình Desktop (VUONGTT Toolkit.lnk, VUONGTT Tool Pro 2026.lnk); Tự động dọn dẹp triệt để mọi lối tắt tại Desktop và Programs khi mở và khi tắt công cụ; Tối ưu hóa chu trình kết thúc tiến trình sạch sẽ (Clean Exit) ngay khi người dùng đóng cửa sổ giao diện mà không để lại bất kỳ dấu vết nào.",
