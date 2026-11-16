@@ -141,6 +141,10 @@
       if (v.id === targetId) {
         v.classList.add("active");
         found = true;
+        // Tự động cuộn đỉnh view và các container con
+        v.scrollTop = 0;
+        const scrollContainers = v.querySelectorAll(".overflow-y-auto");
+        scrollContainers.forEach((sc) => { sc.scrollTop = 0; });
       } else {
         v.classList.remove("active");
       }
@@ -2670,24 +2674,46 @@ getAppIconMarkup(app) +
     }
 
     // --- POWER PLANS CONTROLLER ---
-    window.selectPowerPlan = async function(btn, planName) {
+    function updatePowerPlanButtonsUI(activeKey) {
       const container = document.getElementById("power-plans-grid");
-      if (container) {
-        container.querySelectorAll(".power-plan-btn").forEach((b) => {
-          b.className = "power-plan-btn p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex flex-col gap-1 text-left transition-all cursor-pointer";
-          const ping = b.querySelector(".animate-ping");
-          if (ping) ping.remove();
-        });
-      }
+      if (!container) return;
 
-      if (btn) {
-        btn.className = "power-plan-btn p-3 rounded-xl bg-error-container text-on-error-container flex flex-col gap-1 text-left shadow-sm transition-all ring-1 ring-error cursor-pointer";
-        const topRow = btn.querySelector(".flex.items-center.justify-between");
-        if (topRow && !topRow.querySelector(".animate-ping")) {
-          const pingEl = document.createElement("span");
-          pingEl.className = "w-2 h-2 rounded-full bg-error animate-ping";
-          topRow.appendChild(pingEl);
+      container.querySelectorAll(".power-plan-btn").forEach((b) => {
+        const planKey = b.getAttribute("data-plan");
+        const isNeverSleep = (planKey === "never_sleep");
+        const isSelected = (planKey === activeKey);
+        const colClass = isNeverSleep ? "col-span-2 md:col-span-2" : "";
+
+        const ping = b.querySelector(".power-plan-ping");
+        if (ping) ping.remove();
+
+        if (isSelected) {
+          // Nút được chọn (Active) - Đồng bộ màu đỏ / amber nổi bật
+          if (isNeverSleep) {
+            b.className = `power-plan-btn p-3.5 rounded-xl bg-amber-50/90 text-amber-950 border-2 border-amber-500 ring-2 ring-amber-400/30 flex flex-col justify-between gap-1 text-left shadow-sm transition-all cursor-pointer min-h-[92px] ${colClass}`;
+          } else {
+            b.className = `power-plan-btn p-3.5 rounded-xl bg-red-50/90 text-red-950 border-2 border-red-500 ring-2 ring-red-400/30 flex flex-col justify-between gap-1 text-left shadow-sm transition-all cursor-pointer min-h-[92px] ${colClass}`;
+          }
+          const topRow = b.querySelector(".flex.items-center.justify-between");
+          if (topRow) {
+            const pingEl = document.createElement("span");
+            pingEl.className = isNeverSleep
+              ? "power-plan-ping w-2.5 h-2.5 rounded-full bg-amber-500 shadow-xs animate-ping"
+              : "power-plan-ping w-2.5 h-2.5 rounded-full bg-red-500 shadow-xs animate-ping";
+            topRow.appendChild(pingEl);
+          }
+        } else {
+          // Nút Unselected - Luôn giữ viền rõ ràng, nền kính trắng, bóng đổ nhẹ
+          b.className = `power-plan-btn p-3.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 border border-slate-200/90 hover:border-slate-300 hover:shadow-xs flex flex-col justify-between gap-1 text-left transition-all cursor-pointer min-h-[92px] shadow-2xs ${colClass}`;
         }
+      });
+    }
+    window.updatePowerPlanButtonsUI = updatePowerPlanButtonsUI;
+
+    window.selectPowerPlan = async function(btn, planName) {
+      const planKey = btn ? btn.getAttribute("data-plan") : null;
+      if (planKey) {
+        updatePowerPlanButtonsUI(planKey);
       }
 
       appendTweakLog(`[NGUỒN ĐIỆN] Đang áp dụng cấu hình: ${planName}...`, "progress");
@@ -2773,56 +2799,39 @@ getAppIconMarkup(app) +
         const powerGrid = document.getElementById("power-plans-grid");
         const powerBadge = document.getElementById("active-power-badge");
         if (powerGrid) {
-          powerGrid.querySelectorAll(".power-plan-btn").forEach((b) => {
-            b.className = "power-plan-btn p-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex flex-col gap-1 text-left transition-all cursor-pointer";
-            const ping = b.querySelector(".animate-ping");
-            if (ping) ping.remove();
-          });
-
           const schemeLower = (data.scheme || "").toLowerCase();
           let activeKey = "balanced";
           let badgeText = "BALANCED ACTIVE";
-          let badgeColor = "bg-primary-container text-on-primary-container";
+          let badgeColor = "bg-sky-100 text-sky-700 border border-sky-300";
 
           if (data.sleep_seconds === 0 && (data.disk_seconds === 0 || data.disk_seconds === undefined) && (schemeLower.includes("high") || schemeLower.includes("never"))) {
             activeKey = "never_sleep";
             badgeText = "24/7 NON-STOP ACTIVE";
-            badgeColor = "bg-amber-500/20 text-amber-500 ring-1 ring-amber-500";
+            badgeColor = "bg-amber-100 text-amber-700 border border-amber-300";
           } else if (schemeLower.includes("ultimate") || schemeLower.includes("cuc dai") || schemeLower.includes("cực đại")) {
             activeKey = "ultimate";
             badgeText = "ULTIMATE ACTIVE";
-            badgeColor = "bg-error-container text-on-error-container";
+            badgeColor = "bg-red-100 text-red-700 border border-red-300";
           } else if (schemeLower.includes("high") || schemeLower.includes("hieu nang cao") || schemeLower.includes("hiệu năng cao")) {
             activeKey = "high";
             badgeText = "HIGH PERF ACTIVE";
-            badgeColor = "bg-secondary-container text-on-secondary-container";
+            badgeColor = "bg-sky-100 text-sky-700 border border-sky-300";
           } else if (schemeLower.includes("saver") || schemeLower.includes("tiet kiem") || schemeLower.includes("tiết kiệm")) {
             activeKey = "saver";
             badgeText = "SAVER ACTIVE";
-            badgeColor = "bg-surface-container-high text-outline";
+            badgeColor = "bg-emerald-100 text-emerald-700 border border-emerald-300";
           } else {
             activeKey = "balanced";
             badgeText = "BALANCED ACTIVE";
-            badgeColor = "bg-tertiary-container text-on-tertiary-container";
+            badgeColor = "bg-teal-100 text-teal-700 border border-teal-300";
           }
 
-          const activeBtn = powerGrid.querySelector(`button[data-plan="${activeKey}"]`);
-          if (activeBtn) {
-            const is247 = activeKey === "never_sleep";
-            activeBtn.className = is247
-              ? "power-plan-btn p-3 rounded-xl bg-amber-500/15 text-amber-400 flex flex-col gap-1 text-left shadow-sm transition-all ring-1 ring-amber-500 cursor-pointer col-span-2 md:col-span-2"
-              : "power-plan-btn p-3 rounded-xl bg-error-container text-on-error-container flex flex-col gap-1 text-left shadow-sm transition-all ring-1 ring-error cursor-pointer";
-            const topRow = activeBtn.querySelector(".flex.items-center.justify-between");
-            if (topRow && !topRow.querySelector(".animate-ping")) {
-              const pingEl = document.createElement("span");
-              pingEl.className = is247 ? "w-2 h-2 rounded-full bg-amber-500 animate-ping" : "w-2 h-2 rounded-full bg-error animate-ping";
-              topRow.appendChild(pingEl);
-            }
-          }
+          // Cập nhật giao diện các nút một cách đồng bộ, an toàn layout
+          updatePowerPlanButtonsUI(activeKey);
 
           if (powerBadge) {
             powerBadge.textContent = badgeText;
-            powerBadge.className = `px-2 py-0.5 rounded font-code-sm text-code-sm font-bold uppercase ${badgeColor}`;
+            powerBadge.className = `px-2 py-0.5 rounded font-mono text-xs font-bold uppercase shadow-2xs ${badgeColor}`;
           }
         }
 

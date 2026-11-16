@@ -290,7 +290,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.168</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.169</span>
       </div>
     </div>
 
@@ -694,7 +694,7 @@
       <div id="view-general" class="stitch-view">
         <div class="grid grid-cols-12 gap-4 h-full">
           <!-- Left 8 Cols: Tweak switches -->
-          <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
+          <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pt-2.5 pb-8 pr-1.5">
             <!-- BIOS License Recognition Banner -->
             <div id="bios-license-card" class="glass-card p-4 rounded-xl border border-sky-200/70 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-2">
               <div class="flex items-start gap-3">
@@ -916,47 +916,57 @@
                 <span id="active-power-badge" class="px-2 py-0.5 rounded font-mono text-xs font-bold uppercase bg-sky-100 text-sky-700">Đang nhận diện...</span>
               </div>
 
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-2" id="power-plans-grid">
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5" id="power-plans-grid">
                 <!-- Ultimate Performance -->
-                <button data-plan="ultimate" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer" onclick="selectPowerPlan(this, 'Ultimate Performance')" type="button">
+                <button data-plan="ultimate" class="power-plan-btn p-3.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 border border-slate-200/90 hover:border-slate-300 flex flex-col justify-between gap-1 text-left transition-all cursor-pointer min-h-[92px] shadow-2xs" onclick="selectPowerPlan(this, 'Ultimate Performance')" type="button">
                   <div class="flex items-center justify-between">
                     <span class="material-symbols-outlined text-rose-500 text-[20px]">local_fire_department</span>
                   </div>
-                  <div class="font-bold text-xs leading-tight">Ultimate Perf</div>
-                  <div class="text-[11px] text-slate-500">Full Core Clocks 100%</div>
+                  <div>
+                    <div class="font-bold text-xs leading-tight text-slate-800">Ultimate Perf</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">Full Core Clocks 100%</div>
+                  </div>
                 </button>
                 <!-- High Performance -->
-                <button data-plan="high" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer" onclick="selectPowerPlan(this, 'High Performance')" type="button">
+                <button data-plan="high" class="power-plan-btn p-3.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 border border-slate-200/90 hover:border-slate-300 flex flex-col justify-between gap-1 text-left transition-all cursor-pointer min-h-[92px] shadow-2xs" onclick="selectPowerPlan(this, 'High Performance')" type="button">
                   <div class="flex items-center justify-between">
                     <span class="material-symbols-outlined text-sky-500 text-[20px]">flash_on</span>
                   </div>
-                  <div class="font-bold text-xs leading-tight">High Performance</div>
-                  <div class="text-[11px] text-slate-500">Hiệu năng máy bàn cao</div>
+                  <div>
+                    <div class="font-bold text-xs leading-tight text-slate-800">High Performance</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">Hiệu năng máy bàn cao</div>
+                  </div>
                 </button>
                 <!-- Balanced -->
-                <button data-plan="balanced" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer" onclick="selectPowerPlan(this, 'Balanced (Cân Bằng)')" type="button">
+                <button data-plan="balanced" class="power-plan-btn p-3.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 border border-slate-200/90 hover:border-slate-300 flex flex-col justify-between gap-1 text-left transition-all cursor-pointer min-h-[92px] shadow-2xs" onclick="selectPowerPlan(this, 'Balanced (Cân Bằng)')" type="button">
                   <div class="flex items-center justify-between">
                     <span class="material-symbols-outlined text-teal-600 text-[20px]">balance</span>
                   </div>
-                  <div class="font-bold text-xs leading-tight">Balanced</div>
-                  <div class="text-[11px] text-slate-500">Cân bằng tự động</div>
+                  <div>
+                    <div class="font-bold text-xs leading-tight text-slate-800">Balanced</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">Cân bằng tự động</div>
+                  </div>
                 </button>
                 <!-- Power Saver -->
-                <button data-plan="saver" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer" onclick="selectPowerPlan(this, 'Power Saver (Tiết Kiệm)')" type="button">
+                <button data-plan="saver" class="power-plan-btn p-3.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 border border-slate-200/90 hover:border-slate-300 flex flex-col justify-between gap-1 text-left transition-all cursor-pointer min-h-[92px] shadow-2xs" onclick="selectPowerPlan(this, 'Power Saver (Tiết Kiệm)')" type="button">
                   <div class="flex items-center justify-between">
                     <span class="material-symbols-outlined text-emerald-600 text-[20px]">eco</span>
                   </div>
-                  <div class="font-bold text-xs leading-tight">Power Saver</div>
-                  <div class="text-[11px] text-slate-500">Tiết kiệm pin Laptop</div>
+                  <div>
+                    <div class="font-bold text-xs leading-tight text-slate-800">Power Saver</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">Tiết kiệm pin Laptop</div>
+                  </div>
                 </button>
                 <!-- Never Sleep (Chạy 24/7) -->
-                <button data-plan="never_sleep" class="power-plan-btn p-3 rounded-xl bg-white/70 hover:bg-white text-slate-800 border border-slate-200 flex flex-col gap-1 text-left transition-all cursor-pointer col-span-2 md:col-span-2" onclick="selectPowerPlan(this, 'Never Sleep (Chạy 24/7)')" type="button">
+                <button data-plan="never_sleep" class="power-plan-btn p-3.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 border border-slate-200/90 hover:border-slate-300 flex flex-col justify-between gap-1 text-left transition-all cursor-pointer col-span-2 md:col-span-2 min-h-[92px] shadow-2xs" onclick="selectPowerPlan(this, 'Never Sleep (Chạy 24/7)')" type="button">
                   <div class="flex items-center justify-between">
                     <span class="material-symbols-outlined text-amber-500 text-[20px]">bedtime_off</span>
-                    <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold">24/7 NON-STOP</span>
+                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold tracking-wide">24/7 NON-STOP</span>
                   </div>
-                  <div class="font-bold text-xs leading-tight text-amber-600">Chạy 24/7 (Never Sleep)</div>
-                  <div class="text-[11px] text-slate-500">Tắt Sleep, Hibernate &amp; Đĩa, Máy chạy 24/7 không gián đoạn</div>
+                  <div>
+                    <div class="font-bold text-xs leading-tight text-amber-600">Chạy 24/7 (Never Sleep)</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5 leading-normal">Tắt Sleep, Hibernate &amp; Tắt Đĩa, Máy chạy liên tục không gián đoạn</div>
+                  </div>
                 </button>
               </div>
 
@@ -3716,8 +3726,8 @@ Chọn phân vùng và thao tác mong muốn...
       </div>
 
       <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-        <button id="btn-admin-cancel-login" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors" type="button">Hủy</button>
-        <button id="btn-admin-submit-login" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-all" type="button">Đăng Nhập</button>
+        <button id="btn-admin-cancel-login" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all cursor-pointer active:scale-95 shadow-2xs" type="button">Hủy</button>
+        <button id="btn-admin-submit-login" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95" type="button">Đăng Nhập</button>
       </div>
     </div>
   </div>
