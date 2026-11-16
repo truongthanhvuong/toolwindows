@@ -1535,138 +1535,109 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     
 
     if act == "admin_get_data" {
-
         let repo = get_repo_dir();
-
         let policy_path = repo.join("src").join("Config").join("feature_policy.json");
-
         let vault_path = repo.join("src").join("Config").join("licenses_vault.json");
-
         let dev_path = repo.join("src").join("Config").join("client_devices.json");
 
-
-
         let mut policy_json = read_clean_file(&policy_path);
-
-        if policy_json.trim() == "[]" || policy_json.trim().is_empty() {
-
+        if policy_json.trim() == "[]" || policy_json.trim().is_empty() || !policy_json.trim().starts_with('[') {
             let alt = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\feature_policy.json");
-
             policy_json = read_clean_file(alt);
-
         }
-
-
+        if policy_json.trim() == "[]" || policy_json.trim().is_empty() || !policy_json.trim().starts_with('[') {
+            policy_json = r#"[{"Id":"SysInfo","Name":"Xem Cấu Hình Máy Tính","Icon":"💻","Tier":"FREE","Description":"Xem thông số CPU, RAM, GPU, Mainboard, ổ cứng thời gian thực"},{"Id":"Customize","Name":"Tùy Chỉnh Thông Tin Máy","Icon":"🛠️","Tier":"FREE","Description":"Đổi tên máy tính, Workgroup, chủ sở hữu OEM"},{"Id":"CpuMain","Name":"Tra Cứu CPU + Main","Icon":"🔍","Tier":"FREE","Description":"Tra cứu độ tương thích socket, chipset mainboard và CPU"},{"Id":"Users","Name":"Quản Lý User & PC","Icon":"👥","Tier":"FREE","Description":"Quản trị người dùng Windows, reset mật khẩu, kích hoạt Administrator"},{"Id":"Cleaner","Name":"Dọn Rác & Tăng Tốc Win","Icon":"🧹","Tier":"FREE","Description":"Xóa cache tạm, dọn dẹp hệ điều hành và tối ưu hóa"},{"Id":"Tweaks","Name":"Tinh Chỉnh Hệ Thống","Icon":"⚡","Tier":"FREE","Description":"Tối ưu hóa Windows sâu, tắt telemetry, tăng tốc đồ họa & game"},{"Id":"Config","Name":"Cấu Hình & Sửa Lỗi Hệ Thống","Icon":"⚙️","Tier":"FREE","Description":"25 công cụ sửa lỗi Windows, 9 tính năng hệ thống, 14 bảng điều khiển cổ điển"},{"Id":"Troubleshoot","Name":"Cứu Hộ IT Helpdesk Windows","Icon":"🧰","Tier":"FREE","Description":"Trung tâm cứu hộ hơn 500 sự cố, đo lường Telemetry thực tế & tự động sửa lỗi"},{"Id":"NetworkLAN","Name":"Mạng & Advanced IP Scanner","Icon":"🌐","Tier":"FREE","Description":"Quét dải IP LAN, dò tìm thiết bị, kiểm tra port mở & kết nối mạng"},{"Id":"PrinterLAN","Name":"Sửa Lỗi Máy In & Mạng LAN","Icon":"🖨️","Tier":"FREE","Description":"Khắc phục lỗi chia sẻ máy in 0x0000011b, 0x00000709 và thông mạng LAN"},{"Id":"Office","Name":"Cài Đặt Office (Tự Động AIO)","Icon":"📄","Tier":"FREE","Description":"Cài đặt Office 2016-2024 / 365 tự động trọn gói"},{"Id":"Software","Name":"Tải Ứng Dụng Thiết Yếu","Icon":"📦","Tier":"FREE","Description":"Kho hơn 260 phần mềm văn phòng, đồ họa, tiện ích cần thiết"},{"Id":"CustomApp","Name":"Phần Mềm Kế Toán & Khác","Icon":"📊","Tier":"FREE","Description":"Cài đặt MISA, HTKK, iTaxViewer và ứng dụng doanh nghiệp"},{"Id":"Uninstaller","Name":"Gỡ Phần Mềm & Dọn Sạch Sâu","Icon":"🗑️","Tier":"FREE","Description":"Gỡ cài đặt hàng loạt và dọn sạch sâu tận gốc Registry/AppData"},{"Id":"Fonts","Name":"Kho Font Tiếng Việt & AutoCAD","Icon":"🔤","Tier":"FREE","Description":"Cài đặt trọn bộ Font VNI, TCVN3, Unicode và Font AutoCAD .shx"},{"Id":"DiskHealth","Name":"Sức Khỏe Ổ Cứng (S.M.A.R.T)","Icon":"💾","Tier":"FREE","Description":"Chẩn đoán CrystalDiskInfo, NVMe spec log page 0x02, nhiệt độ, TBW ghi đọc và giờ chạy"},{"Id":"Benchmark","Name":"Tốc Độ Ổ Đĩa (Benchmark)","Icon":"⏱️","Tier":"FREE","Description":"Đo tốc độ đọc/ghi tuần tự và ngẫu nhiên SSD/HDD chuyên sâu"},{"Id":"Partition","Name":"Quản Lý Phân Vùng (Partition)","Icon":"🗂️","Tier":"FREE","Description":"Sơ đồ đĩa live, TRIM SSD, chuyển MBR sang GPT không mất dữ liệu"},{"Id":"LaptopCheck","Name":"Kiểm Tra Laptop & Ngoại Vi","Icon":"💻","Tier":"FREE","Description":"Test bàn phím offline, pin chai, loa đa tần, dead pixel, mic, webcam"},{"Id":"AutoWin","Name":"Cài Win & Bypass TPM 2.0","Icon":"💿","Tier":"FREE","Description":"Cài đặt Windows tự động, vượt rào TPM 2.0 / SecureBoot / RAM"},{"Id":"BackupDriver","Name":"Quản Lý & Sao Lưu Driver","Icon":"🖹","Tier":"FREE","Description":"Quản lý Device Manager, kiểm tra driver thiếu hoặc lỗi, sao lưu và cập nhật driver"},{"Id":"BackupSystem","Name":"Sao Lưu & Khôi Phục Windows","Icon":"🔄","Tier":"FREE","Description":"Sao lưu toàn bộ Windows System Image WBAdmin / VHDX và khôi phục 1-click"},{"Id":"BitLocker","Name":"Tắt BitLocker & EFS","Icon":"🔒","Tier":"FREE","Description":"Mở khóa và giải mã phân vùng ổ đĩa an toàn"},{"Id":"Activation","Name":"Kích Hoạt Bản Quyền Số","Icon":"🔑","Tier":"ADMIN","Description":"Kích hoạt bản quyền kỹ thuật số vĩnh viễn cho Windows & Office"}]"#.to_string();
+            let _ = fs::write(&policy_path, &policy_json);
+            let progdata = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\feature_policy.json");
+            let _ = fs::create_dir_all(r"C:\ProgramData\VUONGTT_Toolkit");
+            let _ = fs::write(progdata, &policy_json);
+        }
 
         let mut vault_json = read_clean_file(&vault_path);
-
         if vault_json.trim() == "[]" || vault_json.trim().is_empty() {
-
             let alt = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\licenses_vault.json");
-
             vault_json = read_clean_file(alt);
-
         }
-
-
 
         let mut devices_json = read_clean_file(&dev_path);
-
         if devices_json.trim() == "[]" || devices_json.trim().is_empty() {
-
             let alt = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\client_devices.json");
-
             devices_json = read_clean_file(alt);
-
         }
-
         if devices_json.trim().is_empty() {
-
             devices_json = "[]".to_string();
-
         }
-
-
 
         let out = format!(
-
             r#"{{"policies":{},"vault":{},"devices":{}}}"#,
-
             policy_json.trim(),
-
             vault_json.trim(),
-
             devices_json.trim()
-
         );
-
         return (true, out);
-
     }
-
-
 
     if act == "admin_save_policies" {
-
         let mut json_arr_str = String::new();
-
-        if let Some(idx) = params_json.find("\"policies\":") {
-
-            let rest = params_json[idx + 11..].trim();
-
-            if rest.starts_with('[') {
-
-                if let Some(end) = rest.rfind(']') {
-
-                    json_arr_str = rest[..=end].to_string();
-
-                }
-
-            } else if rest.starts_with('"') {
-
-                if let Some(end) = rest[1..].find('"') {
-
-                    let unescaped = rest[1..1 + end].replace("\\\"", "\"").replace("\\\\", "\\");
-
-                    if unescaped.trim().starts_with('[') {
-
-                        json_arr_str = unescaped;
-
+        let key_patterns = ["\"policies\":", "\"policies_json\":"];
+        for key in &key_patterns {
+            if let Some(idx) = params_json.find(key) {
+                let rest = params_json[idx + key.len()..].trim();
+                if let Some(start_bracket) = rest.find('[') {
+                    let arr_slice = &rest[start_bracket..];
+                    let mut depth = 0;
+                    let mut in_str = false;
+                    let mut escape = false;
+                    let mut end_idx = None;
+                    for (ch_idx, ch) in arr_slice.char_indices() {
+                        if escape {
+                            escape = false;
+                            continue;
+                        }
+                        if ch == '\\' {
+                            escape = true;
+                            continue;
+                        }
+                        if ch == '"' {
+                            in_str = !in_str;
+                            continue;
+                        }
+                        if !in_str {
+                            if ch == '[' {
+                                depth += 1;
+                            } else if ch == ']' {
+                                depth -= 1;
+                                if depth == 0 {
+                                    end_idx = Some(ch_idx);
+                                    break;
+                                }
+                            }
+                        }
                     }
-
+                    if let Some(end) = end_idx {
+                        json_arr_str = arr_slice[..=end].to_string();
+                        break;
+                    }
                 }
-
             }
-
         }
-
-
 
         if !json_arr_str.is_empty() {
-
             let repo = get_repo_dir();
-
             let policy_path = repo.join("src").join("Config").join("feature_policy.json");
-
+            if let Some(p) = policy_path.parent() {
+                let _ = fs::create_dir_all(p);
+            }
             let _ = fs::write(&policy_path, &json_arr_str);
 
-            
-
             let progdata = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\feature_policy.json");
-
+            let _ = fs::create_dir_all(r"C:\ProgramData\VUONGTT_Toolkit");
             let _ = fs::write(progdata, &json_arr_str);
 
-
-
             return (true, "Đã lưu chính sách phân quyền tính năng (feature_policy.json) thành công!".to_string());
-
         }
-
         return (false, "Dữ liệu cấu hình phân quyền không hợp lệ!".to_string());
-
     }
-
-
 
     if act == "admin_generate_key" {
 

@@ -281,7 +281,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.164</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.165</span>
       </div>
     </div>
 
@@ -333,6 +333,11 @@
     <!-- FIXED SIDEBAR (14 TABS) -->
     <aside class="w-56 sidebar-glass rounded-2xl p-2.5 flex flex-col justify-between shadow-xs select-none flex-shrink-0">
       <nav id="sidebar-nav" class="flex flex-col gap-1 overflow-y-auto pr-1">
+        <!-- NHÓM 1: TỔNG QUAN & TỐI ƯU -->
+        <div class="px-2.5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[13px]">dashboard</span>
+          <span>Tổng Quan & Tối Ưu</span>
+        </div>
         <!-- 1. Dashboard -->
         <button data-target="view-sys-monitor" class="nav-item active flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">home</span>
@@ -347,112 +352,131 @@
 
         <!-- 3. Windows -->
         <button data-target="view-win-optimize" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">window</span>
-          <span>Windows</span>
+          <span class="material-symbols-outlined text-[19px] text-slate-500">tune</span>
+          <span>Windows Tối Ưu</span>
         </button>
 
-        <!-- 4. UWP Apps -->
-        <button data-target="view-uwp-apps" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">format_list_bulleted</span>
-          <span>UWP Apps</span>
+        <!-- 4. Cleaning -->
+        <button data-target="view-it-helpdesk" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">cleaning_services</span>
+          <span>Dọn Dẹp & Tăng Tốc</span>
         </button>
 
+        <!-- NHÓM 2: QUẢN LÝ PHẦN MỀM (VỊ TRÍ 5: GỠ CÀI ĐẶT SẠCH) -->
+        <div class="px-2.5 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 border-t border-slate-200/40 mt-1">
+          <span class="material-symbols-outlined text-[13px]">apps</span>
+          <span>Quản Lý Phần Mềm</span>
+        </div>
         <!-- 5. Gỡ Cài Đặt Sạch (Clean Uninstaller) -->
         <button data-target="view-clean-uninstaller" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-rose-500">delete_sweep</span>
-          <span>Gỡ Cài Đặt Sạch</span>
+          <span class="font-medium text-rose-600">Gỡ Cài Đặt Sạch</span>
         </button>
 
-        <!-- 6. Startup Apps -->
+        <!-- 6. UWP Apps -->
+        <button data-target="view-uwp-apps" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">widgets</span>
+          <span>UWP Apps</span>
+        </button>
+
+        <!-- 7. Startup Apps -->
         <button data-target="view-startup-apps" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">speed</span>
           <span>Startup Apps</span>
         </button>
 
-        <!-- 6. Download -->
+        <!-- 8. Kho Tải Phần Mềm -->
         <button data-target="view-soft-winget" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">download</span>
-          <span>Download</span>
+          <span>Kho Tải Phần Mềm</span>
         </button>
 
-        <!-- 7. Cleaning -->
-        <button data-target="view-it-helpdesk" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">delete</span>
-          <span>Cleaning</span>
-        </button>
-
-        <!-- 8. Network -->
-        <button data-target="view-vpn-proxy" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">public</span>
-          <span>Network</span>
-        </button>
-
-        <!-- 9. USB Boot -->
-        <button data-target="view-win-deploy" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">usb</span>
-          <span>USB Boot</span>
-        </button>
-
-        <!-- 10. Hardware Info -->
-        <button data-target="view-oem-brand" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">info</span>
-          <span>Hardware Info</span>
-        </button>
-
-        <!-- 11. Manage License -->
-        <button data-target="view-hwid-act" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">key</span>
-          <span>Manage License</span>
-        </button>
-
-        <!-- 12. Convert SKUs -->
-        <button data-target="view-disk-part" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">shuffle</span>
-          <span>Convert SKUs</span>
-        </button>
-
-        <!-- 13. Office Setup -->
+        <!-- 9. Office Setup -->
         <button data-target="view-office-m365" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">description</span>
-          <span>Office Setup</span>
+          <span>Cài Đặt Office</span>
         </button>
 
-        <!-- 14. Extend Features -->
-        <button data-target="view-tech-driver" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">menu</span>
-          <span>Extend Features</span>
-        </button>
-
-        <!-- 15. Cài Windows -->
+        <!-- NHÓM 3: CÀI WIN, SAO LƯU & ĐĨA CỨU HỘ -->
+        <div class="px-2.5 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 border-t border-slate-200/40 mt-1">
+          <span class="material-symbols-outlined text-[13px]">save</span>
+          <span>Cài Win & Đĩa Cứu Hộ</span>
+        </div>
+        <!-- 10. Cài Windows -->
         <button data-target="view-cai-windows" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">install_desktop</span>
           <span>Cài Windows</span>
         </button>
 
-        <!-- 16. Backup Windows -->
+        <!-- 11. Backup Windows -->
         <button data-target="view-backup-windows" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">cloud_sync</span>
-          <span>Backup Windows</span>
+          <span>Backup & Phục Hồi</span>
         </button>
 
-        <!-- 17. Sửa Máy In LAN -->
-        <button data-target="view-printer-lan" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">print</span>
-          <span>Sửa Máy In LAN</span>
-        </button>
-
-        <!-- 18. IT Helpdesk 547 Sự Cố -->
-        <button data-target="view-helpdesk-troubleshoot" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-slate-500">support_agent</span>
-          <span>IT Helpdesk (547 Sự Cố)</span>
-        </button>
-
-        <!-- 19. Quản Trị BitLocker -->
+        <!-- 12. Quản Trị BitLocker -->
         <button data-target="view-bitlocker-mgmt" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">lock</span>
           <span>Quản Trị BitLocker</span>
         </button>
 
+        <!-- 13. Phân Vùng Đĩa & SKUs -->
+        <button data-target="view-disk-part" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">storage</span>
+          <span>Phân Vùng Đĩa (SKUs)</span>
+        </button>
+
+        <!-- 14. Tạo USB Boot Win -->
+        <button data-target="view-win-deploy" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">usb</span>
+          <span>Tạo USB Boot Win</span>
+        </button>
+
+        <!-- NHÓM 4: MẠNG & NGOẠI VI -->
+        <div class="px-2.5 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 border-t border-slate-200/40 mt-1">
+          <span class="material-symbols-outlined text-[13px]">router</span>
+          <span>Mạng & Ngoại Vi</span>
+        </div>
+        <!-- 15. Mạng & VPN Proxy -->
+        <button data-target="view-vpn-proxy" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">public</span>
+          <span>Mạng & VPN Proxy</span>
+        </button>
+
+        <!-- 16. Sửa Máy In LAN -->
+        <button data-target="view-printer-lan" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">print</span>
+          <span>Sửa Máy In LAN</span>
+        </button>
+
+        <!-- NHÓM 5: IT HELPDESK & BẢN QUYỀN -->
+        <div class="px-2.5 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 border-t border-slate-200/40 mt-1">
+          <span class="material-symbols-outlined text-[13px]">verified_user</span>
+          <span>Cứu Hộ & Bản Quyền</span>
+        </div>
+        <!-- 17. IT Helpdesk (547 Sự Cố) -->
+        <button data-target="view-helpdesk-troubleshoot" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">support_agent</span>
+          <span>IT Helpdesk (547 Sự Cố)</span>
+        </button>
+
+        <!-- 18. Hardware Info -->
+        <button data-target="view-oem-brand" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">memory</span>
+          <span>Thông Tin Phần Cứng</span>
+        </button>
+
+        <!-- 19. Manage License -->
+        <button data-target="view-hwid-act" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">key</span>
+          <span>Bản Quyền & Kích Hoạt</span>
+        </button>
+
+        <!-- 20. Extend Features -->
+        <button data-target="view-tech-driver" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">extension</span>
+          <span>Tiện Ích Kỹ Thuật</span>
+        </button>
       </nav>
 
       <!-- Admin Portal button (VIP bottom) -->

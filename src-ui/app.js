@@ -26,7 +26,33 @@
   "use strict";
 
   let isAdminAuth = false;
-  let currentPolicies = [];
+  const DEFAULT_FEATURE_POLICIES = [
+    { Id: "SysInfo", Name: "Xem Cấu Hình Máy Tính", Icon: "💻", Tier: "FREE", Description: "Xem thông số CPU, RAM, GPU, Mainboard, ổ cứng thời gian thực" },
+    { Id: "Customize", Name: "Tùy Chỉnh Thông Tin Máy", Icon: "🛠️", Tier: "FREE", Description: "Đổi tên máy tính, Workgroup, chủ sở hữu OEM" },
+    { Id: "CpuMain", Name: "Tra Cứu CPU + Main", Icon: "🔍", Tier: "FREE", Description: "Tra cứu độ tương thích socket, chipset mainboard và CPU" },
+    { Id: "Users", Name: "Quản Lý User & PC", Icon: "👥", Tier: "FREE", Description: "Quản trị người dùng Windows, reset mật khẩu, kích hoạt Administrator" },
+    { Id: "Cleaner", Name: "Dọn Rác & Tăng Tốc Win", Icon: "🧹", Tier: "FREE", Description: "Xóa cache tạm, dọn dẹp hệ điều hành và tối ưu hóa" },
+    { Id: "Tweaks", Name: "Tinh Chỉnh Hệ Thống", Icon: "⚡", Tier: "FREE", Description: "Tối ưu hóa Windows sâu, tắt telemetry, tăng tốc đồ họa & game" },
+    { Id: "Config", Name: "Cấu Hình & Sửa Lỗi Hệ Thống", Icon: "⚙️", Tier: "FREE", Description: "25 công cụ sửa lỗi Windows, 9 tính năng hệ thống, 14 bảng điều khiển cổ điển" },
+    { Id: "Troubleshoot", Name: "Cứu Hộ IT Helpdesk Windows", Icon: "🧰", Tier: "FREE", Description: "Trung tâm cứu hộ hơn 500 sự cố, đo lường Telemetry thực tế & tự động sửa lỗi" },
+    { Id: "NetworkLAN", Name: "Mạng & Advanced IP Scanner", Icon: "🌐", Tier: "FREE", Description: "Quét dải IP LAN, dò tìm thiết bị, kiểm tra port mở & kết nối mạng" },
+    { Id: "PrinterLAN", Name: "Sửa Lỗi Máy In & Mạng LAN", Icon: "🖨️", Tier: "FREE", Description: "Khắc phục lỗi chia sẻ máy in 0x0000011b, 0x00000709 và thông mạng LAN" },
+    { Id: "Office", Name: "Cài Đặt Office (Tự Động AIO)", Icon: "📄", Tier: "FREE", Description: "Cài đặt Office 2016-2024 / 365 tự động trọn gói" },
+    { Id: "Software", Name: "Tải Ứng Dụng Thiết Yếu", Icon: "📦", Tier: "FREE", Description: "Kho hơn 260 phần mềm văn phòng, đồ họa, tiện ích cần thiết" },
+    { Id: "CustomApp", Name: "Phần Mềm Kế Toán & Khác", Icon: "📊", Tier: "FREE", Description: "Cài đặt MISA, HTKK, iTaxViewer và ứng dụng doanh nghiệp" },
+    { Id: "Uninstaller", Name: "Gỡ Phần Mềm & Dọn Sạch Sâu", Icon: "🗑️", Tier: "FREE", Description: "Gỡ cài đặt hàng loạt và dọn sạch sâu tận gốc Registry/AppData" },
+    { Id: "Fonts", Name: "Kho Font Tiếng Việt & AutoCAD", Icon: "🔤", Tier: "FREE", Description: "Cài đặt trọn bộ Font VNI, TCVN3, Unicode và Font AutoCAD .shx" },
+    { Id: "DiskHealth", Name: "Sức Khỏe Ổ Cứng (S.M.A.R.T)", Icon: "💾", Tier: "FREE", Description: "Chẩn đoán CrystalDiskInfo, NVMe spec log page 0x02, nhiệt độ, TBW ghi đọc và giờ chạy" },
+    { Id: "Benchmark", Name: "Tốc Độ Ổ Đĩa (Benchmark)", Icon: "⏱️", Tier: "FREE", Description: "Đo tốc độ đọc/ghi tuần tự và ngẫu nhiên SSD/HDD chuyên sâu" },
+    { Id: "Partition", Name: "Quản Lý Phân Vùng (Partition)", Icon: "🗂️", Tier: "FREE", Description: "Sơ đồ đĩa live, TRIM SSD, chuyển MBR sang GPT không mất dữ liệu" },
+    { Id: "LaptopCheck", Name: "Kiểm Tra Laptop & Ngoại Vi", Icon: "💻", Tier: "FREE", Description: "Test bàn phím offline, pin chai, loa đa tần, dead pixel, mic, webcam" },
+    { Id: "AutoWin", Name: "Cài Win & Bypass TPM 2.0", Icon: "💿", Tier: "FREE", Description: "Cài đặt Windows tự động, vượt rào TPM 2.0 / SecureBoot / RAM" },
+    { Id: "BackupDriver", Name: "Quản Lý & Sao Lưu Driver", Icon: "🖹", Tier: "FREE", Description: "Quản lý Device Manager, kiểm tra driver thiếu hoặc lỗi, sao lưu và cập nhật driver" },
+    { Id: "BackupSystem", Name: "Sao Lưu & Khôi Phục Windows", Icon: "🔄", Tier: "FREE", Description: "Sao lưu toàn bộ Windows System Image WBAdmin / VHDX và khôi phục 1-click" },
+    { Id: "BitLocker", Name: "Tắt BitLocker & EFS", Icon: "🔒", Tier: "FREE", Description: "Mở khóa và giải mã phân vùng ổ đĩa an toàn" },
+    { Id: "Activation", Name: "Kích Hoạt Bản Quyền Số", Icon: "🔑", Tier: "ADMIN", Description: "Kích hoạt bản quyền kỹ thuật số vĩnh viễn cho Windows & Office" }
+  ];
+  let currentPolicies = [...DEFAULT_FEATURE_POLICIES];
   let currentVault = [];
 
   try {
@@ -489,7 +515,6 @@
 
     if (btnSavePolicy) {
       btnSavePolicy.addEventListener("click", async () => {
-        // Collect current policies
         const listEl = document.getElementById("admin-policy-list");
         if (!listEl) return;
         const items = listEl.querySelectorAll(".policy-row");
@@ -499,23 +524,27 @@
           const id = row.getAttribute("data-id");
           const sel = row.querySelector("select");
           const tier = sel ? sel.value : "FREE";
-          const original = currentPolicies.find((p) => p.Id === id) || {};
+          const original = currentPolicies.find((p) => p.Id === id) || DEFAULT_FEATURE_POLICIES.find((p) => p.Id === id) || {};
           newPolicies.push({ ...original, Id: id, Tier: tier });
         });
 
         showToast("Lưu Phân Quyền", "Đang lưu chính sách phân quyền vào hệ thống...", "info");
-        const res = await invokeRust("admin_save_policies", { policies: JSON.stringify(newPolicies) });
+        const res = await invokeRust("admin_save_policies", { policies: newPolicies });
         if (res && res.success) {
-          showToast("Đã Lưu", res.message, "success");
+          showToast("Đã Lưu", res.message || "Đã lưu chính sách phân quyền thành công!", "success");
           currentPolicies = newPolicies;
+          renderPoliciesUI(currentPolicies);
+        } else {
+          showToast("Lỗi Lưu", (res && res.message) || "Không thể lưu cấu hình phân quyền!", "error");
         }
       });
     }
 
     if (btnSyncPolicy) {
-      btnSyncPolicy.addEventListener("click", () => {
-        showToast("Đồng Bộ Cloud", "Đang tải dữ liệu phân quyền mới nhất từ Cloud...", "info");
-        loadAdminData();
+      btnSyncPolicy.addEventListener("click", async () => {
+        showToast("Đồng Bộ Cloud", "Đang đồng bộ dữ liệu phân quyền mới nhất từ Cloud...", "info");
+        await loadAdminData();
+        showToast("Đồng Bộ Cloud", "Đã nạp đầy đủ chính sách phân quyền hệ thống!", "success");
       });
     }
 
@@ -534,18 +563,76 @@
 
   let currentDevices = [];
 
+  function renderPoliciesUI(policies) {
+    const policyListEl = document.getElementById("admin-policy-list");
+    if (!policyListEl) return;
+    const list = Array.isArray(policies) && policies.length > 0 ? policies : DEFAULT_FEATURE_POLICIES;
+    policyListEl.innerHTML = list
+      .map(
+        (p) => `
+      <div class="policy-row flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 hover:bg-white hover:border-purple-300 hover:shadow-xs transition-all gap-2" data-id="${p.Id}">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="text-xl flex-shrink-0">${p.Icon || "⚙️"}</span>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-semibold text-slate-800 text-xs leading-tight">${p.Name || p.Id}</span>
+              <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                p.Tier === "ADMIN" ? "bg-rose-100 text-rose-700 border border-rose-200" :
+                p.Tier === "PRO" ? "bg-purple-100 text-purple-700 border border-purple-200" :
+                "bg-emerald-100 text-emerald-700 border border-emerald-200"
+              }">${p.Tier || "FREE"}</span>
+            </div>
+            <div class="text-[11px] text-slate-500 truncate max-w-[220px] sm:max-w-xs mt-0.5">${p.Description || ""}</div>
+          </div>
+        </div>
+        <select class="px-2 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-300 text-slate-800 shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 flex-shrink-0">
+          <option value="FREE" ${p.Tier === "FREE" ? "selected" : ""}>FREE</option>
+          <option value="PRO" ${p.Tier === "PRO" ? "selected" : ""}>PRO (VIP)</option>
+          <option value="ADMIN" ${p.Tier === "ADMIN" ? "selected" : ""}>ADMIN (Quản Trị)</option>
+        </select>
+      </div>`
+      )
+      .join("");
+  }
+
   async function loadAdminData() {
-    const res = await invokeRust("admin_get_data", {});
-    if (res && res.success && res.data) {
-      const { policies, vault, devices } = res.data;
-      currentPolicies = Array.isArray(policies) ? policies : [];
-      currentVault = Array.isArray(vault) ? vault : [];
-      if (Array.isArray(devices) && devices.length > 0) {
-        currentDevices = devices;
+    // 0. Render ngay lập tức bằng dữ liệu hiện có để không bao giờ bị kẹt ở "Đang tải..."
+    renderPoliciesUI(currentPolicies);
+
+    try {
+      const res = await invokeRust("admin_get_data", {});
+      if (res && res.success && res.data) {
+        let data = res.data;
+        if (typeof data === "string") {
+          try { data = JSON.parse(data); } catch(e){}
+        }
+        if (data && typeof data === "object") {
+          let { policies, vault, devices } = data;
+          if (typeof policies === "string") {
+            try { policies = JSON.parse(policies); } catch(e){}
+          }
+          if (Array.isArray(policies) && policies.length > 0) {
+            currentPolicies = policies;
+          }
+          if (typeof vault === "string") {
+            try { vault = JSON.parse(vault); } catch(e){}
+          }
+          if (Array.isArray(vault)) {
+            currentVault = vault;
+          }
+          if (typeof devices === "string") {
+            try { devices = JSON.parse(devices); } catch(e){}
+          }
+          if (Array.isArray(devices) && devices.length > 0) {
+            currentDevices = devices;
+          }
+        }
       }
+    } catch (e) {
+      console.warn("invokeRust admin_get_data error:", e);
     }
 
-    // Tự động đồng bộ danh sách máy trạm tươi mới nhất từ GitHub Cloud
+    // Tự động đồng bộ thêm từ GitHub Cloud nếu có kết nối
     try {
       const cloudUrl = `https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/src/Config/client_devices.json?t=${Date.now()}`;
       const cloudRes = await fetch(cloudUrl, { cache: "no-store" });
@@ -559,29 +646,8 @@
       console.warn("Cloud devices sync notice:", errCloud);
     }
 
-    // 1. Render Policies
-    const policyListEl = document.getElementById("admin-policy-list");
-    if (policyListEl && currentPolicies.length > 0) {
-      policyListEl.innerHTML = currentPolicies
-        .map(
-          (p) => `
-        <div class="policy-row flex items-center justify-between p-2.5 rounded-lg bg-surface-container-high/60 border border-outline-variant/20 hover:border-primary/40 transition-colors" data-id="${p.Id}">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">${p.Icon || "⚙️"}</span>
-            <div>
-              <div class="font-label-md text-label-md text-on-surface font-semibold leading-tight">${p.Name || p.Id}</div>
-              <div class="font-label-sm text-[11px] text-on-surface-variant line-clamp-1">${p.Description || ""}</div>
-            </div>
-          </div>
-          <select class="px-2 py-1 rounded bg-surface-container border border-outline-variant/40 font-code-sm text-code-sm font-bold text-on-surface focus:outline-none focus:border-primary">
-            <option value="FREE" ${p.Tier === "FREE" ? "selected" : ""}>FREE</option>
-            <option value="PRO" ${p.Tier === "PRO" ? "selected" : ""}>PRO (VIP)</option>
-            <option value="ADMIN" ${p.Tier === "ADMIN" ? "selected" : ""}>ADMIN (Chỉ Quản Trị)</option>
-          </select>
-        </div>`
-        )
-        .join("");
-    }
+    // 1. Render Policies sau khi nạp xong
+    renderPoliciesUI(currentPolicies);
 
     // 2. Render Vault
     const vaultListEl = document.getElementById("admin-keys-container");
