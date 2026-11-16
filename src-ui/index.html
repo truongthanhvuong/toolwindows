@@ -281,7 +281,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.166</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.167</span>
       </div>
     </div>
 
@@ -1223,16 +1223,29 @@
 
           <!-- Right 4 Cols: Live Description Panel -->
           <div class="col-span-12 lg:col-span-4 h-full">
-            <div class="glass-card p-5 h-full flex flex-col">
-              <div class="font-bold text-slate-800 text-sm mb-2" id="panel-desc-title">Description:</div>
-              <p class="text-xs text-slate-600 leading-relaxed mb-6" id="panel-desc-en">
-                Unlock more ways to supercharge your PC! With these options, you can boost system speed, protect your privacy, and get the best out of your hardware.
-              </p>
+            <div class="glass-card p-5 h-full flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-slate-800 text-base mb-2 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sky-600 text-[18px]">info</span>
+                  <span id="panel-desc-title">Description:</span>
+                </div>
+                <div id="panel-desc-en" class="text-xs text-slate-600 leading-relaxed mb-4 bg-white/70 p-3 rounded-xl border border-slate-200/60 shadow-2xs min-h-[90px]">
+                  Unlock more ways to supercharge your PC! With these options, you can boost system speed, protect your privacy, and get the best out of your hardware.
+                </div>
 
-              <div class="font-bold text-slate-800 text-sm mb-2">Mô tả:</div>
-              <p class="text-xs text-slate-600 leading-relaxed" id="panel-desc-vi">
-                Mở khóa thêm nhiều cách để tăng tốc PC của bạn! Với tùy chọn này, bạn có thể tăng tốc hệ thống, bảo vệ quyền riêng tư và tối ưu hóa phần cứng mượt mà hơn.
-              </p>
+                <div class="font-bold text-slate-800 text-base mb-2 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-teal-600 text-[18px]">translate</span>
+                  <span>Mô tả:</span>
+                </div>
+                <div id="panel-desc-vi" class="text-xs text-slate-600 leading-relaxed bg-white/70 p-3 rounded-xl border border-slate-200/60 shadow-2xs min-h-[90px]">
+                  Mở khóa thêm nhiều cách để tăng tốc PC của bạn! Với tùy chọn này, bạn có thể tăng tốc hệ thống, bảo vệ quyền riêng tư và tối ưu hóa phần cứng mượt mà hơn.
+                </div>
+              </div>
+
+              <div class="pt-4 border-t border-slate-200/50 flex items-center justify-between text-xs text-slate-500">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Trực quan thời gian thực</span>
+                <span class="text-sky-600 font-semibold">Windows Tối Ưu Pro</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1419,6 +1432,27 @@
           </div>
 
           <!-- Category Pill Filters (All 12 Categories + All) -->
+          
+          <!-- Khung hiển thị các phần mềm đã chọn để cài đặt -->
+          <div id="store-selected-bar" class="p-3 rounded-xl border border-sky-200 bg-sky-50/70 shadow-xs hidden flex-col gap-2 transition-all">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 text-[18px]">playlist_add_check</span>
+                <span class="text-xs font-bold text-slate-800">Các phần mềm đã chọn để cài đặt (<span id="store-selected-count" class="text-sky-600">0</span>):</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="store-btn-clear-chips" type="button" class="text-[11px] text-slate-500 hover:text-rose-600 font-semibold cursor-pointer px-2 py-0.5 rounded hover:bg-white transition-colors">Bỏ chọn tất cả</button>
+                <button id="store-btn-install-chips" type="button" class="px-3 py-1 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer">
+                  <span class="material-symbols-outlined text-[15px]">download</span>
+                  <span>Cài Đặt Ngay</span>
+                </button>
+              </div>
+            </div>
+            <div id="store-selected-chips" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+              <!-- Danh sách chip các ứng dụng đã chọn sẽ hiển thị ở đây -->
+            </div>
+          </div>
+
           <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="store-cat-pills">
             <!-- Dynamically populated by JS -->
           </div>
@@ -3147,7 +3181,7 @@
               </div>
               <button onclick="document.getElementById('printer-action-log').innerText = ''" class="text-[11px] text-slate-400 hover:text-slate-600">Xóa log</button>
             </div>
-            <div id="printer-action-log" class="font-mono text-xs p-3.5 bg-slate-900 text-slate-100 rounded-xl overflow-y-auto max-h-40 border border-slate-700 whitespace-pre-wrap leading-relaxed">
+            <div id="printer-action-log" class="font-mono text-xs p-4 bg-slate-950 text-emerald-400 rounded-xl overflow-y-auto max-h-48 border border-slate-800 shadow-inner whitespace-pre-wrap leading-relaxed select-text font-medium">
 [SẴN SÀNG] Bộ công cụ sửa máy in &amp; chia sẻ SMB LAN 2026 đã sẵn sàng.
             </div>
           </div>
@@ -3262,7 +3296,7 @@
                   </div>
                   <button onclick="document.getElementById('helpdeskActionOutput').innerHTML = '<span class=\'text-slate-400\'>Chưa có nhật ký thực thi.</span>'" class="text-[11px] text-slate-400 hover:text-slate-600">Xóa log</button>
                 </div>
-                <div id="helpdeskActionOutput" class="flex-1 font-mono text-xs p-3.5 bg-slate-900 text-slate-100 rounded-xl overflow-y-auto max-h-64 border border-slate-700 whitespace-pre-wrap leading-relaxed">
+                <div id="helpdeskActionOutput" class="flex-1 font-mono text-xs p-4 bg-slate-950 text-emerald-400 rounded-xl overflow-y-auto max-h-72 border border-slate-800 shadow-inner whitespace-pre-wrap leading-relaxed select-text font-medium">
 <span class="text-emerald-400">[HỆ THỐNG]</span> Động cơ chẩn đoán &amp; cứu hộ 547 sự cố IT Helpdesk đã sẵn sàng.
 Chọn mã sự cố và nhấn nút tác vụ tương ứng.
                 </div>
@@ -3444,7 +3478,7 @@ Chọn mã sự cố và nhấn nút tác vụ tương ứng.
                 </div>
                 <button id="btn-bitlocker-clear-log" class="text-[11px] text-slate-400 hover:text-slate-600">Xóa log</button>
               </div>
-              <div id="bitlocker-action-output" class="flex-1 font-mono text-[11px] p-3 bg-slate-900 text-slate-100 rounded-xl overflow-y-auto min-h-[180px] max-h-[220px] border border-slate-700 whitespace-pre-wrap leading-relaxed">
+              <div id="bitlocker-action-output" class="flex-1 font-mono text-xs p-4 bg-slate-950 text-emerald-400 rounded-xl overflow-y-auto min-h-[190px] max-h-[240px] border border-slate-800 shadow-inner whitespace-pre-wrap leading-relaxed select-text font-medium">
 <span class="text-emerald-400">[HỆ THỐNG]</span> Động cơ quản trị BitLocker đã sẵn sàng.
 Chọn phân vùng và thao tác mong muốn...
               </div>
@@ -3627,21 +3661,21 @@ Chọn phân vùng và thao tác mong muốn...
           <!-- Donation Card with MoMo 0328808425 -->
           <div class="p-4 rounded-xl bg-white border border-rose-200/80 shadow-sm text-center">
             <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-rose-100">
-              <span class="text-xs font-bold text-rose-600 uppercase tracking-wide flex items-center gap-1">
-                <span class="material-symbols-outlined text-[15px]">favorite</span>
-                <span>MoMo / VietQR</span>
+              <span class="text-xs font-bold text-rose-600 uppercase tracking-wide flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">account_balance_wallet</span>
+                <span>Ủng Hộ Ví MoMo</span>
               </span>
-              <span class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-600 font-semibold">Napas 247</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-600 font-bold border border-rose-200">Ví Điện Tử MoMo</span>
             </div>
 
-            <!-- QR Code image -->
+            <!-- MoMo QR Code image -->
             <div class="w-40 h-40 mx-auto bg-slate-50 border border-slate-200 rounded-lg flex flex-col items-center justify-center p-1.5 mb-2">
-              <img src="https://api.vietqr.io/image/970422-0328808425-compact2.jpg?accountName=TRUONG%20THANH%20VUONG&amount=0" alt="VietQR MoMo Truong Thanh Vuong 0328808425" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'160\' height=\'160\' viewBox=\'0 0 160 160\'><rect width=\'160\' height=\'160\' fill=\'%23f8fafc\'/><text x=\'50%\' y=\'40%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'12\' font-weight=\'bold\' fill=\'%23d946ef\'>MoMo / VietQR</text><text x=\'50%\' y=\'55%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'11\' font-weight=\'bold\' fill=\'%230284c7\'>0328808425</text><text x=\'50%\' y=\'70%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'10\' fill=\'%23334155\'>TRUONG THANH VUONG</text></svg>'"/>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=2%7C99%7C0328808425%7CTRUONG%20THANH%20VUONG%7C%7C0%7C0%7C0" alt="MoMo Truong Thanh Vuong 0328808425" class="w-full h-full object-contain rounded-lg" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'160\' height=\'160\' viewBox=\'0 0 160 160\'><rect width=\'160\' height=\'160\' rx=\'12\' fill=\'%23a50064\'/><text x=\'50%\' y=\'40%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'14\' font-weight=\'bold\' fill=\'%23ffffff\'>VÍ MOMO</text><text x=\'50%\' y=\'60%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'13\' font-weight=\'bold\' fill=\'%23ffeb3b\'>0328808425</text><text x=\'50%\' y=\'78%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'10\' fill=\'%23ffffff\'>TRUONG THANH VUONG</text></svg>'"/>
             </div>
 
             <div class="text-xs font-bold text-slate-800">TRƯƠNG THANH VƯƠNG</div>
-            <div class="text-[11px] text-rose-600 font-mono font-bold mt-0.5">MoMo: 0328808425</div>
-            <div class="text-[11px] text-slate-600 font-mono">MBBank: 0328808425 - TRUONG THANH VUONG</div>
+            <div class="text-xs text-rose-600 font-mono font-bold mt-1">Số Ví MoMo: 0328808425</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Quét mã MoMo để ủng hộ kinh phí duy trì và phát triển công cụ</div>
           </div>
         </div>
       </div>

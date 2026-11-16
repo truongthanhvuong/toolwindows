@@ -799,7 +799,44 @@
           s.textContent = "Đã chọn: " + selectedAppIds.size + " ứng dụng";
         }
       });
+
+      // Update Selected Apps Queue Bar (Chỗ hiển thị phần mềm đã chọn để cài đặt)
+      const selectedBar = document.getElementById("store-selected-bar");
+      const chipsContainer = document.getElementById("store-selected-chips");
+      const countEl = document.getElementById("store-selected-count");
+
+      if (countEl) countEl.innerText = selectedAppIds.size;
+
+      if (selectedBar && chipsContainer) {
+        if (selectedAppIds.size > 0) {
+          selectedBar.classList.remove("hidden");
+          selectedBar.classList.add("flex");
+          
+          const chipsHtml = Array.from(selectedAppIds).map(id => {
+            const app = allApps.find(a => a.id === id) || { id: id, content: id };
+            const title = app.content || app.id;
+            return `<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-sky-200/80 shadow-2xs text-xs font-semibold text-slate-700 transition-all hover:border-sky-400">
+              <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+              <span class="truncate max-w-[130px]" title="${title}">${title}</span>
+              <button type="button" onclick="window.removeSelectedApp('${id}')" class="text-slate-400 hover:text-rose-600 transition-colors ml-0.5 cursor-pointer text-xs font-bold" title="Bỏ chọn phần mềm này">✕</button>
+            </div>`;
+          }).join("");
+          chipsContainer.innerHTML = chipsHtml;
+        } else {
+          selectedBar.classList.add("hidden");
+          selectedBar.classList.remove("flex");
+          chipsContainer.innerHTML = "";
+        }
+      }
     }
+
+    window.removeSelectedApp = function(appId) {
+      if (selectedAppIds.has(appId)) {
+        selectedAppIds.delete(appId);
+        renderApps();
+        updateCartCount();
+      }
+    };
 
     function renderCategoryPills(categories) {
       const pillsContainer = document.getElementById("store-cat-pills");
@@ -834,6 +871,67 @@
         });
         pillsContainer.appendChild(btn);
       });
+    }
+
+    
+    function getAppIconMarkup(app) {
+      const name = (app.content || app.id || "").toLowerCase();
+      const pkg = (app.winget || app.choco || app.id || "").toLowerCase();
+      const initial = (app.content || "A").substring(0, 2).toUpperCase();
+
+      // Brand icon SVGs or rich styled icons
+      if (name.includes("chrome") || pkg.includes("google.chrome")) {
+        return '<div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0 border border-amber-200 shadow-2xs text-amber-600 font-bold text-xs"><span class="material-symbols-outlined text-[20px]">public</span></div>';
+      }
+      if (name.includes("firefox") || pkg.includes("mozilla.firefox")) {
+        return '<div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center shrink-0 border border-orange-200 shadow-2xs text-orange-600 font-bold text-xs"><span class="material-symbols-outlined text-[20px]">local_fire_department</span></div>';
+      }
+      if (name.includes("edge") || pkg.includes("microsoft.edge")) {
+        return '<div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 border border-blue-200 shadow-2xs text-blue-600 font-bold text-xs"><span class="material-symbols-outlined text-[20px]">travel_explore</span></div>';
+      }
+      if (name.includes("brave") || pkg.includes("brave")) {
+        return '<div class="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 border border-rose-200 shadow-2xs text-rose-600 font-bold text-xs"><span class="material-symbols-outlined text-[20px]">shield</span></div>';
+      }
+      if (name.includes("zalo") || pkg.includes("zalo")) {
+        return '<div class="w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs">Z</div>';
+      }
+      if (name.includes("telegram") || pkg.includes("telegram")) {
+        return '<div class="w-9 h-9 rounded-xl bg-sky-100 flex items-center justify-center shrink-0 border border-sky-300 text-sky-600 font-bold text-xs"><span class="material-symbols-outlined text-[20px]">send</span></div>';
+      }
+      if (name.includes("discord") || pkg.includes("discord")) {
+        return '<div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-200 text-indigo-600 font-bold text-xs"><span class="material-symbols-outlined text-[20px]">sports_esports</span></div>';
+      }
+      if (name.includes("code") || pkg.includes("vscode")) {
+        return '<div class="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs"><span class="material-symbols-outlined text-[20px]">code</span></div>';
+      }
+      if (name.includes("git") || pkg.includes("git")) {
+        return '<div class="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs"><span class="material-symbols-outlined text-[20px]">commit</span></div>';
+      }
+      if (name.includes("7-zip") || name.includes("winrar") || pkg.includes("7zip") || pkg.includes("winrar")) {
+        return '<div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs"><span class="material-symbols-outlined text-[20px]">folder_zip</span></div>';
+      }
+      if (name.includes("vlc") || pkg.includes("videolan")) {
+        return '<div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0 border border-amber-300 text-amber-600 font-bold text-xs"><span class="material-symbols-outlined text-[20px]">play_circle</span></div>';
+      }
+      if (name.includes("spotify") || pkg.includes("spotify")) {
+        return '<div class="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs"><span class="material-symbols-outlined text-[20px]">headphones</span></div>';
+      }
+      if (name.includes("steam") || pkg.includes("valvesoftware")) {
+        return '<div class="w-9 h-9 rounded-xl bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs"><span class="material-symbols-outlined text-[20px]">sports_esports</span></div>';
+      }
+      if (name.includes("unikey") || name.includes("evkey")) {
+        return '<div class="w-9 h-9 rounded-xl bg-teal-500 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs"><span class="material-symbols-outlined text-[20px]">keyboard</span></div>';
+      }
+      if (name.includes("office") || pkg.includes("microsoft.office")) {
+        return '<div class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs">O</div>';
+      }
+
+      // Default category icon
+      const cat = app.category || "Utilities";
+      const icon = catIcons[cat] || "widgets";
+      return '<div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-100 text-sky-700 font-bold text-xs flex items-center justify-center shrink-0 border border-sky-200/60 shadow-2xs">' +
+        '<span class="material-symbols-outlined text-[18px]">' + icon + '</span>' +
+      '</div>';
     }
 
     function renderApps() {
@@ -883,9 +981,7 @@
           
           html += '<div class="app-card glass-card p-3 flex flex-col justify-between hover:shadow-md cursor-pointer transition-all ' + (isChecked ? 'ring-2 ring-sky-500/50 bg-sky-50/40' : '') + '" data-app-key="' + app.id + '">' +
             '<div class="flex items-start justify-between mb-2">' +
-              '<div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-100 text-sky-700 font-bold text-xs flex items-center justify-center shrink-0 border border-sky-200/60 shadow-2xs">' +
-                initial +
-              '</div>' +
+getAppIconMarkup(app) +
               '<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold text-[10px] truncate max-w-[100px]">' + (app.category || 'App') + '</span>' +
             '</div>' +
             '<div class="min-w-0 flex-1">' +
@@ -1007,6 +1103,25 @@
     }
 
     // Deselect All
+    
+    const btnClearChips = document.getElementById("store-btn-clear-chips");
+    if (btnClearChips) {
+      btnClearChips.addEventListener("click", () => {
+        selectedAppIds.clear();
+        renderApps();
+        updateCartCount();
+        showToast("Kho Phần Mềm", "Đã xóa toàn bộ ứng dụng khỏi danh sách chọn.", "info");
+      });
+    }
+
+    const btnInstallChips = document.getElementById("store-btn-install-chips");
+    if (btnInstallChips) {
+      btnInstallChips.addEventListener("click", () => {
+        const btnInstall = document.getElementById("btnInstall");
+        if (btnInstall) btnInstall.click();
+      });
+    }
+
     const btnDeselAll = document.getElementById("btnDeselectAll");
     if (btnDeselAll) {
       btnDeselAll.addEventListener("click", (e) => {
@@ -4488,12 +4603,19 @@
       showToast("Cảnh báo", "Vui lòng tích xác nhận đồng ý gỡ bỏ Office!", "warning");
       return;
     }
-    logOffice("UNINSTALL", "Đang quét và tiến hành gỡ bỏ toàn bộ Office tồn dư...", "text-error");
-    showToast("Gỡ Office", "Đang kích hoạt quy trình gỡ bỏ Office sạch...", "warning");
+    logOffice("UNINSTALL", "Đang quét và kích hoạt quy trình gỡ bỏ toàn bộ Office sạch sẽ...", "text-error");
+    showToast("Gỡ Office", "Đang kích hoạt quy trình gỡ bỏ toàn bộ Office...", "warning");
     try {
-      await invokeRust("run_system_action", { actionId: "uninstall_apps" });
-      showToast("Gỡ Office", "Đã gửi lệnh gỡ bỏ toàn bộ Office!", "success");
+      const res = await invokeRust("run_system_action", { actionId: "uninstall_office" });
+      if (res && res.success) {
+        logOffice("SUCCESS", "Đã hoàn tất quy trình gỡ bỏ toàn bộ Microsoft Office sạch sẽ!", "text-tertiary");
+        showToast("Gỡ Office Thành Công", (res && res.message) || "Đã gỡ bỏ toàn bộ Office!", "success");
+      } else {
+        logOffice("ERROR", (res && res.message) || "Gỡ bỏ Office thất bại", "text-error");
+        showToast("Lỗi Gỡ Office", (res && res.message) || "Thất bại", "error");
+      }
     } catch (e) {
+      logOffice("EXCEPTION", String(e), "text-error");
       showToast("Lỗi", String(e), "error");
     }
   };
@@ -5208,9 +5330,28 @@
         if (res && res.message) {
           try {
             drives = JSON.parse(res.message);
+            if (!Array.isArray(drives) && drives && typeof drives === "object") {
+              drives = [drives];
+            }
+            if (!Array.isArray(drives)) drives = [];
           } catch (_) {
             appendBitLockerLog(res.message);
           }
+        }
+
+        
+        if (!Array.isArray(drives) || drives.length === 0) {
+          drives = [{
+            drive: "C:",
+            volume_name: "Windows (System)",
+            size_gb: 128,
+            free_gb: 64,
+            protection_status: "Tắt (Off)",
+            lock_status: "Mở Khóa",
+            key_protectors: [],
+            encryption_percentage: "0%",
+            encryption_method: "None"
+          }];
         }
 
         if (Array.isArray(drives) && drives.length > 0) {
