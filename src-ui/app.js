@@ -100,8 +100,8 @@
 
     // SECURITY GATEKEEPER: Bắt buộc xác thực mật khẩu Admin trước khi hiển thị Admin Portal
     if (targetId === "view-admin-portal" && !isAdminAuth) {
-      if (typeof openAdminPortal === "function") {
-        openAdminPortal();
+      if (typeof window.openAdminPortal === "function") {
+        window.openAdminPortal();
       } else {
         const modal = document.getElementById("modal-admin-login");
         if (modal) modal.classList.remove("hidden");
@@ -365,6 +365,7 @@
         }
       }
     }
+    window.openAdminPortal = openAdminPortal;
 
     if (btnHeaderAdmin) btnHeaderAdmin.addEventListener("click", openAdminPortal);
     if (btnHeaderAvatar) btnHeaderAvatar.addEventListener("click", openAdminPortal);

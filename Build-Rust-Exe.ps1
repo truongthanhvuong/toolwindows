@@ -44,7 +44,14 @@ if (Test-Path $htmlFile) {
     $hTxt = [System.IO.File]::ReadAllText($htmlFile, [System.Text.Encoding]::UTF8)
     $hTxt = $hTxt -replace 'id="app-version-badge"[^>]*>v[^<]+<', "id=`"app-version-badge`" class=`"px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary`">v$appVersion<"
     $hTxt = $hTxt -replace 'id="tech-driver-build-badge"[^>]*>Build:\s*v[^<]+<', "id=`"tech-driver-build-badge`">Build: v$appVersion<"
-    [System.IO.File]::WriteAllText($htmlFile, $hTxt, (New-Object System.Text.UTF8Encoding($false)))
+    for ($retry = 0; $retry -lt 5; $retry++) {
+        try {
+            [System.IO.File]::WriteAllText($htmlFile, $hTxt, (New-Object System.Text.UTF8Encoding($false)))
+            break
+        } catch {
+            Start-Sleep -Milliseconds 200
+        }
+    }
 }
 
 # 3. Bien dich bang Cargo
