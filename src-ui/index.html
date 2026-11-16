@@ -281,7 +281,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.163</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.164</span>
       </div>
     </div>
 
@@ -357,7 +357,13 @@
           <span>UWP Apps</span>
         </button>
 
-        <!-- 5. Startup Apps -->
+        <!-- 5. Gỡ Cài Đặt Sạch (Clean Uninstaller) -->
+        <button data-target="view-clean-uninstaller" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-rose-500">delete_sweep</span>
+          <span>Gỡ Cài Đặt Sạch</span>
+        </button>
+
+        <!-- 6. Startup Apps -->
         <button data-target="view-startup-apps" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">speed</span>
           <span>Startup Apps</span>
@@ -446,11 +452,7 @@
           <span class="material-symbols-outlined text-[19px] text-slate-500">lock</span>
           <span>Quản Trị BitLocker</span>
         </button>
-              <!-- 20. Gỡ Cài Đặt Sạch (Clean Uninstaller) -->
-        <button data-target="view-clean-uninstaller" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-rose-500">delete_sweep</span>
-          <span>Gỡ Cài Đặt Sạch</span>
-        </button>
+
       </nav>
 
       <!-- Admin Portal button (VIP bottom) -->
@@ -3427,10 +3429,9 @@ Chọn phân vùng và thao tác mong muốn...
 
         </div>
       </div>
-  </div>
 
       <!-- ========================================== -->
-      <!-- VIEW 20: GỠ CÀI ĐẶT SẠCH (view-clean-uninstaller) -->
+      <!-- VIEW: GỠ CÀI ĐẶT SẠCH (view-clean-uninstaller) -->
       <!-- ========================================== -->
       <div id="view-clean-uninstaller" class="stitch-view">
         <div class="flex flex-col gap-3 h-full overflow-y-auto pr-1">
@@ -3513,6 +3514,9 @@ Chọn phân vùng và thao tác mong muốn...
 
         </div>
       </div>
+
+    </main>
+  </div>
 
     <!-- TOAST CONTAINER -->
   <div id="rust-toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
