@@ -92,7 +92,8 @@ const EMBEDDED_UWP_PRESETS_JSON: &str = include_str!("../../src-ui/uwp_presets.j
 const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/TroubleshootDatabase.json");
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
-pub const APP_VERSION: &str = "20.5.909.159";
+const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
+pub const APP_VERSION: &str = "20.5.909.160";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -223,6 +224,18 @@ fn handle_client(
         );
         let _ = stream.write_all(resp_header.as_bytes());
         let _ = stream.write_all(EMBEDDED_HTML.as_bytes());
+        let _ = stream.flush();
+        return;
+    }
+
+    // 3.0 GET tailwind.js (Offline Local Tailwind CSS Runtime)
+    if first_line.starts_with("GET /tailwind.js") || first_line.starts_with("HEAD /tailwind.js") {
+        let resp_header = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/javascript; charset=utf-8\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: public, max-age=86400\r\nConnection: close\r\n\r\n",
+            EMBEDDED_TAILWIND_JS.len()
+        );
+        let _ = stream.write_all(resp_header.as_bytes());
+        let _ = stream.write_all(EMBEDDED_TAILWIND_JS.as_bytes());
         let _ = stream.flush();
         return;
     }
