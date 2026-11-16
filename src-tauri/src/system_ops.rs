@@ -6414,57 +6414,59 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
     if act == "apply_update" || act == "download_and_apply_update" || act == "tu_dong_cap_nhat" {
-        let ps_code = r#"
+        let current_exe = std::env::current_exe()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| "E:\\toolwindows\\VUONGTT_Toolkit.exe".to_string());
+
+        let ps_code = format!(
+            r#"
+            [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8;
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13 -bor [Net.SecurityProtocolType]::Tls
             
-            $currExe = ""
-            try {
-                $currExe = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
-            } catch {}
-            
-            if (-not $currExe -or $currExe -match "cargo|target|rustc") {
-                if (Test-Path "E:\toolwindows\VUONGTT_Toolkit.exe") {
+            $currExe = @'{current_exe}'@
+            if (-not $currExe -or -not (Test-Path $currExe) -or $currExe -match "powershell|cmd\.exe|cargo|target|rustc") {{
+                if (Test-Path "E:\toolwindows\VUONGTT_Toolkit.exe") {{
                     $currExe = "E:\toolwindows\VUONGTT_Toolkit.exe"
-                } elseif (Test-Path "$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe") {
+                }} elseif (Test-Path "$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe") {{
                     $currExe = "$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe"
-                } else {
+                }} else {{
                     $currExe = "E:\toolwindows\VUONGTT_Toolkit.exe"
-                }
-            }
+                }}
+            }}
 
             $urls = @(
                 "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
-                "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe",
-                "https://cdn.jsdelivr.net/gh/truongthanhvuong/toolwindows@main/VUONGTT_Toolkit.exe"
+                "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe"
             )
 
             $tempExe = Join-Path $env:TEMP "VUONGTT_Toolkit_latest.exe"
-            if (Test-Path $tempExe) { Remove-Item $tempExe -Force -ErrorAction SilentlyContinue }
+            if (Test-Path $tempExe) {{ Remove-Item $tempExe -Force -ErrorAction SilentlyContinue }}
 
             $downloaded = $false
-            foreach ($url in $urls) {
-                try {
+            foreach ($url in $urls) {{
+                try {{
                     $wc = New-Object System.Net.WebClient
-                    $wc.Headers.Add("User-Agent", "VUONGTT-Toolkit-Updater/2026")
+                    $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) VUONGTT-Toolkit-Updater/2026")
                     $wc.DownloadFile($url, $tempExe)
 
-                    if ((Test-Path $tempExe) -and ((Get-Item $tempExe).Length -gt 1000000)) {
+                    if ((Test-Path $tempExe) -and ((Get-Item $tempExe).Length -gt 1000000)) {{
                         $downloaded = $true
                         break
-                    }
-                } catch {}
-            }
+                    }}
+                }} catch {{}}
+            }}
 
-            if (-not $downloaded) {
+            if (-not $downloaded) {{
                 Write-Output "DOWNLOAD_FAILED"
                 return
-            }
+            }}
 
-            # Tao runner bat doc lap va an toan (khong hien console den)
+            # Tao runner cmd an toan doc lap de thay the binary va khoi dong lai
             $runnerBat = Join-Path $env:TEMP "vuongtt_update_runner.cmd"
             $batContent = @"
 @echo off
-timeout /t 2 /nobreak >nul
+setlocal enabledelayedexpansion
+timeout /t 1 /nobreak >nul
 taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
 taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
 timeout /t 1 /nobreak >nul
@@ -6483,10 +6485,14 @@ if exist "E:\toolwindows\VUONGTT_Toolkit.exe" copy /Y "%~1" "E:\toolwindows\VUON
 if exist "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "%~1" "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Unblock-File -Path '%~2' -ErrorAction SilentlyContinue"
-start "" "%~2"
+if exist "%~2" (
+    start "" "%~2"
+) else if exist "E:\toolwindows\VUONGTT_Toolkit.exe" (
+    start "" "E:\toolwindows\VUONGTT_Toolkit.exe"
+)
 timeout /t 1 /nobreak >nul
 del /f /q "%~1" >nul 2>&1
-del /f /q "%~f0" >nul 2>&1
+(goto) 2>nul & del "%~f0"
 "@
             [System.IO.File]::WriteAllText($runnerBat, $batContent, [System.Text.Encoding]::ASCII)
 
@@ -6498,10 +6504,12 @@ del /f /q "%~f0" >nul 2>&1
             [System.Diagnostics.Process]::Start($psi) | Out-Null
 
             Write-Output "UPDATE_READY"
-        "#;
+        "#,
+            current_exe = current_exe
+        );
 
         let mut cmd = Command::new("powershell");
-        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
@@ -6515,94 +6523,6 @@ del /f /q "%~f0" >nul 2>&1
                 "Không thể tải bản cập nhật tự động. Vui lòng kiểm tra kết nối mạng và thử lại sau!".to_string()
             },
         );
-    }
-
-    if act == "restart_app" || act == "exit_app" {
-
-        std::thread::spawn(|| {
-
-            std::thread::sleep(std::time::Duration::from_millis(600));
-
-            std::process::exit(0);
-
-        });
-
-        return (true, "Ứng dụng đang khởi động lại...".to_string());
-
-    }
-
-
-
-    if act == "devmgmt" || act == "open_devmgmt" || act == "device manager" {
-
-        let mut cmd = Command::new("cmd");
-
-        cmd.args(["/c", "start devmgmt.msc"]);
-
-        #[cfg(windows)]
-
-        cmd.creation_flags(CREATE_NO_WINDOW);
-
-        let _ = cmd.spawn();
-
-        return (true, "Đang mở Trình Quản Lý Thiết Bị Device Manager...".to_string());
-
-    }
-
-
-
-    // ========================================================================
-
-    // 9.5.2 TÙY CHỈNH THÔNG TIN THƯƠNG HIỆU (OEM BRAND REGISTRY INJECTION)
-
-    // ========================================================================
-
-    if act == "backup_oem" || act == "sao luu oem" {
-
-        let user_dir = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:\\".to_string());
-
-        let backup_path = format!("{}\\Desktop\\OEM_Information_Backup.reg", user_dir);
-
-        let mut cmd = Command::new("reg");
-
-        cmd.args([
-
-            "export",
-
-            r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation",
-
-            &backup_path,
-
-            "/y",
-
-        ]);
-
-        #[cfg(windows)]
-
-        cmd.creation_flags(CREATE_NO_WINDOW);
-
-        let out = cmd.output();
-
-        return match out {
-
-            Ok(o) if o.status.success() => (
-
-                true,
-
-                format!("Đã sao lưu cấu hình OEM Registry thành công ra Desktop: {}", backup_path),
-
-            ),
-
-            _ => (
-
-                false,
-
-                "Không thể xuất khóa OEMInformation (khóa có thể chưa tồn tại hoặc cần quyền Administrator).".to_string(),
-
-            ),
-
-        };
-
     }
 
 

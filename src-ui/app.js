@@ -148,16 +148,16 @@
 
     if (!found) return;
 
-    // Update Sidebar Active State
+    // Update Sidebar Active State (Dong bo 1 mau, khi chon chuc nang nao moi MAU DO)
     const navItems = document.querySelectorAll("#sidebar-nav .nav-item");
     navItems.forEach((item) => {
       const itemTarget = item.getAttribute("data-target");
       if (itemTarget === targetId) {
-        item.classList.add("bg-primary-container", "text-on-primary-container", "font-semibold", "shadow-sm");
-        item.classList.remove("text-on-surface-variant");
+        item.classList.add("active");
+        item.classList.add("font-semibold");
       } else {
-        item.classList.remove("bg-primary-container", "text-on-primary-container", "font-semibold", "shadow-sm");
-        item.classList.add("text-on-surface-variant");
+        item.classList.remove("active");
+        item.classList.remove("font-semibold");
       }
     });
 
@@ -1718,9 +1718,7 @@ getAppIconMarkup(app) +
       btnHelpdesk.addEventListener("click", () => switchView("view-it-helpdesk"));
     }
 
-    if (btnUpdate) {
-      btnUpdate.addEventListener("click", () => checkForUpdate(true));
-    }
+    // btnUpdate handled in initHeaderControls
 
     // Theme Switcher
     const btnDark = document.getElementById("btn-theme-dark");
@@ -5165,7 +5163,7 @@ getAppIconMarkup(app) +
       return;
     }
     isUpdatingInProgress = true;
-    showToast("Cập Nhật Hệ Thống", "Đang kết nối GitHub và kiểm tra bản phát hành mới...", "info");
+    showToast("Kiểm Tra Cập Nhật", "Đang kết nối GitHub để kiểm tra phiên bản mới nhất...", "info");
 
     try {
       const res = await invokeRust("run_system_action", { actionId: "check_update" });
@@ -5177,17 +5175,21 @@ getAppIconMarkup(app) +
       const curVer = (updateInfo && updateInfo.current_version) || "2026";
       const newVer = (updateInfo && updateInfo.latest_version) || curVer;
 
-      showToast("Đang Tải Bản Mới", `Đang tải bản cập nhật mới nhất (v${newVer}) trực tiếp từ GitHub...`, "info");
+      if (updateInfo && updateInfo.has_update) {
+        showToast("Phát Hiện Bản Mới", `Phát hiện bản nâng cấp v${newVer} (hiện tại: v${curVer})! Đang tự động tải và cài đặt...`, "info");
+      } else {
+        showToast("Tải Bản Mới Nhất", `Đang tải và cập nhật phiên bản mới nhất từ GitHub...`, "info");
+      }
 
       const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
       if (applyRes && applyRes.success) {
-        showToast("Cập Nhật Thành Công", "Đã tải bản mới nhất! Ứng dụng đang tự động thay thế và khởi động lại sau 2 giây...", "success");
+        showToast("Cập Nhật Thành Công", "Đã tải xong bản mới nhất! Ứng dụng đang tự động thay thế và khởi động lại sau 2 giây...", "success");
         setTimeout(() => {
           invokeRust("window_control", { action: "close" }).catch(() => {});
         }, 1800);
       } else {
         isUpdatingInProgress = false;
-        showToast("Thông Báo", (applyRes && applyRes.message) || "Không thể tải bản cập nhật tự động. Vui lòng kiểm tra lại kết nối mạng!", "warning");
+        showToast("Thông Báo Cập Nhật", (applyRes && applyRes.message) || "Không thể tải bản cập nhật tự động. Vui lòng kiểm tra lại kết nối mạng!", "warning");
       }
     } catch (err) {
       isUpdatingInProgress = false;

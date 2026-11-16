@@ -207,15 +207,24 @@
     }
     .nav-item {
       transition: all 0.15s ease-in-out;
+      color: #475569 !important;
+    }
+    .nav-item .material-symbols-outlined {
+      color: #64748b !important;
+      transition: color 0.15s ease-in-out;
     }
     .nav-item.active {
       background: #ffffff !important;
-      color: #0284c7 !important;
-      font-weight: 600;
-      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.12);
+      color: #dc2626 !important; /* MAU DO KHI DUOC CHON */
+      font-weight: 700 !important;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15), 0 1px 2px rgba(0,0,0,0.05) !important;
+      border: 1px solid rgba(254, 202, 202, 0.95) !important;
+    }
+    .nav-item.active span {
+      color: #dc2626 !important; /* TEXT DO KHI CHON */
     }
     .nav-item.active .material-symbols-outlined {
-      color: #0284c7 !important;
+      color: #dc2626 !important; /* ICON DO KHI CHON */
     }
     /* Toggle Switch */
     .switch-toggle {
@@ -281,7 +290,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.167</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.168</span>
       </div>
     </div>
 
@@ -369,8 +378,8 @@
         </div>
         <!-- 5. Gỡ Cài Đặt Sạch (Clean Uninstaller) -->
         <button data-target="view-clean-uninstaller" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
-          <span class="material-symbols-outlined text-[19px] text-rose-500">delete_sweep</span>
-          <span class="font-medium text-rose-600">Gỡ Cài Đặt Sạch</span>
+          <span class="material-symbols-outlined text-[19px] text-slate-500">delete_sweep</span>
+          <span>Gỡ Cài Đặt Sạch</span>
         </button>
 
         <!-- 6. UWP Apps -->
