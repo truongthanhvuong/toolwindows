@@ -6996,77 +6996,19 @@ fn restart_explorer_safely() {}
 
 
         if plan_clean.contains("never_sleep") || plan_clean.contains("24/7") || plan_clean.contains("chay 24") || plan_clean.contains("tat sleep") || plan_clean.contains("khong tat") {
-
             let ps_code = r#"
-
-                # 1. Kich hoat High Performance de mo khoa hieu nang may ban
-
-                powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-
-
-
-                # 2. Tat triet de moi timeout cho man hinh, o cung, sleep, hibernate
-
-                powercfg /change monitor-timeout-ac 0
-
-                powercfg /change monitor-timeout-dc 0
-
-                powercfg /change disk-timeout-ac 0
-
-                powercfg /change disk-timeout-dc 0
-
-                powercfg /change standby-timeout-ac 0
-
-                powercfg /change standby-timeout-dc 0
-
-                powercfg /change hibernate-timeout-ac 0
-
-                powercfg /change hibernate-timeout-dc 0
-
-
-
-                # 3. Ghi de chi so Subgroup Value Index xuong truc tiep Registry Windows Power Manager
-
-                $schemes = @('SCHEME_CURRENT', '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', '381b4222-f694-41f0-9685-ff5bb260df2e')
-
-                foreach ($s in $schemes) {
-
-                    powercfg -setacvalueindex $s SUB_DISK DISKIDLE 0
-
-                    powercfg -setdcvalueindex $s SUB_DISK DISKIDLE 0
-
-                    powercfg -setacvalueindex $s SUB_VIDEO VIDEOIDLE 0
-
-                    powercfg -setdcvalueindex $s SUB_VIDEO VIDEOIDLE 0
-
-                    powercfg -setacvalueindex $s SUB_SLEEP STANDBYIDLE 0
-
-                    powercfg -setdcvalueindex $s SUB_SLEEP STANDBYIDLE 0
-
-                    powercfg -setacvalueindex $s SUB_SLEEP HIBERNATEIDLE 0
-
-                    powercfg -setdcvalueindex $s SUB_SLEEP HIBERNATEIDLE 0
-
-                }
-
-
-
-                # 4. Commit va kich hoat thoi gian thuc tren Windows Kernel
-
-                powercfg -setactive SCHEME_CURRENT
-
+                powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 2>$null
+                powercfg /change monitor-timeout-ac 0 2>$null
+                powercfg /change monitor-timeout-dc 0 2>$null
+                powercfg /change disk-timeout-ac 0 2>$null
+                powercfg /change disk-timeout-dc 0 2>$null
+                powercfg /change standby-timeout-ac 0 2>$null
+                powercfg /change standby-timeout-dc 0 2>$null
+                powercfg /change hibernate-timeout-ac 0 2>$null
+                powercfg /change hibernate-timeout-dc 0 2>$null
+                powercfg -setactive SCHEME_CURRENT 2>$null
             "#;
-
-            let mut cmd = Command::new("powershell");
-
-            cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
-
-            #[cfg(windows)]
-
-            cmd.creation_flags(CREATE_NO_WINDOW);
-
-            let _ = cmd.output();
-
+            run_ps_oneshot(ps_code);
             return (true, "Đã kích hoạt chế độ Nguồn 24/7 (Never Sleep): Tắt hoàn toàn chế độ Sleep, Hibernate, tắt đĩa và tắt màn hình, máy tính sẵn sàng hoạt động 24/7 liên tục không bị gián đoạn!".to_string());
 
         } else if plan_clean.contains("ultimate") || plan_clean.contains("cuc dai") {
@@ -7149,7 +7091,7 @@ fn restart_explorer_safely() {}
 
             return (true, "Đã chuyển sang gói nguồn Power Saver (Tiết kiệm pin Laptop)!".to_string());
 
-        } else if plan_clean.contains("restore") || plan_clean.contains("khoi phuc") || plan_clean.contains("mac dinh") {
+        } else if plan_clean.contains("restore") || plan_clean.contains("khoi phuc") || plan_clean.contains("mac dinh") || plan_clean.contains("default") {
 
             let mut cmd = Command::new("powercfg");
 
@@ -9536,6 +9478,111 @@ fn restart_explorer_safely() {}
     }
 
 
+
+    if act == "open_power_cpl" {
+        let _ = Command::new("control").arg("powercfg.cpl").spawn();
+        return (true, "Đang mở Windows Control Panel Power Options (powercfg.cpl)...".to_string());
+    }
+
+    if act == "disable_sensor_svc" {
+        let ps = r#"
+            Get-Service -Name "SensorService", "SensrSvc", "SensorDataService" -ErrorAction SilentlyContinue | Stop-Service -Force -ErrorAction SilentlyContinue
+            Get-Service -Name "SensorService", "SensrSvc", "SensorDataService" -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt các dịch vụ cảm biến xoay và ánh sáng màn hình!".to_string());
+    }
+
+    if act == "disable_vbs" {
+        let ps = r#"
+            if (!(Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard')) { New-Item -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard' -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard' -Name 'EnableVirtualizationBasedSecurity' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            bcdedit /set hypervisorlaunchtype off 2>$null
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt tính năng Virtualization-Based Security (VBS) để tối đa FPS chơi game!".to_string());
+    }
+
+    if act == "enhance_privacy" {
+        let ps = r#"
+            $k1 = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'
+            $k2 = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+            if (!(Test-Path $k1)) { New-Item -Path $k1 -Force -ErrorAction SilentlyContinue }
+            if (!(Test-Path $k2)) { New-Item -Path $k2 -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k1 -Name 'Enabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $k2 -Name 'AllowTelemetry' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã kích hoạt chế độ tăng cường quyền riêng tư nghiêm ngặt!".to_string());
+    }
+
+    if act == "disable_cortana" {
+        let ps = r#"
+            $k = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+            if (!(Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'AllowCortana' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã vô hiệu hóa hoàn toàn trợ lý ảo Cortana chạy ngầm!".to_string());
+    }
+
+    if act == "disable_start_ads" {
+        let ps = r#"
+            $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'
+            if (!(Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'SystemPaneSuggestionsEnabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $k -Name 'SubscribedContent-338388Enabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt toàn bộ quảng cáo gợi ý app trên Start Menu!".to_string());
+    }
+
+    if act == "enable_game_mode" {
+        let ps = r#"
+            $k = 'HKCU:\Software\Microsoft\GameBar'
+            if (!(Test-Path $k)) { New-Item -Path $k -Force -ErrorAction SilentlyContinue }
+            Set-ItemProperty -Path $k -Name 'AllowAutoGameMode' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $k -Name 'AutoGameModeEnabled' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã kích hoạt chế độ Game Mode tối ưu CPU/GPU cho game!".to_string());
+    }
+
+    if act == "disable_xbox_live" {
+        let ps = r#"
+            Get-Service -Name "XboxGipSvc", "XblAuthManager", "XblGameSave", "XboxNetApiSvc" -ErrorAction SilentlyContinue | Stop-Service -Force -ErrorAction SilentlyContinue
+            Get-Service -Name "XboxGipSvc", "XblAuthManager", "XblGameSave", "XboxNetApiSvc" -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt các dịch vụ Xbox Live chạy ngầm tiết kiệm tài nguyên!".to_string());
+    }
+
+    if act == "disable_mouse_accel" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Mouse' -Name 'MouseSpeed' -Value '0' -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Mouse' -Name 'MouseThreshold1' -Value '0' -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Mouse' -Name 'MouseThreshold2' -Value '0' -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã tắt gia tốc chuột (Mouse Acceleration), chuột chuyển sang chuẩn 1:1!".to_string());
+    }
+
+    if act == "vietnamese_time_format" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKCU:\Control Panel\International' -Name 'sShortDate' -Value 'dd/MM/yyyy' -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKCU:\Control Panel\International' -Name 'sTimeFormat' -Value 'HH:mm:ss' -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã chuyển định dạng ngày giờ sang chuẩn Việt Nam (dd/MM/yyyy HH:mm:ss)!".to_string());
+    }
+
+    if act == "disable_uac" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLUA' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đã vô hiệu hóa thông báo UAC (User Account Control)!".to_string());
+    }
 
     if act == "add_take_ownership" {
 

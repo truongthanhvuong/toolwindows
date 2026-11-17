@@ -2712,6 +2712,30 @@ getAppIconMarkup(app) +
     }
     window.updatePowerPlanButtonsUI = updatePowerPlanButtonsUI;
 
+    window.restorePowerPlanDefault = async function() {
+      appendTweakLog("[NGUỒN ĐIỆN] Đang khôi phục toàn bộ cấu hình nguồn điện về mặc định Windows...", "progress");
+      showToast("Gói Nguồn Điện", "Đang khôi phục cài đặt nguồn mặc định...", "info");
+      try {
+        const res = await invokeRust("run_system_action", {
+          actionId: "set_power_plan",
+          plan: "restore_default",
+          params: { plan: "restore_default" }
+        });
+        if (res && res.success) {
+          appendTweakLog(`[THÀNH CÔNG] ✓ ${res.message}`, "success");
+          showToast("Thành Công", res.message, "success");
+          updatePowerPlanButtonsUI("balanced");
+          setTimeout(() => { if (window.syncRealWinOptimizeState) window.syncRealWinOptimizeState(); }, 400);
+        } else {
+          appendTweakLog(`[LỖI] ✗ ${(res && res.message) || "Không thể khôi phục nguồn mặc định"}`, "error");
+          showToast("Lỗi", (res && res.message) || "Không thể khôi phục nguồn mặc định", "error");
+        }
+      } catch (err) {
+        appendTweakLog(`[LỖI] ✗ ${err}`, "error");
+        showToast("Lỗi", String(err), "error");
+      }
+    };
+
     window.selectPowerPlan = async function(btn, planName) {
       const planKey = btn ? btn.getAttribute("data-plan") : null;
       if (planKey) {
@@ -2896,22 +2920,22 @@ getAppIconMarkup(app) +
       const revertBtn = document.getElementById("btn-revert-super-lean");
       if (isApplied) {
         if (badge) {
-          badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm flex items-center gap-1";
-          badge.innerHTML = '<span class="material-symbols-outlined text-[13px] text-emerald-400">check_circle</span><span>Đang Bật Cấu Hình Siêu Nhẹ</span>';
+          badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-white border border-emerald-600 shadow-sm flex items-center gap-1";
+          badge.innerHTML = '<span class="material-symbols-outlined text-[13px]">check_circle</span><span>Đang Bật Cấu Hình Siêu Nhẹ</span>';
         }
         if (revertBtn) {
-          revertBtn.className = "px-4 py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-all border-2 border-amber-400/80 shadow-lg ring-2 ring-amber-400/40 animate-pulse";
-          revertBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] text-amber-300">undo</span><span>↩ HOÀN TÁC VỀ MẶC ĐỊNH TRƯỚC ĐÓ</span>';
+          revertBtn.className = "px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer animate-pulse";
+          revertBtn.innerHTML = '<span class="material-symbols-outlined text-[17px]">undo</span><span>↩ HOÀN TÁC VỀ MẶC ĐỊNH TRƯỚC ĐÓ</span>';
           revertBtn.title = "Bấm vào đây để hủy bỏ toàn bộ tối ưu và khôi phục về trạng thái chuẩn mặc định của Windows";
         }
       } else {
         if (badge) {
-          badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant border border-outline/20";
+          badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200";
           badge.innerHTML = "⚪ Chuẩn Windows (Mặc Định)";
         }
         if (revertBtn) {
-          revertBtn.className = "px-4 py-3 rounded-xl bg-surface-container-highest hover:bg-error-container hover:text-on-error-container text-on-surface font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all border border-outline/20";
-          revertBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">undo</span><span>HOÀN TÁC VỀ MẶC ĐỊNH</span>';
+          revertBtn.className = "px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer";
+          revertBtn.innerHTML = '<span class="material-symbols-outlined text-[17px]">undo</span><span>HOÀN TÁC VỀ MẶC ĐỊNH</span>';
           revertBtn.title = "Khôi phục toàn bộ cài đặt về mặc định của hệ thống";
         }
       }

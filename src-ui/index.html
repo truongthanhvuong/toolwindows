@@ -324,7 +324,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.175</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.177</span>
       </div>
     </div>
 
@@ -889,7 +889,7 @@
         <div class="grid grid-cols-12 gap-4 h-full">
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
             <!-- CẤU HÌNH TỐI ƯU SIÊU NHẸ 2026 (SUPER LEAN PRO) KÈM NÚT HOÀN TÁC -->
-            <div class="glass-card p-4 rounded-2xl border-2 border-sky-400/40 shadow-sm flex flex-col gap-3 relative overflow-hidden">
+            <div class="glass-card p-4 rounded-2xl border-2 border-sky-400/40 shadow-sm flex flex-col gap-3 relative overflow-hidden shrink-0">
               <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 relative z-10">
                 <div class="space-y-1 max-w-xl">
                   <div class="flex flex-wrap items-center gap-2">
@@ -941,7 +941,7 @@
             </div>
 
             <!-- QUẢN TRỊ 5 GÓI NGUỒN ĐIỆN & CHẾ ĐỘ 24/7 NEVER SLEEP -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="flex items-center justify-between mb-3">
                 <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
                   <span class="material-symbols-outlined text-amber-500 text-[18px]">bolt</span>
@@ -1005,7 +1005,7 @@
               </div>
 
               <div class="grid grid-cols-3 gap-2 pt-2">
-                <button class="py-1.5 px-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-center justify-center gap-1 transition-all cursor-pointer" onclick="triggerAction('Đã đặt lại cấu hình nguồn mặc định!'); selectPowerPlan(null, 'Khôi Phục Mặc Định');" type="button">
+                <button class="py-1.5 px-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-center justify-center gap-1 transition-all cursor-pointer" onclick="window.restorePowerPlanDefault()" type="button">
                   <span class="material-symbols-outlined text-[15px]">settings_backup_restore</span>
                   <span>Khôi Phục Mặc Định</span>
                 </button>
@@ -1021,7 +1021,7 @@
             </div>
 
             <!-- ĐỔI MÁY CHỦ DNS NHANH THỜI GIAN THỰC -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="flex items-center justify-between mb-2">
                 <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
                   <span class="material-symbols-outlined text-sky-500 text-[18px]">language</span>
@@ -1055,7 +1055,7 @@
             </div>
 
             <!-- 1. System Group -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <span class="material-symbols-outlined text-sky-600 text-[18px]">desktop_windows</span>
                 <span>System</span>
@@ -1085,7 +1085,7 @@
             </div>
 
             <!-- 2. Privacy Group -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <span class="material-symbols-outlined text-indigo-600 text-[18px]">security</span>
                 <span>Privacy</span>
@@ -1115,7 +1115,7 @@
             </div>
 
             <!-- 3. Gaming & Power Plan -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <span class="material-symbols-outlined text-amber-600 text-[18px]">sports_esports</span>
                 <span>Gaming &amp; Power Plan</span>
@@ -1141,7 +1141,7 @@
             </div>
 
             <!-- 4. Windows Update Group -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <span class="material-symbols-outlined text-rose-600 text-[18px]">update</span>
                 <span>Windows Update</span>
@@ -1171,7 +1171,7 @@
             </div>
 
             <!-- 5. Taskbar Group -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <span class="material-symbols-outlined text-teal-600 text-[18px]">view_column</span>
                 <span>Taskbar (Thanh tác vụ)</span>
@@ -1205,7 +1205,7 @@
             </div>
 
             <!-- 6. Extras Group -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <span class="material-symbols-outlined text-purple-600 text-[18px]">extension</span>
                 <span>Extras (Tiện ích mở rộng)</span>
@@ -1243,7 +1243,7 @@
             </div>
 
             <!-- 7. Advanced Profiles Group -->
-            <div class="glass-card p-4">
+            <div class="glass-card p-4 shrink-0">
               <div class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
                 <span class="material-symbols-outlined text-orange-600 text-[18px]">tune</span>
                 <span>Advanced Tweaking (Cấu hình nâng cao)</span>
