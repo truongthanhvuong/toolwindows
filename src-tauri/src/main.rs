@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.180";
+pub const APP_VERSION: &str = "20.5.909.181";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -434,6 +434,18 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         if action == "close" {
             is_running.store(false, Ordering::SeqCst);
             let _ = system_ops::cleanup_desktop_shortcuts();
+            #[cfg(windows)]
+            {
+                let mut edge_kill = Command::new("powershell");
+                edge_kill.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+                       r#"Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | Where-Object { $_.CommandLine -like '*127.0.0.1*' } | Stop-Process -Force -ErrorAction SilentlyContinue"#]);
+                edge_kill.creation_flags(0x08000000);
+                let _ = edge_kill.spawn();
+            }
+            std::thread::spawn(|| {
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                std::process::exit(0);
+            });
             json_resp = "{\"success\":true,\"message\":\"Closing\"}".to_string();
         } else if action == "minimize" {
             let (ok, msg) = control_window("minimize");

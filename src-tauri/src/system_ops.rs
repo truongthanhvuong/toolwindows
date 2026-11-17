@@ -13738,6 +13738,32 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
+    if act == "restart_app" || act == "khoi_dong_lai" {
+        clear_logs();
+        append_log("[HỆ THỐNG] Đang chuẩn bị khởi động lại ứng dụng...");
+        let current_exe = std::env::current_exe()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| "E:\\toolwindows\\VUONGTT_Toolkit.exe".to_string());
+        let clean_exe = current_exe.replace('\'', "''");
+        let ps_code = format!(
+            r#"
+            Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | Where-Object {{ $_.CommandLine -like '*127.0.0.1*' }} | Stop-Process -Force -ErrorAction SilentlyContinue
+            Start-Process -FilePath '{clean_exe}' -WorkingDirectory (Split-Path '{clean_exe}')
+            "#,
+            clean_exe = clean_exe
+        );
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.spawn();
+        std::thread::spawn(|| {
+            std::thread::sleep(std::time::Duration::from_millis(600));
+            std::process::exit(0);
+        });
+        return (true, "Đang khởi động lại ứng dụng...".to_string());
+    }
+
     if act == "apply_update" || act == "download_and_apply_update" || act == "tu_dong_cap_nhat" {
 
         let current_exe = std::env::current_exe()
@@ -13847,49 +13873,28 @@ if ('{auto_reboot}' -eq 'True') {{
             $runnerBat = Join-Path $env:TEMP "vuongtt_update_runner.cmd"
 
             $lines = @(
-
                 '@echo off',
-
-                'setlocal enabledelayedexpansion',
-
-                'timeout /t 2 /nobreak >nul',
-
+                'timeout /t 1 /nobreak >nul',
                 'taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1',
-
                 'taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1',
-
+                'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process -Filter \"Name = ''msedge.exe''\" | Where-Object {{ $_.CommandLine -like ''*127.0.0.1*'' }} | Stop-Process -Force -ErrorAction SilentlyContinue" >nul 2>&1',
                 'timeout /t 1 /nobreak >nul',
-
                 'set RETRY=0',
-
                 ':RETRY_LOOP',
-
                 'copy /Y "%~1" "%~2" >nul 2>&1',
-
                 'if not errorlevel 1 goto DONE_COPY',
-
                 'set /a RETRY+=1',
-
                 'if %RETRY% geq 20 goto DONE_COPY',
-
                 'timeout /t 1 /nobreak >nul',
-
                 'goto RETRY_LOOP',
-
                 ':DONE_COPY',
-
                 'if exist "E:\toolwindows\VUONGTT_Toolkit.exe" copy /Y "%~1" "E:\toolwindows\VUONGTT_Toolkit.exe" >nul 2>&1',
-
                 'if exist "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "%~1" "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1',
-
-                'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path ''%~2'' -ErrorAction SilentlyContinue; Start-Process -FilePath ''%~2'' -WorkingDirectory ''%~dp2'' -Verb RunAs" -WindowStyle Hidden',
-
-                'timeout /t 1 /nobreak >nul',
-
+                'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -LiteralPath ''%~2'' -ErrorAction SilentlyContinue" >nul 2>&1',
+                'start "" "%~2"',
+                'timeout /t 2 /nobreak >nul',
                 'del /f /q "%~1" >nul 2>&1',
-
                 '(goto) 2>nul & del "%~f0"'
-
             )
 
             [System.IO.File]::WriteAllLines($runnerBat, $lines, [System.Text.Encoding]::ASCII)

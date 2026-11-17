@@ -10970,6 +10970,16 @@ getAppIconMarkup(app) +
 
 
 
+  window.restartApp = async function () {
+    showToast("Khởi Động Lại", "Đang khởi động lại ứng dụng...", "info");
+    try {
+      await invokeRust("run_system_action", { actionId: "restart_app" });
+    } catch (_) {}
+    setTimeout(() => {
+      try { window.close(); } catch (_) {}
+    }, 500);
+  };
+
   window.triggerManualUpdate = async function () {
 
     const updateBtn = document.getElementById("btn-header-update");
@@ -11038,11 +11048,14 @@ getAppIconMarkup(app) +
 
         showToast("Cập Nhật Thành Công", "Đã tải xong bản mới nhất! Ứng dụng đang tự động thay thế và khởi động lại sau 2 giây...", "success");
 
-        setTimeout(() => {
-
-          invokeRust("window_control", { action: "close" }).catch(() => {});
-
-        }, 1800);
+        setTimeout(async () => {
+          try {
+            await invokeRust("window_control", { action: "close" });
+          } catch (_) {}
+          try {
+            window.close();
+          } catch (_) {}
+        }, 1200);
 
       } else {
 
