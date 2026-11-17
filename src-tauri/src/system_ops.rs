@@ -285,52 +285,66 @@ pub fn cleanup_desktop_shortcuts() -> bool {
 
 
 pub fn ensure_desktop_shortcut() -> bool {
+    // Tu dong tao va duy tri DUY NHAT 1 shortcut 'VUONGTT Toolkit.lnk' tren Desktop
+    let current_exe = std::env::current_exe()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|_| "E:\\toolwindows\\VUONGTT_Toolkit.exe".to_string());
+    let current_exe_clean = current_exe.replace('\'', "''");
 
-    // Tu dong tao va duy tri shortcut 'VUONGTT Toolkit.lnk' tren Desktop
-
-    let ps = r#"
-
-        try {
-
+    let ps = format!(
+        r#"
+        try {{
             $ws = New-Object -ComObject WScript.Shell
+            $userDesk = [Environment]::GetFolderPath('Desktop')
+            if (-not $userDesk -or -not (Test-Path $userDesk)) {{ $userDesk = "$env:USERPROFILE\Desktop" }}
 
-            $desk = [Environment]::GetFolderPath('Desktop')
+            # 1. Don dep triet de duplicate shortcut tai cac thu muc khac (Public Desktop, OneDrive, Common Desktop)
+            $otherDesks = @(
+                [Environment]::GetFolderPath('CommonDesktopDirectory'),
+                "$env:PUBLIC\Desktop",
+                "$env:USERPROFILE\OneDrive\Desktop"
+            ) | Where-Object {{ $_ -and (Test-Path $_) -and $_ -ne $userDesk }} | Select-Object -Unique
 
-            if (-not $desk -or -not (Test-Path $desk)) { $desk = "$env:USERPROFILE\Desktop" }
+            foreach ($od in $otherDesks) {{
+                foreach ($name in @('VUONGTT Toolkit.lnk', 'VUONGTT Tool Pro 2026.lnk')) {{
+                    $stalePath = Join-Path $od $name
+                    if (Test-Path $stalePath) {{
+                        Remove-Item -Path $stalePath -Force -ErrorAction SilentlyContinue
+                    }}
+                }}
+            }}
 
-            $exe = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+            # 2. Xoa bo bat ky shortcut nao tren User Desktop dang tro sai vao powershell.exe hoac cmd.exe
+            Get-ChildItem -Path $userDesk -Filter "*VUONGTT*.lnk" -Force -ErrorAction SilentlyContinue | ForEach-Object {{
+                try {{
+                    $target = $ws.CreateShortcut($_.FullName).TargetPath
+                    if ($target -match 'powershell\.exe|cmd\.exe|wscript\.exe') {{
+                        Remove-Item -Path $_.FullName -Force -ErrorAction SilentlyContinue
+                    }}
+                }} catch {{}}
+            }}
 
-            if (-not $exe -or -not (Test-Path $exe) -or $exe -match "cargo|target|rustc") {
+            # 3. Tao DUY NHAT 1 shortcut chuan tro truc tiep vao file thuc thi VUONGTT_Toolkit.exe
+            $exe = '{current_exe_clean}'
+            if (-not (Test-Path $exe) -or $exe -match "cargo|target|rustc") {{
+                $exe = "E:\\toolwindows\\VUONGTT_Toolkit.exe"
+                if (-not (Test-Path $exe)) {{ $exe = "$PSScriptRoot\\VUONGTT_Toolkit.exe" }}
+            }}
 
-                $exe = "E:	oolwindows\VUONGTT_Toolkit.exe"
-
-                if (-not (Test-Path $exe)) { $exe = "$PSScriptRoot\VUONGTT_Toolkit.exe" }
-
-            }
-
-            $lnkPath = Join-Path $desk "VUONGTT Toolkit.lnk"
-
+            $lnkPath = Join-Path $userDesk "VUONGTT Toolkit.lnk"
             $s = $ws.CreateShortcut($lnkPath)
-
             $s.TargetPath = $exe
-
             $s.WorkingDirectory = Split-Path $exe
-
             $s.Description = "VUONGTT Toolkit 2026 - Truong Thanh Vuong"
-
+            $s.IconLocation = "$exe,0"
             $s.Save()
+        }} catch {{}}
+    "#
+    );
 
-        } catch {}
-
-    "#;
-
-    run_ps_oneshot(ps);
-
+    run_ps_oneshot(&ps);
     true
-
 }
-
-
 
 pub fn collect_real_system_identity() -> (String, String, String, String, String) {
 

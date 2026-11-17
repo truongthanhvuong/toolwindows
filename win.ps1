@@ -290,25 +290,44 @@ if ($needDownload) {
     }
 }
 
-# 5. TU DONG TAO VA DUY TRI SHORTCUT TREN DESKTOP (KHI DUNG XONG TAT VAN CON)
+# 5. TU DONG TAO VA DUY TRI DUY NHAT 1 SHORTCUT TREN DESKTOP (KHI DUNG XONG TAT VAN CON)
 try {
-    $desktopDirs = @(
-        [System.Environment]::GetFolderPath('Desktop'),
-        "$env:USERPROFILE\Desktop",
-        "$env:USERPROFILE\OneDrive\Desktop",
-        [System.Environment]::GetFolderPath('CommonDesktopDirectory'),
-        "$env:PUBLIC\Desktop"
-    ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
-
     $wsh = New-Object -ComObject WScript.Shell
-    foreach ($d in $desktopDirs) {
-        $scPath = Join-Path $d "VUONGTT Toolkit.lnk"
-        $sc = $wsh.CreateShortcut($scPath)
-        $sc.TargetPath = $exePath
-        $sc.WorkingDirectory = $installDir
-        $sc.Description = "VUONGTT Tool Pro 2026 - Truong Thanh Vuong"
-        $sc.Save()
+    $userDesk = [System.Environment]::GetFolderPath('Desktop')
+    if (-not $userDesk -or -not (Test-Path $userDesk)) { $userDesk = "$env:USERPROFILE\Desktop" }
+
+    # Xoa bo duplicate shortcut o cac thu muc khac tranh trung lap 2 icon tren man hinh
+    $otherDesks = @(
+        [System.Environment]::GetFolderPath('CommonDesktopDirectory'),
+        "$env:PUBLIC\Desktop",
+        "$env:USERPROFILE\OneDrive\Desktop"
+    ) | Where-Object { $_ -and (Test-Path $_) -and $_ -ne $userDesk } | Select-Object -Unique
+
+    foreach ($od in $otherDesks) {
+        foreach ($name in @("VUONGTT Toolkit.lnk", "VUONGTT Tool Pro 2026.lnk")) {
+            $stale = Join-Path $od $name
+            if (Test-Path $stale) { Remove-Item -Path $stale -Force -ErrorAction SilentlyContinue }
+        }
     }
+
+    # Xoa bat ky shortcut nao tro sai vao powershell hoac cmd
+    Get-ChildItem -Path $userDesk -Filter "*VUONGTT*.lnk" -Force -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $target = $wsh.CreateShortcut($_.FullName).TargetPath
+            if ($target -match 'powershell\.exe|cmd\.exe|wscript\.exe') {
+                Remove-Item -Path $_.FullName -Force -ErrorAction SilentlyContinue
+            }
+        } catch {}
+    }
+
+    # Tao DUY NHAT 1 shortcut chuan tro truc tiep vao file thuc thi
+    $scPath = Join-Path $userDesk "VUONGTT Toolkit.lnk"
+    $sc = $wsh.CreateShortcut($scPath)
+    $sc.TargetPath = $exePath
+    $sc.WorkingDirectory = $installDir
+    $sc.Description = "VUONGTT Tool Pro 2026 - Truong Thanh Vuong"
+    $sc.IconLocation = "$exePath,0"
+    $sc.Save()
 } catch {}
 
 # 6. KHOI CHAY UNG DUNG
