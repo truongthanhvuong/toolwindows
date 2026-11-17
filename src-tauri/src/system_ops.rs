@@ -8506,7 +8506,193 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
-    // 5.1A SAO LƯU TOÀN BỘ WINDOWS (FULL SYSTEM IMAGE / WIM BACKUP)
+        // ========================================================================
+    // ========================================================================
+    // 5.0C CHẶN WEBSITE & GAME TRỰC TUYẾN (PARENTAL CONTROL / WEB & GAME BLOCKER)
+    // ========================================================================
+    if act == "get_block_rules_status" || act == "trang_thai_chan_web_game" {
+        let ps_code = r##"
+            $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
+            $hasBlock = $false
+            if (Test-Path $hostsPath) {
+                $c = Get-Content -Path $hostsPath -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
+                if ($c -match "# === VUONGTT BLOCK RULES BEGIN ===") {
+                    $hasBlock = $true
+                }
+            }
+            $cfgPath = "C:\VUONGTT_Tools\BlockRules\blocked_config.json"
+            $cfgJson = "{}"
+            if (Test-Path $cfgPath) {
+                $cfgJson = (Get-Content -Path $cfgPath -Raw -Encoding UTF8 -ErrorAction SilentlyContinue).Trim()
+            }
+            [PSCustomObject]@{
+                is_blocking = $hasBlock
+                config = $cfgJson
+            } | ConvertTo-Json -Compress
+        "##;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        return (true, if trimmed.is_empty() { r#"{"is_blocking":false,"config":"{}"}"#.to_string() } else { trimmed.to_string() });
+    }
+
+    if act == "apply_block_rules" || act == "chan_web_game" || act == "block_web_game" {
+        clear_logs();
+        append_log("[CHẶN WEB & GAME] Bắt đầu cấu hình quy tắc chặn website & game trực tuyến...");
+
+        let platforms_json = extract_json_field(params_json, "platforms").unwrap_or("[]").trim();
+        let custom_domains = extract_json_field(params_json, "custom_domains").unwrap_or("").trim();
+        let safe_platforms = platforms_json.replace('\'', "''");
+        let safe_custom = custom_domains.replace('\'', "''");
+        let safe_params = params_json.replace('\'', "''");
+
+        let ps_code = format!(
+            r##"
+            $ErrorActionPreference = 'SilentlyContinue'
+            $rawPlatforms = '{safe_platforms}'
+            $customText = '{safe_custom}'
+            $rawParams = '{safe_params}'
+
+            $domainMap = @{{
+                'facebook'  = @('facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.com', 'www.fb.com', 'fbcdn.net', 'connect.facebook.net')
+                'tiktok'    = @('tiktok.com', 'www.tiktok.com', 'm.tiktok.com', 'vt.tiktok.com', 'tiktokcdn.com', 'tiktokv.com')
+                'youtube'   = @('youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'googlevideo.com', 'youtubei.googleapis.com')
+                'instagram' = @('instagram.com', 'www.instagram.com', 'cdninstagram.com')
+                'threads'   = @('threads.net', 'www.threads.net')
+                'twitter'   = @('twitter.com', 'www.twitter.com', 'x.com', 'www.x.com', 'twimg.com', 't.co')
+                'linkedin'  = @('linkedin.com', 'www.linkedin.com', 'licdn.com')
+                'telegram'  = @('telegram.org', 'web.telegram.org', 't.me')
+                'discord'   = @('discord.com', 'www.discord.com', 'discord.gg', 'discordapp.com', 'discordapp.net')
+                'roblox'    = @('roblox.com', 'www.roblox.com', 'rbxcdn.com', 'robloxlabs.com')
+                'garena'    = @('garena.vn', 'www.garena.vn', 'garena.com', 'garenanow.com', 'lienquan.garena.vn', 'ff.garena.vn')
+                'steam'     = @('steampowered.com', 'store.steampowered.com', 'steamcommunity.com', 'steamstatic.com')
+                'riot'      = @('riotgames.com', 'leagueoflegends.com', 'playvalorant.com', 'pvp.net')
+            }}
+
+            $selectedPlatforms = @()
+            try {{
+                $selectedPlatforms = $rawPlatforms | ConvertFrom-Json
+            }} catch {{}}
+
+            $domainsToBlock = @()
+            foreach ($p in $selectedPlatforms) {{
+                if ($domainMap.ContainsKey($p)) {{
+                    $domainsToBlock += $domainMap[$p]
+                }}
+            }}
+
+            if ($customText) {{
+                $lines = $customText -split "[\r\n]+"
+                foreach ($line in $lines) {{
+                    $d = $line.Trim().ToLower()
+                    if ($d -and -not $d.StartsWith("#")) {{
+                        $d = $d -replace '^https?://', '' -replace '/.*$', ''
+                        if ($d) {{
+                            $domainsToBlock += $d
+                            if (-not $d.StartsWith("www.")) {{ $domainsToBlock += "www.$d" }}
+                        }}
+                    }}
+                }}
+            }}
+
+            $domainsToBlock = $domainsToBlock | Select-Object -Unique
+
+            $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
+            if (Test-Path $hostsPath) {{
+                $content = Get-Content -Path $hostsPath -Raw -Encoding UTF8
+                $pattern = '(?s)# === VUONGTT BLOCK RULES BEGIN ===.*?# === VUONGTT BLOCK RULES END ===\r?\n?'
+                $cleaned = $content -replace $pattern, ''
+
+                $blockLines = @(
+                    "# === VUONGTT BLOCK RULES BEGIN ===",
+                    "# Chặn Website & Game Trực Tuyến - VUONGTT Toolkit 2026",
+                    "# Thời gian áp dụng: " + (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
+                )
+                foreach ($dom in $domainsToBlock) {{
+                    $blockLines += "0.0.0.0 $dom"
+                    $blockLines += "127.0.0.1 $dom"
+                    $blockLines += "::1 $dom"
+                }}
+                $blockLines += "# === VUONGTT BLOCK RULES END ==="
+
+                $final = $cleaned.TrimEnd() + "`r`n`r`n" + ($blockLines -join "`r`n") + "`r`n"
+                Set-Content -Path $hostsPath -Value $final -Encoding UTF8 -Force
+            }}
+
+            if ($selectedPlatforms -contains 'roblox') {{ Stop-Process -Name "RobloxPlayerBeta" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'garena') {{ Stop-Process -Name "Garena" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'steam') {{ Stop-Process -Name "steam" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'riot') {{ Stop-Process -Name "RiotClientServices", "LeagueClient" -Force -ErrorAction SilentlyContinue }}
+
+            ipconfig /flushdns | Out-Null
+            Clear-DnsClientCache -ErrorAction SilentlyContinue | Out-Null
+
+            $cfgDir = "C:\VUONGTT_Tools\BlockRules"
+            if (-not (Test-Path $cfgDir)) {{ [System.IO.Directory]::CreateDirectory($cfgDir) | Out-Null }}
+            $rawParams | Out-File -FilePath "$cfgDir\blocked_config.json" -Encoding UTF8 -Force
+
+            Write-Output "SUCCESS:$($domainsToBlock.Count)"
+            "##
+        );
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        if out.contains("SUCCESS:") {
+            let count = out.split("SUCCESS:").nth(1).unwrap_or("0").trim();
+            append_log(&format!("[THÀNH CÔNG] Đã áp dụng quy tắc chặn cho {} tên miền vào hosts và làm mới DNS cache!", count));
+            return (
+                true,
+                format!("Đã lưu & áp dụng thành công quy tắc chặn cho {} tên miền! Máy tính đã được kích hoạt bảo vệ.", count),
+            );
+        } else {
+            append_log("[LỖI] Không thể ghi tệp hosts. Vui lòng chạy công cụ với quyền Administrator!");
+            return (false, "Lỗi khi áp dụng quy tắc chặn vào tệp hosts hệ thống.".to_string());
+        }
+    }
+
+    if act == "unblock_all_rules" || act == "bo_chan_toan_bo" || act == "go_chan_web_game" {
+        clear_logs();
+        append_log("[GỠ CHẶN] Bắt đầu gỡ bỏ toàn bộ quy tắc chặn website & game...");
+
+        let ps_code = r##"
+            $ErrorActionPreference = 'SilentlyContinue'
+            $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
+            if (Test-Path $hostsPath) {
+                $content = Get-Content -Path $hostsPath -Raw -Encoding UTF8
+                $pattern = '(?s)# === VUONGTT BLOCK RULES BEGIN ===.*?# === VUONGTT BLOCK RULES END ===\r?\n?'
+                $cleaned = $content -replace $pattern, ''
+                Set-Content -Path $hostsPath -Value ($cleaned.TrimEnd() + "`r`n") -Encoding UTF8 -Force
+            }
+            $cfgPath = "C:\VUONGTT_Tools\BlockRules\blocked_config.json"
+            if (Test-Path $cfgPath) {
+                Remove-Item -Path $cfgPath -Force -ErrorAction SilentlyContinue
+            }
+            ipconfig /flushdns | Out-Null
+            Clear-DnsClientCache -ErrorAction SilentlyContinue | Out-Null
+            Write-Output "UNBLOCKED"
+        "##;
+
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+        let _ = cmd.output();
+        append_log("[THÀNH CÔNG] Đã gỡ bỏ toàn bộ quy tắc chặn trong hosts và làm mới DNS cache!");
+        return (
+            true,
+            "Đã gỡ bỏ toàn bộ quy tắc chặn website & game thành công! Hệ thống đã khôi phục truy cập 100%.".to_string(),
+        );
+    }
+
+        // 5.1A SAO LƯU TOÀN BỘ WINDOWS (FULL SYSTEM IMAGE / WIM BACKUP)
 
 
 
