@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.181";
+pub const APP_VERSION: &str = "20.5.909.182";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -508,8 +508,10 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
     } else if cmd == "get_install_logs" {
         let logs_raw = system_ops::get_logs_json();
         let safe_escaped = escape_json_str(&logs_raw);
+        let log_ver = system_ops::get_log_version();
         json_resp = format!(
-            r#"{{"success":true,"message":"{}","logs":{}}}"#,
+            r#"{{"success":true,"version":{},"message":"{}","logs":{}}}"#,
+            log_ver,
             safe_escaped,
             logs_raw
         );

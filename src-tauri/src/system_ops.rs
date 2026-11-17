@@ -411,6 +411,7 @@ pub fn get_now_timestamp() -> String {
 
 
 static EXECUTION_LOGS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+static LOG_VERSION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 
 
@@ -451,6 +452,8 @@ pub fn append_log(msg: &str) {
 
 
     }
+
+    LOG_VERSION.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
 
 
@@ -524,9 +527,16 @@ pub fn clear_logs() {
 
     }
 
+    LOG_VERSION.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+
 
 
 }
+
+pub fn get_log_version() -> u64 {
+    LOG_VERSION.load(std::sync::atomic::Ordering::SeqCst)
+}
+
 
 
 
@@ -3990,7 +4000,7 @@ if ($res) {{
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -7594,7 +7604,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -8294,7 +8304,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
     if act == "save_deploy_post_config" || act == "save_post_install_config" || act == "luu_tuy_chon_cai_win" {
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
         append_log("[WIN DEPLOY CONFIG] Bắt đầu lưu tùy chọn cấu hình tối ưu và phần mềm tự động...");
 
@@ -8614,7 +8624,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
         append_log(&format!("[ISO DOWNLOAD] Bắt đầu tải tệp ISO từ liên kết: {}", iso_url));
 
@@ -8708,7 +8718,7 @@ if ('{auto_reboot}' -eq 'True') {{
     }
 
     if act == "apply_block_rules" || act == "chan_web_game" || act == "block_web_game" {
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
         append_log("[CHẶN WEB & GAME] Bắt đầu cấu hình quy tắc chặn website & game trực tuyến...");
 
         let platforms_json = extract_json_field(params_json, "platforms").unwrap_or("[]").trim();
@@ -8848,7 +8858,7 @@ if ('{auto_reboot}' -eq 'True') {{
     }
 
     if act == "unblock_all_rules" || act == "bo_chan_toan_bo" || act == "go_chan_web_game" {
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
         append_log("[GỠ CHẶN] Bắt đầu gỡ bỏ toàn bộ quy tắc chặn website & game...");
 
         let ps_code = r##"
@@ -8912,7 +8922,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -9186,7 +9196,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
     if act == "restore_full_windows" || act == "phuc_hoi_toan_bo_windows" || act == "phuc hoi windows" || act == "restore_windows" || act == "restore_system" {
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
         append_log("[PHỤC HỒI WINDOWS] Bắt đầu quy trình phục hồi hệ thống Windows từ bản sao lưu WIM...");
 
@@ -9502,7 +9512,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
     if act == "boot_to_winre" || act == "boot_winre" || act == "khoi_dong_winre" {
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
         append_log("[WINRE] Đang chuẩn bị môi trường cứu hộ phục hồi Windows RE (Windows Recovery Environment)...");
 
@@ -9562,7 +9572,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
     if act == "create_restore_point" || act == "tao_diem_khoi_phuc" {
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
         append_log("[SYSTEM RESTORE] Đang tạo điểm khôi phục hệ thống (System Restore Point)...");
 
@@ -9610,7 +9620,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
     if act == "repair_winre" || act == "check_winre" || act == "bat_winre" {
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
         append_log("[WINRE] Đang kiểm tra và kích hoạt lại Windows Recovery Environment (reagentc)...");
 
@@ -10156,7 +10166,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -10324,7 +10334,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -10712,7 +10722,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -11148,7 +11158,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
     if act == "uninstall_office" || act == "go_cai_dat_office" || act == "remove_office" {
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
         append_log("[GỠ OFFICE] Khởi động quy trình gỡ bỏ sạch sẽ toàn bộ Microsoft Office...");
 
@@ -13739,7 +13749,7 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
     if act == "restart_app" || act == "khoi_dong_lai" {
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
         append_log("[HỆ THỐNG] Đang chuẩn bị khởi động lại ứng dụng...");
         let current_exe = std::env::current_exe()
             .map(|p| p.to_string_lossy().to_string())
@@ -17224,7 +17234,7 @@ fn restart_explorer_safely() {}
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -17380,7 +17390,7 @@ fn restart_explorer_safely() {}
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -17504,7 +17514,7 @@ fn restart_explorer_safely() {}
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 
@@ -17624,7 +17634,7 @@ fn restart_explorer_safely() {}
 
 
 
-        clear_logs();
+        // clear_logs(); // Retain continuous console log stream
 
 
 

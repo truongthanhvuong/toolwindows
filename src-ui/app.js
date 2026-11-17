@@ -177,65 +177,14 @@
   // --- 2. TOAST NOTIFICATION SYSTEM (RO NET 100% ULTRA CONTRAST) ---
 
   function showToast(title, message, type = "info") {
-
-    const container = document.getElementById("rust-toast-container");
-
-    if (!container) return;
-
-
-
-    const iconMap = {
-
-      info: { icon: "bolt", color: "#38bdf8", border: "border-sky-500/50" },
-
-      success: { icon: "check_circle", color: "#34d399", border: "border-emerald-500/50" },
-
-      warning: { icon: "warning", color: "#fbbf24", border: "border-amber-500/50" },
-
-      error: { icon: "error", color: "#f87171", border: "border-rose-500/50" },
-
-    };
-
-    const cfg = iconMap[type] || iconMap.info;
-
-
-
-    const toast = document.createElement("div");
-
-    toast.className = `rust-toast ${cfg.border}`;
-
-    toast.innerHTML = `
-
-      <span class="material-symbols-outlined shrink-0" style="color:${cfg.color};font-size:22px">${cfg.icon}</span>
-
-      <div style="flex:1;min-width:0">
-
-        <div class="toast-title">${title}</div>
-
-        <div class="toast-msg">${message}</div>
-
-      </div>
-
-      <button type="button" class="text-slate-400 hover:text-white transition-colors cursor-pointer text-xs p-1 ml-1 leading-none shrink-0" onclick="this.parentElement.remove()" title="Đóng">✕</button>
-
-    `;
-
-    container.appendChild(toast);
-
-
-
-    setTimeout(() => {
-
-      toast.style.opacity = "0";
-
-      toast.style.transform = "translateY(8px)";
-
-      toast.style.transition = "opacity 0.25s ease, transform 0.25s ease";
-
-      setTimeout(() => toast.remove(), 260);
-
-    }, 4500);
-
+    // CHỈ GIỮ BẢNG CONSOLE LOG & LOẠI BỎ LOG POPUP:
+    // Toàn bộ thông báo được chuyển hướng trực tiếp vào Console Log Drawer.
+    const tag = title ? `[${String(title).toUpperCase()}]` : "[THÔNG BÁO]";
+    if (typeof appendUniversalLog === "function") {
+      appendUniversalLog(`${tag} ${message}`, type);
+    } else {
+      console.log(`${tag} ${message}`);
+    }
   }
 
   window.showRustToast = showToast;
@@ -2185,7 +2134,9 @@ getAppIconMarkup(app) +
 
 
     window.installSingleApp = async function(appId, pkgId) {
-
+      if (typeof openUniversalLog === "function") {
+        openUniversalLog();
+      }
       showToast("Cài Đặt", "Đang tiến hành cài đặt " + (pkgId || appId) + " qua Winget...", "info");
 
       try {
@@ -2332,6 +2283,9 @@ getAppIconMarkup(app) +
 
         const appNames = selectedApps.map(a => a.content || a.id).join(", ");
 
+        if (typeof openUniversalLog === "function") {
+          openUniversalLog();
+        }
         showToast("Cài Đặt", "Đang tiến hành cài đặt " + selectedApps.length + " ứng dụng qua Winget...", "info");
 
 
@@ -12071,6 +12025,7 @@ getAppIconMarkup(app) +
   // =========================================================================
   let universalLogPollingTimer = null;
   let lastUniversalLogCount = 0;
+  let lastRenderedLastLine = "";
   let isUniversalLogExpanded = false;
 
   function expandUniversalLog(forceOpen = true) {
@@ -12222,7 +12177,11 @@ getAppIconMarkup(app) +
       const countBadge = document.getElementById("universal-log-count");
       if (!body) return;
 
-      if (serverLogs.length < lastUniversalLogCount) {
+      const currentLastLine = serverLogs.length > 0 ? String(serverLogs[serverLogs.length - 1] || "") : "";
+      const isBufferReset = (serverLogs.length < lastUniversalLogCount) ||
+                            (serverLogs.length === lastUniversalLogCount && serverLogs.length > 0 && currentLastLine !== lastRenderedLastLine);
+
+      if (isBufferReset) {
         body.innerHTML = "";
         lastUniversalLogCount = 0;
       }
@@ -12231,8 +12190,16 @@ getAppIconMarkup(app) +
         const deltaLogs = serverLogs.slice(lastUniversalLogCount);
         appendUniversalLogsToBody(deltaLogs);
         lastUniversalLogCount = serverLogs.length;
+        lastRenderedLastLine = currentLastLine;
         if (countBadge) {
           countBadge.textContent = `${body.children.length}`;
+        }
+      } else if (serverLogs.length === 0 && body.children.length > 0) {
+        body.innerHTML = "";
+        lastUniversalLogCount = 0;
+        lastRenderedLastLine = "";
+        if (countBadge) {
+          countBadge.textContent = "0";
         }
       }
     } catch (_) {
@@ -12309,6 +12276,7 @@ getAppIconMarkup(app) +
           body.innerHTML = "";
         }
         lastUniversalLogCount = 0;
+        lastRenderedLastLine = "";
         const badge = document.getElementById("universal-log-count");
         if (badge) {
           badge.textContent = "0";
@@ -12321,7 +12289,7 @@ getAppIconMarkup(app) +
 
     if (universalLogPollingTimer) clearInterval(universalLogPollingTimer);
     pollUniversalLogs();
-    universalLogPollingTimer = setInterval(pollUniversalLogs, 800);
+    universalLogPollingTimer = setInterval(pollUniversalLogs, 400);
   }
 
   // Global window exports
