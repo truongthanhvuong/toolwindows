@@ -131,7 +131,7 @@ Write-Host ">>> Trinh bien dich C#: $cscPath" -ForegroundColor Cyan
 # NGOAI TRU win.ps1 va vuongtt.ps1 (chay qua irm ... | iex) BAT BUOC phai la UTF-8 No BOM de khong bi loi char 65279 (\uFEFF)
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)
 $textFilesToEnforce = Get-ChildItem -Path $RootDir -Recurse -Include "*.ps1", "*.xaml", "*.json", "*.cs" -File | Where-Object {
-    $_.FullName -notmatch "\\\.git\\" -and $_.Name -ne "win.ps1" -and $_.Name -ne "vuongtt.ps1"
+    $_.FullName -notmatch "\\\.git\\" -and $_.Name -ne "win.ps1" -and $_.Name -ne "vuongtt.ps1" -and $_.Name -ne "applications.json" -and $_.Name -ne "uwp_presets.json" -and $_.Name -ne "TroubleshootDatabase.json"
 }
 foreach ($tf in $textFilesToEnforce) {
     try {
@@ -143,10 +143,9 @@ foreach ($tf in $textFilesToEnforce) {
     } catch {}
 }
 
-# win.ps1 va vuongtt.ps1 la bootstrapper cloud duoc goi qua irm ... | iex.
-# BAT BUOC phai luu dang UTF-8 KHONG BOM (UTF-8 No BOM) de tranh loi parser char 65279 (\uFEFF) trong PowerShell 5.1!
+# win.ps1, vuongtt.ps1 va cac file JSON du lieu tinh BAT BUOC phai luu dang UTF-8 KHONG BOM (UTF-8 No BOM)
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-@("win.ps1", "vuongtt.ps1") | ForEach-Object {
+@("win.ps1", "vuongtt.ps1", "src-ui\applications.json", "src-ui\uwp_presets.json", "src\Data\TroubleshootDatabase.json") | ForEach-Object {
     $fPath = Join-Path $RootDir $_
     if (Test-Path $fPath) {
         $rawText = [System.IO.File]::ReadAllText($fPath, [System.Text.Encoding]::UTF8)

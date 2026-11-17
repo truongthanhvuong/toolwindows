@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.172";
+pub const APP_VERSION: &str = "20.5.909.173";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -508,7 +508,8 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         json_resp = format!(r#"{{"success":true,"data":{}}}"#, sanitized);
     } else if cmd == "get_installed_apps" {
         let (success, msg) = system_ops::execute_system_action("get_installed_apps", body);
-        json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, if msg.is_empty() { "[]" } else { &msg });
+        let valid_data = if !success || (!msg.starts_with('[') && !msg.starts_with('{')) { "[]" } else { &msg };
+        json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, valid_data);
     } else if cmd == "run_system_action" {
         let act_id = system_ops::extract_json_field(body, "actionId")
             .unwrap_or("general");
@@ -739,12 +740,12 @@ mod tests {
     }
 
     #[test]
-    fn test_run_system_action_check_winsxs_size_fails_closed() {
+    fn test_run_system_action_check_winsxs_size() {
         let flag = AtomicBool::new(true);
         let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"check_winsxs_size\"}";
         let resp = route_ipc_request(req, &flag);
-        assert!(resp.contains("\"success\":false"), "check_winsxs_size must return success=false: {}", resp);
-        assert!(resp.contains("không tồn tại"), "Expected action not found error: {}", resp);
+        assert!(resp.contains("\"success\":true"), "check_winsxs_size must return success=true: {}", resp);
+        assert!(resp.contains("WinSxS"), "Expected WinSxS in response: {}", resp);
     }
 
     #[test]

@@ -231,6 +231,7 @@ function Get-VUONGTTOfficeDeploymentTool {
     # Kỹ thuật 3 (Fallback cuối cùng): Tải trực tiếp file setup.exe từ kho CDN GitHub
     if (-not (Test-Path $setupExe)) {
         try {
+            $ghUrl = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/src/Assets/setup.exe"
             if ($OnProgress) { & $OnProgress "Đang tải file setup.exe dự phòng từ CDN GitHub..." }
             if (Get-Command Start-VUONGTTResponsiveDownload -ErrorAction SilentlyContinue) {
                 Start-VUONGTTResponsiveDownload -Uri $ghUrl -OutFile $setupExe -OnProgress $OnProgress | Out-Null

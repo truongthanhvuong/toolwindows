@@ -324,7 +324,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 text-[15px] tracking-tight">VUONGTT Toolkit</span>
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.172</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.173</span>
       </div>
     </div>
 
@@ -347,7 +347,7 @@
         <button id="btn-lang-vn"></button>
         <button id="btn-lang-en"></button>
         <button id="btn-theme-dark"></button>
-        <button id="cb-deploy-backup-drivers"></button>
+        <button id="btn-lang-driver-backup"></button>
       </div>
 
       <!-- Settings Icon -->
@@ -516,7 +516,7 @@
         </button>
 
         <!-- 20. Extend Features -->
-        <button data-target="view-tech-driver" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+        <button data-target="view-tech-driver" onclick="switchView('view-tech-driver')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
           <span class="material-symbols-outlined text-[19px] text-slate-500">extension</span>
           <span>Tiện Ích Kỹ Thuật</span>
         </button>
@@ -524,7 +524,7 @@
 
       <!-- Admin Portal button (VIP bottom) -->
       <div class="pt-2 border-t border-slate-200/50">
-        <button id="nav-item-admin" onclick="openAdminPortal()" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/60 w-full text-left transition-all shadow-2xs">
+        <button id="nav-item-admin" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/60 w-full text-left transition-all shadow-2xs">
           <span class="material-symbols-outlined text-[16px] text-purple-600">admin_panel_settings</span>
           <span class="flex-1">Admin Portal</span>
           <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-600 text-white">VIP</span>
@@ -934,7 +934,7 @@
                   <span class="text-slate-500 font-medium">Chế độ tối ưu:</span>
                   <span id="active-preset-label" class="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-semibold text-[11px]">Super Lean Pro 2026</span>
                 </div>
-                <button id="btn-apply-tweaks" onclick="runToolkitAction('apply_tweaks')" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs">
+                <button id="btn-apply-tweaks" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs">
                   Áp Dụng Tùy Chọn
                 </button>
               </div>
@@ -1067,7 +1067,7 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Sensor Services" data-desc-en="Disables Windows orientation and ambient light sensors to save battery and RAM." data-desc-vi="Tắt cảm biến xoay và ánh sáng màn hình nhằm tiết kiệm pin và bộ nhớ.">
                   <span class="text-slate-700">Disable Sensor Services</span>
-                  <div class="switch-toggle"><input type="checkbox"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-tweak-sensor-svc" data-tweak="disable_sensor_svc" onchange="runToolkitAction('disable_sensor_svc')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable TPM 2.0 Check" data-desc-en="Bypasses TPM 2.0 hardware requirement during Windows installation and upgrades." data-desc-vi="Bỏ qua yêu cầu kiểm tra TPM 2.0 khi cài đặt và nâng cấp Windows.">
                   <span class="text-slate-700">Disable TPM 2.0 Check</span>
@@ -1075,7 +1075,7 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable VBS" data-desc-en="Disables Virtualization-Based Security to maximize gaming frame rates and CPU performance." data-desc-vi="Tắt bảo mật ảo hóa VBS để tối đa hóa số khung hình chơi game và hiệu năng CPU.">
                   <span class="text-slate-700">Disable Virtualization Based Security</span>
-                  <div class="switch-toggle"><input type="checkbox"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-tweak-vbs" data-tweak="disable_vbs" onchange="runToolkitAction('disable_vbs')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enable Long Paths" data-desc-en="Removes the 260 character limit for file paths in Windows." data-desc-vi="Bỏ giới hạn 260 ký tự cho đường dẫn tệp tin trong Windows.">
                   <span class="text-slate-700">Enable Long Paths</span>
@@ -1097,15 +1097,15 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enhance Privacy" data-desc-en="Applies strict privacy settings across advertising ID, location, and tracking." data-desc-vi="Áp dụng cấu hình quyền riêng tư nghiêm ngặt cho ID quảng cáo, vị trí và theo dõi.">
                   <span class="text-slate-700">Enhance Privacy</span>
-                  <div class="switch-toggle"><input type="checkbox" checked/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-tweak-privacy" data-tweak="enhance_privacy" checked onchange="runToolkitAction('enhance_privacy')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Cortana" data-desc-en="Disables Microsoft Cortana assistant from running in the background." data-desc-vi="Vô hiệu hóa trợ lý Cortana chạy ngầm gây hao tốn tài nguyên.">
                   <span class="text-slate-700">Disable Cortana</span>
-                  <div class="switch-toggle"><input type="checkbox" checked/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-tweak-cortana" data-tweak="disable_cortana" checked onchange="runToolkitAction('disable_cortana')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Start Menu Ads" data-desc-en="Removes suggested apps and sponsored promotions from the Start Menu." data-desc-vi="Loại bỏ các ứng dụng gợi ý và quảng cáo tài trợ trên Start Menu.">
                   <span class="text-slate-700">Disable Start Menu Ads</span>
-                  <div class="switch-toggle"><input type="checkbox"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-tweak-start-ads" data-tweak="disable_start_ads" onchange="runToolkitAction('disable_start_ads')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Copilot & Recall" data-desc-en="Disables Microsoft Copilot AI and Windows Recall snapshot recording." data-desc-vi="Tắt trí tuệ nhân tạo Copilot và tính năng chụp màn hình tự động Windows Recall.">
                   <span class="text-slate-700">Disable Copilot &amp; Recall</span>
@@ -1123,11 +1123,11 @@
               <div class="grid grid-cols-2 gap-3 text-xs">
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enable Gaming Mode" data-desc-en="Prioritizes CPU and GPU resources exclusively for full-screen games." data-desc-vi="Ưu tiên toàn bộ tài nguyên CPU và GPU cho các tựa game toàn màn hình.">
                   <span class="text-slate-700">Enable Gaming Mode</span>
-                  <div class="switch-toggle"><input type="checkbox"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-tweak-game-mode" data-tweak="enable_game_mode" onchange="runToolkitAction('enable_game_mode')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Xbox Live" data-desc-en="Disables Xbox background services if you do not use Xbox Game Pass." data-desc-vi="Tắt các dịch vụ Xbox chạy ngầm nếu bạn không dùng gói Xbox Game Pass.">
                   <span class="text-slate-700">Disable Xbox Live</span>
-                  <div class="switch-toggle"><input type="checkbox"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-tweak-xbox-live" data-tweak="disable_xbox_live" onchange="runToolkitAction('disable_xbox_live')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Enable Ultimate Performance" data-desc-en="Unlocks the hidden Ultimate Performance power scheme for zero throttling." data-desc-vi="Mở khóa gói nguồn Ultimate Performance giảm tối đa độ trễ phần cứng.">
                   <span class="text-slate-700">Enable Ultimate Performance</span>
@@ -1135,7 +1135,7 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer tweak-item" data-title="Disable Mouse Acceleration" data-desc-en="Enables 1:1 raw mouse input without Windows dynamic pointer acceleration curve." data-desc-vi="Bật chuột chuẩn 1:1, loại bỏ gia tốc con trỏ động của Windows.">
                   <span class="text-slate-700">Disable Mouse Acceleration</span>
-                  <div class="switch-toggle"><input type="checkbox"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-tweak-mouse-accel" data-tweak="disable_mouse_accel" onchange="runToolkitAction('disable_mouse_accel')"/><span class="slider"></span></div>
                 </label>
               </div>
             </div>
@@ -1517,9 +1517,9 @@
           </div>
 
           <!-- Hidden containers for audit compatibility -->
-          <div id="subview-soft-custom" class="hidden"></div>
-          <div id="subview-soft-uninstall" class="hidden"></div>
-          <div id="subview-soft-fonts" class="hidden"></div>
+          <div id="subview-soft-custom" class="hidden"><button id="tab-soft-custom"></button></div>
+          <div id="subview-soft-uninstall" class="hidden"><button id="tab-soft-uninstall"></button></div>
+          <div id="subview-soft-fonts" class="hidden"><button id="tab-soft-fonts"></button></div>
         </div>
       </div>
 
@@ -1634,13 +1634,12 @@
               <div class="font-bold text-slate-800 text-sm mb-2">Ping IP to check network latency</div>
               <div class="flex items-center gap-2 mb-3">
                 <input id="input-ping-host" type="text" placeholder="Type the IP or Domain name (e.g. 8.8.8.8, google.com)..." class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
-                <button onclick="runToolkitAction('ping_test')" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold">Ping</button>
+                <button id="btn-test-ping" onclick="handlePingTest()" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold">Ping</button>
               </div>
-              <div class="p-3 rounded-lg bg-slate-900 text-emerald-400 font-mono text-[11px] h-24 overflow-y-auto">
-                Reply from 8.8.8.8: bytes=32 time=12ms TTL=117<br/>
-                Reply from 8.8.8.8: bytes=32 time=11ms TTL=117<br/>
-                Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)
-              </div>
+              <div id="ping-test-output" class="p-3 rounded-lg bg-slate-900 text-emerald-400 font-mono text-[11px] h-24 overflow-y-auto whitespace-pre-wrap">Pinging 8.8.8.8 with 32 bytes of data:
+Reply from 8.8.8.8: bytes=32 time=12ms TTL=117
+Reply from 8.8.8.8: bytes=32 time=11ms TTL=117
+Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)</div>
             </div>
           </div>
 
@@ -1737,10 +1736,58 @@
       </div>
 
       <!-- ========================================== -->
-      <!-- VIEW 10: HARDWARE INFO (view-oem-brand)    -->
+      <!-- VIEW 7: S.M.A.R.T DISK (view-disk-smart)   -->
+      <!-- ========================================== -->
+      <div id="view-disk-smart" class="stitch-view">
+        <div class="p-4 space-y-4 overflow-y-auto h-full">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 text-[20px]">hard_drive</span> Sức Khỏe &amp; Thông Tin Ổ Đĩa (S.M.A.R.T)
+              </h2>
+              <p class="text-xs text-slate-500">Giám sát thông số kỹ thuật, nhiệt độ và tình trạng sức khỏe ổ cứng vật lý</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <select id="disk-select" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-700 outline-none w-64"></select>
+              <button class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shadow-xs flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">refresh</span>
+                <span>Quét Lại</span>
+              </button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="glass-card p-4">
+              <span class="text-xs text-slate-400">Tình Trạng Sức Khỏe</span>
+              <div class="font-display-lg text-2xl font-bold text-emerald-600 mt-1">100%</div>
+            </div>
+            <div class="glass-card p-4">
+              <span class="text-xs text-slate-400">Model Ổ Đĩa</span>
+              <div id="disk-model-name" class="text-sm font-semibold text-slate-800 mt-1">-</div>
+            </div>
+            <div class="glass-card p-4">
+              <span class="text-xs text-slate-400">Chuẩn Giao Tiếp</span>
+              <div id="disk-media-type" class="text-sm font-semibold text-slate-800 mt-1">-</div>
+            </div>
+            <div class="glass-card p-4">
+              <span class="text-xs text-slate-400">Dung Lượng Tổng</span>
+              <div id="disk-capacity-val" class="text-sm font-semibold text-slate-800 mt-1">-</div>
+            </div>
+          </div>
+          <div class="glass-card p-4">
+            <h3 class="text-sm font-bold text-slate-700 mb-3">Danh Sách Phân Vùng</h3>
+            <div id="disk-partitions-list" class="space-y-2 text-xs"></div>
+          </div>
+          <div class="glass-card p-4">
+            <h3 class="text-sm font-bold text-slate-700 mb-3">Thuộc Tính S.M.A.R.T Chi Tiết</h3>
+            <div id="disk-smart-attrs" class="overflow-x-auto text-xs text-slate-600 font-mono">Trạng thái cảm biến: TỐT (S.M.A.R.T Status: OK, Nhiệt độ 34°C, 0 Bad Sectors)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 10: HARDWARE INFO & OEM (view-oem-brand) -->
       <!-- ========================================== -->
       <div id="view-oem-brand" class="stitch-view">
-        <div id="view-disk-smart" class="hidden"></div>
         <div class="grid grid-cols-12 gap-4 h-full">
           <div class="col-span-12 lg:col-span-8 flex flex-col gap-3 overflow-y-auto pr-1">
             <div class="glass-card p-3 flex items-center justify-between">
@@ -1800,17 +1847,53 @@
             </div>
           </div>
 
-          <!-- Right Description Panel -->
-          <div class="col-span-12 lg:col-span-4 h-full">
-            <div class="glass-card p-5 h-full flex flex-col">
-              <div class="font-bold text-slate-800 text-sm mb-2">Description:</div>
-              <p class="text-xs text-slate-600 leading-relaxed mb-6">
-                Get a clear snapshot of your entire hardware in one place.
-              </p>
-              <div class="font-bold text-slate-800 text-sm mb-2">Mô tả:</div>
-              <p class="text-xs text-slate-600 leading-relaxed">
-                Tính năng này giúp tổng hợp thông tin phần cứng của máy bạn và hiển thị trực quan hơn.
-              </p>
+          <!-- Right Description & OEM Branding Panel -->
+          <div class="col-span-12 lg:col-span-4 h-full flex flex-col gap-3 overflow-y-auto pr-1">
+            <div class="glass-card p-4 flex flex-col gap-3">
+              <div class="font-bold text-slate-800 text-sm pb-2 border-b border-slate-100 flex items-center justify-between">
+                <span>Tùy Chỉnh OEM &amp; Thương Hiệu</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-700">Registry</span>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div>
+                  <label class="block text-slate-600 font-medium mb-1">Nhà Sản Xuất (Manufacturer)</label>
+                  <input id="input-manufacturer" type="text" placeholder="e.g. Dell Inc., ASUS, HP" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                </div>
+                <div>
+                  <label class="block text-slate-600 font-medium mb-1">Model Thiết Bị (Model)</label>
+                  <input id="input-model" type="text" placeholder="e.g. XPS 15 9520, ROG Zephyrus" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-slate-600 font-medium mb-1">Điện Thoại Hỗ Trợ</label>
+                    <input id="input-phone" type="text" placeholder="1800-xxxx" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                  </div>
+                  <div>
+                    <label class="block text-slate-600 font-medium mb-1">Giờ Hỗ Trợ</label>
+                    <input id="input-hours" type="text" placeholder="24/7 Support" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-slate-600 font-medium mb-1">Website Hỗ Trợ (URL)</label>
+                  <input id="input-url" type="text" placeholder="https://support.example.com" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-slate-600 font-medium mb-1">Chủ Sở Hữu (Owner)</label>
+                    <input id="input-owner" type="text" placeholder="Windows User" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                  </div>
+                  <div>
+                    <label class="block text-slate-600 font-medium mb-1">Tổ Chức (Org)</label>
+                    <input id="input-org" type="text" placeholder="WORKGROUP" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none"/>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 pt-2">
+                  <button onclick="applyOEMChanges()" class="flex-1 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs shadow-xs text-center">Ghi Registry</button>
+                  <button onclick="backupRegistry()" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium">Sao Lưu</button>
+                  <button onclick="resetDefaults()" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium">Mặc Định</button>
+                </div>
+                <div id="console-log-msg" class="text-[11px] text-slate-500 font-mono mt-1 truncate">Sẵn sàng thiết lập thông tin OEM.</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1864,7 +1947,7 @@
                 <div class="text-[11px] text-slate-400 mb-2">Enter a product key to activate Windows.</div>
                 <div class="flex items-center gap-2 mb-3">
                   <input id="input-license-key" type="text" placeholder="Enter product key..." class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-mono outline-none"/>
-                  <button onclick="runToolkitAction('activate_windows')" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold">Activate</button>
+                  <button id="btn-activate-license-key" onclick="handleActivateWithKey()" class="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold">Activate</button>
                 </div>
               </div>
             </div>
@@ -1955,16 +2038,16 @@
               <div class="font-bold text-slate-800 text-xs mb-2">3. Choose Target Edition</div>
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <label class="p-2.5 rounded-lg border border-slate-200 bg-white/60 flex items-center justify-between cursor-pointer">
-                  <span>Home</span><input type="radio" name="target_ed" class="w-4 h-4 text-sky-600 accent-sky-600"/>
+                  <span>Home</span><input type="radio" name="target_ed" value="Home" class="w-4 h-4 text-sky-600 accent-sky-600"/>
                 </label>
                 <label class="p-2.5 rounded-lg border border-sky-500 bg-sky-50/50 flex items-center justify-between cursor-pointer">
-                  <span class="font-semibold text-slate-800">Pro</span><input type="radio" name="target_ed" checked class="w-4 h-4 text-sky-600 accent-sky-600"/>
+                  <span class="font-semibold text-slate-800">Pro</span><input type="radio" name="target_ed" value="Pro" checked class="w-4 h-4 text-sky-600 accent-sky-600"/>
                 </label>
                 <label class="p-2.5 rounded-lg border border-slate-200 bg-white/60 flex items-center justify-between cursor-pointer">
-                  <span>Enterprise</span><input type="radio" name="target_ed" class="w-4 h-4 text-sky-600 accent-sky-600"/>
+                  <span>Enterprise</span><input type="radio" name="target_ed" value="Enterprise" class="w-4 h-4 text-sky-600 accent-sky-600"/>
                 </label>
                 <label class="p-2.5 rounded-lg border border-slate-200 bg-white/60 flex items-center justify-between cursor-pointer">
-                  <span>IoT Enterprise</span><input type="radio" name="target_ed" class="w-4 h-4 text-sky-600 accent-sky-600"/>
+                  <span>IoT Enterprise</span><input type="radio" name="target_ed" value="IoTEnterprise" class="w-4 h-4 text-sky-600 accent-sky-600"/>
                 </label>
               </div>
             </div>
@@ -2354,7 +2437,7 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer">
                   <span>Vietnamese Time Format</span>
-                  <div class="switch-toggle"><input type="checkbox" checked/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-driver-vn-time" checked onchange="runToolkitAction('vietnamese_time_format')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer">
                   <span>"Take Ownership" in Right click</span>
@@ -2362,7 +2445,7 @@
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer">
                   <span>Disable UAC</span>
-                  <div class="switch-toggle"><input type="checkbox"/><span class="slider"></span></div>
+                  <div class="switch-toggle"><input type="checkbox" id="cb-driver-disable-uac" onchange="runToolkitAction('disable_uac')"/><span class="slider"></span></div>
                 </label>
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-white/60 cursor-pointer">
                   <span>"God Mode" in Right click</span>
@@ -3677,7 +3760,7 @@ Chọn phân vùng và thao tác mong muốn...
             <span class="material-symbols-outlined text-sky-600 text-[26px]">sync</span>
             <div>
               <div class="font-bold text-slate-800 text-xs">Check for updates</div>
-              <div class="text-[11px] text-slate-500">VERSION INFORMATION v20.5.909.152 Official</div>
+              <div class="text-[11px] text-slate-500">VERSION INFORMATION v20.5.909.173 Official</div>
             </div>
           </div>
           <button onclick="window.triggerManualUpdate()" class="px-4 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs">
@@ -3693,7 +3776,7 @@ Chọn phân vùng và thao tác mong muốn...
               <div class="font-bold text-slate-800 text-xs mb-1">About VUONGTT Toolkit</div>
               <div class="text-[11px] text-slate-600 space-y-1 mb-3">
                 <div><strong>Tác giả:</strong> Trương Thanh Vương</div>
-                <div><strong>Phiên bản:</strong> v20.5.909.152 Official</div>
+                <div><strong>Phiên bản:</strong> v20.5.909.173 Official</div>
                 <div><strong>Nền tảng:</strong> Rust Native + WebView2 (0% CPU)</div>
                 <div><strong>Kho mã nguồn:</strong> truongthanhvuong/toolwindows</div>
               </div>

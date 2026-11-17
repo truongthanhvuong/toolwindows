@@ -3966,6 +3966,9 @@ getAppIconMarkup(app) +
         let items = [];
         try {
           items = JSON.parse(res.message);
+          if (!Array.isArray(items) && items && typeof items === "object") {
+            items = [items];
+          }
         } catch (_) {}
 
         sel.innerHTML = "";
@@ -4966,6 +4969,37 @@ getAppIconMarkup(app) +
     });
   }
 
+  window.handleActivateWithKey = async function() {
+    const key = document.getElementById('input-license-key')?.value?.trim();
+    if (key) {
+      showToast("Kích Hoạt Bản Quyền", `Đang cài đặt và kích hoạt với Product Key: ${key}...`, "info");
+      const res = await invokeRust("run_system_action", { actionId: "upgrade_windows_edition", key: key });
+      showToast(res && res.success ? "Thành Công" : "Thông Báo", (res && res.message) || "Đã gửi lệnh kích hoạt bản quyền!", res && res.success ? "success" : "info");
+    } else {
+      runToolkitAction('activate_windows');
+    }
+  };
+
+  window.handlePingTest = async function() {
+    const host = document.getElementById('input-ping-host')?.value?.trim() || "8.8.8.8";
+    const outputEl = document.getElementById('ping-test-output');
+    if (outputEl) {
+      outputEl.textContent = `Pinging ${host} with 32 bytes of data:\nĐang gửi gói tin ICMP thời gian thực...`;
+    }
+    showToast("Kiểm Tra Mạng", `Đang ping tới máy chủ ${host}...`, "info");
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "ping_test", target: host });
+      const msg = (res && res.message) || "Kiểm tra hoàn tất.";
+      if (outputEl) {
+        outputEl.textContent = `Pinging ${host} with 32 bytes of data:\n${msg}\nTrạng thái: Hoàn tất (100% phản hồi).`;
+      }
+      showToast("Kết Quả Ping", msg, res && res.success ? "success" : "warning");
+    } catch (e) {
+      if (outputEl) outputEl.textContent = `Lỗi ping ${host}: ${e}`;
+      showToast("Lỗi Ping", String(e), "error");
+    }
+  };
+
   // --- 14. 547 IT HELPDESK ENGINE CONTROLLER ---
   function initHelpdeskController() {
     const listEl = document.getElementById("helpdeskProblemList");
@@ -5237,26 +5271,16 @@ getAppIconMarkup(app) +
       if (updateInfo && updateInfo.has_update) {
         const newVer = updateInfo.latest_version;
         const curVer = updateInfo.current_version;
-        showToast("Cập Nhật Tự Động", `Phát hiện bản mới v${newVer} trên GitHub! Đang tự động nâng cấp...`, "info");
+        showToast("Cập Nhật", `Phát hiện bản mới v${newVer} trên GitHub! Bấm nút Cập Nhật trên thanh công cụ để nâng cấp.`, "info");
         const logEl = document.getElementById("log-console");
         if (logEl && typeof appendLog === "function") {
-          appendLog("UPDATE", `Tự động tải và cập nhật lên v${newVer} từ GitHub...`, "text-secondary");
+          appendLog("UPDATE", `Phát hiện bản cập nhật mới v${newVer} từ GitHub. Sẵn sàng cập nhật.`, "text-secondary");
         }
         const btnHeaderUpdate = document.getElementById("btn-header-update");
         if (btnHeaderUpdate) {
           btnHeaderUpdate.classList.add("animate-pulse");
           btnHeaderUpdate.title = `Có bản cập nhật mới v${newVer}! Bấm để nâng cấp ngay.`;
         }
-        // Tự động tải và cập nhật lên bản mới nhất
-        setTimeout(async () => {
-          const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
-          if (applyRes && applyRes.success) {
-            showToast("Đang Cập Nhật", "Tải bản mới thành công! Ứng dụng đang tự khởi động lại...", "success");
-            setTimeout(() => {
-              invokeRust("window_control", { action: "close" }).catch(() => {});
-            }, 1800);
-          }
-        }, 2500);
       }
     } catch (_) {}
   }

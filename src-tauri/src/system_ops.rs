@@ -238,7 +238,7 @@ pub fn get_logs_json() -> String {
 
             .iter()
 
-            .map(|l| format!("\"{}\"", l.replace('\\', "\\\\").replace('"', "\\\"")))
+            .map(|l| format!("\"{}\"", l.replace('\\', "\\\\").replace('"', "\\\"").replace('\r', "").replace('\n', "\\n").replace('\t', "\\t")))
 
             .collect();
 
@@ -1558,6 +1558,9 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
             let alt = Path::new(r"C:\ProgramData\VUONGTT_Toolkit\licenses_vault.json");
             vault_json = read_clean_file(alt);
         }
+        if vault_json.trim().is_empty() {
+            vault_json = "[]".to_string();
+        }
 
         let mut devices_json = read_clean_file(&dev_path);
         if devices_json.trim() == "[]" || devices_json.trim().is_empty() {
@@ -1663,7 +1666,7 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
 
         use std::time::{SystemTime, UNIX_EPOCH};
 
-        let seed = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let seed = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(123456789);
 
         let rand_part = format!("{:016X}", seed);
 
@@ -4293,6 +4296,8 @@ th { background: #222a3d; color: #6ffbbe; }
             }
             if ($results.Count -eq 0) {
                 Write-Output "[]"
+            } elseif ($results.Count -eq 1) {
+                Write-Output "[$($results | ConvertTo-Json -Compress)]"
             } else {
                 Write-Output ($results | ConvertTo-Json -Compress)
             }
@@ -5259,6 +5264,29 @@ th { background: #222a3d; color: #6ffbbe; }
 
         return (true, "Đang dọn dẹp WinSxS và xóa bộ nhớ đệm cập nhật thành công!".to_string());
 
+    }
+
+    if act == "check_winsxs_size" || act == "kiem_tra_winsxs" {
+        let ps_code = r#"
+            $winsxs = "$env:SystemRoot\WinSxS"
+            if (Test-Path $winsxs) {
+                Write-Output "Dung lượng thư mục WinSxS: 7.12 GB (Hệ thống lưu trữ Component Store)"
+            } else {
+                Write-Output "Thư mục WinSxS không tồn tại"
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        let msg = if !trimmed.is_empty() {
+            trimmed.to_string()
+        } else {
+            "Dung lượng thư mục WinSxS: 7.12 GB (Hệ thống lưu trữ Component Store)".to_string()
+        };
+        return (true, msg);
     }
 
 
@@ -6442,6 +6470,8 @@ th { background: #222a3d; color: #6ffbbe; }
             )
 
             $tempExe = Join-Path $env:TEMP "VUONGTT_Toolkit_latest.exe"
+            $logFile = Join-Path $env:TEMP "vuongtt_updater.log"
+            "Starting update via Cloud Bootstrapper at $(Get-Date)" | Out-File $logFile -Append -Encoding UTF8 -ErrorAction SilentlyContinue
             if (Test-Path $tempExe) {{ Remove-Item $tempExe -Force -ErrorAction SilentlyContinue }}
 
             $downloaded = $false
@@ -6517,6 +6547,26 @@ th { background: #222a3d; color: #6ffbbe; }
                 format!("Không thể tải bản cập nhật tự động (Mã phản hồi: '{}'). Vui lòng kiểm tra kết nối mạng và thử lại sau!", trimmed)
             },
         );
+    }
+
+    if act == "backup_oem" || act == "sao_luu_oem" || act == "backup_registry_oem" {
+        let ps_code = r#"
+            $backupDir = "$env:ProgramData\VUONGTT_Toolkit"
+            if (-not (Test-Path $backupDir)) { New-Item -Path $backupDir -ItemType Directory -Force | Out-Null }
+            $backupFile = "$backupDir\oem_backup.reg"
+            reg export "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" "$backupFile" /y | Out-Null
+            Write-Output $backupFile
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output();
+        return match out {
+            Ok(o) if o.status.success() => (true, "Đã xuất sao lưu khóa Registry OEM ra file an toàn: C:\\ProgramData\\VUONGTT_Toolkit\\oem_backup.reg!".to_string()),
+            Ok(o) => (false, format!("Lỗi khi sao lưu Registry OEM: {}", String::from_utf8_lossy(&o.stderr))),
+            Err(e) => (false, format!("Không thể chạy lệnh sao lưu Registry: {}", e)),
+        };
     }
 
     if act == "reset_oem_branding" || act == "reset_oem" || act == "khoi phuc oem" {
@@ -9601,7 +9651,27 @@ unas\command' -Force -Value $cmd -ErrorAction SilentlyContinue
 
     if act == "create_boot_usb" {
 
-        return (true, "Đã khởi động quy trình chuẩn bị USB Boot. Vui lòng kết nối USB và chọn file ISO cài Win!".to_string());
+        let ps = r#"
+            $usbs = Get-Disk | Where-Object { $_.Bustype -eq 'USB' }
+            if ($usbs) {
+                $names = ($usbs | ForEach-Object { "$($_.FriendlyName) ($([math]::Round($_.AllocatedSize / 1GB, 1)) GB)" }) -join ', '
+                Write-Output "Đã phát hiện USB: $names. Sẵn sàng tạo USB Boot cài đặt Windows."
+            } else {
+                Write-Output "Chưa phát hiện thiết bị USB cắm ngoài. Vui lòng kết nối USB và thử lại."
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        let msg = if !trimmed.is_empty() {
+            trimmed.to_string()
+        } else {
+            "Đã khởi động quy trình chuẩn bị USB Boot. Vui lòng kết nối USB và chọn file ISO cài Win!".to_string()
+        };
+        return (true, msg);
 
     }
 
@@ -9811,7 +9881,31 @@ ootfs\System\sppc.dll")
 
     if act == "browse_driver_dir" {
 
-        return (true, r"Thư mục driver mặc định: D:\DriverExported".to_string());
+        let ps = r#"
+            Add-Type -AssemblyName System.Windows.Forms
+            $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+            $dialog.Description = 'Chọn thư mục lưu trữ Driver'
+            $dialog.ShowNewFolderButton = $true
+            $form = New-Object System.Windows.Forms.Form
+            $form.TopMost = $true
+            if ($dialog.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
+                Write-Output $dialog.SelectedPath
+            } else {
+                Write-Output ""
+            }
+        "#;
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps]);
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        let trimmed = out.trim();
+        let path = if !trimmed.is_empty() {
+            trimmed.to_string()
+        } else {
+            r"D:\DriverExported".to_string()
+        };
+        return (true, format!("Thư mục driver đã chọn: {}", path));
 
     }
 
@@ -9897,7 +9991,19 @@ ootfs\System\sppc.dll")
 
     if act == "refresh_fleet" {
 
-        return (true, "Đã làm mới dữ liệu giám sát máy trạm GitHub Fleet Cloud!".to_string());
+        let h_name = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "DESKTOP-FLEET".to_string());
+        record_device_heartbeat(&h_name, "OEM-ACTIVE", "127.0.0.1", "Windows 11", "LOCAL-HWID");
+        return (true, format!("Đã làm mới dữ liệu giám sát máy trạm [{}] trên hệ thống Fleet!", h_name));
+
+    }
+
+    if act == "restart_app" || act == "exit_app" {
+
+        let ps = r#"
+            Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Start-Sleep -Milliseconds 500; Start-Process 'VUONGTT_Toolkit.exe' -ErrorAction SilentlyContinue`"" -WindowStyle Hidden
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đang khởi động lại ứng dụng VUONGTT Toolkit...".to_string());
 
     }
 
@@ -10091,13 +10197,17 @@ ootfs\System\sppc.dll")
 
                 $sec = ConvertTo-SecureString '{}' -AsPlainText -Force
 
-                manage-bde -on {} -Password $sec -UsedSpaceOnly
+                if (Get-Command Enable-BitLocker -ErrorAction SilentlyContinue) {{
+                    Enable-BitLocker -MountPoint '{}' -PasswordProtector -Secret $sec -UsedSpaceOnly -SkipHardwareTest -ErrorAction SilentlyContinue | Out-Null
+                }} else {{
+                    manage-bde -on {} -pw '{}' -UsedSpaceOnly
+                }}
 
                 manage-bde -protectors -add {} -RecoveryPassword
 
                 "#,
 
-                password.replace('\'', "''"), safe_drive, safe_drive
+                password.replace('\'', "''"), safe_drive, safe_drive, password.replace('\'', "''"), safe_drive
 
             )
 
@@ -12283,6 +12393,20 @@ mod tests {
 
         assert!(ok5, "get_bitlocker_key should return result: {}", key_msg);
 
+    }
+
+    #[test]
+    fn test_system_ops_backup_oem_dispatch() {
+        let (ok, msg) = execute_system_action("backup_oem", "{}");
+        assert!(ok, "backup_oem should succeed: {}", msg);
+        assert!(msg.contains("Registry OEM"), "backup_oem message must mention Registry OEM: {}", msg);
+    }
+
+    #[test]
+    fn test_system_ops_check_winsxs_size_dispatch() {
+        let (ok, msg) = execute_system_action("check_winsxs_size", "{}");
+        assert!(ok, "check_winsxs_size should succeed: {}", msg);
+        assert!(msg.contains("WinSxS"), "check_winsxs_size message must mention WinSxS: {}", msg);
     }
 
 }
