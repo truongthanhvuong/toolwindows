@@ -11690,10 +11690,17 @@ getAppIconMarkup(app) +
     { id: 'linkedin', name: 'LinkedIn', cat: 'social' },
     { id: 'telegram', name: 'Telegram', cat: 'social' },
     { id: 'discord', name: 'Discord', cat: 'social' },
+    { id: 'zalo', name: 'Zalo', cat: 'social' },
+    { id: 'netflix', name: 'Netflix', cat: 'social' },
+    { id: 'spotify', name: 'Spotify', cat: 'social' },
     { id: 'roblox', name: 'Roblox', cat: 'game' },
     { id: 'garena', name: 'Garena', cat: 'game' },
     { id: 'steam', name: 'Steam', cat: 'game' },
-    { id: 'riot', name: 'Riot Games', cat: 'game' }
+    { id: 'riot', name: 'Riot Games', cat: 'game' },
+    { id: 'epicgames', name: 'Epic Games', cat: 'game' },
+    { id: 'hoyoverse', name: 'Genshin / Hoyo', cat: 'game' },
+    { id: 'pubg', name: 'PUBG', cat: 'game' },
+    { id: 'minecraft', name: 'Minecraft', cat: 'game' }
   ];
 
   let selectedBlockPlatforms = new Set();
@@ -11790,6 +11797,9 @@ getAppIconMarkup(app) +
   };
 
   window.applyBlockRules = async function() {
+    if (typeof openUniversalLog === "function") {
+      openUniversalLog();
+    }
     const customText = document.getElementById('input-custom-blocked-domains')?.value || '';
     const platformsArr = Array.from(selectedBlockPlatforms);
 
@@ -11810,11 +11820,17 @@ getAppIconMarkup(app) +
     } else {
       showToast("Lỗi", (res && res.message) || "Không thể áp dụng quy tắc chặn", "error");
     }
+    if (typeof pollUniversalLogs === "function") {
+      pollUniversalLogs();
+    }
   };
 
   window.unblockAllRules = async function() {
     if (!confirm("Bạn có chắc chắn muốn gỡ chặn toàn bộ website & game trên máy tính này?")) {
       return;
+    }
+    if (typeof openUniversalLog === "function") {
+      openUniversalLog();
     }
 
     showToast("Đang Gỡ Chặn", "Đang gỡ bỏ quy tắc và làm mới DNS...", "info");

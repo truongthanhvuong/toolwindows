@@ -2606,7 +2606,7 @@
 
 
 
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.182</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.183</span>
 
 
 
@@ -13666,6 +13666,42 @@ Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)</div>
 
               </div>
 
+              <!-- Zalo -->
+              <div id="block-card-zalo" onclick="toggleBlockCard('zalo')" class="block-card p-3 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between select-none group shadow-2xs">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-[#0068FF] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">Z</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 truncate">Zalo</div>
+                    <div class="text-[10px] text-slate-400 block-status-text">Đang mở</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="block-cb-zalo" class="accent-amber-500 w-4.5 h-4.5 rounded pointer-events-none" />
+              </div>
+
+              <!-- Netflix -->
+              <div id="block-card-netflix" onclick="toggleBlockCard('netflix')" class="block-card p-3 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between select-none group shadow-2xs">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-[#E50914] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">N</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 truncate">Netflix</div>
+                    <div class="text-[10px] text-slate-400 block-status-text">Đang mở</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="block-cb-netflix" class="accent-amber-500 w-4.5 h-4.5 rounded pointer-events-none" />
+              </div>
+
+              <!-- Spotify -->
+              <div id="block-card-spotify" onclick="toggleBlockCard('spotify')" class="block-card p-3 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between select-none group shadow-2xs">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-[#1ED760] text-black font-bold flex items-center justify-center text-sm shadow-xs shrink-0">♫</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 truncate">Spotify</div>
+                    <div class="text-[10px] text-slate-400 block-status-text">Đang mở</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="block-cb-spotify" class="accent-amber-500 w-4.5 h-4.5 rounded pointer-events-none" />
+              </div>
+
             </div>
 
           </div>
@@ -13782,6 +13818,54 @@ Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)</div>
 
                 <input type="checkbox" id="block-cb-riot" class="accent-amber-500 w-4.5 h-4.5 rounded pointer-events-none" />
 
+              </div>
+
+              <!-- Epic Games -->
+              <div id="block-card-epicgames" onclick="toggleBlockCard('epicgames')" class="block-card p-3 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between select-none group shadow-2xs">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-[#313131] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">EG</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 truncate">Epic Games</div>
+                    <div class="text-[10px] text-slate-400 block-status-text">Đang mở</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="block-cb-epicgames" class="accent-amber-500 w-4.5 h-4.5 rounded pointer-events-none" />
+              </div>
+
+              <!-- HoYoverse / Genshin -->
+              <div id="block-card-hoyoverse" onclick="toggleBlockCard('hoyoverse')" class="block-card p-3 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between select-none group shadow-2xs">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-[#3D4460] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">HY</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 truncate">Genshin / Hoyo</div>
+                    <div class="text-[10px] text-slate-400 block-status-text">Đang mở</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="block-cb-hoyoverse" class="accent-amber-500 w-4.5 h-4.5 rounded pointer-events-none" />
+              </div>
+
+              <!-- PUBG -->
+              <div id="block-card-pubg" onclick="toggleBlockCard('pubg')" class="block-card p-3 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between select-none group shadow-2xs">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-[#F2A900] text-black font-black flex items-center justify-center text-xs shadow-xs shrink-0">PB</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 truncate">PUBG</div>
+                    <div class="text-[10px] text-slate-400 block-status-text">Đang mở</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="block-cb-pubg" class="accent-amber-500 w-4.5 h-4.5 rounded pointer-events-none" />
+              </div>
+
+              <!-- Minecraft -->
+              <div id="block-card-minecraft" onclick="toggleBlockCard('minecraft')" class="block-card p-3 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between select-none group shadow-2xs">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-[#5B8731] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">⛏</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 truncate">Minecraft</div>
+                    <div class="text-[10px] text-slate-400 block-status-text">Đang mở</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="block-cb-minecraft" class="accent-amber-500 w-4.5 h-4.5 rounded pointer-events-none" />
               </div>
 
             </div>

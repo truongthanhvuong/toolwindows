@@ -8744,16 +8744,28 @@ if ('{auto_reboot}' -eq 'True') {{
                 'linkedin'  = @('linkedin.com', 'www.linkedin.com', 'licdn.com')
                 'telegram'  = @('telegram.org', 'web.telegram.org', 't.me')
                 'discord'   = @('discord.com', 'www.discord.com', 'discord.gg', 'discordapp.com', 'discordapp.net')
+                'zalo'      = @('zalo.me', 'www.zalo.me', 'chat.zalo.me', 'zalo.vn', 'id.zalo.me', 'oa.zalo.me', 'zalocdn.com')
+                'netflix'   = @('netflix.com', 'www.netflix.com', 'nflxvideo.net', 'nflxext.com', 'nflximg.net', 'nflxso.net')
+                'spotify'   = @('spotify.com', 'www.spotify.com', 'spoti.fi', 'spotifycdn.com', 'scdn.co')
                 'roblox'    = @('roblox.com', 'www.roblox.com', 'rbxcdn.com', 'robloxlabs.com')
                 'garena'    = @('garena.vn', 'www.garena.vn', 'garena.com', 'garenanow.com', 'lienquan.garena.vn', 'ff.garena.vn')
                 'steam'     = @('steampowered.com', 'store.steampowered.com', 'steamcommunity.com', 'steamstatic.com')
                 'riot'      = @('riotgames.com', 'leagueoflegends.com', 'playvalorant.com', 'pvp.net')
+                'epicgames' = @('epicgames.com', 'www.epicgames.com', 'unrealengine.com', 'fortnite.com', 'www.fortnite.com', 'epicgames.net')
+                'hoyoverse' = @('hoyoverse.com', 'www.hoyoverse.com', 'mihoyo.com', 'genshinimpact.com', 'honkaiimpact3.com', 'starrails.com', 'zenlesszonezero.com')
+                'pubg'      = @('pubg.com', 'www.pubg.com', 'pubgmobile.com', 'vnggames.pubgmobile.com', 'krafton.com')
+                'minecraft' = @('minecraft.net', 'www.minecraft.net', 'mojang.com', 'minecraftservices.com')
             }}
 
             $selectedPlatforms = @()
             try {{
-                $selectedPlatforms = $rawPlatforms | ConvertFrom-Json
+                $cleanPlatforms = $rawPlatforms.Replace('\"', '"')
+                $selectedPlatforms = $cleanPlatforms | ConvertFrom-Json
             }} catch {{}}
+
+            if (-not $selectedPlatforms -or $selectedPlatforms.Count -eq 0) {{
+                $selectedPlatforms = [regex]::Matches($rawPlatforms, '([a-zA-Z0-9_\-]+)') | ForEach-Object {{ $_.Value }} | Where-Object {{ $domainMap.ContainsKey($_) }}
+            }}
 
             $domainsToBlock = @()
             foreach ($p in $selectedPlatforms) {{
@@ -8763,7 +8775,8 @@ if ('{auto_reboot}' -eq 'True') {{
             }}
 
             if ($customText) {{
-                $lines = $customText -split "[\r\n]+"
+                $normCustom = $customText.Replace('\r\n', "`n").Replace('\n', "`n").Replace("`r", '')
+                $lines = $normCustom -split "`n"
                 foreach ($line in $lines) {{
                     $d = $line.Trim().ToLower()
                     if ($d -and -not $d.StartsWith("#")) {{
@@ -8780,6 +8793,8 @@ if ('{auto_reboot}' -eq 'True') {{
 
             $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
             if (Test-Path $hostsPath) {{
+                Set-ItemProperty -Path $hostsPath -Name IsReadOnly -Value $false -ErrorAction SilentlyContinue
+                attrib -r $hostsPath 2>$null
                 $content = Get-Content -Path $hostsPath -Raw -Encoding UTF8
                 $pattern = '(?s)# === VUONGTT BLOCK RULES BEGIN ===.*?# === VUONGTT BLOCK RULES END ===\r?\n?'
                 $cleaned = $content -replace $pattern, ''
@@ -8823,9 +8838,16 @@ if ('{auto_reboot}' -eq 'True') {{
             if ($selectedPlatforms -contains 'garena') {{ Stop-Process -Name "Garena" -Force -ErrorAction SilentlyContinue }}
             if ($selectedPlatforms -contains 'steam') {{ Stop-Process -Name "steam" -Force -ErrorAction SilentlyContinue }}
             if ($selectedPlatforms -contains 'riot') {{ Stop-Process -Name "RiotClientServices", "LeagueClient" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'epicgames') {{ Stop-Process -Name "EpicGamesLauncher", "FortniteClient-Win64-Shipping" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'hoyoverse') {{ Stop-Process -Name "GenshinImpact", "StarRail", "ZenlessZoneZero" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'pubg') {{ Stop-Process -Name "TslGame", "PUBG" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'minecraft') {{ Stop-Process -Name "Minecraft", "javaw" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'zalo') {{ Stop-Process -Name "Zalo" -Force -ErrorAction SilentlyContinue }}
+            if ($selectedPlatforms -contains 'spotify') {{ Stop-Process -Name "Spotify" -Force -ErrorAction SilentlyContinue }}
 
-            # Anti-Bypass: Dong cac tien trinh trinh duyet de huy bo triet de persistent socket (HTTP/2, QUIC)
-            Stop-Process -Name chrome, msedge, brave, opera -Force -ErrorAction SilentlyContinue
+            # Anti-Bypass: Dong cac trinh duyet ngoai de huy bo socket HTTP/2 & QUIC cu (TUYET DOI khong kill Edge cua VUONGTT Toolkit)
+            Stop-Process -Name chrome, brave, opera -Force -ErrorAction SilentlyContinue
+            Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" -ErrorAction SilentlyContinue | Where-Object {{ $_.CommandLine -notlike '*vuongtt*' -and $_.CommandLine -notlike '*127.0.0.1*' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}
 
             ipconfig /flushdns | Out-Null
             Clear-DnsClientCache -ErrorAction SilentlyContinue | Out-Null
@@ -8891,9 +8913,12 @@ if ('{auto_reboot}' -eq 'True') {{
                 Remove-Item -Path $cfgPath -Force -ErrorAction SilentlyContinue
             }
 
+            Set-ItemProperty -Path $hostsPath -Name IsReadOnly -Value $false -ErrorAction SilentlyContinue
+            attrib -r $hostsPath 2>$null
             ipconfig /flushdns | Out-Null
             Clear-DnsClientCache -ErrorAction SilentlyContinue | Out-Null
-            Stop-Process -Name chrome, msedge, brave, opera -Force -ErrorAction SilentlyContinue
+            Stop-Process -Name chrome, brave, opera -Force -ErrorAction SilentlyContinue
+            Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -notlike '*vuongtt*' -and $_.CommandLine -notlike '*127.0.0.1*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
             Write-Output "UNBLOCKED"
         "##;
 
