@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.174";
+pub const APP_VERSION: &str = "20.5.909.175";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -365,7 +365,6 @@ fn handle_client(
         );
         let _ = stream.write_all(resp.as_bytes());
         let _ = stream.flush();
-        let _ = stream.shutdown(std::net::Shutdown::Write);
         return;
     }
 
@@ -774,6 +773,17 @@ mod tests {
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":true"), "get_uwp_presets should succeed: {}", resp);
         assert!(!resp.contains("\u{feff}"), "Response must not contain UTF-8 BOM");
+    }
+
+    #[test]
+    fn test_ipc_get_installed_apps() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"get_installed_apps\",\"payload\":{}}";
+        let resp = route_ipc_request(req, &flag);
+        println!("RESP LEN: {}", resp.len());
+        println!("RESP PREVIEW: {}", &resp[..resp.len().min(300)]);
+        assert!(resp.contains("\"success\":true"));
+        assert!(resp.contains("\"data\":["));
     }
 
     #[test]

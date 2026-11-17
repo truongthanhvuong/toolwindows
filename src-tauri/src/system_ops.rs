@@ -6527,7 +6527,7 @@ th { background: #222a3d; color: #6ffbbe; }
                 ':DONE_COPY',
                 'if exist "E:\toolwindows\VUONGTT_Toolkit.exe" copy /Y "%~1" "E:\toolwindows\VUONGTT_Toolkit.exe" >nul 2>&1',
                 'if exist "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "%~1" "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1',
-                'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path ''%~2'' -ErrorAction SilentlyContinue; Start-Process -FilePath ''%~2'' -Verb RunAs" -WindowStyle Hidden',
+                'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path ''%~2'' -ErrorAction SilentlyContinue; Start-Process -FilePath ''%~2'' -WorkingDirectory ''%~dp2'' -Verb RunAs" -WindowStyle Hidden',
                 'timeout /t 1 /nobreak >nul',
                 'del /f /q "%~1" >nul 2>&1',
                 '(goto) 2>nul & del "%~f0"'
@@ -6539,6 +6539,7 @@ th { background: #222a3d; color: #6ffbbe; }
             $psi.Arguments = "/c `"$runnerBat`" `"$tempExe`" `"$currExe`""
             $psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
             $psi.CreateNoWindow = $true
+            $psi.Verb = "RunAs"
             [System.Diagnostics.Process]::Start($psi) | Out-Null
 
             Write-Output "UPDATE_READY"
@@ -6716,66 +6717,61 @@ th { background: #222a3d; color: #6ffbbe; }
     // ========================================================================
 
     if act == "get_installed_apps" || act == "list_installed_apps" {
-
         let ps_code = r#"
-
+            [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+            $OutputEncoding = [System.Text.Encoding]::UTF8;
             $apps = @()
-
             $regKeys = @(
-
                 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
-
                 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
-
                 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
-
             )
-
             foreach ($k in $regKeys) {
-
                 Get-ItemProperty $k -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -and -not $_.SystemComponent } | ForEach-Object {
-
                     $uStr = if ($_.QuietUninstallString) { $_.QuietUninstallString } else { $_.UninstallString }
+                    if (-not $uStr) { $uStr = "" }
+                    $cleanName = ("" + $_.DisplayName) -replace '[\r\n\t]+', ' '
+                    $cleanPub = if ($_.Publisher) { ("" + $_.Publisher) -replace '[\r\n\t]+', ' ' } else { "Microsoft Corporation" }
+                    $cleanVer = if ($_.DisplayVersion) { ("" + $_.DisplayVersion) -replace '[\r\n\t]+', ' ' } else { "1.0.0" }
+                    $cleanUStr = ("" + $uStr) -replace '[\r\n]+', ' '
 
                     $apps += [PSCustomObject]@{
-
-                        name = $_.DisplayName
-
-                        publisher = if ($_.Publisher) { $_.Publisher } else { "Microsoft Corporation" }
-
-                        version = if ($_.DisplayVersion) { $_.DisplayVersion } else { "1.0.0" }
-
-                        uninstallString = $uStr
-
-                        uninstall_string = $uStr
-
+                        name = $cleanName.Trim()
+                        publisher = $cleanPub.Trim()
+                        version = $cleanVer.Trim()
+                        uninstallString = $cleanUStr.Trim()
+                        uninstall_string = $cleanUStr.Trim()
                     }
-
                 }
-
             }
-
             $unique = @($apps | Sort-Object name -Unique | Select-Object -First 300)
-
-            $unique | ConvertTo-Json -Compress
-
+            if ($unique.Count -eq 0) {
+                Write-Output "[]"
+            } else {
+                $json = $unique | ConvertTo-Json -Compress
+                if ($unique.Count -eq 1 -and (-not $json.StartsWith("["))) {
+                    Write-Output "[$json]"
+                } else {
+                    Write-Output $json
+                }
+            }
         "#;
 
         let mut cmd = Command::new("powershell");
-
         cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
-
         #[cfg(windows)]
-
         cmd.creation_flags(CREATE_NO_WINDOW);
-
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
-
-        return (true, out.trim().to_string());
-
+        let trimmed = out.trim();
+        let valid_json = if trimmed.starts_with('[') {
+            trimmed.to_string()
+        } else if trimmed.starts_with('{') {
+            format!("[{}]", trimmed)
+        } else {
+            "[]".to_string()
+        };
+        return (true, valid_json);
     }
-
-
 
     if act == "install_font_pack" || act == "cai font" || act == "cai_font" || act == "cai dat font" || act == "font" {
 

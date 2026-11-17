@@ -5229,7 +5229,8 @@ getAppIconMarkup(app) +
       if (updateInfo && updateInfo.has_update) {
         showToast("Phát Hiện Bản Mới", `Phát hiện bản nâng cấp v${newVer} (hiện tại: v${curVer})! Đang tự động tải và cài đặt...`, "info");
       } else {
-        showToast("Tải Bản Mới Nhất", `Đang tải bản mới nhất trực tiếp từ GitHub...`, "info");
+        showToast("Đã Là Bản Mới Nhất", `Bạn đang sử dụng phiên bản mới nhất (v${curVer}) từ GitHub! Hệ thống đã được đồng bộ 100%.`, "success");
+        return;
       }
 
       const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
