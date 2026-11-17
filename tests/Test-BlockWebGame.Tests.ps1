@@ -80,6 +80,45 @@ Assert-True ($opsContent -match 'youtube\.com') "system_ops.rs phai dinh nghia d
 Assert-True ($opsContent -match 'roblox\.com') "system_ops.rs phai dinh nghia domain roblox.com"
 Assert-True ($opsContent -match 'garena\.vn') "system_ops.rs phai dinh nghia domain garena.vn"
 
+Write-Host "`n--- Nhom 4: Kiem Tra Anti-Bypass Blocker Engine (DNS-over-HTTPS & Firewall) ---" -ForegroundColor Yellow
+
+# Kiem tra tat ca 17+ ten mien Facebook mo rong
+$expectedFbDomains = @(
+    'facebook.com', 'www.facebook.com', 'm.facebook.com', 'web.facebook.com',
+    'fb.com', 'www.fb.com', 'fbcdn.net', 'www.fbcdn.net',
+    'static.xx.fbcdn.net', 'scontent.xx.fbcdn.net', 'scontent.fbcdn.net', 'external.xx.fbcdn.net',
+    'connect.facebook.net', 'edge-chat.facebook.com', 'graph.facebook.com',
+    'messenger.com', 'www.messenger.com', 'm.messenger.com'
+)
+foreach ($dom in $expectedFbDomains) {
+    $escapedDom = [regex]::Escape($dom)
+    Assert-True ($opsContent -match $escapedDom) "system_ops.rs phai bao gom ten mien mo rong '$dom'"
+}
+
+# Kiem tra cau hinh Registry vo hieu hoa DoH tren Chrome va Edge
+Assert-True ($opsContent -match 'SOFTWARE\\Policies\\Google\\Chrome') "system_ops.rs phai cau hinh policy Chrome"
+Assert-True ($opsContent -match 'SOFTWARE\\Policies\\Microsoft\\Edge') "system_ops.rs phai cau hinh policy Edge"
+Assert-True ($opsContent -match 'DnsOverHttpsMode') "system_ops.rs phai thiet lap thuoc tinh DnsOverHttpsMode"
+Assert-True ($opsContent -match "DnsOverHttpsMode.*'off'") "system_ops.rs phai dat DnsOverHttpsMode = 'off'"
+Assert-True ($opsContent -match "New-Item.*-Force") "system_ops.rs phai tu dong tao parent key cho policies"
+
+# Kiem tra cau hinh Windows Firewall chan Meta IP subnets
+Assert-True ($opsContent -match 'VUONGTT_Block_Facebook') "system_ops.rs phai tao firewall rule 'VUONGTT_Block_Facebook'"
+Assert-True ($opsContent -match '31\.13\.0\.0/16') "Firewall rule phai chan dai IP 31.13.0.0/16"
+Assert-True ($opsContent -match '157\.240\.0\.0/16') "Firewall rule phai chan dai IP 157.240.0.0/16"
+Assert-True ($opsContent -match '129\.134\.0\.0/16') "Firewall rule phai chan dai IP 129.134.0.0/16"
+Assert-True ($opsContent -match '185\.60\.216\.0/22') "Firewall rule phai chan dai IP 185.60.216.0/22"
+Assert-True ($opsContent -match '57\.144\.0\.0/14') "Firewall rule phai chan dai IP 57.144.0.0/14"
+
+# Kiem tra cat socket va don dep tien trinh trinh duyet
+Assert-True ($opsContent -match 'Stop-Process.*chrome.*msedge') "system_ops.rs phai dong tien trinh trinh duyet chrome va msedge"
+Assert-True ($opsContent -match 'ipconfig /flushdns') "system_ops.rs phai flush DNS cache"
+Assert-True ($opsContent -match 'Clear-DnsClientCache') "system_ops.rs phai xoa cache DnsClient"
+
+# Kiem tra quy trinh hoan tac unblock_all_rules
+Assert-True ($opsContent -match 'Remove-ItemProperty.*DnsOverHttpsMode') "unblock_all_rules phai xoa bo thuoc tinh DnsOverHttpsMode"
+Assert-True ($opsContent -match 'netsh advfirewall firewall delete rule name="VUONGTT_Block_Facebook"') "unblock_all_rules phai xoa rule firewall VUONGTT_Block_Facebook"
+
 Write-Host "`n=======================================================" -ForegroundColor Cyan
 Write-Host "KET QUA KIEM THU: PASS $script:passed / TOTAL $($script:passed + $script:failed)" -ForegroundColor Green
 Write-Host "=======================================================`n" -ForegroundColor Cyan

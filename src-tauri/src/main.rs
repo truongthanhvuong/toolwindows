@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.179";
+pub const APP_VERSION: &str = "20.5.909.180";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -463,6 +463,29 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
                 escape_json_str(&msg)
             );
         }
+    } else if cmd == "check_pro_license" {
+        let (success, msg) = system_ops::execute_system_action("check_pro_license", body);
+        if success && msg.trim().starts_with('{') {
+            json_resp = msg;
+        } else {
+            json_resp = format!(
+                r#"{{"success":{},"is_pro":{},"customer":"","duration":"","message":"{}"}}"#,
+                success,
+                success,
+                escape_json_str(&msg)
+            );
+        }
+    } else if cmd == "activate_pro_key" {
+        let (success, msg) = system_ops::execute_system_action("activate_pro_key", body);
+        if msg.trim().starts_with('{') {
+            json_resp = msg;
+        } else {
+            json_resp = format!(
+                r#"{{"success":{},"message":"{}"}}"#,
+                success,
+                escape_json_str(&msg)
+            );
+        }
     } else if cmd == "install_apps" {
         let (success, msg) = system_ops::execute_system_action("install_apps", body);
         json_resp = format!(
@@ -514,7 +537,9 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
             .unwrap_or("general");
 
         let (success, msg) = system_ops::execute_system_action(act_id, body);
-        if act_id == "browse_iso" || act_id == "browse_file" {
+        if (act_id == "check_pro_license" || act_id == "activate_pro_key") && msg.trim().starts_with('{') {
+            json_resp = msg;
+        } else if act_id == "browse_iso" || act_id == "browse_file" {
             let escaped_path = escape_json_str(&msg);
             json_resp = format!(
                 r#"{{"success":{},"file_path":"{}","message":"{}"}}"#,
@@ -794,5 +819,21 @@ mod tests {
         assert!(resp.contains("\"success\":true"), "get_troubleshoot_database should succeed: {}", resp);
         assert!(!resp.contains("\u{feff}"), "Response must not contain UTF-8 BOM");
         assert!(resp.contains("\"Problems\""), "Response should contain Problems array");
+    }
+
+    #[test]
+    fn test_ipc_check_pro_license() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"check_pro_license\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"is_pro\":"), "check_pro_license should return is_pro field: {}", resp);
+    }
+
+    #[test]
+    fn test_ipc_activate_pro_key_empty_fails() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"activate_pro_key\",\"key\":\"\"}";
+        let resp = route_ipc_request(req, &flag);
+        assert!(resp.contains("\"success\":false"), "Empty key must return success: false: {}", resp);
     }
 }

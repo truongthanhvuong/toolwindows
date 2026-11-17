@@ -3686,6 +3686,174 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
 
 
 
+    if act == "check_pro_license" {
+
+        let repo = get_repo_dir();
+
+        let lic_ps1 = repo.join("src").join("Core").join("LicenseManager.ps1");
+
+        let lic_str = lic_ps1.to_string_lossy().replace('\'', "''");
+
+        let ps_code = format!(
+
+            r#"$ErrorActionPreference = 'SilentlyContinue'
+
+if (Test-Path '{lic_str}') {{ . '{lic_str}' }}
+
+$hwid = Get-VUONGTTHardwareId
+
+$res = Test-VUONGTTProLicense
+
+if ($res -and $res.IsPro) {{
+
+    $c = if ($res.Customer) {{ [string]$res.Customer }} else {{ '' }}
+
+    $d = if ($res.Duration) {{ [string]$res.Duration }} else {{ '' }}
+
+    [PSCustomObject]@{{ success = $true; is_pro = $true; customer = $c; duration = $d; hwid = [string]$hwid }} | ConvertTo-Json -Compress
+
+}} else {{
+
+    [PSCustomObject]@{{ success = $true; is_pro = $false; customer = ''; duration = ''; hwid = [string]$hwid }} | ConvertTo-Json -Compress
+
+}}"#
+
+        );
+
+
+
+        let mut cmd = Command::new("powershell");
+
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+
+        #[cfg(windows)]
+
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+
+
+        if let Ok(out) = cmd.output() {
+
+            let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
+
+            if stdout.starts_with('{') && stdout.ends_with('}') {
+
+                return (true, stdout);
+
+            }
+
+        }
+
+        return (true, r#"{"success":true,"is_pro":false,"customer":"","duration":"","hwid":""}"#.to_string());
+
+    }
+
+
+
+
+
+
+
+    if act == "activate_pro_key" {
+
+        let raw_key = extract_json_field(params_json, "key")
+
+            .or_else(|| extract_json_field(params_json, "inputKey"))
+
+            .or_else(|| extract_json_field(params_json, "InputKey"))
+
+            .or_else(|| extract_json_field(params_json, "licenseKey"))
+
+            .unwrap_or("")
+
+            .trim();
+
+
+
+        if raw_key.is_empty() {
+
+            return (false, "Vui lòng nhập License Key kích hoạt!".to_string());
+
+        }
+
+
+
+        let clean_key = raw_key.replace('\'', "''").to_uppercase();
+
+        let repo = get_repo_dir();
+
+        let lic_ps1 = repo.join("src").join("Core").join("LicenseManager.ps1");
+
+        let lic_str = lic_ps1.to_string_lossy().replace('\'', "''");
+
+
+
+        let ps_code = format!(
+
+            r#"$ErrorActionPreference = 'SilentlyContinue'
+
+if (Test-Path '{lic_str}') {{ . '{lic_str}' }}
+
+$res = Invoke-VUONGTTKeyActivation -InputKey '{clean_key}'
+
+if ($res) {{
+
+    $suc = [bool]$res.Success
+
+    $msg = [string]$res.Message
+
+    [PSCustomObject]@{{ success = $suc; message = $msg }} | ConvertTo-Json -Compress
+
+}} else {{
+
+    [PSCustomObject]@{{ success = $false; message = 'Không thể xác thực License Key qua hệ thống.' }} | ConvertTo-Json -Compress
+
+}}"#
+
+        );
+
+
+
+        let mut cmd = Command::new("powershell");
+
+        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_code]);
+
+        #[cfg(windows)]
+
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+
+
+        if let Ok(out) = cmd.output() {
+
+            let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
+
+            if stdout.starts_with('{') && stdout.ends_with('}') {
+
+                let success = extract_json_field(&stdout, "success").unwrap_or("false") == "true";
+
+                let message = extract_json_field(&stdout, "message")
+
+                    .unwrap_or("Kích hoạt bản quyền thành công!")
+
+                    .to_string();
+
+                return (success, message);
+
+            }
+
+        }
+
+        return (false, "Không thể kết nối đến nhân xác thực bản quyền LicenseManager!".to_string());
+
+    }
+
+
+
+
+
+
+
     if act == "get_install_logs" || act == "get_execution_logs" || act == "get_logs" {
 
 
@@ -8557,7 +8725,7 @@ if ('{auto_reboot}' -eq 'True') {{
             $rawParams = '{safe_params}'
 
             $domainMap = @{{
-                'facebook'  = @('facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.com', 'www.fb.com', 'fbcdn.net', 'connect.facebook.net')
+                'facebook'  = @('facebook.com', 'www.facebook.com', 'm.facebook.com', 'web.facebook.com', 'fb.com', 'www.fb.com', 'fbcdn.net', 'www.fbcdn.net', 'static.xx.fbcdn.net', 'scontent.xx.fbcdn.net', 'scontent.fbcdn.net', 'external.xx.fbcdn.net', 'connect.facebook.net', 'edge-chat.facebook.com', 'graph.facebook.com', 'messenger.com', 'www.messenger.com', 'm.messenger.com')
                 'tiktok'    = @('tiktok.com', 'www.tiktok.com', 'm.tiktok.com', 'vt.tiktok.com', 'tiktokcdn.com', 'tiktokv.com')
                 'youtube'   = @('youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'googlevideo.com', 'youtubei.googleapis.com')
                 'instagram' = @('instagram.com', 'www.instagram.com', 'cdninstagram.com')
@@ -8622,10 +8790,32 @@ if ('{auto_reboot}' -eq 'True') {{
                 Set-Content -Path $hostsPath -Value $final -Encoding UTF8 -Force
             }}
 
+            # Anti-Bypass: Vo hieu hoa Secure DNS (DNS-over-HTTPS) tren Google Chrome va Microsoft Edge
+            $dohPolicies = @(
+                'HKLM:\SOFTWARE\Policies\Google\Chrome',
+                'HKLM:\SOFTWARE\Policies\Microsoft\Edge'
+            )
+            foreach ($polPath in $dohPolicies) {{
+                if (-not (Test-Path $polPath)) {{
+                    New-Item -Path $polPath -Force | Out-Null
+                }}
+                Set-ItemProperty -Path $polPath -Name 'DnsOverHttpsMode' -Value 'off' -Type String -Force -ErrorAction SilentlyContinue
+            }}
+
+            # Anti-Bypass: Chan Outbound Windows Firewall toi dai IP Meta/Facebook neu duoc chon
+            if ($selectedPlatforms -contains 'facebook') {{
+                netsh advfirewall firewall delete rule name="VUONGTT_Block_Facebook" 2>$null | Out-Null
+                netsh advfirewall firewall add rule name="VUONGTT_Block_Facebook" dir=out action=block remoteip="31.13.0.0/16,157.240.0.0/16,129.134.0.0/16,185.60.216.0/22,57.144.0.0/14" enable=yes | Out-Null
+            }}
+
+            # Dong cac tien trinh game neu duoc chon
             if ($selectedPlatforms -contains 'roblox') {{ Stop-Process -Name "RobloxPlayerBeta" -Force -ErrorAction SilentlyContinue }}
             if ($selectedPlatforms -contains 'garena') {{ Stop-Process -Name "Garena" -Force -ErrorAction SilentlyContinue }}
             if ($selectedPlatforms -contains 'steam') {{ Stop-Process -Name "steam" -Force -ErrorAction SilentlyContinue }}
             if ($selectedPlatforms -contains 'riot') {{ Stop-Process -Name "RiotClientServices", "LeagueClient" -Force -ErrorAction SilentlyContinue }}
+
+            # Anti-Bypass: Dong cac tien trinh trinh duyet de huy bo triet de persistent socket (HTTP/2, QUIC)
+            Stop-Process -Name chrome, msedge, brave, opera -Force -ErrorAction SilentlyContinue
 
             ipconfig /flushdns | Out-Null
             Clear-DnsClientCache -ErrorAction SilentlyContinue | Out-Null
@@ -8646,7 +8836,7 @@ if ('{auto_reboot}' -eq 'True') {{
         let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
         if out.contains("SUCCESS:") {
             let count = out.split("SUCCESS:").nth(1).unwrap_or("0").trim();
-            append_log(&format!("[THÀNH CÔNG] Đã áp dụng quy tắc chặn cho {} tên miền vào hosts và làm mới DNS cache!", count));
+            append_log(&format!("[THÀNH CÔNG] Đã áp dụng quy tắc chặn cho {} tên miền vào hosts, tắt DoH Chrome/Edge và làm mới DNS cache!", count));
             return (
                 true,
                 format!("Đã lưu & áp dụng thành công quy tắc chặn cho {} tên miền! Máy tính đã được kích hoạt bảo vệ.", count),
@@ -8670,12 +8860,30 @@ if ('{auto_reboot}' -eq 'True') {{
                 $cleaned = $content -replace $pattern, ''
                 Set-Content -Path $hostsPath -Value ($cleaned.TrimEnd() + "`r`n") -Encoding UTF8 -Force
             }
+
+            # Khoi phuc chinh sach DNS-over-HTTPS (DoH) ve mac dinh cho Chrome & Edge
+            $dohPolicies = @(
+                'HKLM:\SOFTWARE\Policies\Google\Chrome',
+                'HKLM:\SOFTWARE\Policies\Microsoft\Edge'
+            )
+            foreach ($polPath in $dohPolicies) {
+                if (Test-Path $polPath) {
+                    Remove-ItemProperty -Path $polPath -Name 'DnsOverHttpsMode' -Force -ErrorAction SilentlyContinue
+                }
+            }
+
+            # Xoa quy tac chan Windows Firewall
+            netsh advfirewall firewall delete rule name="VUONGTT_Block_Facebook" 2>$null | Out-Null
+            netsh advfirewall firewall delete rule name="VUONGTT_Block_WebGame" 2>$null | Out-Null
+
             $cfgPath = "C:\VUONGTT_Tools\BlockRules\blocked_config.json"
             if (Test-Path $cfgPath) {
                 Remove-Item -Path $cfgPath -Force -ErrorAction SilentlyContinue
             }
+
             ipconfig /flushdns | Out-Null
             Clear-DnsClientCache -ErrorAction SilentlyContinue | Out-Null
+            Stop-Process -Name chrome, msedge, brave, opera -Force -ErrorAction SilentlyContinue
             Write-Output "UNBLOCKED"
         "##;
 
@@ -8685,7 +8893,7 @@ if ('{auto_reboot}' -eq 'True') {{
         cmd.creation_flags(CREATE_NO_WINDOW);
 
         let _ = cmd.output();
-        append_log("[THÀNH CÔNG] Đã gỡ bỏ toàn bộ quy tắc chặn trong hosts và làm mới DNS cache!");
+        append_log("[THÀNH CÔNG] Đã gỡ bỏ toàn bộ quy tắc chặn trong hosts, gỡ bỏ DoH policy và làm mới DNS cache!");
         return (
             true,
             "Đã gỡ bỏ toàn bộ quy tắc chặn website & game thành công! Hệ thống đã khôi phục truy cập 100%.".to_string(),
@@ -16437,46 +16645,32 @@ fn restart_explorer_safely() {}
 
 
 
-    if act == "toggle_bing_search_start" || act == "bing_search_start" {
-
-
-
+    if act == "disable_bing_search" || act == "toggle_bing_search_start" || act == "bing_search_start" {
         let ps_code = r#"
-
-
-
+            if (!(Test-Path 'HKCU:\Software\Policies\Microsoft\Windows\Explorer')) {
+                New-Item -Path 'HKCU:\Software\Policies\Microsoft\Windows\Explorer' -Force -ErrorAction SilentlyContinue | Out-Null
+            }
+            Set-ItemProperty -Path 'HKCU:\Software\Policies\Microsoft\Windows\Explorer' -Name 'DisableSearchBoxSuggestions' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            if (!(Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search')) {
+                New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search' -Force -ErrorAction SilentlyContinue | Out-Null
+            }
             Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search' -Name 'BingSearchEnabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
-
-
-
         "#;
-
-
-
-        let mut cmd = Command::new("powershell");
-
-
-
-        cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
-
-
-
-        #[cfg(windows)]
-
-
-
-        cmd.creation_flags(CREATE_NO_WINDOW);
-
-
-
-        let _ = cmd.output();
-
-
-
+        run_ps_oneshot(ps_code);
         return (true, "Đã tắt tích hợp tìm kiếm web Bing trong Start Menu giúp mở menu nhanh tức thì!".to_string());
+    }
 
-
-
+    if act == "enable_bing_search" {
+        let ps_code = r#"
+            if (Test-Path 'HKCU:\Software\Policies\Microsoft\Windows\Explorer') {
+                Set-ItemProperty -Path 'HKCU:\Software\Policies\Microsoft\Windows\Explorer' -Name 'DisableSearchBoxSuggestions' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            }
+            if (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search') {
+                Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search' -Name 'BingSearchEnabled' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            }
+        "#;
+        run_ps_oneshot(ps_code);
+        return (true, "Đã khôi phục tính năng tìm kiếm web Bing trong Start Menu!".to_string());
     }
 
 
@@ -19521,11 +19715,14 @@ fn restart_explorer_safely() {}
 
 
 
-            Stop-Service wuauserv, bits, dosvc -Force -ErrorAction SilentlyContinue
-
-
-
-            Set-Service wuauserv, bits, dosvc -StartupType Disabled -ErrorAction SilentlyContinue
+            Stop-Service wuauserv, bits, dosvc, UsoSvc, WaaSMedicSvc -Force -ErrorAction SilentlyContinue
+            Set-Service wuauserv, bits, dosvc, UsoSvc, WaaSMedicSvc -StartupType Disabled -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\UsoSvc' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
+            if (!(Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU')) {
+                New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Force -ErrorAction SilentlyContinue | Out-Null
+            }
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
 
 
 
@@ -19557,10 +19754,12 @@ fn restart_explorer_safely() {}
 
 
 
-            Set-Service wuauserv, bits, dosvc -StartupType Manual -ErrorAction SilentlyContinue
-
-
-
+            Set-Service wuauserv, bits, dosvc, UsoSvc, WaaSMedicSvc -StartupType Manual -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\UsoSvc' -Name 'Start' -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc' -Name 'Start' -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
+            if (Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU') {
+                Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            }
             Start-Service wuauserv -ErrorAction SilentlyContinue
 
 
@@ -19916,29 +20115,27 @@ unas\command' -Force -Value $cmd -ErrorAction SilentlyContinue
 
 
     if act == "show_file_extensions" {
-
-
-
         let ps = r#"
-
-
-
             Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
-
-
-
         "#;
-
-
-
         run_ps_oneshot(ps);
 
-
+        #[cfg(not(test))]
+        restart_explorer_safely();
 
         return (true, "Đã bật hiển thị đuôi mở rộng của tệp tin trong File Explorer!".to_string());
+    }
 
+    if act == "hide_file_extensions" {
+        let ps = r#"
+            Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+        "#;
+        run_ps_oneshot(ps);
 
+        #[cfg(not(test))]
+        restart_explorer_safely();
 
+        return (true, "Đã ẩn đuôi mở rộng của tệp tin trong File Explorer!".to_string());
     }
 
 
@@ -22121,76 +22318,32 @@ pub fn collect_win_optimize_state() -> String {
 
         $classic = (Test-Path 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32')
 
+        $wuSvc = (Get-Service -Name wuauserv -ErrorAction SilentlyContinue).StartType
+        $wuPol = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -ErrorAction SilentlyContinue).NoAutoUpdate
+        $wuDisabled = ($wuSvc -eq 'Disabled' -or $wuPol -eq 1)
 
-
-
-
-
+        $bing1 = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Search' -Name 'BingSearchEnabled' -ErrorAction SilentlyContinue).BingSearchEnabled
+        $bing2 = (Get-ItemProperty -Path 'HKCU:\Software\Policies\Microsoft\Windows\Explorer' -Name 'DisableSearchBoxSuggestions' -ErrorAction SilentlyContinue).DisableSearchBoxSuggestions
+        $bingDisabled = ($bing1 -eq 0 -or $bing2 -eq 1)
 
         $dnsArr = @()
-
-
-
         if ($dnsObj -and $dnsObj.ServerAddresses) { $dnsArr = $dnsObj.ServerAddresses }
-
-
-
         $adapter = ''
-
-
-
         if ($dnsObj -and $dnsObj.InterfaceAlias) { $adapter = $dnsObj.InterfaceAlias }
 
-
-
-
-
-
-
         ConvertTo-Json -Compress ([PSCustomObject]@{
-
-
-
             scheme = $scheme
-
-
-
             sleep_seconds = $sleepAc
-
-
-
             disk_seconds = $diskAc
-
-
-
             video_seconds = $videoAc
-
-
-
             dns = $dnsArr
-
-
-
             adapter = $adapter
-
-
-
             dark_theme = ($dark -eq 0)
-
-
-
             show_ext = ($ext -eq 0)
-
-
-
             show_hidden = ($hidden -eq 1)
-
-
-
             classic_context = $classic
-
-
-
+            windows_update_disabled = [bool]$wuDisabled
+            bing_disabled = [bool]$bingDisabled
         })
 
 
@@ -22235,7 +22388,7 @@ pub fn collect_win_optimize_state() -> String {
 
 
 
-    r#"{"scheme":"","sleep_seconds":-1,"disk_seconds":-1,"video_seconds":-1,"dns":[],"adapter":"","dark_theme":false,"show_ext":false,"show_hidden":false,"classic_context":false}"#.to_string()
+    r#"{"scheme":"","sleep_seconds":-1,"disk_seconds":-1,"video_seconds":-1,"dns":[],"adapter":"","dark_theme":false,"show_ext":false,"show_hidden":false,"classic_context":false,"windows_update_disabled":false,"bing_disabled":false}"#.to_string()
 
 
 
@@ -23659,7 +23812,8 @@ mod tests {
 
 
 
-            "show_file_extensions", "disable_sponsored_apps", "revert_sponsored_apps",
+            "show_file_extensions", "hide_file_extensions", "disable_bing_search", "enable_bing_search",
+            "disable_sponsored_apps", "revert_sponsored_apps",
 
 
 
@@ -25015,11 +25169,11 @@ mod tests {
 
 
 
-        let (ok, msg) = execute_system_action("check_winsxs_size", "{}");
+        let (ok, msg) = execute_system_action("check_winsxs_size_unrecognized_dummy", "{}");
 
 
 
-        assert!(!ok, "Unrecognized action check_winsxs_size must fail closed");
+        assert!(!ok, "Unrecognized action check_winsxs_size_unrecognized_dummy must fail closed");
 
 
 

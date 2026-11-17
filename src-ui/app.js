@@ -53,6 +53,8 @@
 
 
   let isAdminAuth = false;
+  let isProLicensed = false;
+  let pendingGatekeeperTarget = null;
 
   const DEFAULT_FEATURE_POLICIES = [
 
@@ -242,7 +244,90 @@
 
 
 
-  // --- 3. SPA VIEW ROUTER ---
+  // --- 3. SPA VIEW ROUTER & GATEKEEPER POLICY CONTROLLER ---
+  const CANONICAL_VIEW_POLICY_MAP = {
+    "view-sys-monitor": "SysInfo",
+    "view-general": "Customize",
+    "view-oem-brand": "Customize",
+    "view-win-optimize": "Tweaks",
+    "view-uwp-apps": "Uninstaller",
+    "view-clean-uninstaller": "Uninstaller",
+    "view-soft-winget": "Software",
+    "view-download": "Software",
+    "view-it-helpdesk": "Troubleshoot",
+    "view-helpdesk-troubleshoot": "Troubleshoot",
+    "view-vpn-proxy": "NetworkLAN",
+    "view-block-web-game": "NetworkLAN",
+    "view-win-deploy": "AutoWin",
+    "view-cai-windows": "AutoWin",
+    "view-disk-smart": "DiskHealth",
+    "view-hwid-act": "Activation",
+    "view-disk-part": "Partition",
+    "view-office-m365": "Office",
+    "view-tech-driver": "BackupDriver",
+    "view-backup-windows": "BackupSystem",
+    "view-printer-lan": "PrinterLAN",
+    "view-bitlocker-mgmt": "BitLocker",
+  };
+
+  function checkGatekeeperAccess(targetId) {
+    if (targetId === "view-win-activate") targetId = "view-hwid-act";
+    if (targetId === "view-disk-bitlocker" || targetId === "view-bitlocker") targetId = "view-bitlocker-mgmt";
+
+    // Quyền Quản Trị Tối Cao (Admin God Mode): Mở toàn bộ các tính năng FREE / PRO / ADMIN
+    if (isAdminAuth) {
+      return true;
+    }
+
+    // Xác thực Admin Portal
+    if (targetId === "view-admin-portal") {
+      pendingGatekeeperTarget = targetId;
+      if (typeof window.openAdminPortal === "function") {
+        window.openAdminPortal();
+      } else {
+        const modal = document.getElementById("modal-admin-login");
+        if (modal) modal.classList.remove("hidden");
+      }
+      return false;
+    }
+
+    const policyId = CANONICAL_VIEW_POLICY_MAP[targetId];
+    if (policyId) {
+      const pol = currentPolicies.find((p) => p.Id === policyId);
+      const tier = pol && pol.Tier ? pol.Tier.toUpperCase() : "FREE";
+
+      if (tier === "ADMIN") {
+        if (!isAdminAuth) {
+          pendingGatekeeperTarget = targetId;
+          const modal = document.getElementById("modal-admin-login");
+          if (modal) modal.classList.remove("hidden");
+          const inputPass = document.getElementById("input-admin-pass");
+          if (inputPass) { inputPass.value = ""; inputPass.focus(); }
+          const lblErr = document.getElementById("lbl-admin-err");
+          if (lblErr) lblErr.classList.add("hidden");
+          showToast("Yêu Cầu Quyền Quản Trị", `Tính năng [${pol.Name || policyId}] yêu cầu mật khẩu Admin!`, "warning");
+          return false;
+        }
+      }
+
+      if (tier === "PRO") {
+        if (!isProLicensed) {
+          pendingGatekeeperTarget = targetId;
+          const modal = document.getElementById("modal-license-activation");
+          if (modal) modal.classList.remove("hidden");
+          const keyInput = document.getElementById("input-pro-license-key") || document.getElementById("input-license-key");
+          if (keyInput) { keyInput.value = ""; keyInput.focus(); }
+          const errEl = document.getElementById("lbl-license-error");
+          if (errEl) errEl.classList.add("hidden");
+          showToast("Yêu Cầu Bản Quyền PRO", `Tính năng [${pol.Name || policyId}] yêu cầu bản quyền PRO VIP!`, "warning");
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+  window.checkGatekeeperAccess = checkGatekeeperAccess;
 
   function switchView(targetId, focusElementId = null) {
 
@@ -254,24 +339,9 @@
 
 
 
-    // SECURITY GATEKEEPER: Bắt buộc xác thực mật khẩu Admin trước khi hiển thị Admin Portal
-
-    if (targetId === "view-admin-portal" && !isAdminAuth) {
-
-      if (typeof window.openAdminPortal === "function") {
-
-        window.openAdminPortal();
-
-      } else {
-
-        const modal = document.getElementById("modal-admin-login");
-
-        if (modal) modal.classList.remove("hidden");
-
-      }
-
+    // GATEKEEPER ACCESS VERIFICATION
+    if (!checkGatekeeperAccess(targetId)) {
       return;
-
     }
 
 
@@ -415,6 +485,9 @@
   // --- 3.1 NATIVE SYSTEM ACTION DISPATCHER ---
 
   async function runToolkitAction(actionName, details) {
+    if (typeof openUniversalLog === "function") {
+      openUniversalLog();
+    }
 
     const raw = (actionName || "") + " " + (details || "");
 
@@ -612,7 +685,9 @@
 
     }
 
-
+    if (typeof appendUniversalLog === "function") {
+      appendUniversalLog(`[BẮT ĐẦU] ${actionName} - ${details || "Đang thực thi..."}`, "info");
+    }
 
     showToast("Thực Thi", `Đang thực hiện: ${actionName}...`, "info");
 
@@ -630,7 +705,9 @@
 
     }
 
-
+    if (typeof appendUniversalLog === "function") {
+      appendUniversalLog(res && res.success ? `[THÀNH CÔNG] ${actionName}: ${msg}` : `[LỖI] ${actionName}: ${msg}`, res && res.success ? "success" : "error");
+    }
 
     showToast(res && res.success ? "Hoàn Tất" : "Lỗi", msg, res && res.success ? "success" : "error");
 
@@ -812,125 +889,73 @@
 
 
     if (btnCancel && modalLogin) {
-
       btnCancel.addEventListener("click", () => {
-
         modalLogin.classList.add("hidden");
-
+        pendingGatekeeperTarget = null;
         if (!isAdminAuth) {
-
           const cur = document.querySelector(".stitch-view.active");
-
           if (cur && cur.id === "view-admin-portal") {
-
             switchView("view-sys-monitor");
-
           }
-
         }
-
       });
-
     }
-
-
 
     const btnTogglePass = document.getElementById("btn-toggle-admin-pass");
-
     if (btnTogglePass && inputPass) {
-
       btnTogglePass.addEventListener("click", () => {
-
         const isPwd = inputPass.getAttribute("type") === "password";
-
         inputPass.setAttribute("type", isPwd ? "text" : "password");
-
         const icon = btnTogglePass.querySelector(".material-symbols-outlined");
-
         if (icon) icon.textContent = isPwd ? "visibility_off" : "visibility";
-
       });
-
     }
 
-
-
     async function handleLogin() {
-
       const pass = (inputPass ? inputPass.value : "").trim();
-
       if (!pass) {
-
         if (lblErr) {
-
           lblErr.textContent = "Vui lòng nhập mật khẩu quản trị viên!";
-
           lblErr.classList.remove("hidden");
-
         }
-
         return;
-
       }
-
-
 
       // Hỗ trợ kiểm tra mật khẩu Admin Vtt@2403 (Case-insensitive, không phân biệt hoa thường)
-
       const passLower = pass.toLowerCase();
-
       const isDirectMatch = (
-
         pass === "Vtt@2403" ||
-
         passLower === "vtt@2403" ||
-
         passLower === "vtt2403" ||
-
         passLower === "vuongtt" ||
-
         passLower === "admin" ||
-
         passLower === "admin@2026"
-
       );
 
-
-
       let res = null;
-
       try {
-
         res = await invokeRust("admin_login", { password: pass });
-
       } catch (err) {
-
         console.warn("invokeRust admin_login error:", err);
-
       }
-
-
 
       const isValid = (res && res.success) || isDirectMatch;
 
-
-
       if (isValid) {
-
         isAdminAuth = true;
-
         if (modalLogin) modalLogin.classList.add("hidden");
-
         if (inputPass) inputPass.value = "";
-
         if (lblErr) lblErr.classList.add("hidden");
-
         showToast("Xác Thực VIP", "Chào mừng Quản Trị Viên hệ thống!", "success");
 
-        switchView("view-admin-portal");
-
+        if (pendingGatekeeperTarget) {
+          const tgt = pendingGatekeeperTarget;
+          pendingGatekeeperTarget = null;
+          switchView(tgt);
+        } else {
+          switchView("view-admin-portal");
+        }
         loadAdminData();
-
       } else {
 
         isAdminAuth = false;
@@ -5812,6 +5837,12 @@ getAppIconMarkup(app) +
         const toggleClassic = document.getElementById("toggle-classic-context");
 
         if (toggleClassic) toggleClassic.checked = !!data.classic_context;
+
+        const toggleWinUpdate = document.getElementById("toggle-windows-update");
+        if (toggleWinUpdate) toggleWinUpdate.checked = !!data.windows_update_disabled;
+
+        const toggleBing = document.getElementById("toggle-disable-bing");
+        if (toggleBing) toggleBing.checked = !!data.bing_disabled;
 
 
 
@@ -11876,15 +11907,427 @@ getAppIconMarkup(app) +
   }
   window.initBlockWebGameController = initBlockWebGameController;
 
+  // --- 17. GATEKEEPER PRO LICENSE & HWID ACTIVATION CONTROLLER ---
+
+  async function submitProLicenseKey() {
+    const inputEl = document.getElementById("input-pro-license-key") || document.getElementById("input-license-key");
+    const errEl = document.getElementById("lbl-license-error");
+    const modalEl = document.getElementById("modal-license-activation");
+    const keyVal = (inputEl ? inputEl.value : "").trim().toUpperCase();
+
+    if (!keyVal) {
+      if (errEl) {
+        errEl.textContent = "Vui lòng nhập License Key kích hoạt bản quyền PRO!";
+        errEl.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (errEl) errEl.classList.add("hidden");
+
+    try {
+      const res = await invokeRust("activate_pro_key", { key: keyVal, inputKey: keyVal });
+      if (res && res.success) {
+        isProLicensed = true;
+        if (modalEl) modalEl.classList.add("hidden");
+        if (inputEl) inputEl.value = "";
+        showToast("Bản Quyền PRO", (res && res.message) || "Kích hoạt bản quyền PRO VIP thành công!", "success");
+        if (pendingGatekeeperTarget) {
+          const tgt = pendingGatekeeperTarget;
+          pendingGatekeeperTarget = null;
+          switchView(tgt);
+        }
+      } else {
+        if (errEl) {
+          errEl.textContent = (res && res.message) || "Mã kích hoạt không hợp lệ hoặc đã được sử dụng!";
+          errEl.classList.remove("hidden");
+        }
+        showToast("Lỗi Bản Quyền", (res && res.message) || "Mã kích hoạt không hợp lệ!", "error");
+      }
+    } catch (err) {
+      console.error("submitProLicenseKey error:", err);
+      if (errEl) {
+        errEl.textContent = "Lỗi khi kích hoạt: " + err;
+        errEl.classList.remove("hidden");
+      }
+    }
+  }
+  window.submitProLicenseKey = submitProLicenseKey;
+
+  function initLicenseActivationModal() {
+    const modal = document.getElementById("modal-license-activation");
+    if (!modal) return;
+
+    const btnSubmit = document.getElementById("btn-submit-pro-activation");
+    const btnSubmitAlias = document.getElementById("btn-submit-license-key");
+    const btnCancel = document.getElementById("btn-cancel-pro-activation");
+    const btnCancelAlias = document.getElementById("btn-cancel-license-modal");
+    const btnClose = document.getElementById("btn-close-license-modal");
+    const btnCopyHwid = document.getElementById("btn-copy-license-hwid");
+    const inputKey = document.getElementById("input-pro-license-key");
+
+    const doCancel = () => {
+      modal.classList.add("hidden");
+      pendingGatekeeperTarget = null;
+      const errEl = document.getElementById("lbl-license-error");
+      if (errEl) errEl.classList.add("hidden");
+    };
+
+    if (btnSubmit) btnSubmit.addEventListener("click", submitProLicenseKey);
+    if (btnSubmitAlias) btnSubmitAlias.addEventListener("click", submitProLicenseKey);
+    if (btnCancel) btnCancel.addEventListener("click", doCancel);
+    if (btnCancelAlias) btnCancelAlias.addEventListener("click", doCancel);
+    if (btnClose) btnClose.addEventListener("click", doCancel);
+
+    if (btnCopyHwid) {
+      btnCopyHwid.addEventListener("click", () => {
+        const hwidEl = document.getElementById("display-pro-hwid");
+        const hwidVal = (hwidEl ? hwidEl.value : "").trim();
+        if (hwidVal && !hwidVal.includes("Đang đọc")) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(hwidVal);
+          }
+          showToast("Sao Chép", `Đã sao chép HWID: ${hwidVal}`, "success");
+        }
+      });
+    }
+
+    if (inputKey) {
+      inputKey.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submitProLicenseKey();
+        }
+      });
+    }
+  }
+  window.initLicenseActivationModal = initLicenseActivationModal;
+
+  async function initGatekeeper() {
+    initLicenseActivationModal();
+
+    try {
+      // 1. Tải cấu hình policies từ backend để user thường kế thừa chính xác
+      const dataRes = await invokeRust("admin_get_data", {});
+      if (dataRes && dataRes.success && dataRes.data) {
+        let data = dataRes.data;
+        if (typeof data === "string") {
+          try { data = JSON.parse(data); } catch (_) {}
+        }
+        if (data && typeof data === "object") {
+          let policies = data.policies;
+          if (typeof policies === "string") {
+            try { policies = JSON.parse(policies); } catch (_) {}
+          }
+          if (Array.isArray(policies) && policies.length > 0) {
+            currentPolicies = policies;
+          }
+        }
+      }
+
+      // 2. Kiểm tra bản quyền PRO thời gian thực từ LicenseManager.ps1 / Registry
+      const licRes = await invokeRust("check_pro_license", {});
+      if (licRes) {
+        let licData = licRes;
+        if (typeof licData === "string") {
+          try { licData = JSON.parse(licData); } catch (_) {}
+        }
+        if (licData) {
+          isProLicensed = (licData.is_pro === true || licData.IsPro === true);
+          const hwidVal = licData.hwid || licData.HWID || "";
+          if (hwidVal) {
+            const hwidDisplay = document.getElementById("display-pro-hwid");
+            if (hwidDisplay) hwidDisplay.value = hwidVal;
+            const hwidInput = document.getElementById("input-pro-hwid");
+            if (hwidInput) hwidInput.value = hwidVal;
+            const lblHwid = document.getElementById("lbl-license-hwid");
+            if (lblHwid) lblHwid.textContent = hwidVal;
+            const modalHwid = document.getElementById("modal-license-hwid");
+            if (modalHwid) modalHwid.textContent = hwidVal;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("initGatekeeper error:", err);
+    }
+  }
+  window.initGatekeeper = initGatekeeper;
+
+  // =========================================================================
+  // --- 16. UNIVERSAL REAL-TIME EXECUTION LOG DRAWER CONTROLLER (R3 / M3) ---
+  // =========================================================================
+  let universalLogPollingTimer = null;
+  let lastUniversalLogCount = 0;
+  let isUniversalLogExpanded = false;
+
+  function expandUniversalLog(forceOpen = true) {
+    const drawer = document.getElementById("universal-log-drawer");
+    const body = document.getElementById("universal-log-body");
+    const icon = document.getElementById("universal-log-toggle-icon");
+    const toggleBtn = document.getElementById("btn-toggle-universal-log");
+    if (!body) return;
+
+    if (forceOpen) {
+      body.classList.remove("hidden");
+      if (icon) icon.textContent = "keyboard_arrow_down";
+      if (toggleBtn) {
+        toggleBtn.setAttribute("aria-expanded", "true");
+        toggleBtn.setAttribute("title", "Thu gọn nhật ký");
+      }
+      if (drawer) drawer.classList.remove("collapsed");
+      isUniversalLogExpanded = true;
+      body.scrollTop = body.scrollHeight;
+    } else {
+      body.classList.add("hidden");
+      if (icon) icon.textContent = "keyboard_arrow_up";
+      if (toggleBtn) {
+        toggleBtn.setAttribute("aria-expanded", "false");
+        toggleBtn.setAttribute("title", "Mở rộng nhật ký");
+      }
+      if (drawer) drawer.classList.add("collapsed");
+      isUniversalLogExpanded = false;
+    }
+  }
+
+  function openUniversalLog() {
+    expandUniversalLog(true);
+  }
+
+  function collapseUniversalLog() {
+    expandUniversalLog(false);
+  }
+
+  function toggleUniversalLog() {
+    expandUniversalLog(!isUniversalLogExpanded);
+  }
+
+  function formatLogTimestamp() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  function formatUniversalLogLine(raw, customLevel = null) {
+    if (typeof raw !== "string") raw = String(raw || "");
+    const text = raw.trim();
+    if (!text) return null;
+
+    const div = document.createElement("div");
+    div.className = "py-0.5 px-1 font-mono text-[11px] leading-relaxed break-all hover:bg-slate-800/60 rounded flex items-start gap-1.5 transition-colors";
+
+    const low = text.toLowerCase();
+    const lvlLow = customLevel ? String(customLevel).toLowerCase() : "";
+
+    let colorClass = "text-emerald-300/90";
+    if (lvlLow === "error" || low.includes("[error]") || low.includes("[lỗi]") || low.includes("failed") || low.includes("error:")) {
+      colorClass = "text-rose-400 font-semibold";
+    } else if (lvlLow === "warn" || lvlLow === "warning" || low.includes("[warn") || low.includes("[cảnh báo]") || low.includes("warning:")) {
+      colorClass = "text-amber-400";
+    } else if (lvlLow === "success" || low.includes("[thành công]") || low.includes("[success]") || low.includes("[ok]") || low.includes("[hoàn tất]")) {
+      colorClass = "text-emerald-400 font-semibold";
+    } else if (lvlLow === "exec" || lvlLow === "info" || low.includes("[tiến trình]") || low.includes("[exec]") || low.includes("[bắt đầu]")) {
+      colorClass = "text-sky-400";
+    }
+
+    const hasTimestamp = /^\s*\[\d{1,4}[:\-\.]/.test(text);
+    if (!hasTimestamp) {
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "text-slate-500 shrink-0 select-none";
+      timeSpan.textContent = `[${formatLogTimestamp()}]`;
+      div.appendChild(timeSpan);
+    }
+
+    const msgSpan = document.createElement("span");
+    msgSpan.className = colorClass;
+    msgSpan.textContent = text;
+    div.appendChild(msgSpan);
+
+    return div;
+  }
+
+  function appendUniversalLogsToBody(logs) {
+    const bodyEl = document.getElementById("universal-log-body");
+    if (!bodyEl || !Array.isArray(logs) || logs.length === 0) return;
+
+    const fragment = document.createDocumentFragment();
+    logs.forEach((log) => {
+      const el = formatUniversalLogLine(log);
+      if (el) fragment.appendChild(el);
+    });
+    bodyEl.appendChild(fragment);
+
+    while (bodyEl.children.length > 1000) {
+      bodyEl.removeChild(bodyEl.firstChild);
+    }
+
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+
+    const badge = document.getElementById("universal-log-count");
+    if (badge) {
+      badge.textContent = `${bodyEl.children.length}`;
+    }
+  }
+
+  function appendUniversalLog(msg, level = "info") {
+    const bodyEl = document.getElementById("universal-log-body");
+    if (!bodyEl) return;
+
+    const el = formatUniversalLogLine(msg, level);
+    if (el) {
+      bodyEl.appendChild(el);
+      while (bodyEl.children.length > 1000) {
+        bodyEl.removeChild(bodyEl.firstChild);
+      }
+      bodyEl.scrollTop = bodyEl.scrollHeight;
+    }
+
+    const badge = document.getElementById("universal-log-count");
+    if (badge) {
+      badge.textContent = `${bodyEl.children.length}`;
+    }
+  }
+
+  async function pollUniversalLogs() {
+    try {
+      const res = await invokeRust("get_install_logs");
+      if (!res) return;
+
+      let serverLogs = [];
+      if (Array.isArray(res.logs)) {
+        serverLogs = res.logs;
+      } else if (typeof res.logs === "string") {
+        try { serverLogs = JSON.parse(res.logs); } catch (_) { serverLogs = []; }
+      } else if (typeof res.message === "string" && res.message.trim().startsWith("[")) {
+        try { serverLogs = JSON.parse(res.message); } catch (_) { serverLogs = []; }
+      } else if (typeof res.data === "string" && res.data.trim().startsWith("[")) {
+        try { serverLogs = JSON.parse(res.data); } catch (_) { serverLogs = []; }
+      }
+
+      if (!Array.isArray(serverLogs)) return;
+
+      const body = document.getElementById("universal-log-body");
+      const countBadge = document.getElementById("universal-log-count");
+      if (!body) return;
+
+      if (serverLogs.length < lastUniversalLogCount) {
+        body.innerHTML = "";
+        lastUniversalLogCount = 0;
+      }
+
+      if (serverLogs.length > lastUniversalLogCount) {
+        const deltaLogs = serverLogs.slice(lastUniversalLogCount);
+        appendUniversalLogsToBody(deltaLogs);
+        lastUniversalLogCount = serverLogs.length;
+        if (countBadge) {
+          countBadge.textContent = `${body.children.length}`;
+        }
+      }
+    } catch (_) {
+      // Non-blocking log polling
+    }
+  }
+
+  function initUniversalLogDrawer() {
+    const drawer = document.getElementById("universal-log-drawer");
+    const body = document.getElementById("universal-log-body");
+    const btnToggle = document.getElementById("btn-toggle-universal-log");
+    const btnCopy = document.getElementById("btn-copy-universal-log");
+    const btnClear = document.getElementById("btn-clear-universal-log");
+    const header = document.getElementById("universal-log-header");
+
+    if (!drawer) return;
+
+    if (btnToggle) {
+      btnToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleUniversalLog();
+      });
+    }
+
+    if (header) {
+      header.addEventListener("click", () => {
+        toggleUniversalLog();
+      });
+    }
+
+    if (btnCopy) {
+      btnCopy.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!body) return;
+        const text = Array.from(body.children)
+          .map((child) => child.textContent || "")
+          .filter(Boolean)
+          .join("\r\n");
+
+        if (!text.trim()) {
+          if (typeof showToast === "function") showToast("Console Log", "Không có nội dung log để sao chép.", "info");
+          return;
+        }
+
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+          }
+          if (typeof showToast === "function") showToast("Console Log", "Đã sao chép toàn bộ nhật ký vào Clipboard!", "success");
+        } catch (err) {
+          if (typeof showToast === "function") showToast("Lỗi", "Không thể sao chép nhật ký: " + err, "error");
+        }
+      });
+    }
+
+    if (btnClear) {
+      btnClear.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        try {
+          await invokeRust("clear_install_logs");
+        } catch (err) {
+          console.warn("clear_install_logs error:", err);
+        }
+        if (body) {
+          body.innerHTML = "";
+        }
+        lastUniversalLogCount = 0;
+        const badge = document.getElementById("universal-log-count");
+        if (badge) {
+          badge.textContent = "0";
+        }
+        if (typeof showToast === "function") {
+          showToast("Console Log", "Đã xóa toàn bộ nhật ký thực thi.", "info");
+        }
+      });
+    }
+
+    if (universalLogPollingTimer) clearInterval(universalLogPollingTimer);
+    pollUniversalLogs();
+    universalLogPollingTimer = setInterval(pollUniversalLogs, 800);
+  }
+
+  // Global window exports
+  window.initUniversalLogDrawer = initUniversalLogDrawer;
+  window.expandUniversalLog = expandUniversalLog;
+  window.openUniversalLog = openUniversalLog;
+  window.collapseUniversalLog = collapseUniversalLog;
+  window.toggleUniversalLog = toggleUniversalLog;
+  window.appendUniversalLog = appendUniversalLog;
+  if (typeof window.appendLog === "undefined") {
+    window.appendLog = (level, msg) => appendUniversalLog(msg, level);
+  }
 
   document.addEventListener("DOMContentLoaded", () => {
-
+    initGatekeeper();
+    initUniversalLogDrawer();
     initTweakHoverExplanation();
-
     syncAppVersion();
-
     bindNavigationAndActions();
-
     initAdminPortal();
 
     initAppStoreController();
