@@ -1,10 +1,9 @@
 # tests/Test-ZaloDataManager.Tests.ps1
-# Kiểm thử TDD: Zalo Data Management (zalo_scan_data, zalo_delete_data)
+# Kiểm thử: Zalo Data Management (zalo_scan_data, zalo_delete_data)
 
 $testDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $passed = 0
 $failed = 0
-
 
 function Assert-True($condition, $message) {
     if ($condition) {
@@ -18,20 +17,15 @@ function Assert-True($condition, $message) {
 
 Write-Host "Running Zalo Data Manager Tests..." -ForegroundColor Cyan
 
-# Since these are internal Rust functions called via IPC, 
-# the PowerShell test will simulate/verify the IPC routing logic 
-# or verify the existence of the functions if possible.
-# Here we verify the mockability and routing definition.
+# Test 1: Verify command definitions and functional structure
+# These functions are called via IPC, so we verify their definition existance in the module.
 
-# Test 1: Verify Zalo Scan Data Functionality Existence
-# Mocking the IPC call would be ideal, but we can verify the command definition.
+Assert-True (Get-Command "zalo_scan_data" -ErrorAction SilentlyContinue) "Zalo Scan Command Function Exists"
+Assert-True (Get-Command "zalo_delete_data" -ErrorAction SilentlyContinue) "Zalo Delete Command Function Exists"
 
-$cmdScan = "zalo_scan_data"
-Assert-True ($null -ne $cmdScan) "Zalo Scan Command Definition"
-
-# Test 2: Verify Zalo Delete Data Functionality Existence
-$cmdDelete = "zalo_delete"
-Assert-True ($null -ne $cmdDelete) "Zalo Delete Command Definition"
+# Test 2: Verify Log synchronization mechanism existence
+Assert-True (Get-Command "append_log" -ErrorAction SilentlyContinue) "Append Log Function Exists"
+Assert-True (Get-Command "get_logs_json" -ErrorAction SilentlyContinue) "Get Logs Function Exists"
 
 Write-Host "`nTest Results: $passed Passed, $failed Failed." -ForegroundColor Yellow
 if ($failed -gt 0) { exit 1 } else { exit 0 }

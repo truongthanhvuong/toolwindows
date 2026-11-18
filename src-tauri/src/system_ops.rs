@@ -23842,6 +23842,7 @@ impl ZaloDataInfo {
 }
 
 pub fn zalo_scan_data(path: String) -> ZaloDataInfo {
+    append_log(&format!("Zalo scan initiated for path: {}", path));
     let ps = format!(
         r#"
         $path = '{0}'
@@ -23864,15 +23865,18 @@ pub fn zalo_scan_data(path: String) -> ZaloDataInfo {
         path.replace('\'', "''")
     );
     let json = run_ps_oneshot(&ps);
-    ZaloDataInfo {
+    let info = ZaloDataInfo {
         path: extract_json_field(&json, "path").unwrap_or(&path).to_string(),
         total_size: extract_json_field(&json, "total_size").unwrap_or("0").parse::<u64>().unwrap_or(0),
         file_count: extract_json_field(&json, "file_count").unwrap_or("0").parse::<i32>().unwrap_or(0),
         last_scanned: extract_json_field(&json, "last_scanned").unwrap_or("").to_string(),
-    }
+    };
+    append_log(&format!("Zalo scan completed. Files: {}, Size: {} bytes", info.file_count, info.total_size));
+    info
 }
 
 pub fn zalo_delete_data(path: String, days: i32) -> String {
+    append_log(&format!("Zalo deletion initiated for path: {} (older than {} days)", path, days));
     let ps = format!(
         r#"
         $path = '{0}'
@@ -23894,7 +23898,9 @@ pub fn zalo_delete_data(path: String, days: i32) -> String {
         path.replace('\'', "''"),
         days
     );
-    run_ps_oneshot(&ps)
+    let result = run_ps_oneshot(&ps);
+    append_log(&format!("Zalo deletion completed. Items removed: {}", result));
+    result
 }
 
 #[cfg(test)]
