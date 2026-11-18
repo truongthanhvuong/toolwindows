@@ -23916,6 +23916,21 @@ mod tests {
 
 
     #[test]
+    fn test_zalo_data_manager_logging() {
+        let path = "C:\\Windows\\Temp";
+        clear_logs();
+        let _ = zalo_scan_data(path.to_string());
+        let logs = get_logs_json();
+        assert!(logs.contains("Zalo scan initiated"), "Scan log missing");
+        assert!(logs.contains("Zalo scan completed"), "Scan completion log missing");
+
+        let _ = zalo_delete_data(path.to_string(), 30);
+        let logs2 = get_logs_json();
+        assert!(logs2.contains("Zalo deletion initiated"), "Deletion log missing");
+        assert!(logs2.contains("Zalo deletion completed"), "Deletion completion log missing");
+    }
+
+    #[test]
 
 
 

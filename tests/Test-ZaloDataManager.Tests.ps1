@@ -17,15 +17,15 @@ function Assert-True($condition, $message) {
 
 Write-Host "Running Zalo Data Manager Tests..." -ForegroundColor Cyan
 
-# Test 1: Verify command definitions and functional structure
-# These functions are called via IPC, so we verify their definition existance in the module.
+# Test 1: Verify command definitions in main.rs
+$mainRs = Get-Content (Join-Path $testDir "../src-tauri/src/main.rs") -Raw
+Assert-True ($mainRs -match 'cmd == "zalo_scan"') "Zalo Scan IPC Command Defined in main.rs"
+Assert-True ($mainRs -match 'cmd == "zalo_delete"') "Zalo Delete IPC Command Defined in main.rs"
 
-Assert-True (Get-Command "zalo_scan_data" -ErrorAction SilentlyContinue) "Zalo Scan Command Function Exists"
-Assert-True (Get-Command "zalo_delete_data" -ErrorAction SilentlyContinue) "Zalo Delete Command Function Exists"
-
-# Test 2: Verify Log synchronization mechanism existence
-Assert-True (Get-Command "append_log" -ErrorAction SilentlyContinue) "Append Log Function Exists"
-Assert-True (Get-Command "get_logs_json" -ErrorAction SilentlyContinue) "Get Logs Function Exists"
+# Test 2: Verify Log synchronization mechanism definition in system_ops.rs
+$systemOpsRs = Get-Content (Join-Path $testDir "../src-tauri/src/system_ops.rs") -Raw
+Assert-True ($systemOpsRs -match 'pub fn append_log') "Append Log Function Defined in system_ops.rs"
+Assert-True ($systemOpsRs -match 'pub fn get_logs_json') "Get Logs Function Defined in system_ops.rs"
 
 Write-Host "`nTest Results: $passed Passed, $failed Failed." -ForegroundColor Yellow
 if ($failed -gt 0) { exit 1 } else { exit 0 }
