@@ -1,10 +1,10 @@
-﻿[
+[
     {
         "hostname":  "TEST-PC-99",
         "serialNumber":  "TEST-BIOS-SN-99",
         "ipAddress":  "192.168.1.99",
         "osCaption":  "Windows 11 Test",
-        "lastSeen":  "2026-11-17 15:49:55",
+        "lastSeen":  "2026-11-18 09:58:31",
         "hwid":  "HWID-TEST-99",
         "status":  "Active"
     },
