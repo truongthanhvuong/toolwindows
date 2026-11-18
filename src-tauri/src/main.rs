@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.185";
+pub const APP_VERSION: &str = "20.5.909.186";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
