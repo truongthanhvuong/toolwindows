@@ -1,4 +1,4 @@
-
+﻿
 
   // Global Image Error Fallback Handler
 
@@ -7644,7 +7644,7 @@ getAppIconMarkup(app) +
 
       const res = await invokeRust("run_system_action", { actionId: "browse_iso" });
 
-      const selectedPath = (res && res.file_path) || (res && res.success && res.message && (res.message.includes(":\\") || res.message.toLowerCase().endsWith(".iso")) ? res.message : null);
+      const selectedPath = (res && res.success && res.file_path && !res.file_path.includes("hủy") && (res.file_path.toLowerCase().endsWith(".iso") || res.file_path.toLowerCase().endsWith("setup.exe") || res.file_path.includes(":\\"))) ? res.file_path : null;
 
 
 
@@ -7897,6 +7897,17 @@ getAppIconMarkup(app) +
     safeAttachClick("btn-browse-iso", () => browseIsoFile());
 
     safeAttachClick("btn-start-deploy", () => startWinDeploy());
+
+    const inputIsoEl = document.getElementById("input-iso-path");
+    if (inputIsoEl) {
+      inputIsoEl.addEventListener("input", (e) => {
+        const v = (e.target.value || "").trim();
+        const isoText = document.getElementById("iso-path-text");
+        if (isoText) {
+          isoText.innerText = v || "ChÆ°a chá»n file ISO";
+        }
+      });
+    }
 
     safeAttachClick("btn-quick-backup-system", () => backupSystemFromDeploy());
 
@@ -8862,7 +8873,23 @@ getAppIconMarkup(app) +
 
     const isoText = document.getElementById("iso-path-text");
 
-    const isoPath = ((isoInput && isoInput.value.trim()) || (isoText ? (isoText.innerText || "").trim() : "")).trim();
+    const rawPath = ((isoInput && isoInput.value.trim()) || (isoText ? (isoText.innerText || "").trim() : "")).trim();
+
+    const isInvalid = !rawPath || 
+      rawPath.includes("hủy") || 
+      rawPath.includes("chưa chọn") || 
+      rawPath.includes("Chưa chọn") ||
+      (!rawPath.toLowerCase().endsWith(".iso") && !rawPath.toLowerCase().endsWith("setup.exe") && !rawPath.includes(":\\"));
+
+    if (isInvalid) {
+
+      showToast("Cài Đặt Windows", "Vui lòng chọn hoặc nhập đường dẫn file ISO (.iso) hoặc file setup.exe hợp lệ trước khi bắt đầu!", "warning");
+
+      return;
+
+    }
+
+    const isoPath = rawPath;
 
     const modeEl = document.querySelector('input[name="deploy-mode"]:checked');
 
@@ -8876,14 +8903,14 @@ getAppIconMarkup(app) +
 
     const shouldBackupSystem = cbBackupSystem ? cbBackupSystem.checked : true;
 
-
-
-    if (!isoPath) {
-
-      showToast("Cài Đặt Windows", "Vui lòng chọn hoặc nhập đường dẫn file ISO trước khi bắt đầu!", "warning");
-
-      return;
-
+    if (typeof window.openUniversalLog === "function") {
+      window.openUniversalLog();
+    }
+    if (typeof window.appendConsoleLog === "function") {
+      window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Khởi chạy triển khai Windows Setup với file: " + isoPath);
+      window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Chế độ: " + (deployMode === "clean" ? "Cài Mới (Clean Install)" : "Nâng Cấp / Cài Đè (In-Place Upgrade)"));
+      if (shouldBackupSystem) window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Tùy chọn: Tự động sao lưu Windows C:");
+      if (shouldBackupDrivers) window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Tùy chọn: Tự động sao lưu Driver phần cứng");
     }
 
 
@@ -8903,26 +8930,6 @@ getAppIconMarkup(app) +
 
 
     try {
-
-      if (shouldBackupSystem) {
-
-        showToast("Sao Lưu Hệ Thống", "Đang tự động sao lưu toàn bộ Windows C: trước khi cài mới...", "info");
-
-        await backupSystemFromDeploy();
-
-      }
-
-
-
-      if (shouldBackupDrivers) {
-
-        showToast("Sao Lưu Driver", "Đang tiến hành sao lưu Driver máy tính trước khi cài Win...", "info");
-
-        await backupDriverFromDeploy();
-
-      }
-
-
 
       const res = await invokeRust("run_system_action", {
 

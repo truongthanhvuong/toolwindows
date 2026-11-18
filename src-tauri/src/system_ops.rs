@@ -7608,7 +7608,36 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
+        if iso_path.is_empty() || iso_path.contains("hủy") || iso_path.contains("chưa chọn") || iso_path.contains("Chưa chọn") {
+            append_log("[LỖI] Đường dẫn tệp tin ISO không hợp lệ hoặc chưa được chọn!");
+            return (false, "Vui lòng chọn hoặc nhập đường dẫn tệp tin ISO (.iso) hoặc ổ đĩa cài đặt setup.exe hợp lệ trước khi bắt đầu!".to_string());
+        }
+
+        let safe_iso = iso_path.replace('\'', "''");
+        let ps_precheck = format!(
+            r#"
+            $iso = '{}'
+            if (Test-Path "$iso\setup.exe") {{ Write-Output "EXISTS" }}
+            elseif (Test-Path $iso) {{ Write-Output "EXISTS" }}
+            else {{
+                $opt = Get-CimInstance Win32_LogicalDisk | Where-Object {{ Test-Path "$($_.DeviceID)\setup.exe" }} | Select-Object -First 1
+                if ($opt) {{ Write-Output "EXISTS" }} else {{ Write-Output "NOT_FOUND" }}
+            }}
+            "#,
+            safe_iso
+        );
+        let mut pre_cmd = Command::new("powershell");
+        pre_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_precheck]);
+        #[cfg(windows)]
+        pre_cmd.creation_flags(CREATE_NO_WINDOW);
+        let pre_out = pre_cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+        if pre_out.contains("NOT_FOUND") {
+            append_log(&format!("[LỖI] Không tìm thấy file ISO hoặc ổ đĩa cài đặt tại: {}", iso_path));
+            return (false, format!("Không tìm thấy tệp tin ISO tại: '{}'. Vui lòng kiểm tra lại đường dẫn!", iso_path));
+        }
+
         append_log("[CÀI WIN TỰ ĐỘNG] Khởi tạo môi trường triển khai Windows Setup...");
+        append_log(&format!("[CÀI WIN TỰ ĐỘNG] Đã xác thực tệp cài đặt: {}", iso_path));
 
 
 
@@ -7900,19 +7929,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
-        if iso_path.is_empty() {
-
-
-
-            append_log("[LỖI] Đường dẫn tệp tin ISO trống!");
-
-
-
-            return (false, "Vui lòng chọn hoặc nhập đường dẫn tệp tin ISO Windows hợp lệ trước khi bấm Bắt Đầu Cài Win!".to_string());
-
-
-
-        }
+        // Đã kiểm tra tệp tin ISO tại đầu hàm
 
 
 
@@ -8040,6 +8057,16 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
+                    try {{
+                        $existing = Get-DiskImage -ImagePath $iso -ErrorAction SilentlyContinue | Get-Volume -ErrorAction SilentlyContinue | Select-Object -First 1
+                        if ($existing -and $existing.DriveLetter) {{
+                            $drv = "$($existing.DriveLetter):"
+                            if (Test-Path (Join-Path $drv "setup.exe")) {{
+                                Write-Output "MOUNTED:$drv"
+                                exit 0
+                            }}
+                        }}
+                    }} catch {{}}
                     Write-Output "ERR_MOUNT:$($_.Exception.Message)"
 
 
@@ -8196,7 +8223,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
-                Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}"
+                Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\"
 
 
 
@@ -8204,10 +8231,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
-                drv, setup_args
-
-
-
+                drv, setup_args, drv
             );
 
 

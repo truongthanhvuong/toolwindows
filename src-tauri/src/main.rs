@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.183";
+pub const APP_VERSION: &str = "20.5.909.184";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -554,12 +554,12 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         if (act_id == "check_pro_license" || act_id == "activate_pro_key") && msg.trim().starts_with('{') {
             json_resp = msg;
         } else if act_id == "browse_iso" || act_id == "browse_file" {
-            let escaped_path = escape_json_str(&msg);
+            let escaped_path = if success { escape_json_str(&msg) } else { String::new() };
             json_resp = format!(
                 r#"{{"success":{},"file_path":"{}","message":"{}"}}"#,
                 success,
                 escaped_path,
-                escaped_path
+                escape_json_str(&msg)
             );
         } else {
             json_resp = format!(
