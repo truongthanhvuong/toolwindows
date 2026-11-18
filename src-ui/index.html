@@ -2606,7 +2606,7 @@
 
 
 
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.188</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.190</span>
 
 
 
@@ -3946,6 +3946,12 @@
 
 
 
+        </button>
+
+        <!-- 16B. Quản Lý Dữ Liệu Zalo -->
+        <button data-target="view-zalo-data" onclick="switchView('view-zalo-data')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+          <span class="material-symbols-outlined text-[19px] text-slate-500">chat</span>
+          <span>Quản Lý Dữ Liệu Zalo</span>
         </button>
 
 
@@ -34221,6 +34227,13 @@ Chọn phân vùng và thao tác mong muốn...
       <!-- Dynamically rendered log lines -->
     </div>
   </div>
+
+    <!-- Zalo Data Management -->
+    <div id="view-zalo-data" class="stitch-view hidden h-full w-full flex-col p-6 space-y-4">
+        <div class="text-2xl font-bold text-slate-800">Quản Lý Dữ Liệu Zalo</div>
+        <p class="text-slate-600">Công cụ giúp quét và dọn dẹp dữ liệu Zalo (Cache, File đính kèm, Nhật ký).</p>
+        <button onclick="invokeRust('backend_zalo_cleanup')" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700">Quét & Dọn Dẹp Ngay</button>
+    </div>
 
 </body>
 

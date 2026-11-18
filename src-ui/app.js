@@ -1,4 +1,4 @@
-﻿
+
 
   // Global Image Error Fallback Handler
 
@@ -103,7 +103,7 @@
     { Id: "BackupSystem", Name: "Sao Lưu & Khôi Phục Windows", Icon: "🔄", Tier: "FREE", Description: "Sao lưu toàn bộ Windows System Image WBAdmin / VHDX và khôi phục 1-click" },
 
     { Id: "BitLocker", Name: "Tắt BitLocker & EFS", Icon: "🔒", Tier: "FREE", Description: "Mở khóa và giải mã phân vùng ổ đĩa an toàn" },
-
+    { Id: "ZaloData", Name: "Quản Lý Dữ Liệu Zalo", Icon: "💬", Tier: "FREE", Description: "Quản lý và dọn dẹp dữ liệu Zalo" },
     { Id: "Activation", Name: "Kích Hoạt Bản Quyền Số", Icon: "🔑", Tier: "ADMIN", Description: "Kích hoạt bản quyền kỹ thuật số vĩnh viễn cho Windows & Office" }
 
   ];
@@ -217,6 +217,7 @@
     "view-backup-windows": "BackupSystem",
     "view-printer-lan": "PrinterLAN",
     "view-bitlocker-mgmt": "BitLocker",
+    "view-zalo-data": "ZaloData",
   };
 
   function checkGatekeeperAccess(targetId) {
