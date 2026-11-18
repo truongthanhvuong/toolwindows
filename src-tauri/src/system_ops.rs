@@ -23822,6 +23822,81 @@ pub fn uninstall_uwp_package(package_id: &str) -> (bool, String) {
 
 
 
+
+pub struct ZaloDataInfo {
+    pub path: String,
+    pub total_size: u64,
+    pub file_count: i32,
+    pub last_scanned: String,
+}
+
+impl ZaloDataInfo {
+    pub fn to_json(&self) -> String {
+        format!(r#"{{"path":"{}","total_size":{},"file_count":{},"last_scanned":"{}"}}"#,
+            self.path.replace('\\', "\\\\").replace('"', "\\\""),
+            self.total_size,
+            self.file_count,
+            self.last_scanned.replace('"', "\\\"")
+        )
+    }
+}
+
+pub fn zalo_scan_data(path: String) -> ZaloDataInfo {
+    let ps = format!(
+        r#"
+        $path = '{0}'
+        if (Test-Path $path) {{
+            $files = Get-ChildItem -Path $path -Recurse -File -ErrorAction SilentlyContinue
+            $size = 0
+            if ($files) {{ $size = ($files | Measure-Object -Property Length -Sum).Sum }}
+            $count = if ($files) {{ $files.Count }} else {{ 0 }}
+            $obj = [PSCustomObject]@{{
+                path = $path
+                total_size = $size
+                file_count = $count
+                last_scanned = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+            }}
+            $obj | ConvertTo-Json -Compress
+        }} else {{
+            'null'
+        }}
+        "#,
+        path.replace('\'', "''")
+    );
+    let json = run_ps_oneshot(&ps);
+    ZaloDataInfo {
+        path: extract_json_field(&json, "path").unwrap_or(&path).to_string(),
+        total_size: extract_json_field(&json, "total_size").unwrap_or("0").parse::<u64>().unwrap_or(0),
+        file_count: extract_json_field(&json, "file_count").unwrap_or("0").parse::<i32>().unwrap_or(0),
+        last_scanned: extract_json_field(&json, "last_scanned").unwrap_or("").to_string(),
+    }
+}
+
+pub fn zalo_delete_data(path: String, days: i32) -> String {
+    let ps = format!(
+        r#"
+        $path = '{0}'
+        $days = {1}
+        if (Test-Path $path) {{
+            $limit = (Get-Date).AddDays(-$days)
+            $deleted = 0
+            Get-ChildItem -Path $path -Recurse -File -ErrorAction SilentlyContinue | Where-Object {{ $_.LastWriteTime -lt $limit }} | ForEach-Object {{
+                try {{
+                    Remove-Item -Path $_.FullName -Force
+                    $deleted++
+                }} catch {{}}
+            }}
+            $deleted
+        }} else {{
+            -1
+        }}
+        "#,
+        path.replace('\'', "''"),
+        days
+    );
+    run_ps_oneshot(&ps)
+}
+
 #[cfg(test)]
 
 
