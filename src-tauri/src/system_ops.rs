@@ -13541,7 +13541,23 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
-            $url = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+            $latestSha = ""
+            try {{
+                $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/commits?path=version.json&page=1&per_page=1"
+                $req = [System.Net.HttpWebRequest]::Create($apiUrl)
+                $req.Timeout = 4000
+                $req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) VUONGTT-Toolkit-Updater/2026"
+                $req.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                $req.Headers.Add("Pragma", "no-cache")
+                $resp = $req.GetResponse()
+                $reader = New-Object System.IO.StreamReader($resp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $raw = $reader.ReadToEnd()
+                $reader.Close(); $resp.Close()
+                $arr = ConvertFrom-Json $raw
+                if ($arr -and $arr.Count -gt 0 -and $arr[0].sha) {{ $latestSha = $arr[0].sha }}
+            }} catch {{}}
+
+            $url = if ($latestSha) {{ "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/$latestSha/version.json" }} else {{ "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" }}
 
 
 
@@ -13867,15 +13883,29 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
+            $latestSha = ""
+            try {{
+                $apiUrl = "https://api.github.com/repos/truongthanhvuong/toolwindows/commits?path=VUONGTT_Toolkit.exe&page=1&per_page=1"
+                $req = [System.Net.HttpWebRequest]::Create($apiUrl)
+                $req.Timeout = 4000
+                $req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) VUONGTT-Toolkit-Updater/2026"
+                $req.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                $req.Headers.Add("Pragma", "no-cache")
+                $resp = $req.GetResponse()
+                $reader = New-Object System.IO.StreamReader($resp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $raw = $reader.ReadToEnd()
+                $reader.Close(); $resp.Close()
+                $arr = ConvertFrom-Json $raw
+                if ($arr -and $arr.Count -gt 0 -and $arr[0].sha) {{ $latestSha = $arr[0].sha }}
+            }} catch {{}}
+
             $ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-
-            $urls = @(
-
-                "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe?t=$ts",
-
-                "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe?t=$ts"
-
-            )
+            $urls = @()
+            if ($latestSha) {{
+                $urls += "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/$latestSha/VUONGTT_Toolkit.exe"
+            }}
+            $urls += "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe?t=$ts"
+            $urls += "https://github.com/truongthanhvuong/toolwindows/raw/main/VUONGTT_Toolkit.exe?t=$ts"
 
 
 
@@ -13927,54 +13957,38 @@ if ('{auto_reboot}' -eq 'True') {{
 
 
 
-            # Tao runner cmd an toan doc lap de thay the binary va khoi dong lai
+            # Khoi chay tien trinh PowerShell ngam doc lap de thay the binary va khoi dong lai
+            # Tu dong ke thua quyen Admin cao nhat ma khong dung Verb RunAs gay loi Win32Exception
+            $updateScript = @"
+Start-Sleep -Milliseconds 1200
+taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
+taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
+Stop-Process -Name 'VUONGTT_Toolkit','VUONGTT_Toolkit_Rust' -Force -ErrorAction SilentlyContinue
+Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | Where-Object {{ \$_.CommandLine -like '*127.0.0.1*' }} | Stop-Process -Force -ErrorAction SilentlyContinue
+for (\$i = 0; \$i -lt 25; \$i++) {{
+    try {{
+        Copy-Item -Path '$tempExe' -Destination '$currExe' -Force -ErrorAction Stop
+        break
+    }} catch {{
+        Start-Sleep -Milliseconds 400
+    }}
+}}
+if (Test-Path 'E:\toolwindows\VUONGTT_Toolkit.exe') {{
+    Copy-Item -Path '$tempExe' -Destination 'E:\toolwindows\VUONGTT_Toolkit.exe' -Force -ErrorAction SilentlyContinue
+}}
+if (Test-Path "\$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe") {{
+    Copy-Item -Path '$tempExe' -Destination "\$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" -Force -ErrorAction SilentlyContinue
+}}
+Unblock-File -LiteralPath '$currExe' -ErrorAction SilentlyContinue
+Start-Process -FilePath '$currExe'
+Start-Sleep -Seconds 2
+Remove-Item -Path '$tempExe' -Force -ErrorAction SilentlyContinue
+"@
 
-            $runnerBat = Join-Path $env:TEMP "vuongtt_update_runner.cmd"
+            $runnerPs1 = Join-Path $env:TEMP "vuongtt_update_runner.ps1"
+            [System.IO.File]::WriteAllText($runnerPs1, $updateScript, [System.Text.Encoding]::UTF8)
 
-            $lines = @(
-                '@echo off',
-                'timeout /t 1 /nobreak >nul',
-                'taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1',
-                'taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1',
-                'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process -Filter \"Name = ''msedge.exe''\" | Where-Object {{ $_.CommandLine -like ''*127.0.0.1*'' }} | Stop-Process -Force -ErrorAction SilentlyContinue" >nul 2>&1',
-                'timeout /t 1 /nobreak >nul',
-                'set RETRY=0',
-                ':RETRY_LOOP',
-                'copy /Y "%~1" "%~2" >nul 2>&1',
-                'if not errorlevel 1 goto DONE_COPY',
-                'set /a RETRY+=1',
-                'if %RETRY% geq 20 goto DONE_COPY',
-                'timeout /t 1 /nobreak >nul',
-                'goto RETRY_LOOP',
-                ':DONE_COPY',
-                'if exist "E:\toolwindows\VUONGTT_Toolkit.exe" copy /Y "%~1" "E:\toolwindows\VUONGTT_Toolkit.exe" >nul 2>&1',
-                'if exist "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" copy /Y "%~1" "%ProgramData%\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" >nul 2>&1',
-                'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -LiteralPath ''%~2'' -ErrorAction SilentlyContinue" >nul 2>&1',
-                'start "" "%~2"',
-                'timeout /t 2 /nobreak >nul',
-                'del /f /q "%~1" >nul 2>&1',
-                '(goto) 2>nul & del "%~f0"'
-            )
-
-            [System.IO.File]::WriteAllLines($runnerBat, $lines, [System.Text.Encoding]::ASCII)
-
-
-
-            $psi = New-Object System.Diagnostics.ProcessStartInfo
-
-            $psi.FileName = "cmd.exe"
-
-            $psi.Arguments = "/c `"$runnerBat`" `"$tempExe`" `"$currExe`""
-
-            $psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
-
-            $psi.CreateNoWindow = $true
-
-            $psi.Verb = "RunAs"
-
-            [System.Diagnostics.Process]::Start($psi) | Out-Null
-
-
+            Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$runnerPs1`"" -WindowStyle Hidden
 
             Write-Output "UPDATE_READY"
 

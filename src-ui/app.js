@@ -10963,11 +10963,15 @@ getAppIconMarkup(app) +
 
     }
 
-
+    // Tự động mở Universal Console Log Drawer để quan sát trực quan thời gian thực
+    if (typeof window.openUniversalLog === "function") {
+      window.openUniversalLog();
+    }
+    if (typeof window.appendConsoleLog === "function") {
+      window.appendConsoleLog("[CẬP NHẬT GITHUB] Đang kết nối máy chủ GitHub kiểm tra phiên bản mới nhất...");
+    }
 
     showToast("Kiểm Tra Cập Nhật", "Đang kết nối GitHub để kiểm tra phiên bản mới nhất...", "info");
-
-
 
     try {
 
@@ -10981,33 +10985,39 @@ getAppIconMarkup(app) +
 
       } catch (_) {}
 
-
-
       const curVer = (updateInfo && updateInfo.current_version) || "2026";
 
       const newVer = (updateInfo && updateInfo.latest_version) || curVer;
 
+      if (typeof window.appendConsoleLog === "function") {
+        window.appendConsoleLog(`[CẬP NHẬT GITHUB] Phiên bản hiện tại: v${curVer} | Phiên bản GitHub: v${newVer}`);
+      }
 
-
+      // Kể cả khi số phiên bản trùng nhau, người dùng bấm nút Cập Nhật là muốn đồng bộ/tải lại binary mới nhất từ GitHub
       if (updateInfo && updateInfo.has_update) {
 
         showToast("Phát Hiện Bản Mới", `Phát hiện bản nâng cấp v${newVer} (hiện tại: v${curVer})! Đang tự động tải và cài đặt...`, "info");
+        if (typeof window.appendConsoleLog === "function") {
+          window.appendConsoleLog(`[CẬP NHẬT GITHUB] Phát hiện bản mới v${newVer}. Đang tải file VUONGTT_Toolkit.exe...`);
+        }
 
       } else {
 
-        showToast("Đã Là Bản Mới Nhất", `Bạn đang sử dụng phiên bản mới nhất (v${curVer}) từ GitHub! Hệ thống đã được đồng bộ 100%.`, "success");
-
-        return;
+        showToast("Đồng Bộ GitHub", `Đang đồng bộ và tải lại bản phát hành mới nhất v${newVer} từ GitHub...`, "info");
+        if (typeof window.appendConsoleLog === "function") {
+          window.appendConsoleLog(`[CẬP NHẬT GITHUB] Bắt đầu đồng bộ và tải lại bản phát hành mới nhất v${newVer} từ GitHub...`);
+        }
 
       }
-
-
 
       const applyRes = await invokeRust("run_system_action", { actionId: "apply_update" });
 
       if (applyRes && applyRes.success) {
 
         showToast("Cập Nhật Thành Công", "Đã tải xong bản mới nhất! Ứng dụng đang tự động thay thế và khởi động lại sau 2 giây...", "success");
+        if (typeof window.appendConsoleLog === "function") {
+          window.appendConsoleLog("[CẬP NHẬT GITHUB] Tải thành công! Ứng dụng đang tự động thay thế binary và khởi động lại...");
+        }
 
         setTimeout(async () => {
           try {
@@ -11021,12 +11031,18 @@ getAppIconMarkup(app) +
       } else {
 
         showToast("Thông Báo Cập Nhật", (applyRes && applyRes.message) || "Không thể tải bản cập nhật tự động. Vui lòng kiểm tra lại kết nối mạng!", "warning");
+        if (typeof window.appendConsoleLog === "function") {
+          window.appendConsoleLog("[LỖI CẬP NHẬT] " + ((applyRes && applyRes.message) || "Không thể tải bản cập nhật tự động"));
+        }
 
       }
 
     } catch (err) {
 
       showToast("Lỗi Cập Nhật", String(err), "error");
+      if (typeof window.appendConsoleLog === "function") {
+        window.appendConsoleLog("[LỖI CẬP NHẬT] Ngoại lệ: " + err);
+      }
 
     } finally {
 
