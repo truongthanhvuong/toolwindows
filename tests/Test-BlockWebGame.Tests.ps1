@@ -111,7 +111,7 @@ Assert-True ($opsContent -match '185\.60\.216\.0/22') "Firewall rule phai chan d
 Assert-True ($opsContent -match '57\.144\.0\.0/14') "Firewall rule phai chan dai IP 57.144.0.0/14"
 
 # Kiem tra cat socket va don dep tien trinh trinh duyet
-Assert-True ($opsContent -match 'Stop-Process.*chrome.*msedge') "system_ops.rs phai dong tien trinh trinh duyet chrome va msedge"
+Assert-True ($opsContent -match 'Stop-Process.*chrome' -and $opsContent -match 'msedge') "system_ops.rs phai dong tien trinh trinh duyet chrome va msedge"
 Assert-True ($opsContent -match 'ipconfig /flushdns') "system_ops.rs phai flush DNS cache"
 Assert-True ($opsContent -match 'Clear-DnsClientCache') "system_ops.rs phai xoa cache DnsClient"
 
