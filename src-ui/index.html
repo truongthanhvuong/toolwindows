@@ -2606,7 +2606,7 @@
 
 
 
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.189</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.192</span>
 
 
 
@@ -3302,7 +3302,7 @@
 
 
 
-        <button data-target="view-clean-uninstaller" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
+        <button data-target="view-clean-uninstaller" onclick="switchView('view-clean-uninstaller')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-slate-600 hover:bg-white/50 w-full text-left">
 
 
 
@@ -34229,12 +34229,58 @@ Chọn phân vùng và thao tác mong muốn...
   </div>
 
     <!-- Zalo Data Management -->
-    <div id="view-zalo-data" class="stitch-view hidden h-full w-full flex-col p-6 space-y-4">
-        <div class="text-2xl font-bold text-slate-800">Quản Lý Dữ Liệu Zalo</div>
-        <p class="text-slate-600">Công cụ giúp quét và dọn dẹp dữ liệu Zalo (Cache, File đính kèm, Nhật ký).</p>
-        <button onclick="invokeRust('backend_zalo_cleanup')" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700">Quét & Dọn Dẹp Ngay</button>
+    <div id="view-zalo-data" class="stitch-view hidden h-full w-full flex-col overflow-y-auto" style="padding:20px;gap:0;">
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <span style="font-size:26px;">💬</span>
+          <div>
+            <div style="font-size:20px;font-weight:700;color:#1e293b;">Quản Lý &amp; Dọn Dẹp Dữ Liệu Zalo</div>
+            <div style="font-size:12px;color:#64748b;">Quét, phân tích và xóa cache, file tải về cũ của Zalo theo thời gian tùy chọn</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">📁 Thư mục dữ liệu Zalo</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input id="zalo-path-input" type="text" placeholder="C:\Users\[Tên]\AppData\Roaming\ZaloData\media\[ZaloID]\ZaloDownloads"
+            style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;color:#374151;background:#fff;outline:none;" />
+          <button onclick="zaloDetectPath()" style="padding:7px 14px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🔍 Tự động tìm</button>
+          <button onclick="zaloScanData()" style="padding:7px 14px;background:#0f766e;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📊 Quét thư mục</button>
+        </div>
+        <div id="zalo-scan-result" style="display:none;margin-top:10px;padding:10px 14px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;">
+          <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+            <div><div style="font-size:20px;font-weight:700;color:#065f46;" id="zalo-file-count">0</div><div style="font-size:11px;color:#059669;">Tổng số file</div></div>
+            <div><div style="font-size:20px;font-weight:700;color:#065f46;" id="zalo-total-size">0 MB</div><div style="font-size:11px;color:#059669;">Dung lượng</div></div>
+            <div><div style="font-size:13px;font-weight:600;color:#374151;" id="zalo-last-scanned">—</div><div style="font-size:11px;color:#059669;">Lần quét cuối</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;">⏱️ Giữ lại file trong vòng</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="zalo-time-options">
+          <button onclick="zaloSetDays(90)" id="zalo-opt-90" style="padding:7px 16px;border-radius:8px;border:2px solid #3b82f6;background:#3b82f6;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">3 tháng (90 ngày)</button>
+          <button onclick="zaloSetDays(180)" id="zalo-opt-180" style="padding:7px 16px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:12px;font-weight:600;cursor:pointer;">6 tháng (180 ngày)</button>
+          <button onclick="zaloSetDays(365)" id="zalo-opt-365" style="padding:7px 16px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:12px;font-weight:600;cursor:pointer;">12 tháng (365 ngày)</button>
+          <button onclick="zaloSetDays(-1)" id="zalo-opt-custom" style="padding:7px 16px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:12px;font-weight:600;cursor:pointer;">✏️ Tùy chỉnh</button>
+        </div>
+        <div id="zalo-custom-days-box" style="display:none;margin-top:8px;align-items:center;gap:8px;">
+          <input id="zalo-custom-days" type="number" min="1" max="3650" value="30" style="width:90px;padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;" />
+          <span style="font-size:13px;color:#64748b;">ngày</span>
+        </div>
+        <div style="margin-top:8px;padding:7px 10px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;font-size:11px;color:#92400e;">⚠️ Sẽ xóa toàn bộ file tải xuống cũ hơn số ngày đã chọn. <strong>Không thể hoàn tác!</strong></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <button onclick="zaloDeleteData()" id="btn-zalo-delete" style="padding:10px 24px;background:#dc2626;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">🗑️ Xóa file Zalo cũ ngay</button>
+        <button onclick="zaloScanData()" style="padding:10px 18px;background:#64748b;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">🔄 Quét lại</button>
+      </div>
+      <div style="background:#0f172a;border-radius:12px;padding:12px;min-height:100px;max-height:200px;overflow-y:auto;font-family:monospace;font-size:11px;color:#94a3b8;" id="zalo-log-box">
+        <div style="color:#64748b;">Nhấn "Quét thư mục" để bắt đầu phân tích dữ liệu Zalo...</div>
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px;margin-top:12px;">
+        <div style="font-size:12px;font-weight:600;color:#1d4ed8;margin-bottom:4px;">💡 Hướng dẫn tìm thư mục Zalo</div>
+        <div style="font-size:11px;color:#1e40af;line-height:1.6;">Thư mục dữ liệu Zalo thường nằm tại:<br/><code style="background:#dbeafe;padding:2px 5px;border-radius:4px;font-size:10px;">C:\Users\[TênMáy]\AppData\Roaming\ZaloData\media\[ZaloID]\ZaloDownloads</code><br/>Nhấn <strong>🔍 Tự động tìm</strong> để ứng dụng phát hiện thư mục tự động.</div>
+      </div>
     </div>
-
 </body>
 
 

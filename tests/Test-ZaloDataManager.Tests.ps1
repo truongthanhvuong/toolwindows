@@ -1,4 +1,4 @@
-# tests/Test-ZaloDataManager.Tests.ps1
+﻿# tests/Test-ZaloDataManager.Tests.ps1
 # Kiểm thử: Zalo Data Management (zalo_scan_data, zalo_delete_data)
 
 $testDir = Split-Path -Parent $MyInvocation.MyCommand.Path

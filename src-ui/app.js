@@ -1,4 +1,4 @@
-
+﻿
 
   // Global Image Error Fallback Handler
 
@@ -12422,5 +12422,113 @@ getAppIconMarkup(app) +
 
   });
 
+
+  // ===================== ZALO DATA MANAGER =====================
+  let _zaloDays = 90;
+
+  window.zaloSetDays = function(days) {
+    ['90','180','365','-1'].forEach(function(o) {
+      const btn = document.getElementById('zalo-opt-' + o);
+      if (btn) { btn.style.border = '2px solid #d1d5db'; btn.style.background = '#fff'; btn.style.color = '#374151'; }
+    });
+    const btn2 = document.getElementById('zalo-opt-custom');
+    if(btn2) { btn2.style.border='2px solid #d1d5db'; btn2.style.background='#fff'; btn2.style.color='#374151'; }
+    const customBox = document.getElementById('zalo-custom-days-box');
+    if (days === -1) {
+      if (btn2) { btn2.style.border='2px solid #3b82f6'; btn2.style.background='#3b82f6'; btn2.style.color='#fff'; }
+      if (customBox) customBox.style.display = 'flex';
+      _zaloDays = -1;
+    } else {
+      _zaloDays = days;
+      const btn = document.getElementById('zalo-opt-' + days);
+      if (btn) { btn.style.border='2px solid #3b82f6'; btn.style.background='#3b82f6'; btn.style.color='#fff'; }
+      if (customBox) customBox.style.display = 'none';
+    }
+  };
+
+  window.zaloLog = function(msg, color) {
+    const box = document.getElementById('zalo-log-box');
+    if (!box) return;
+    if (box.children.length === 1 && box.children[0].textContent && box.children[0].textContent.includes('Nhấn')) box.innerHTML = '';
+    const line = document.createElement('div');
+    const ts = new Date().toLocaleTimeString('vi-VN');
+    line.innerHTML = '<span style="color:#475569">[' + ts + ']</span> <span style="color:' + (color||'#94a3b8') + '">' + msg + '</span>';
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  };
+
+  window.zaloDetectPath = async function() {
+    zaloLog('🔍 Đang tự động tìm thư mục Zalo...', '#60a5fa');
+    try {
+      const ps = '$base = "$env:APPDATA\\ZaloData\\media"; if(Test-Path $base){ Get-ChildItem $base -Directory -ErrorAction SilentlyContinue | ForEach-Object { $dl = Join-Path $_.FullName "ZaloDownloads"; if(Test-Path $dl){ Write-Output $dl } } }';
+      const res = await invokeRust('run_powershell', { script: ps });
+      let found = '';
+      if (res && res.output) { const lines = res.output.split('\n').map(function(s){return s.trim();}).filter(function(s){return s.length>5;}); if(lines.length>0) found = lines[0]; }
+      const inp = document.getElementById('zalo-path-input');
+      if (found && inp) { inp.value = found; zaloLog('✅ Tìm thấy: ' + found, '#34d399'); }
+      else { zaloLog('⚠️ Không tìm thấy tự động. Vui lòng nhập thủ công đường dẫn ZaloDownloads.', '#fbbf24'); }
+    } catch(e) {
+      zaloLog('⚠️ Không thể tự động tìm. Vui lòng nhập thủ công.', '#fbbf24');
+    }
+  };
+
+  window.zaloScanData = async function() {
+    const inp = document.getElementById('zalo-path-input');
+    const path = inp ? inp.value.trim() : '';
+    if (!path) { zaloLog('❌ Vui lòng nhập đường dẫn thư mục Zalo trước.', '#f87171'); return; }
+    zaloLog('📊 Đang quét: ' + path, '#60a5fa');
+    try {
+      const res = await invokeRust('zalo_scan', { path: path });
+      if (res && res.success && res.data) {
+        const d = res.data;
+        const szMB = d.total_size ? (d.total_size / 1048576).toFixed(1) : '0';
+        const el = document.getElementById('zalo-scan-result');
+        if (el) el.style.display = 'block';
+        const fc = document.getElementById('zalo-file-count');
+        if (fc) fc.textContent = Number(d.file_count||0).toLocaleString('vi-VN') + ' file';
+        const ts2 = document.getElementById('zalo-total-size');
+        if (ts2) ts2.textContent = szMB + ' MB';
+        const ls = document.getElementById('zalo-last-scanned');
+        if (ls) ls.textContent = d.last_scanned || '—';
+        zaloLog('✅ Quét xong! ' + (d.file_count||0) + ' file, tổng ' + szMB + ' MB', '#34d399');
+      } else {
+        zaloLog('⚠️ Không tìm thấy dữ liệu tại đường dẫn này.', '#fbbf24');
+      }
+    } catch(e) {
+      zaloLog('❌ Lỗi quét: ' + (e && e.message ? e.message : String(e)), '#f87171');
+    }
+  };
+
+  window.zaloDeleteData = async function() {
+    const inp = document.getElementById('zalo-path-input');
+    const path = inp ? inp.value.trim() : '';
+    if (!path) { zaloLog('❌ Vui lòng nhập đường dẫn thư mục Zalo trước.', '#f87171'); return; }
+    let days = _zaloDays;
+    if (days === -1) {
+      const ci = document.getElementById('zalo-custom-days');
+      days = ci ? (parseInt(ci.value) || 30) : 30;
+    }
+    if (!window.confirm('⚠️ Xác nhận: Xóa toàn bộ file Zalo cũ hơn ' + days + ' ngày tại:\n' + path + '\n\nThao tác này KHÔNG THỂ HOÀN TÁC!')) {
+      zaloLog('ℹ️ Người dùng đã hủy.', '#94a3b8'); return;
+    }
+    const btn = document.getElementById('btn-zalo-delete');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xóa...'; }
+    zaloLog('🗑️ Xóa file cũ hơn ' + days + ' ngày tại: ' + path, '#f97316');
+    try {
+      const res = await invokeRust('zalo_delete', { path: path, days: days });
+      if (res && res.success) {
+        zaloLog('✅ Xong! Đã xóa ' + (res.deleted||0) + ' file. Đang quét lại...', '#34d399');
+        await zaloScanData();
+      } else {
+        zaloLog('⚠️ Có lỗi khi xóa. Kiểm tra quyền truy cập thư mục.', '#fbbf24');
+      }
+    } catch(e) {
+      zaloLog('❌ Lỗi: ' + (e && e.message ? e.message : String(e)), '#f87171');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🗑️ Xóa file Zalo cũ ngay'; }
+    }
+  };
+  // ===================== END ZALO DATA MANAGER =====================
 })();
+
 

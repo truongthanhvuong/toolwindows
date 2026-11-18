@@ -1,6 +1,6 @@
 // ============================================================================
-//   VUONGTT TOOL PRO 2026 — RUST TAURI V2 ENTRY POINT (src-tauri/src/main.rs)
-//   Fluent OS Utility — 13+1 Stitch Screens Desktop Engine
+//   VUONGTT TOOL PRO 2026 â€” RUST TAURI V2 ENTRY POINT (src-tauri/src/main.rs)
+//   Fluent OS Utility â€” 13+1 Stitch Screens Desktop Engine
 // ============================================================================
 
 #![windows_subsystem = "windows"]
@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.189";
+pub const APP_VERSION: &str = "20.5.909.192";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -527,6 +527,10 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         let enabled = system_ops::extract_json_field(body, "enabled").unwrap_or("true") == "true";
         let (ok, msg) = system_ops::toggle_startup_item(name, loc, enabled);
         json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, ok, escape_json_str(&msg));
+    } else if cmd == "run_powershell" {
+        let script = system_ops::extract_json_field(body, "script").unwrap_or("");
+        let output = system_ops::run_ps_oneshot(script);
+        json_resp = format!(r#"{{"success":true,"output":"{}"}}"#, escape_json_str(&output));
     } else if cmd == "zalo_scan" {
         let path = system_ops::extract_json_field(body, "path").unwrap_or("");
         let data = system_ops::zalo_scan_data(path.to_string());
@@ -579,7 +583,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
             );
         }
     } else {
-        json_resp = r#"{"success":false,"message":"Lỗi: Lệnh IPC không hợp lệ hoặc chưa được hỗ trợ!"}"#.to_string();
+        json_resp = r#"{"success":false,"message":"Lá»—i: Lá»‡nh IPC khÃ´ng há»£p lá»‡ hoáº·c chÆ°a Ä‘Æ°á»£c há»— trá»£!"}"#.to_string();
     }
 
     json_resp
@@ -657,10 +661,10 @@ fn main() {
         }
     });
 
-    // 5. Ghi nhận máy trạm hiện tại vào hệ thống Admin Fleet Monitor
+    // 5. Ghi nháº­n mÃ¡y tráº¡m hiá»‡n táº¡i vÃ o há»‡ thá»‘ng Admin Fleet Monitor
     let _ = system_ops::record_device_heartbeat("", "", "", "", "");
 
-    // 5.1 Tự động tạo biểu tượng Shortcut trên Desktop trỏ đến tool khi khởi chạy
+    // 5.1 Tá»± Ä‘á»™ng táº¡o biá»ƒu tÆ°á»£ng Shortcut trÃªn Desktop trá» Ä‘áº¿n tool khi khá»Ÿi cháº¡y
     let _ = system_ops::ensure_desktop_shortcut();
 
     // 6. Open Edge App Mode Window
@@ -696,20 +700,20 @@ fn main() {
         let _ = Command::new("cmd").args(["/c", "start", &url]).status();
     }
 
-    // 6. Master Lifecycle Watchdog: Giữ tiến trình Rust sống liên tục theo cửa sổ giao diện!
+    // 6. Master Lifecycle Watchdog: Giá»¯ tiáº¿n trÃ¬nh Rust sá»‘ng liÃªn tá»¥c theo cá»­a sá»• giao diá»‡n!
     while is_running.load(Ordering::SeqCst) {
         thread::sleep(std::time::Duration::from_millis(500));
 
         if let Ok(act) = last_activity.lock() {
             let elapsed = act.elapsed();
             if has_connected.load(Ordering::SeqCst) {
-                // Sau khi client đã kết nối lần đầu:
-                // Nếu quá 6 giây không còn heartbeat/request -> Cửa sổ Edge đã đóng -> Tự động thoát sạch sẽ!
+                // Sau khi client Ä‘Ã£ káº¿t ná»‘i láº§n Ä‘áº§u:
+                // Náº¿u quÃ¡ 6 giÃ¢y khÃ´ng cÃ²n heartbeat/request -> Cá»­a sá»• Edge Ä‘Ã£ Ä‘Ã³ng -> Tá»± Ä‘á»™ng thoÃ¡t sáº¡ch sáº½!
                 if elapsed > std::time::Duration::from_secs(6) {
                     break;
                 }
             } else {
-                // Chờ tối đa 60 giây cho Edge mở và gửi request đầu tiên
+                // Chá» tá»‘i Ä‘a 60 giÃ¢y cho Edge má»Ÿ vÃ  gá»­i request Ä‘áº§u tiÃªn
                 if elapsed > std::time::Duration::from_secs(60) {
                     break;
                 }
@@ -731,7 +735,7 @@ mod tests {
         let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"unknown_action_xyz_123\",\"payload\":{}}";
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":false"), "Unknown command must return success=false: {}", resp);
-        assert!(resp.contains("Lỗi: Lệnh IPC không hợp lệ"), "Expected error message: {}", resp);
+        assert!(resp.contains("Lá»—i: Lá»‡nh IPC khÃ´ng há»£p lá»‡"), "Expected error message: {}", resp);
     }
 
     #[test]
@@ -802,7 +806,7 @@ mod tests {
         let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"verify_office_license\"}";
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":false"), "verify_office_license must return success=false: {}", resp);
-        assert!(resp.contains("không tồn tại"), "Expected action not found error: {}", resp);
+        assert!(resp.contains("khÃ´ng tá»“n táº¡i"), "Expected action not found error: {}", resp);
     }
 
     #[test]
@@ -861,3 +865,4 @@ mod tests {
         assert!(resp.contains("\"success\":false"), "Empty key must return success: false: {}", resp);
     }
 }
+
