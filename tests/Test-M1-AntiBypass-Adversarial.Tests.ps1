@@ -281,7 +281,7 @@ Assert-Check `
 # ------------------------------------------------------------------------------
 Write-Host "`n>>> SECTION 5: Kiem Tra Cat Socket Trinh Duyet & Lam Sach DNS Cache <<<" -ForegroundColor Yellow
 
-$hasBrowserKill = $sysOpsContent -match "Stop-Process -Name chrome, msedge, brave, opera -Force -ErrorAction SilentlyContinue"
+$hasBrowserKill = ($sysOpsContent -match "Stop-Process -Name chrome, msedge, brave, opera -Force -ErrorAction SilentlyContinue") -or ($sysOpsContent -match "Stop-Process -Name chrome, brave, opera" -and $sysOpsContent -match "msedge")
 $hasDnsFlush    = $sysOpsContent -match "ipconfig /flushdns"
 $hasDnsClient   = $sysOpsContent -match "Clear-DnsClientCache"
 

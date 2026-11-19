@@ -368,6 +368,19 @@ try {
     $proc = Start-Process -FilePath $exePath -WorkingDirectory $installDir -PassThru -ErrorAction Stop
 } catch {
     Write-Host "  [!] Khoi chay that bai: $($_.Exception.Message)" -ForegroundColor Red
+    # Fallback khi bi Application Control / Smart App Control / WDAC chan
+    try {
+        Write-Host "  [*] Dang kich hoat co che Fallback cho Application Control..." -ForegroundColor Yellow
+        $mainScript = Join-Path $installDir "VUONGTT_Toolkit.ps1"
+        if (-not (Test-Path $mainScript) -and (Test-Path $exePath)) {
+            try {
+                $asmBytes = [System.IO.File]::ReadAllBytes($exePath)
+                $asm = [System.Reflection.Assembly]::Load($asmBytes)
+                $resNames = $asm.GetManifestResourceNames()
+            } catch {}
+        }
+        Start-Process -FilePath "powershell.exe" -ArgumentList "-STA -NoProfile -ExecutionPolicy Bypass -File `"$mainScript`" -Live"
+    } catch {}
 }
 
 if ($proc) {

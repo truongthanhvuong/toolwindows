@@ -1992,6 +1992,143 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
 
 
 
+    // ===== ZALO SCAN ALL (Rust-side PS, avoids JS IPC escaping bugs) =====
+    if act == "zalo_scan_all" {
+        append_log("zalo_scan_all: starting full Zalo data scan via Rust backend");
+        let ps_code = r#"
+$profiles = [System.Collections.Generic.List[string]]::new()
+# Collect AppData\Roaming paths from all C:\Users subdirs
+try {
+    $usersDir = 'C:\Users'
+    if (Test-Path $usersDir) {
+        Get-ChildItem $usersDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            $ap = Join-Path $_.FullName 'AppData\Roaming'
+            if (Test-Path $ap) { $profiles.Add($ap) }
+        }
+    }
+} catch {}
+# Also add current user's AppData (preserved under admin elevation on most systems)
+if ($env:USERPROFILE -and (Test-Path $env:USERPROFILE)) {
+    $ap2 = Join-Path $env:USERPROFILE 'AppData\Roaming'
+    if ((Test-Path $ap2) -and (-not $profiles.Contains($ap2))) { $profiles.Add($ap2) }
+}
+$totalAll=0; $totalMedia=0; $mediaCount=0; $totalCache=0
+$dlPaths=[System.Collections.Generic.List[string]]::new()
+foreach ($ap in $profiles) {
+    $zaloRoot = Join-Path $ap 'ZaloData'
+    if (-not (Test-Path $zaloRoot)) { continue }
+    # Total all files in ZaloData
+    $allFiles = Get-ChildItem $zaloRoot -Recurse -File -ErrorAction SilentlyContinue
+    if ($allFiles) { $totalAll += ($allFiles | Measure-Object Length -Sum).Sum }
+    # Media: ZaloDownloads inside media\<id>\
+    $mediaBase = Join-Path $zaloRoot 'media'
+    if (Test-Path $mediaBase) {
+        Get-ChildItem $mediaBase -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            $dlPath = Join-Path $_.FullName 'ZaloDownloads'
+            if (Test-Path $dlPath) {
+                if (-not $dlPaths.Contains($dlPath)) { $dlPaths.Add($dlPath) }
+            } else {
+                # Add user media folder if ZaloDownloads subfolder not explicitly created
+                if (-not $dlPaths.Contains($_.FullName)) { $dlPaths.Add($_.FullName) }
+            }
+        }
+        $mFiles = Get-ChildItem $mediaBase -Recurse -File -ErrorAction SilentlyContinue
+        if ($mFiles) {
+            $totalMedia += ($mFiles | Measure-Object Length -Sum).Sum
+            $mediaCount += $mFiles.Count
+        }
+    }
+    # Documents\Zalo Received Files
+    try {
+        $uDir = Split-Path $ap -Parent
+        $docZalo = Join-Path $uDir 'Documents\Zalo Received Files'
+        if (Test-Path $docZalo) {
+            if (-not $dlPaths.Contains($docZalo)) { $dlPaths.Add($docZalo) }
+            $dzFiles = Get-ChildItem $docZalo -Recurse -File -ErrorAction SilentlyContinue
+            if ($dzFiles) {
+                $totalMedia += ($dzFiles | Measure-Object Length -Sum).Sum
+                $mediaCount += $dzFiles.Count
+            }
+        }
+    } catch {}
+    # Cache folders
+    @('Cache','cache','Temp','temp','tmpfiles','Code Cache','DawnCache','GPUCache','blob_storage','Partitions\zalo\Cache','Partitions\zalo\Code Cache','Partitions\zalo\DawnCache','Partitions\zalo\GPUCache','Partitions\zalo\blob_storage') | ForEach-Object {
+        $cp = Join-Path $zaloRoot $_
+        if (Test-Path $cp) {
+            $cf = Get-ChildItem $cp -Recurse -File -ErrorAction SilentlyContinue
+            if ($cf) { $totalCache += ($cf | Measure-Object Length -Sum).Sum }
+        }
+    }
+}
+$totalSystem = [Math]::Max(0, $totalAll - $totalMedia - $totalCache)
+$dlPathsStr = ($dlPaths -join '|')
+[PSCustomObject]@{
+    total_all=$totalAll; total_media=$totalMedia; media_count=$mediaCount;
+    total_cache=$totalCache; total_system=$totalSystem; dl_paths=$dlPathsStr
+} | ConvertTo-Json -Compress
+"#;
+        let out = run_ps_oneshot(ps_code);
+        append_log(&format!("zalo_scan_all output: {}", &out[..out.len().min(200)]));
+        return (true, out);
+    }
+
+    if act == "zalo_clear_cache" {
+        append_log("zalo_clear_cache: starting Zalo cache clean");
+        let ps_code = r#"
+$profiles = [System.Collections.Generic.List[string]]::new()
+try {
+    $usersDir = 'C:\Users'
+    if (Test-Path $usersDir) {
+        Get-ChildItem $usersDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            $ap = Join-Path $_.FullName 'AppData\Roaming'
+            if (Test-Path $ap) { $profiles.Add($ap) }
+        }
+    }
+} catch {}
+if ($env:USERPROFILE -and (Test-Path $env:USERPROFILE)) {
+    $ap2 = Join-Path $env:USERPROFILE 'AppData\Roaming'
+    if ((Test-Path $ap2) -and (-not $profiles.Contains($ap2))) { $profiles.Add($ap2) }
+}
+$deleted = 0
+$freedBytes = 0
+foreach ($ap in $profiles) {
+    $zRoot = Join-Path $ap 'ZaloData'
+    if (-not (Test-Path $zRoot)) { continue }
+    $cacheDirs = @(
+        (Join-Path $zRoot 'Cache'),
+        (Join-Path $zRoot 'Code Cache'),
+        (Join-Path $zRoot 'DawnCache'),
+        (Join-Path $zRoot 'GPUCache'),
+        (Join-Path $zRoot 'blob_storage'),
+        (Join-Path $zRoot 'Temp'),
+        (Join-Path $zRoot 'temp'),
+        (Join-Path $zRoot 'Partitions\zalo\Cache'),
+        (Join-Path $zRoot 'Partitions\zalo\Code Cache'),
+        (Join-Path $zRoot 'Partitions\zalo\DawnCache'),
+        (Join-Path $zRoot 'Partitions\zalo\GPUCache'),
+        (Join-Path $zRoot 'Partitions\zalo\blob_storage')
+    )
+    foreach ($cd in $cacheDirs) {
+        if (Test-Path $cd) {
+            Get-ChildItem $cd -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+                try {
+                    $sz = $_.Length
+                    Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+                    $deleted++
+                    $freedBytes += $sz
+                } catch {}
+            }
+        }
+    }
+}
+[PSCustomObject]@{ deleted=$deleted; freed_bytes=$freedBytes } | ConvertTo-Json -Compress
+"#;
+        let out = run_ps_oneshot(ps_code);
+        append_log(&format!("zalo_clear_cache output: {}", &out[..out.len().min(200)]));
+        return (true, out);
+    }
+    // ===== END ZALO ACTIONS =====
+
     if act == "get_startup_apps" {
 
 
@@ -13965,12 +14102,12 @@ taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
 taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
 Stop-Process -Name 'VUONGTT_Toolkit','VUONGTT_Toolkit_Rust' -Force -ErrorAction SilentlyContinue
 Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | Where-Object {{ \$_.CommandLine -like '*127.0.0.1*' }} | Stop-Process -Force -ErrorAction SilentlyContinue
-for (\$i = 0; \$i -lt 40; \$i++) {{
+for (\$i = 0; \$i -lt 25; \$i++) {{
     try {{
         Copy-Item -Path '$tempExe' -Destination '$currExe' -Force -ErrorAction Stop
         break
     }} catch {{
-        Start-Sleep -Milliseconds 600
+        Start-Sleep -Milliseconds 400
     }}
 }}
 if (Test-Path 'E:\toolwindows\VUONGTT_Toolkit.exe') {{
@@ -23941,6 +24078,11 @@ mod tests {
         let logs2 = get_logs_json();
         assert!(logs2.contains("Zalo deletion initiated"), "Deletion log missing");
         assert!(logs2.contains("Zalo deletion completed"), "Deletion completion log missing");
+
+        let (ok, res) = execute_system_action("zalo_scan_all", "{}");
+        println!("zalo_scan_all output: [{}]", res);
+        assert!(ok, "zalo_scan_all should succeed");
+        assert!(res.contains("total_all"), "zalo_scan_all should return JSON with total_all");
     }
 
     #[test]

@@ -2606,7 +2606,7 @@
 
 
 
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.208</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.211</span>
 
 
 
@@ -12815,7 +12815,9 @@
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
               <button onclick="zaloDeleteData()" id="btn-zalo-delete" style="padding:10px 24px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🗑️ Xóa file Zalo cũ ngay</button>
-              <button onclick="zaloScanData()" style="padding:10px 16px;background:#64748b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Quét lại</button>
+              <button onclick="zaloClearCache()" id="btn-zalo-cache" style="padding:10px 20px;background:#ea580c;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">⚡ Xóa bộ nhớ đệm (Cache Zalo)</button>
+              <button onclick="zaloScanAll()" style="padding:10px 16px;background:#0f766e;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📊 Quét toàn bộ</button>
+              <button onclick="zaloScanData()" style="padding:10px 16px;background:#64748b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Quét thư mục</button>
             </div>
             <div style="background:#0f172a;border-radius:8px;padding:12px;min-height:60px;max-height:150px;overflow-y:auto;font-family:monospace;font-size:11px;color:#94a3b8;" id="zalo-log-box">
               <span style="color:#475569;">Nhấn &quot;Quét&quot; để phân tích dữ liệu Zalo...</span>

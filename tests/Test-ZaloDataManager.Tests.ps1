@@ -26,6 +26,22 @@ Assert-True ($mainRs -match 'cmd == "zalo_delete"') "Zalo Delete IPC Command Def
 $systemOpsRs = Get-Content (Join-Path $testDir "../src-tauri/src/system_ops.rs") -Raw
 Assert-True ($systemOpsRs -match 'pub fn append_log') "Append Log Function Defined in system_ops.rs"
 Assert-True ($systemOpsRs -match 'pub fn get_logs_json') "Get Logs Function Defined in system_ops.rs"
+Assert-True ($systemOpsRs -match 'zalo_scan_all') "zalo_scan_all action Defined in system_ops.rs"
+Assert-True ($systemOpsRs -match 'zalo_clear_cache') "zalo_clear_cache action Defined in system_ops.rs"
+
+# Test 3: Verify Frontend UI & Controller in app.js and index.html
+$appJs = Get-Content (Join-Path $testDir "../src-ui/app.js") -Raw
+Assert-True ($appJs -match 'window\.zaloScanAll') "window.zaloScanAll defined in app.js"
+Assert-True ($appJs -match 'window\.zaloDetectPath') "window.zaloDetectPath defined in app.js"
+Assert-True ($appJs -match 'window\.zaloDeleteData') "window.zaloDeleteData defined in app.js"
+Assert-True ($appJs -match 'window\.zaloClearCache') "window.zaloClearCache defined in app.js"
+
+$indexHtml = Get-Content (Join-Path $testDir "../src-ui/index.html") -Raw
+Assert-True ($indexHtml -match 'zalo-breakdown-panel') "Zalo breakdown panel in index.html"
+Assert-True ($indexHtml -match 'zalo-size-total') "Zalo size total element in index.html"
+Assert-True ($indexHtml -match 'zalo-size-media') "Zalo size media element in index.html"
+Assert-True ($indexHtml -match 'zalo-size-cache') "Zalo size cache element in index.html"
+Assert-True ($indexHtml -match 'zalo-size-system') "Zalo size system element in index.html"
 
 Write-Host "`nTest Results: $passed Passed, $failed Failed." -ForegroundColor Yellow
 if ($failed -gt 0) { exit 1 } else { exit 0 }

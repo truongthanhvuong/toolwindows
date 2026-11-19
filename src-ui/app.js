@@ -12475,31 +12475,14 @@ getAppIconMarkup(app) +
   window.zaloDetectPath = async function() {
     zaloLog('🔍 Đang tự động tìm thư mục ZaloDownloads...', '#60a5fa');
     try {
-      const ps = `
-$found = @()
-$profiles = @($env:APPDATA)
-try {
-  Get-ChildItem 'C:\\Users' -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    $ap = Join-Path $_.FullName 'AppData\\Roaming'
-    if (Test-Path $ap) { $profiles += $ap }
-  }
-} catch {}
-$profiles = $profiles | Select-Object -Unique
-foreach ($ap in $profiles) {
-  $base = Join-Path $ap 'ZaloData\\media'
-  if (Test-Path $base) {
-    Get-ChildItem $base -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-      $dl = Join-Path $_.FullName 'ZaloDownloads'
-      if (Test-Path $dl) { $found += $dl }
-    }
-  }
-}
-if ($found.Count -gt 0) { $found[0] } else { '' }
-`;
-      const res = await invokeRust('run_powershell', { script: ps });
+      // Use Rust backend to avoid JS→IPC string escaping issues
+      const res = await invokeRust('run_system_action', { actionId: 'zalo_scan_all' });
       let found = '';
-      if (res && res.output) {
-        found = res.output.split('\n').map(s => s.trim()).filter(s => s.length > 5)[0] || '';
+      if (res && res.message) {
+        try {
+          const d = JSON.parse(res.message.trim());
+          if (d && d.dl_paths) found = d.dl_paths.split('|')[0] || '';
+        } catch(_) {}
       }
       const inp = document.getElementById('zalo-path-input');
       if (found && inp) {
@@ -12518,46 +12501,10 @@ if ($found.Count -gt 0) { $found[0] } else { '' }
   window.zaloScanAll = async function() {
     zaloLog('📊 Đang quét toàn bộ dữ liệu Zalo...', '#60a5fa');
     try {
-      const ps = `
-$profiles = @($env:APPDATA)
-try {
-  Get-ChildItem 'C:\\Users' -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    $ap = Join-Path $_.FullName 'AppData\\Roaming'
-    if (Test-Path $ap) { $profiles += $ap }
-  }
-} catch {}
-$profiles = $profiles | Select-Object -Unique
-$totalAll=0; $totalMedia=0; $mediaCount=0; $totalCache=0; $dlPaths=@()
-foreach ($ap in $profiles) {
-  $zaloRoot = Join-Path $ap 'ZaloData'
-  if (-not (Test-Path $zaloRoot)) { continue }
-  $allFiles = Get-ChildItem $zaloRoot -Recurse -File -ErrorAction SilentlyContinue
-  if ($allFiles) { $totalAll += ($allFiles | Measure-Object Length -Sum).Sum }
-  $mediaBase = Join-Path $zaloRoot 'media'
-  if (Test-Path $mediaBase) {
-    Get-ChildItem $mediaBase -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-      $dlPath = Join-Path $_.FullName 'ZaloDownloads'
-      if (Test-Path $dlPath) {
-        $dlPaths += $dlPath
-        $dlFiles = Get-ChildItem $dlPath -Recurse -File -ErrorAction SilentlyContinue
-        if ($dlFiles) { $sz=($dlFiles|Measure-Object Length -Sum).Sum; $totalMedia+=$sz; $mediaCount+=$dlFiles.Count }
-      }
-    }
-  }
-  @('Cache','cache','Temp','temp') | ForEach-Object {
-    $cp = Join-Path $zaloRoot $_
-    if (Test-Path $cp) {
-      $cf = Get-ChildItem $cp -Recurse -File -ErrorAction SilentlyContinue
-      if ($cf) { $totalCache += ($cf|Measure-Object Length -Sum).Sum }
-    }
-  }
-}
-$totalSystem = [Math]::Max(0, $totalAll - $totalMedia - $totalCache)
-[PSCustomObject]@{ total_all=$totalAll; total_media=$totalMedia; media_count=$mediaCount; total_cache=$totalCache; total_system=$totalSystem; dl_paths=($dlPaths -join '|') } | ConvertTo-Json -Compress
-`;
-      const res = await invokeRust('run_powershell', { script: ps });
-      if (res && res.output) {
-        let raw = res.output.trim();
+      // Use Rust backend (run_system_action → zalo_scan_all) to avoid JS IPC escaping
+      const res = await invokeRust('run_system_action', { actionId: 'zalo_scan_all' });
+      let raw = (res && res.message) ? res.message.trim() : '';
+      if (raw) {
         const j1 = raw.indexOf('{'), j2 = raw.lastIndexOf('}');
         if (j1 >= 0 && j2 > j1) raw = raw.substring(j1, j2+1);
         try {
@@ -12629,6 +12576,54 @@ $totalSystem = [Math]::Max(0, $totalAll - $totalMedia - $totalCache)
       }
     } catch(e) {
       zaloLog('❌ Lỗi quét: ' + (e && e.message ? e.message : String(e)), '#f87171');
+    }
+  };
+  window.zaloDeleteData = async function() {
+    const inp = document.getElementById('zalo-path-input');
+    let path = inp ? inp.value.trim() : '';
+    if (!path) {
+      zaloLog('⚠️ Đang tự tìm thư mục ZaloDownloads...', '#fbbf24');
+      await window.zaloDetectPath();
+      path = inp ? inp.value.trim() : '';
+      if (!path) {
+        zaloLog('❌ Không tìm thấy thư mục Zalo. Vui lòng dán đường dẫn thủ công.', '#f87171');
+        return;
+      }
+    }
+    const days = _zaloDays === -1 ? (parseInt(document.getElementById('zalo-custom-days')?.value) || 30) : _zaloDays;
+    const label = days >= 365 ? '12 tháng' : (days >= 180 ? '6 tháng' : (days >= 90 ? '3 tháng' : days + ' ngày'));
+    zaloLog(`🗑️ Đang xóa các file Zalo cũ hơn ${label} trong: ${path}...`, '#f59e0b');
+    try {
+      const res = await invokeRust('zalo_delete', { path: path, days: String(days) });
+      const count = (res && res.deleted !== undefined) ? res.deleted : 0;
+      if (count >= 0) {
+        zaloLog(`✅ Đã xóa thành công ${count} file media cũ hơn ${label}!`, '#34d399');
+      } else {
+        zaloLog('⚠️ Không tìm thấy file nào thỏa điều kiện để xóa.', '#fbbf24');
+      }
+      // Re-scan
+      setTimeout(() => { window.zaloScanAll(); }, 500);
+    } catch(e) {
+      zaloLog('❌ Lỗi khi xóa: ' + (e && e.message ? e.message : String(e)), '#f87171');
+    }
+  };
+
+  window.zaloClearCache = async function() {
+    zaloLog('⚡ Đang dọn dẹp bộ nhớ đệm (Cache) của Zalo...', '#f59e0b');
+    try {
+      const res = await invokeRust('run_system_action', { actionId: 'zalo_clear_cache' });
+      let deleted = 0, freed = 0;
+      if (res && res.message) {
+        try {
+          const d = JSON.parse(res.message.trim());
+          deleted = d.deleted || 0;
+          freed = d.freed_bytes || 0;
+        } catch(_) {}
+      }
+      zaloLog(`✅ Đã dọn sạch bộ nhớ đệm Zalo! Xóa ${deleted} file tạm, giải phóng ${zaloFmtSize(freed)}.`, '#34d399');
+      setTimeout(() => { window.zaloScanAll(); }, 500);
+    } catch(e) {
+      zaloLog('❌ Lỗi dọn cache: ' + (e && e.message ? e.message : String(e)), '#f87171');
     }
   };
   // ===================== END ZALO DATA MANAGER =====================
