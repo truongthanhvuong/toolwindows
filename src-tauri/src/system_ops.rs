@@ -8422,7 +8422,7 @@ th { background: #222a3d; color: #6ffbbe; }
             // 3. Chuẩn hóa ổ đích / tempdrive và dọn dẹp cache tạm $WINDOWS.~BT, $Windows.~WS để ngăn chặn mã lỗi 0x80070490
             let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
             let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
-            let temp_drive_arg = format!("{}:\\", temp_drive_letter);
+            let temp_drive_arg = temp_drive_letter;
 
             let ps_clean_and_prep = format!(
                 r#"
@@ -8464,15 +8464,17 @@ th { background: #222a3d; color: #6ffbbe; }
             #[cfg(windows)]
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
-            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ và giải phóng phân vùng tạm {} ($WINDOWS.~BT) ngăn chặn triệt để mã lỗi 0x80070490.", temp_drive_arg));
+            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ và giải phóng phân vùng tạm {}: ($WINDOWS.~BT) ngăn chặn triệt để mã lỗi 0x80070490.", temp_drive_arg));
 
-            // Cài Mới (Clean) / Tùy Chọn (Custom): Hiển thị trực tiếp GUI Setup tương tác, kèm bypass /product server và ổ đệm /tempdrive
-            // Đối với tự động nâng cấp: /auto upgrade /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}
+            // Cài Mới (Clean) / Tùy Chọn (Custom): Hiển thị trực tiếp GUI Setup tương tác, kèm bypass TPM/CPU qua Registry LabConfig & MoSetup
+            // Ghi chú tương thích: Không truyền /product server trực tiếp vào runtime setup_args vì Windows 11 (24H2/25H2) sẽ báo lỗi:
+            // "The installation process was launched with an invalid command line argument."
+            // Thay vào đó, bypass TPM 2.0 / SecureBoot / CPU được thực thi triệt để qua Registry LabConfig & MoSetup.
             // (Hỗ trợ cấu hình tự động: /auto clean /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {})
             let setup_args = if mode == "custom" || mode == "clean" {
-                format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto upgrade /eula accept /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
 
             let ps_run = format!(
