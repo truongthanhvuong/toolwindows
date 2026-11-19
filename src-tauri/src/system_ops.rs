@@ -8427,7 +8427,7 @@ th { background: #222a3d; color: #6ffbbe; }
             let ps_clean_and_prep = format!(
                 r#"
                 $targetDrive = "{}"
-                $stalePaths = @("C:\$WINDOWS.~BT", "C:\$Windows.~WS", "D:\$WINDOWS.~BT", "D:\$Windows.~WS", "$($targetDrive):\$WINDOWS.~BT", "$($targetDrive):\$Windows.~WS")
+                $stalePaths = @("C:\`$WINDOWS.~BT", "C:\`$Windows.~WS", "D:\`$WINDOWS.~BT", "D:\`$Windows.~WS", "$($targetDrive):\`$WINDOWS.~BT", "$($targetDrive):\`$Windows.~WS")
                 foreach ($p in $stalePaths) {{
                     if (Test-Path $p) {{
                         try {{
@@ -8438,10 +8438,10 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
                 # Tiền tạo thư mục $WINDOWS.~BT trên ổ đích để Windows Setup nhận diện ngay ổ đệm hợp lệ và không quét phân vùng boot ESP 100MB
-                $stagingDir = "$($targetDrive):\$WINDOWS.~BT"
+                $stagingDir = "$($targetDrive):\`$WINDOWS.~BT"
                 try {{
                     if (-not (Test-Path $stagingDir)) {{
-                        New-Item -Path "$($targetDrive):\$WINDOWS.~BT" -ItemType Directory -Force | Out-Null
+                        New-Item -Path "$($targetDrive):\`$WINDOWS.~BT" -ItemType Directory -Force | Out-Null
                         icacls "$stagingDir" /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
                     }}
                 }} catch {{}}
@@ -8456,23 +8456,30 @@ th { background: #222a3d; color: #6ffbbe; }
             append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ và khởi tạo phân vùng tạm {} ($WINDOWS.~BT) ngăn chặn triệt để mã lỗi 0x80070490.", temp_drive_arg));
 
             let setup_args = if mode == "custom" {
-                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+                format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else if mode == "clean" {
-                format!("/auto clean /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto clean /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto upgrade /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
 
             let ps_run = format!(
                 r#"
                 $drv = "{}"
                 $setupArgs = '{}'
+                # Gắn mount point cho phân vùng EFI System Partition (nếu là UEFI) để BCD API và Setup luôn tìm thấy boot disk
+                try {{
+                    if (-not (Get-Volume -DriveLetter S -ErrorAction SilentlyContinue)) {{
+                        mountvol S: /S 2>&1 | Out-Null
+                    }}
+                }} catch {{}}
+
                 # Ưu tiên khởi chạy sources\setupprep.exe để bypass hoàn toàn kiểm tra BCD boot disk của setup.exe gây lỗi 0x80070490
                 $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} else {{ "$drv\setup.exe" }}
                 $workDir = Split-Path $setupExe -Parent
                 $argsList = "/c start `"`" `"$setupExe`" $setupArgs"
                 try {{
-                    Start-Process -FilePath "cmd.exe" -ArgumentList $argsList -WorkingDirectory $workDir -WindowStyle Hidden -ErrorAction Stop
+                    Start-Process -FilePath "cmd.exe" -ArgumentList $argsList -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
                     Write-Output "LAUNCH_OK:$setupExe"
                 }} catch {{
                     try {{
