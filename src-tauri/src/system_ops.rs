@@ -8419,54 +8419,65 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
-            // 3. Dọn dẹp cache tạm $WINDOWS.~BT và $Windows.~WS bị khóa/kẹt để ngăn chặn mã lỗi 0x80070490
-            let ps_clean_stale = r#"
-                $stalePaths = @("C:\$WINDOWS.~BT", "C:\$Windows.~WS", "D:\$WINDOWS.~BT", "D:\$Windows.~WS")
-                foreach ($p in $stalePaths) {
-                    if (Test-Path $p) {
-                        try {
+            // 3. Chuẩn hóa ổ đích / tempdrive và dọn dẹp cache tạm $WINDOWS.~BT, $Windows.~WS để ngăn chặn mã lỗi 0x80070490
+            let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
+            let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
+            let temp_drive_arg = format!("{}:\\", temp_drive_letter);
+
+            let ps_clean_and_prep = format!(
+                r#"
+                $targetDrive = "{}"
+                $stalePaths = @("C:\$WINDOWS.~BT", "C:\$Windows.~WS", "D:\$WINDOWS.~BT", "D:\$Windows.~WS", "$($targetDrive):\$WINDOWS.~BT", "$($targetDrive):\$Windows.~WS")
+                foreach ($p in $stalePaths) {{
+                    if (Test-Path $p) {{
+                        try {{
                             takeown /F "$p" /A /R /D Y 2>&1 | Out-Null
                             icacls "$p" /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
                             Remove-Item -Path $p -Recurse -Force -ErrorAction SilentlyContinue
-                        } catch {}
-                    }
-                }
-            "#;
+                        }} catch {{}}
+                    }}
+                }}
+                # Tiền tạo thư mục $WINDOWS.~BT trên ổ đích để Windows Setup nhận diện ngay ổ đệm hợp lệ và không quét phân vùng boot ESP 100MB
+                $stagingDir = "$($targetDrive):\$WINDOWS.~BT"
+                try {{
+                    if (-not (Test-Path $stagingDir)) {{
+                        New-Item -Path "$($targetDrive):\$WINDOWS.~BT" -ItemType Directory -Force | Out-Null
+                        icacls "$stagingDir" /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
+                    }}
+                }} catch {{}}
+                "#,
+                temp_drive_letter
+            );
             let mut clean_cmd = Command::new("powershell");
-            clean_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_clean_stale]);
+            clean_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_clean_and_prep]);
             #[cfg(windows)]
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
-            append_log("[DỌN DẸP] Đã dọn dẹp thư mục tạm $WINDOWS.~BT và $Windows.~WS tránh xung đột lỗi 0x80070490.");
-
-            let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
-            let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
+            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ và khởi tạo phân vùng tạm {} ($WINDOWS.~BT) ngăn chặn triệt để mã lỗi 0x80070490.", temp_drive_arg));
 
             let setup_args = if mode == "custom" {
-                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_letter)
+                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else if mode == "clean" {
-                format!("/auto clean /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_letter)
+                format!("/auto clean /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_letter)
+                format!("/auto upgrade /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
-
-
-
-
-
-
 
             let ps_run = format!(
                 r#"
                 $drv = "{}"
-                $argsList = '/c start "" "{}\setup.exe" {}'
+                $setupArgs = '{}'
+                # Ưu tiên khởi chạy sources\setupprep.exe để bypass hoàn toàn kiểm tra BCD boot disk của setup.exe gây lỗi 0x80070490
+                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} else {{ "$drv\setup.exe" }}
+                $workDir = Split-Path $setupExe -Parent
+                $argsList = "/c start `"`" `"$setupExe`" $setupArgs"
                 try {{
-                    Start-Process -FilePath "cmd.exe" -ArgumentList $argsList -WorkingDirectory "$drv\" -WindowStyle Hidden -ErrorAction Stop
-                    Write-Output "LAUNCH_OK"
+                    Start-Process -FilePath "cmd.exe" -ArgumentList $argsList -WorkingDirectory $workDir -WindowStyle Hidden -ErrorAction Stop
+                    Write-Output "LAUNCH_OK:$setupExe"
                 }} catch {{
                     try {{
-                        & cmd.exe /c start "" "$drv\setup.exe" {}
-                        Write-Output "FALLBACK_OK"
+                        & cmd.exe /c start "" "$drv\setup.exe" $setupArgs
+                        Write-Output "FALLBACK_OK:$setupExe"
                     }} catch {{
                         try {{
                             Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\"
@@ -8477,7 +8488,7 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
                 "#,
-                drv, drv, setup_args, setup_args, drv, setup_args, drv
+                drv, setup_args, drv, setup_args, drv
             );
 
             let mut run_cmd = Command::new("powershell");
@@ -8498,30 +8509,14 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
+            let binary_used = if run_output.contains("setupprep.exe") { "Setup Preparation Engine (setupprep.exe)" } else { "Windows Setup (setup.exe)" };
             let mode_label = if mode == "custom" { "Tùy Chọn Phân Vùng (Custom Setup)" } else if mode == "clean" { "Cài Mới (Clean Install)" } else { "Cài Đè / Nâng Cấp (In-Place Upgrade)" };
 
-
-
-            append_log(&format!("[SETUP ACTIVATED] Trình cài đặt Windows Setup đã được khởi chạy chế độ [{}] từ ổ [{}]!", mode_label, drv));
-
-
-
-
-
-
+            append_log(&format!("[SETUP ACTIVATED] Trình cài đặt Windows đã được khởi chạy thành công qua [{}] ở chế độ [{}] từ ổ [{}] với ổ đệm [{}]!", binary_used, mode_label, drv, temp_drive_arg));
 
             return (
-
-
-
                 true,
-
-
-
-                format!("Đã nạp ảnh ISO / Ổ đĩa [{}] và khởi chạy trình cài đặt Windows Setup chế độ [{}] thành công! Quá trình nâng cấp/cài đè đã bắt đầu.", drv, mode_label),
-
-
-
+                format!("Đã nạp ảnh ISO / Ổ đĩa [{}] và khởi chạy [{}] chế độ [{}] (ổ đệm {}) thành công!", drv, binary_used, mode_label, temp_drive_arg),
             );
 
 
