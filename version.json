@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "20.5.909.192",
-    "releaseDate":  "18/11/2026",
+    "version":  "20.5.909.194",
+    "releaseDate":  "19/11/2026",
     "downloadUrl":  "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/VUONGTT_Toolkit.exe",
     "changelog":  [
                       "Khắc phục triệt để lỗi nút Cập nhật phần mềm từ GitHub: (1) Sửa lỗi Win32Exception \u0027The request is not supported\u0027 do lệnh ProcessStartInfo kết hợp CreateNoWindow với Verb=RunAs khiến tiến trình cập nhật không thể khởi chạy; (2) Loại bỏ lệnh timeout.exe gây crash \u0027Input redirection is not supported\u0027 trong môi trường tiến trình nền không tương tác; (3) Chuyển toàn bộ kịch bản cập nhật sang PowerShell Runner độc lập (vuongtt_update_runner.ps1) chạy ngầm với cơ chế retry 25 lần (10 giây) chờ nhả file lock, sao chép đè binary, unblock file và khởi động lại; (4) Tích hợp truy vấn GitHub Commits API để lấy mã Commit SHA mới nhất, loại bỏ hoàn toàn tình trạng bị kẹt cache 5 phút của Fastly CDN; (5) Cho phép ép buộc cập nhật và đồng bộ lại từ GitHub khi người dùng bấm nút thủ công kể cả khi số version trùng nhau; (6) Tự động kích hoạt mở rộng Universal Console Log Drawer để theo dõi trực tiếp từng bước kết nối, tải binary và khởi động lại; (7) Thêm thuộc tính onclick=\u0027triggerManualUpdate()\u0027 trực tiếp trên nút Header; (8) Vượt qua 100% tất cả các bộ kiểm thử tự động của hệ thống.",
