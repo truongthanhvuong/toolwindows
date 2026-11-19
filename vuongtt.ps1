@@ -39,20 +39,66 @@ if (-not $isAdmin) {
     Write-Host " [*] Vui long bam 'YES' tren hop thoai UAC de cap phep hoat dong.`n" -ForegroundColor Cyan
     
     $cleanCmd = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://tinyurl.com/vuongwin | iex"
+    $bytes = [System.Text.Encoding]::Unicode.GetBytes($cleanCmd)
+    $encodedCmd = [System.Convert]::ToBase64String($bytes)
+    
+    $psExe = if (Test-Path "$PSHOME\powershell.exe") { "$PSHOME\powershell.exe" } else { "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
+    $safeWorkingDir = if (Test-Path $env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
+    
+    $elevatedSuccess = $false
+    $exMsg = ""
+    
+    # Tang 1: Start-Process voi WorkingDirectory an toan & EncodedCommand
     try {
-        Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"$cleanCmd`"" -Verb RunAs
-        Stop-Process -Id $PID -Force
-        Exit
+        Start-Process -FilePath $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd" -WorkingDirectory $safeWorkingDir -Verb RunAs -ErrorAction Stop
+        $elevatedSuccess = $true
     } catch {
         $exMsg = $_.Exception.Message
         $isCancelled = ($_.Exception -is [System.ComponentModel.Win32Exception] -and $_.Exception.NativeErrorCode -eq 1223) -or ($exMsg -match "canceled by the user")
         if ($isCancelled) {
             Write-Host " [!] Ban da bam 'No' tren hop thoai UAC. Bo cong cu yeu cau quyen Admin de can thiep he thong!" -ForegroundColor Red
-        } else {
-            Write-Host " [!] Khong the tu dong nang quyen: $exMsg" -ForegroundColor Red
-            Write-Host " -> Hay mo PowerShell bang cach nhap chuot phai chon 'Run as Administrator', sau do dan lai lenh:`n    irm tinyurl.com/vuongwin | iex`n" -ForegroundColor Yellow
+            return
         }
-        return
+    }
+    
+    # Tang 2: Du phong sang ProcessStartInfo .NET
+    if (-not $elevatedSuccess) {
+        try {
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = $psExe
+            $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd"
+            $psi.WorkingDirectory = $safeWorkingDir
+            $psi.Verb = "RunAs"
+            $psi.UseShellExecute = $true
+            $p = [System.Diagnostics.Process]::Start($psi)
+            if ($null -ne $p) { $elevatedSuccess = $true }
+        } catch {
+            $exMsg = $_.Exception.Message
+            $isCancelled = ($_.Exception -is [System.ComponentModel.Win32Exception] -and $_.Exception.NativeErrorCode -eq 1223) -or ($exMsg -match "canceled by the user")
+            if ($isCancelled) {
+                Write-Host " [!] Ban da bam 'No' tren hop thoai UAC. Bo cong cu yeu cau quyen Admin de can thiep he thong!" -ForegroundColor Red
+                return
+            }
+        }
+    }
+    
+    # Tang 3: Du phong sang Shell.Application COM Object
+    if (-not $elevatedSuccess) {
+        try {
+            $shApp = New-Object -ComObject Shell.Application
+            $shApp.ShellExecute($psExe, "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd", $safeWorkingDir, "runas", 1)
+            $elevatedSuccess = $true
+        } catch {
+            $exMsg = $_.Exception.Message
+        }
+    }
+    
+    if ($elevatedSuccess) {
+        Stop-Process -Id $PID -Force -ErrorAction SilentlyContinue
+        Exit
+    } else {
+        Write-Host " [!] Khong the tu dong nang quyen qua UAC: $exMsg" -ForegroundColor Yellow
+        Write-Host " -> Dang tiep tuc tai ve bo cong cu; file VUONGTT_Toolkit.exe se tu dong kich hoat UAC khi chay..." -ForegroundColor Cyan
     }
 }
 

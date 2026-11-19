@@ -1,6 +1,6 @@
 ﻿<#
 ========================================================================================
-   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.214
+   VUONGTT SOFTWARE - TOOLKIT 2026 VER 20.5.909.215
    VUONGTT Tool Pro 2026 - Professional
    Chuyên nghiệp - Tối ưu hóa - Cài đặt tự động - Sửa lỗi toàn diện Windows, Office & Phần cứng
 ========================================================================================
@@ -19,9 +19,11 @@ if ($SourceExePath -and (Test-Path $SourceExePath -ErrorAction SilentlyContinue)
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     try {
+        $psExe = if (Test-Path "$PSHOME\powershell.exe") { "$PSHOME\powershell.exe" } else { "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
+        $safeWorkingDir = if (Test-Path $env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
         $argList = "-NoProfile -ExecutionPolicy Bypass -Sta -File `"$PSCommandPath`""
         if ($SourceExePath) { $argList += " `"$SourceExePath`"" }
-        Start-Process powershell.exe -ArgumentList $argList -Verb RunAs
+        Start-Process -FilePath $psExe -ArgumentList $argList -WorkingDirectory $safeWorkingDir -Verb RunAs
         Exit
     } catch {
         Add-Type -AssemblyName System.Windows.Forms
@@ -33,7 +35,7 @@ if (-not $isAdmin) {
 # Add required assemblies
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-$Script:AppVersion = "v20.5.909.214"
+$Script:AppVersion = "v20.5.909.215"
 
 $script:lastDoEventsTime = [DateTime]::MinValue
 $script:isDoEventsRunning = $false
@@ -10011,7 +10013,7 @@ if ($btnAdminPushGit) {
 
                 # 1. Đọc và nâng số phiên bản version.json
                 $currentVer = $script:APP_CURRENT_VERSION
-                if (-not $currentVer) { $currentVer = "20.5.909.214" }
+                if (-not $currentVer) { $currentVer = "20.5.909.215" }
                 $parts = $currentVer.Split('.')
                 $newVer = ""
                 if ($parts.Count -ge 4) {

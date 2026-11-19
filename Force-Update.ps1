@@ -13,8 +13,16 @@ Write-Host ""
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host " [!] Can quyen Admin. Dang tu dong leo thang quyen..." -ForegroundColor Yellow
-    $cmd = "irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/Force-Update.ps1 | iex"
-    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"$cmd`"" -Verb RunAs
+    $cmd = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/Force-Update.ps1 | iex"
+    $bytes = [System.Text.Encoding]::Unicode.GetBytes($cmd)
+    $encodedCmd = [System.Convert]::ToBase64String($bytes)
+    $psExe = if (Test-Path "$PSHOME\powershell.exe") { "$PSHOME\powershell.exe" } else { "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
+    $safeWorkingDir = if (Test-Path $env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
+    try {
+        Start-Process -FilePath $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd" -WorkingDirectory $safeWorkingDir -Verb RunAs
+    } catch {
+        Write-Host " [!] Khong the tu dong nang quyen: $($_.Exception.Message)" -ForegroundColor Red
+    }
     Exit
 }
 

@@ -36,6 +36,62 @@ extern "system" {
     fn GetLastError() -> u32;
 }
 
+#[cfg(windows)]
+#[link(name = "shell32")]
+extern "system" {
+    fn ShellExecuteW(
+        hwnd: isize,
+        lpOperation: *const u16,
+        lpFile: *const u16,
+        lpParameters: *const u16,
+        lpDirectory: *const u16,
+        nShowCmd: i32,
+    ) -> isize;
+}
+
+fn ensure_admin_elevation(args: &[String]) {
+    #[cfg(windows)]
+    {
+        if !system_ops::is_admin_elevated() {
+            if let Ok(current_exe) = std::env::current_exe() {
+                let mut op_wide: Vec<u16> = "runas".encode_utf16().collect();
+                op_wide.push(0);
+
+                let mut file_wide: Vec<u16> = current_exe.to_string_lossy().encode_utf16().collect();
+                file_wide.push(0);
+
+                let param_str = if args.len() > 1 {
+                    args[1..].join(" ")
+                } else {
+                    String::new()
+                };
+                let mut param_wide: Vec<u16> = param_str.encode_utf16().collect();
+                param_wide.push(0);
+
+                let dir_str = current_exe.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                let mut dir_wide: Vec<u16> = dir_str.encode_utf16().collect();
+                dir_wide.push(0);
+
+                unsafe {
+                    let hinst = ShellExecuteW(
+                        0,
+                        op_wide.as_ptr(),
+                        file_wide.as_ptr(),
+                        if param_str.is_empty() { std::ptr::null() } else { param_wide.as_ptr() },
+                        if dir_str.is_empty() { std::ptr::null() } else { dir_wide.as_ptr() },
+                        1, // SW_SHOWNORMAL
+                    );
+
+                    // If ShellExecuteW returns > 32, elevated process spawned successfully
+                    if hinst as usize > 32 {
+                        std::process::exit(0);
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn control_window(action: &str) -> (bool, &'static str) {
     #[cfg(windows)]
     unsafe {
@@ -93,7 +149,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.214";
+pub const APP_VERSION: &str = "20.5.909.215";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -604,6 +660,9 @@ fn main() {
         println!("VUONGTT Toolkit v{}", APP_VERSION);
         std::process::exit(0);
     }
+
+    // Tu dong yeu cau quyen Administrator (UAC RunAs) cho toan bo he thong
+    ensure_admin_elevation(&args);
 
     // Single-Instance Mutex: Ngan chan mo nhieu cua so trung lap tren he thong
     #[cfg(windows)]
