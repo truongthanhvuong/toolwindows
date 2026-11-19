@@ -1,4 +1,4 @@
-# VUONGTT TOOL PRO 2026 - CLOUD BOOTSTRAPPER AND AUTO UPDATER
+﻿# VUONGTT TOOL PRO 2026 - CLOUD BOOTSTRAPPER AND AUTO UPDATER
 function Compare-SemVer([string]$v1, [string]$v2) {
     if (-not $v1 -or -not $v2) { return 0 }
     $p1 = ($v1.Trim() -replace '^[vV]', '').Split('.')
@@ -129,18 +129,33 @@ if ($hasWebView2) {
 Write-Host "`n [3/4] Dang kiem tra va dong bo ban phat hanh moi nhat tu Cloud..." -ForegroundColor Cyan
 
 $localVersion = $null
-if (Test-Path $exePath) {
+
+# 1. Uu tien doc tu version.json cuc bo (chuan xac nhat)
+$localVersionJsonCandidates = @(
+    (Join-Path $installDir "version.json"),
+    "E:\toolwindows\version.json",
+    (Join-Path ([System.IO.Path]::GetDirectoryName($exePath)) "version.json")
+)
+foreach ($vjf in $localVersionJsonCandidates) {
+    if ($vjf -and (Test-Path $vjf -ErrorAction SilentlyContinue)) {
+        try {
+            $vj = Get-Content $vjf -Raw -Encoding UTF8 -ErrorAction SilentlyContinue | ConvertFrom-Json -ErrorAction SilentlyContinue
+            if ($vj -and $vj.version) { $localVersion = $vj.version.Trim(); break }
+        } catch {}
+    }
+}
+
+# 2. Fallback: VersionInfo cua exe
+if (-not $localVersion -and (Test-Path $exePath)) {
     try {
         $localInfo = (Get-Item $exePath).VersionInfo
-        if ($localInfo -and $localInfo.ProductVersion) {
-            $localVersion = $localInfo.ProductVersion.Trim()
-        }
+        if ($localInfo -and $localInfo.ProductVersion) { $localVersion = $localInfo.ProductVersion.Trim() }
     } catch {}
 }
+
+# 3. Fallback: file installed_version.txt
 if (-not $localVersion -and (Test-Path $verFilePath)) {
-    try {
-        $localVersion = (Get-Content $verFilePath -Raw -ErrorAction SilentlyContinue).Trim()
-    } catch {}
+    try { $localVersion = (Get-Content $verFilePath -Raw -ErrorAction SilentlyContinue).Trim() } catch {}
 }
 
 $latestSha = ""
