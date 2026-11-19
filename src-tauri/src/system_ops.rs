@@ -8455,10 +8455,11 @@ th { background: #222a3d; color: #6ffbbe; }
             let _ = clean_cmd.output();
             append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ và khởi tạo phân vùng tạm {} ($WINDOWS.~BT) ngăn chặn triệt để mã lỗi 0x80070490.", temp_drive_arg));
 
-            let setup_args = if mode == "custom" {
+            // Cài Mới (Clean) / Tùy Chọn (Custom): Hiển thị trực tiếp GUI Setup tương tác, kèm bypass /product server và ổ đệm /tempdrive
+            // Đối với tự động nâng cấp: /auto upgrade /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}
+            // (Hỗ trợ cấu hình tự động: /auto clean /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {})
+            let setup_args = if mode == "custom" || mode == "clean" {
                 format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
-            } else if mode == "clean" {
-                format!("/auto clean /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             } else {
                 format!("/auto upgrade /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
@@ -8474,23 +8475,35 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }} catch {{}}
 
-                # Ưu tiên khởi chạy sources\setupprep.exe để bypass hoàn toàn kiểm tra BCD boot disk của setup.exe gây lỗi 0x80070490
-                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} else {{ "$drv\setup.exe" }}
+                # Ưu tiên khởi chạy setup.exe gốc từ ổ đĩa cài đặt để hiển thị ngay cửa sổ GUI Windows Setup trên màn hình
+                $setupExe = if (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} elseif (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} else {{ "$drv\sources\setupprep.exe" }}
                 $workDir = Split-Path $setupExe -Parent
-                $argsList = "/c start `"`" `"$setupExe`" $setupArgs"
+                $argArray = $setupArgs.Split(' ') | Where-Object {{ $_ -ne '' }}
+
+                $launched = $false
                 try {{
-                    Start-Process -FilePath "cmd.exe" -ArgumentList $argsList -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
+                    # Khoi chay cmd.exe /c start "" "$setupExe" (chay setup.exe an toan chong loi The request is not supported)
+                    & cmd.exe /c start "" "$setupExe" $argArray
                     Write-Output "LAUNCH_OK:$setupExe"
+                    $launched = $true
                 }} catch {{
                     try {{
-                        & cmd.exe /c start "" "$drv\setup.exe" $setupArgs
-                        Write-Output "FALLBACK_OK:$setupExe"
+                        Start-Process -FilePath $setupExe -ArgumentList $argArray -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
+                        Write-Output "LAUNCH_OK:$setupExe"
+                        $launched = $true
                     }} catch {{
                         try {{
-                            Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\"
-                            Write-Output "FALLBACK_PS_OK"
+                            & explorer.exe "$setupExe"
+                            Write-Output "LAUNCH_EXPLORER_OK:$setupExe"
+                            $launched = $true
                         }} catch {{
-                            Write-Output "ERR_LAUNCH:$($_.Exception.Message)"
+                            try {{
+                                Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\"
+                                Write-Output "FALLBACK_PS_OK"
+                                $launched = $true
+                            }} catch {{
+                                Write-Output "ERR_LAUNCH:$($_.Exception.Message)"
+                            }}
                         }}
                     }}
                 }}
@@ -8502,21 +8515,44 @@ th { background: #222a3d; color: #6ffbbe; }
             run_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_run]);
             #[cfg(windows)]
             run_cmd.creation_flags(CREATE_NO_WINDOW);
-            let run_output = run_cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+            let run_output = run_cmd.output();
 
-            if run_output.contains("ERR_LAUNCH") {
-                let err_detail = run_output.split("ERR_LAUNCH:").nth(1).unwrap_or("Lỗi không xác định").trim();
-                append_log(&format!("[LỖI KHỞI CHẠY SETUP] Không thể khởi chạy Windows Setup: {}", err_detail));
-                return (false, format!("Không thể khởi chạy Windows Setup từ ổ [{}]: {}", drv, err_detail));
+            let (run_success, run_stdout, run_stderr) = match run_output {
+                Ok(ref o) => (
+                    o.status.success(),
+                    String::from_utf8_lossy(&o.stdout).to_string(),
+                    String::from_utf8_lossy(&o.stderr).to_string(),
+                ),
+                Err(e) => (false, String::new(), e.to_string()),
+            };
+
+            let combined_output = format!("{}\n{}", run_stdout, run_stderr);
+
+            if combined_output.contains("ERR_LAUNCH") || (!run_success && !combined_output.contains("LAUNCH_")) {
+                let err_detail = if combined_output.contains("ERR_LAUNCH:") {
+                    combined_output.split("ERR_LAUNCH:").nth(1).unwrap_or("Lỗi khởi chạy").lines().next().unwrap_or("").trim().to_string()
+                } else if !run_stderr.trim().is_empty() {
+                    run_stderr.trim().to_string()
+                } else {
+                    "Không thể kích hoạt tiến trình cài đặt".to_string()
+                };
+
+                // Dự phòng trực tiếp từ Rust bằng Windows Command cmd /c start
+                let fallback_exe = format!(r"{}\setup.exe", drv);
+                let mut direct_cmd = Command::new("cmd");
+                direct_cmd.args(["/c", "start", "", &fallback_exe]);
+                for a in setup_args.split_whitespace() {
+                    direct_cmd.arg(a);
+                }
+                #[cfg(windows)]
+                direct_cmd.creation_flags(CREATE_NO_WINDOW);
+                if let Err(_) = direct_cmd.spawn() {
+                    append_log(&format!("[LỖI KHỞI CHẠY SETUP] Không thể khởi chạy Windows Setup: {}", err_detail));
+                    return (false, format!("Không thể khởi chạy Windows Setup từ ổ [{}]: {}", drv, err_detail));
+                }
             }
 
-
-
-
-
-
-
-            let binary_used = if run_output.contains("setupprep.exe") { "Setup Preparation Engine (setupprep.exe)" } else { "Windows Setup (setup.exe)" };
+            let binary_used = if combined_output.contains("setupprep.exe") { "Setup Preparation Engine (setupprep.exe)" } else { "Windows Setup (setup.exe)" };
             let mode_label = if mode == "custom" { "Tùy Chọn Phân Vùng (Custom Setup)" } else if mode == "clean" { "Cài Mới (Clean Install)" } else { "Cài Đè / Nâng Cấp (In-Place Upgrade)" };
 
             append_log(&format!("[SETUP ACTIVATED] Trình cài đặt Windows đã được khởi chạy thành công qua [{}] ở chế độ [{}] từ ổ [{}] với ổ đệm [{}]!", binary_used, mode_label, drv, temp_drive_arg));
