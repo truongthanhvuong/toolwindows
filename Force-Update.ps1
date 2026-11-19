@@ -12,18 +12,61 @@ Write-Host ""
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host " [!] Can quyen Admin. Dang tu dong leo thang quyen..." -ForegroundColor Yellow
+    Write-Host " [*] Dang yeu cau quyen quan tri vien (Run as Administrator)..." -ForegroundColor Yellow
+    Write-Host " [*] Vui long bam 'YES' tren hop thoai UAC de cap phep hoat dong.`n" -ForegroundColor Cyan
+
     $cmd = "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13; irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/Force-Update.ps1 | iex"
     $bytes = [System.Text.Encoding]::Unicode.GetBytes($cmd)
     $encodedCmd = [System.Convert]::ToBase64String($bytes)
     $psExe = if (Test-Path "$PSHOME\powershell.exe") { "$PSHOME\powershell.exe" } else { "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
     $safeWorkingDir = if (Test-Path $env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
+
+    $elevatedSuccess = $false
+    $exMsg = ""
+
+    # Tang 1: Start-Process
     try {
-        Start-Process -FilePath $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd" -WorkingDirectory $safeWorkingDir -Verb RunAs
+        Start-Process -FilePath $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd" -WorkingDirectory $safeWorkingDir -Verb RunAs -ErrorAction Stop
+        $elevatedSuccess = $true
     } catch {
-        Write-Host " [!] Khong the tu dong nang quyen: $($_.Exception.Message)" -ForegroundColor Red
+        $exMsg = $_.Exception.Message
     }
-    Exit
+
+    # Tang 2: ProcessStartInfo .NET
+    if (-not $elevatedSuccess) {
+        try {
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = $psExe
+            $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd"
+            $psi.WorkingDirectory = $safeWorkingDir
+            $psi.Verb = "RunAs"
+            $psi.UseShellExecute = $true
+            $p = [System.Diagnostics.Process]::Start($psi)
+            if ($null -ne $p) { $elevatedSuccess = $true }
+        } catch {
+            $exMsg = $_.Exception.Message
+        }
+    }
+
+    # Tang 3: Shell.Application COM Object
+    if (-not $elevatedSuccess) {
+        try {
+            $shApp = New-Object -ComObject Shell.Application
+            $shApp.ShellExecute($psExe, "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCmd", $safeWorkingDir, "runas", 1)
+            $elevatedSuccess = $true
+        } catch {
+            $exMsg = $_.Exception.Message
+        }
+    }
+
+    if ($elevatedSuccess) {
+        Stop-Process -Id $PID -Force -ErrorAction SilentlyContinue
+        Exit
+    } else {
+        Write-Host " [!] Khong the tu dong nang quyen qua UAC: $exMsg" -ForegroundColor Yellow
+        Write-Host " -> Hay mo PowerShell bang cach nhap chuot phai chon 'Run as Administrator', sau do dan lai lenh:`n    irm https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/Force-Update.ps1 | iex`n" -ForegroundColor Cyan
+        Exit
+    }
 }
 
 $toolDir = "E:\toolwindows"

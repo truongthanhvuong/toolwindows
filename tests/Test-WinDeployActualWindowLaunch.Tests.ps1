@@ -33,9 +33,9 @@ function Assert-Test([string]$desc, [scriptblock]$condition) {
 
 $opsContent = if (Test-Path $opsRs) { Get-Content -Path $opsRs -Raw -Encoding UTF8 } else { "" }
 
-# 1. Primary setup executable must be root setup.exe (not setupprep.exe which is headless upgrade only)
-Assert-Test "1. Uu tien khoi chay goc setup.exe tren o dia ISO de hien thi giao dien Windows Setup" {
-    $opsContent -match '\$setupExe\s*=\s*if\s*\(Test-Path\s*"\$drv\\setup\.exe"\)'
+# 1. Setup executable phai uu tien sources\setupprep.exe hoac setup.exe de dam bao hien thi GUI va chong 0x80070490
+Assert-Test "1. Uu tien khoi chay sources\setupprep.exe de hien thi GUI Windows Setup va ngan chan loi 0x80070490" {
+    $opsContent -match 'setupprep\.exe' -and ($opsContent -match '\$setupExe\s*=\s*if\s*\(Test-Path\s*"\$drv\\sources\\setupprep\.exe"\)' -or $opsContent -match 'Test-Path.*sources\\setupprep\.exe')
 }
 
 # 2. Argument list in PowerShell must NOT contain broken backtick-quote sequence `"`" causing syntax error

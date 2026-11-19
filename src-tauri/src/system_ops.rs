@@ -2021,7 +2021,7 @@ if ($targetPath -and (Test-Path $targetPath)) {{
 # 2. Environment variables of current session & user profile
 @($env:APPDATA, $env:LOCALAPPDATA, $env:USERPROFILE) | ForEach-Object {{
     if ($_ -and (Test-Path $_)) {{
-        @(Join-Path $_ 'ZaloData', Join-Path $_ 'AppData\Roaming\ZaloData', Join-Path $_ 'AppData\Local\ZaloData') | ForEach-Object {{
+        @((Join-Path $_ 'ZaloData'), (Join-Path $_ 'AppData\Roaming\ZaloData'), (Join-Path $_ 'AppData\Local\ZaloData')) | ForEach-Object {{
             if ((Test-Path $_) -and (-not $zRoots.Contains($_))) {{ $zRoots.Add($_) }}
         }}
     }}
@@ -2032,7 +2032,7 @@ try {{
     Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*' -ErrorAction SilentlyContinue | ForEach-Object {{
         $p = $_.ProfileImagePath
         if ($p -and (Test-Path $p)) {{
-            @(Join-Path $p 'AppData\Roaming\ZaloData', Join-Path $p 'AppData\Local\ZaloData') | ForEach-Object {{
+            @((Join-Path $p 'AppData\Roaming\ZaloData'), (Join-Path $p 'AppData\Local\ZaloData')) | ForEach-Object {{
                 if ((Test-Path $_) -and (-not $zRoots.Contains($_))) {{ $zRoots.Add($_) }}
             }}
         }}
@@ -8428,21 +8428,32 @@ th { background: #222a3d; color: #6ffbbe; }
                 r#"
                 $targetDrive = "{}"
                 $stalePaths = @("C:\`$WINDOWS.~BT", "C:\`$Windows.~WS", "D:\`$WINDOWS.~BT", "D:\`$Windows.~WS", "$($targetDrive):\`$WINDOWS.~BT", "$($targetDrive):\`$Windows.~WS")
+
+                # Dung tat ca tien trinh setup cu co the dang giu khoa file
+                Stop-Process -Name "setup", "setupprep", "SetupHost", "CompatTelRunner" -Force -ErrorAction SilentlyContinue
+
                 foreach ($p in $stalePaths) {{
                     if (Test-Path $p) {{
                         try {{
+                            attrib.exe -R -S -H "$p\*.*" /S /D 2>&1 | Out-Null
+                            attrib.exe -R -S -H "$p" /D 2>&1 | Out-Null
                             takeown /F "$p" /A /R /D Y 2>&1 | Out-Null
                             icacls "$p" /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
-                            Remove-Item -Path $p -Recurse -Force -ErrorAction SilentlyContinue
+                            cmd.exe /c "rd /s /q `"$p`"" 2>&1 | Out-Null
+                            if (Test-Path $p) {{
+                                $rnd = [Guid]::NewGuid().ToString().Substring(0, 8)
+                                Rename-Item -Path $p -NewName "$p.old_$rnd" -Force -ErrorAction SilentlyContinue
+                            }}
                         }} catch {{}}
                     }}
                 }}
-                # Tiền tạo thư mục $WINDOWS.~BT trên ổ đích để Windows Setup nhận diện ngay ổ đệm hợp lệ và không quét phân vùng boot ESP 100MB
+
+                # Khoi tao truoc thu muc staging $WINDOWS.~BT voi quyen Administrator day du
                 $stagingDir = "$($targetDrive):\`$WINDOWS.~BT"
                 try {{
                     if (-not (Test-Path $stagingDir)) {{
-                        New-Item -Path "$($targetDrive):\`$WINDOWS.~BT" -ItemType Directory -Force | Out-Null
-                        icacls "$stagingDir" /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
+                        New-Item -Path "$($targetDrive):\`$WINDOWS.~BT" -ItemType Directory -Force 2>&1 | Out-Null
+                        icacls $stagingDir /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
                     }}
                 }} catch {{}}
                 "#,
@@ -8453,7 +8464,7 @@ th { background: #222a3d; color: #6ffbbe; }
             #[cfg(windows)]
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
-            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ và khởi tạo phân vùng tạm {} ($WINDOWS.~BT) ngăn chặn triệt để mã lỗi 0x80070490.", temp_drive_arg));
+            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ và giải phóng phân vùng tạm {} ($WINDOWS.~BT) ngăn chặn triệt để mã lỗi 0x80070490.", temp_drive_arg));
 
             // Cài Mới (Clean) / Tùy Chọn (Custom): Hiển thị trực tiếp GUI Setup tương tác, kèm bypass /product server và ổ đệm /tempdrive
             // Đối với tự động nâng cấp: /auto upgrade /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}
@@ -8468,28 +8479,30 @@ th { background: #222a3d; color: #6ffbbe; }
                 r#"
                 $drv = "{}"
                 $setupArgs = '{}'
-                # Gắn mount point cho phân vùng EFI System Partition (nếu là UEFI) để BCD API và Setup luôn tìm thấy boot disk
+                # Gắn mount point cho phân vùng EFI System Partition (nếu là UEFI) và sửa chữa BCD entry
                 try {{
-                    if (-not (Get-Volume -DriveLetter S -ErrorAction SilentlyContinue)) {{
+                    if (-not (Test-Path 'S:\EFI')) {{
                         mountvol S: /S 2>&1 | Out-Null
                     }}
+                    bcdboot $env:SystemDrive\Windows /s S: /f UEFI 2>&1 | Out-Null
                 }} catch {{}}
 
-                # Ưu tiên khởi chạy setup.exe gốc từ ổ đĩa cài đặt để hiển thị ngay cửa sổ GUI Windows Setup trên màn hình
-                $setupExe = if (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} elseif (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} else {{ "$drv\sources\setupprep.exe" }}
+                # Ưu tiên khởi chạy sources\setupprep.exe (động cơ In-OS Setup hiện đại của Microsoft, không kiểm tra BCD boot partition, không dính lỗi 0x80070490)
+                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} elseif (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} else {{ "$drv\sources\setup.exe" }}
                 $workDir = Split-Path $setupExe -Parent
                 $argArray = $setupArgs.Split(' ') | Where-Object {{ $_ -ne '' }}
 
                 $launched = $false
                 try {{
-                    # Khoi chay cmd.exe /c start "" "$setupExe" (chay setup.exe an toan chong loi The request is not supported)
-                    & cmd.exe /c start "" "$setupExe" $argArray
+                    # Uu tien Start-Process voi -Verb RunAs de dam bao Windows Setup chay toan quyen NT Authority truy cap BCD khong bi loi 0x80070490
+                    Start-Process -FilePath $setupExe -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
                     Write-Output "LAUNCH_OK:$setupExe"
                     $launched = $true
                 }} catch {{
                     try {{
-                        Start-Process -FilePath $setupExe -ArgumentList $argArray -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
-                        Write-Output "LAUNCH_OK:$setupExe"
+                        # Khoi chay cmd.exe /c start "" "$setupExe" (chay setup.exe an toan chong loi The request is not supported)
+                        & cmd.exe /c start "" "$setupExe" $argArray
+                        Write-Output "LAUNCH_CMD_OK:$setupExe"
                         $launched = $true
                     }} catch {{
                         try {{
@@ -8498,7 +8511,7 @@ th { background: #222a3d; color: #6ffbbe; }
                             $launched = $true
                         }} catch {{
                             try {{
-                                Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\"
+                                Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\" -Verb RunAs
                                 Write-Output "FALLBACK_PS_OK"
                                 $launched = $true
                             }} catch {{
@@ -20076,15 +20089,34 @@ fn restart_explorer_safely() {}
 
     if act == "disable_windows_update" {
         let ps = r#"
-            # 1. Dung va vo hieu hoa cac dich vu Windows Update
+            # 1. Huy toan bo tien trinh tai ve BITS dang cho hoac dang chay
+            try {
+                Get-BitsTransfer -AllUsers -ErrorAction SilentlyContinue | Remove-BitsTransfer -ErrorAction SilentlyContinue
+            } catch {}
+
+            # 2. Cham dut tat ca tien trinh cap nhat Windows dang hoat dong (TiWorker, TrustedInstaller, UsoClient, MoNotificationUx)
+            taskkill.exe /F /IM TiWorker.exe /IM TrustedInstaller.exe /IM UsoClient.exe /IM MoNotificationUx.exe /IM WaasMedicAgent.exe /T 2>&1 | Out-Null
+
+            # 3. Dung va vo hieu hoa cac dich vu Windows Update
             Stop-Service wuauserv, bits, dosvc, UsoSvc, WaaSMedicSvc -Force -ErrorAction SilentlyContinue
             Set-Service wuauserv, bits, dosvc -StartupType Disabled -ErrorAction SilentlyContinue
+            sc.exe config wuauserv start= disabled 2>&1 | Out-Null
+            sc.exe config bits start= disabled 2>&1 | Out-Null
+            sc.exe config dosvc start= disabled 2>&1 | Out-Null
+            sc.exe config UsoSvc start= disabled 2>&1 | Out-Null
+            sc.exe config WaaSMedicSvc start= disabled 2>&1 | Out-Null
+
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\wuauserv' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\UsoSvc' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\dosvc' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
 
-            # 2. Thiet lap Group Policy Registry khoa toan dien Windows Update
+            # 4. Xoa sach cache tai ve dang do do cua Windows Update trong SoftwareDistribution\Download
+            try {
+                Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {}
+
+            # 5. Thiet lap Group Policy Registry khoa toan dien Windows Update
             $wuKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
             $auKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
             if (-not (Test-Path $wuKey)) { New-Item -Path $wuKey -Force -ErrorAction SilentlyContinue | Out-Null }
@@ -20101,17 +20133,17 @@ fn restart_explorer_safely() {}
             Set-ItemProperty -Path $auKey -Name 'AUOptions' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
             Set-ItemProperty -Path $auKey -Name 'UseWUServer' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
 
-            # 3. Vo hieu hoa Scheduled Tasks tu dong danh thuc va scan update
+            # 6. Vo hieu hoa Scheduled Tasks tu dong danh thuc va scan update
             Get-ScheduledTask -TaskPath '\Microsoft\Windows\UpdateOrchestrator\*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
             Get-ScheduledTask -TaskPath '\Microsoft\Windows\WaaSMedic\*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
             Get-ScheduledTask -TaskPath '\Microsoft\Windows\WindowsUpdate\*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
 
-            # 4. Outbound Firewall Rule chan ket noi cua Windows Update
+            # 7. Outbound Firewall Rule chan ket noi cua Windows Update
             Remove-NetFirewallRule -DisplayName 'VUONGTT_Block_Windows_Update' -ErrorAction SilentlyContinue | Out-Null
             New-NetFirewallRule -DisplayName 'VUONGTT_Block_Windows_Update' -Direction Outbound -Service 'wuauserv' -Action Block -Enabled True -ErrorAction SilentlyContinue | Out-Null
         "#;
         run_ps_oneshot(ps);
-        return (true, "Đã tắt triệt để Windows Update (Dịch vụ, Group Policy, WSUS Dummy, Task Scheduler & Firewall)!".to_string());
+        return (true, "Đã tắt triệt để Windows Update (Hủy tải về, Dịch vụ, Group Policy, WSUS Dummy, Task Scheduler & Firewall)!".to_string());
     }
 
     if act == "enable_windows_update" {
