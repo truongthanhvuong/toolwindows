@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.213";
+pub const APP_VERSION: &str = "20.5.909.214";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -566,7 +566,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
             .unwrap_or("general");
 
         let (success, msg) = system_ops::execute_system_action(act_id, body);
-        if (act_id == "check_pro_license" || act_id == "activate_pro_key" || act_id == "zalo_scan_all" || act_id == "zalo_clear_cache") && msg.trim().starts_with('{') {
+        if (act_id == "check_pro_license" || act_id == "activate_pro_key" || act_id == "zalo_scan_all" || act_id == "zalo_clear_cache" || act_id == "scan_missing_drivers") && msg.trim().starts_with('{') {
             json_resp = msg;
         } else if act_id == "browse_iso" || act_id == "browse_file" {
             let escaped_path = if success { escape_json_str(&msg) } else { String::new() };

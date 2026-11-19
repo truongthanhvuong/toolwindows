@@ -8169,6 +8169,153 @@ getAppIconMarkup(app) +
 
   window.restoreDrivers = restoreDrivers;
 
+  // --- MISSING DRIVERS DIAGNOSTIC & UPDATER RECOMMENDATIONS ---
+  function escapeDriverText(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  let isScanningDrivers = false;
+  async function scanMissingDrivers() {
+    if (isScanningDrivers) return;
+    const btn = document.getElementById("btn-scan-missing-drivers");
+    const resultsContainer = document.getElementById("driver-scan-results");
+
+    if (btn) btn.disabled = true;
+    isScanningDrivers = true;
+
+    if (typeof openUniversalLog === "function") openUniversalLog();
+    if (typeof appendUniversalLog === "function") {
+      appendUniversalLog("[DRIVER] Đang quét toàn bộ thiết bị phần cứng để phát hiện driver bị thiếu hoặc bị lỗi...", "info");
+    }
+    showToast("Quét Driver", "Đang quét thiết bị phần cứng qua WMI...", "info");
+
+    if (resultsContainer) {
+      resultsContainer.innerHTML = `
+        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
+          <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+          <span>Đang quét các thiết bị phần cứng trong Device Manager... Vui lòng chờ.</span>
+        </div>
+      `;
+    }
+
+    try {
+      const rawRes = await invokeRust("run_system_action", { actionId: "scan_missing_drivers" });
+      let res = rawRes;
+      if (typeof rawRes === "string") {
+        try { res = JSON.parse(rawRes); } catch (_) {}
+      }
+
+      let scanData = (res && res.data) ? res.data : res;
+      if (typeof scanData === "string") {
+        try { scanData = JSON.parse(scanData); } catch (_) {}
+      }
+
+      const count = (scanData && typeof scanData.missing_count === "number") ? scanData.missing_count : 0;
+      const devices = (scanData && Array.isArray(scanData.devices)) ? scanData.devices : [];
+
+      if (count === 0) {
+        if (typeof appendUniversalLog === "function") {
+          appendUniversalLog("✅ [DRIVER] Tuyệt vời! Tất cả thiết bị phần cứng đã có đủ Driver và hoạt động bình thường (0 thiếu/lỗi).", "success");
+        }
+        showToast("Quét Driver Hoàn Tất", "Không phát hiện driver nào bị thiếu hoặc bị lỗi!", "success");
+        if (resultsContainer) {
+          resultsContainer.innerHTML = `
+            <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+              <span class="material-symbols-outlined text-emerald-600 text-[24px]">verified</span>
+              <div>
+                <div class="font-bold text-xs text-emerald-800">Hệ thống đầy đủ Driver! (0 thiết bị thiếu hoặc lỗi)</div>
+                <div class="text-[11px] text-emerald-600">Tất cả thiết bị phần cứng (Main, Chipset, Audio, LAN, WiFi, VGA) đều hoạt động chuẩn xác trong Device Manager.</div>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        if (typeof appendUniversalLog === "function") {
+          appendUniversalLog(`⚠️ [DRIVER] Phát hiện ${count} thiết bị bị thiếu Driver hoặc bị lỗi trong Device Manager!`, "warning");
+        }
+        showToast("Cảnh Báo Driver", `Phát hiện ${count} thiết bị bị thiếu driver hoặc bị lỗi!`, "warning");
+
+        const itemsHtml = devices.map(d => `
+          <div class="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-amber-600 text-[16px]">warning</span>
+                <span class="truncate">${escapeDriverText(d.name || "Thiết bị không xác định")}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-800 shrink-0">Mã lỗi: ${d.error_code}</span>
+              </div>
+              <div class="text-[11px] text-amber-900 mt-0.5">${escapeDriverText(d.error_desc || "")}</div>
+              <div class="text-[10px] text-slate-400 font-mono truncate mt-0.5">ID: ${escapeDriverText(d.device_id || "")}</div>
+            </div>
+          </div>
+        `).join("");
+
+        if (resultsContainer) {
+          resultsContainer.innerHTML = `
+            <div class="p-3 rounded-xl bg-amber-100/70 border border-amber-300">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-bold text-xs text-amber-900 flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[18px]">report_problem</span>
+                  <span>Phát hiện ${count} thiết bị cần bổ sung / sửa lỗi Driver:</span>
+                </span>
+              </div>
+              <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                ${itemsHtml}
+              </div>
+              <div class="mt-2 pt-2 border-t border-amber-200/80 text-[11px] text-amber-800">
+                💡 <em>Khuyến nghị: Sử dụng 3DP Chip (nếu thiếu Card mạng / VGA), hoặc SDIO / WanDriver bên dưới để cài tự động.</em>
+              </div>
+            </div>
+          `;
+        }
+      }
+    } catch (err) {
+      if (typeof appendUniversalLog === "function") {
+        appendUniversalLog(`❌ [DRIVER LỖI] ${String(err)}`, "error");
+      }
+      showToast("Lỗi Quét Driver", String(err), "error");
+      if (resultsContainer) {
+        resultsContainer.innerHTML = `
+          <div class="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            <span>Lỗi khi quét Driver: ${escapeDriverText(String(err))}</span>
+          </div>
+        `;
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+      isScanningDrivers = false;
+    }
+  }
+
+  async function download3DPChip() {
+    return await runToolkitAction("download_3dpchip", "Tải và khởi chạy 3DP Chip...");
+  }
+
+  async function openSDIOTool() {
+    return await runToolkitAction("open_sdio_tool", "Mở trang tải Snappy Driver Installer Origin (SDIO)...");
+  }
+
+  async function openWanDriverTool() {
+    return await runToolkitAction("open_wandriver_tool", "Mở trang tải WanDriver / Easy DriverPacks...");
+  }
+
+  async function installDriverBooster() {
+    return await runToolkitAction("install_driver_booster", "Tải và cài đặt IObit Driver Booster...");
+  }
+
+  window.scanMissingDrivers = scanMissingDrivers;
+  window.download3DPChip = download3DPChip;
+  window.openSDIOTool = openSDIOTool;
+  window.openWanDriverTool = openWanDriverTool;
+  window.installDriverBooster = installDriverBooster;
+
+
 
 
   let isBackingUpSystem = false;

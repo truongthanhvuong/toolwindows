@@ -20025,74 +20025,159 @@ fn restart_explorer_safely() {}
 
 
     if act == "disable_windows_update" {
-
-
-
         let ps = r#"
-
-
-
+            # 1. Dung va vo hieu hoa cac dich vu Windows Update
             Stop-Service wuauserv, bits, dosvc, UsoSvc, WaaSMedicSvc -Force -ErrorAction SilentlyContinue
-            Set-Service wuauserv, bits, dosvc, UsoSvc, WaaSMedicSvc -StartupType Disabled -ErrorAction SilentlyContinue
+            Set-Service wuauserv, bits, dosvc -StartupType Disabled -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\wuauserv' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\UsoSvc' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
             Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
-            if (!(Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU')) {
-                New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Force -ErrorAction SilentlyContinue | Out-Null
-            }
-            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\dosvc' -Name 'Start' -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
 
+            # 2. Thiet lap Group Policy Registry khoa toan dien Windows Update
+            $wuKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
+            $auKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+            if (-not (Test-Path $wuKey)) { New-Item -Path $wuKey -Force -ErrorAction SilentlyContinue | Out-Null }
+            if (-not (Test-Path $auKey)) { New-Item -Path $auKey -Force -ErrorAction SilentlyContinue | Out-Null }
 
+            Set-ItemProperty -Path $wuKey -Name 'DisableWindowsUpdateAccess' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $wuKey -Name 'DoNotConnectToWindowsUpdateInternetLocations' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $wuKey -Name 'SetDisableUXWUAccess' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $wuKey -Name 'WUServer' -Value 'http://127.0.0.1:80' -Type String -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $wuKey -Name 'WUStatusServer' -Value 'http://127.0.0.1:80' -Type String -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $wuKey -Name 'UpdateServiceUrlAlternate' -Value 'http://127.0.0.1:80' -Type String -Force -ErrorAction SilentlyContinue
 
+            Set-ItemProperty -Path $auKey -Name 'NoAutoUpdate' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $auKey -Name 'AUOptions' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $auKey -Name 'UseWUServer' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+
+            # 3. Vo hieu hoa Scheduled Tasks tu dong danh thuc va scan update
+            Get-ScheduledTask -TaskPath '\Microsoft\Windows\UpdateOrchestrator\*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+            Get-ScheduledTask -TaskPath '\Microsoft\Windows\WaaSMedic\*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+            Get-ScheduledTask -TaskPath '\Microsoft\Windows\WindowsUpdate\*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+
+            # 4. Outbound Firewall Rule chan ket noi cua Windows Update
+            Remove-NetFirewallRule -DisplayName 'VUONGTT_Block_Windows_Update' -ErrorAction SilentlyContinue | Out-Null
+            New-NetFirewallRule -DisplayName 'VUONGTT_Block_Windows_Update' -Direction Outbound -Service 'wuauserv' -Action Block -Enabled True -ErrorAction SilentlyContinue | Out-Null
         "#;
-
-
-
         run_ps_oneshot(ps);
-
-
-
-        return (true, "Đã tắt triệt để dịch vụ Windows Update và các dịch vụ tải ngầm!".to_string());
-
-
-
+        return (true, "Đã tắt triệt để Windows Update (Dịch vụ, Group Policy, WSUS Dummy, Task Scheduler & Firewall)!".to_string());
     }
 
-
-
-
-
-
-
     if act == "enable_windows_update" {
-
-
-
         let ps = r#"
-
-
-
-            Set-Service wuauserv, bits, dosvc, UsoSvc, WaaSMedicSvc -StartupType Manual -ErrorAction SilentlyContinue
-            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\UsoSvc' -Name 'Start' -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
-            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc' -Name 'Start' -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
-            if (Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU') {
-                Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            # 1. Phuc hoi Group Policy Registry ve mac dinh
+            $wuKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
+            $auKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+            if (Test-Path $wuKey) {
+                Remove-ItemProperty -Path $wuKey -Name 'DisableWindowsUpdateAccess', 'DoNotConnectToWindowsUpdateInternetLocations', 'SetDisableUXWUAccess', 'WUServer', 'WUStatusServer', 'UpdateServiceUrlAlternate' -Force -ErrorAction SilentlyContinue
             }
+            if (Test-Path $auKey) {
+                Set-ItemProperty -Path $auKey -Name 'NoAutoUpdate' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $auKey -Name 'AUOptions' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+                Remove-ItemProperty -Path $auKey -Name 'UseWUServer' -Force -ErrorAction SilentlyContinue
+            }
+
+            # 2. Xoa bo Firewall Rule chan Windows Update
+            Remove-NetFirewallRule -DisplayName 'VUONGTT_Block_Windows_Update' -ErrorAction SilentlyContinue | Out-Null
+
+            # 3. Kich hoat lai cac Scheduled Tasks
+            Get-ScheduledTask -TaskPath '\Microsoft\Windows\UpdateOrchestrator\*' -ErrorAction SilentlyContinue | Enable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+            Get-ScheduledTask -TaskPath '\Microsoft\Windows\WaaSMedic\*' -ErrorAction SilentlyContinue | Enable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+            Get-ScheduledTask -TaskPath '\Microsoft\Windows\WindowsUpdate\*' -ErrorAction SilentlyContinue | Enable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+
+            # 4. Phuc hoi cac dich vu Windows Update
+            Set-Service wuauserv, bits, dosvc, UsoSvc, WaaSMedicSvc -StartupType Manual -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\wuauserv' -Name 'Start' -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\UsoSvc' -Name 'Start' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc' -Name 'Start' -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\dosvc' -Name 'Start' -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue
             Start-Service wuauserv -ErrorAction SilentlyContinue
-
-
-
         "#;
-
-
-
         run_ps_oneshot(ps);
-
-
-
         return (true, "Đã khôi phục dịch vụ Windows Update về trạng thái hoạt động bình thường!".to_string());
+    }
 
+    if act == "scan_missing_drivers" {
+        let ps = r#"
+            $errorMap = @{
+                1 = 'Thiết bị chưa được cấu hình đúng (Code 1)'
+                10 = 'Không thể khởi động thiết bị (Code 10)'
+                18 = 'Cần cài đặt lại driver (Code 18)'
+                28 = 'Thiếu Driver / Chưa cài đặt Driver (Code 28)'
+                31 = 'Thiết bị không hoạt động do driver bị lỗi (Code 31)'
+                37 = 'Windows không thể khởi tạo driver (Code 37)'
+                39 = 'Không thể tải driver thiết bị (Code 39)'
+                43 = 'Windows đã dừng thiết bị do phát hiện sự cố (Code 43)'
+                52 = 'Driver chưa có chữ ký số hợp lệ (Code 52)'
+            }
+            $targetCodes = @(1, 10, 18, 28, 31, 37, 39, 43, 52)
+            $devs = Get-CimInstance Win32_PnPEntity -ErrorAction SilentlyContinue | Where-Object {
+                $_.ConfigManagerErrorCode -in $targetCodes
+            }
+            $list = [System.Collections.Generic.List[object]]::new()
+            if ($devs) {
+                foreach ($d in $devs) {
+                    $code = $d.ConfigManagerErrorCode
+                    $desc = if ($errorMap.ContainsKey($code)) { $errorMap[$code] } else { "Lỗi mã $code" }
+                    $hwid = if ($d.HardwareID -and $d.HardwareID.Count -gt 0) { $d.HardwareID[0] } else { $d.DeviceID }
+                    $list.Add([PSCustomObject]@{
+                        name = if ($d.Name) { $d.Name } else { 'Thiết bị không rõ (Unknown Device)' }
+                        device_id = $d.DeviceID
+                        hardware_id = $hwid
+                        error_code = $code
+                        error_desc = $desc
+                        class = if ($d.PNPClass) { $d.PNPClass } else { 'Other Devices' }
+                        status = $d.Status
+                    })
+                }
+            }
+            [PSCustomObject]@{
+                success = $true
+                missing_count = $list.Count
+                devices = $list
+            } | ConvertTo-Json -Compress -Depth 4
+        "#;
+        let out = run_ps_oneshot(ps);
+        return (true, out);
+    }
 
+    if act == "download_3dpchip" {
+        let ps = r#"
+            $url = "https://www.3dpchip.com/3dp/chip_down_latest.php"
+            Start-Process $url
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đang mở trang tải chính thức 3DP Chip...".to_string());
+    }
 
+    if act == "open_sdio_tool" {
+        let ps = r#"
+            $url = "https://www.glenn.delahoy.com/snappy-driver-installer-origin/"
+            Start-Process $url
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đang mở trang chủ Snappy Driver Installer Origin (SDIO)...".to_string());
+    }
+
+    if act == "open_wandriver_tool" {
+        let ps = r#"
+            $url = "https://www.google.com/search?q=WanDriver+Easy+DriverPacks+latest"
+            Start-Process $url
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đang mở tìm kiếm phiên bản WanDriver (Easy DriverPacks) mới nhất...".to_string());
+    }
+
+    if act == "install_driver_booster" {
+        let ps = r#"
+            $out = winget install IObit.DriverBooster --silent --accept-package-agreements --accept-source-agreements 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Start-Process "https://www.iobit.com/en/driver-booster.php"
+            }
+        "#;
+        run_ps_oneshot(ps);
+        return (true, "Đang khởi chạy cài đặt hoặc mở trang tải IObit Driver Booster...".to_string());
     }
 
 
@@ -20107,6 +20192,11 @@ fn restart_explorer_safely() {}
 
         return (true, "Đang mở Windows Control Panel Power Options (powercfg.cpl)...".to_string());
 
+    }
+
+    if act == "open_devmgmt" {
+        let _ = Command::new("mmc.exe").arg("devmgmt.msc").spawn();
+        return (true, "Đang mở Windows Device Manager (devmgmt.msc)...".to_string());
     }
 
 
