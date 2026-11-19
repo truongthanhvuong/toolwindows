@@ -7760,6 +7760,8 @@ th { background: #222a3d; color: #6ffbbe; }
 
             .to_lowercase();
 
+        let target_drive = extract_json_field(params_json, "target_drive").or_else(|| extract_json_field(params_json, "targetDrive")).unwrap_or("C:").trim();
+
 
 
         let bypass_tpm = extract_json_field(params_json, "bypass_tpm")
@@ -8417,22 +8419,35 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
-            let setup_args = if mode == "clean" {
+            // 3. Dọn dẹp cache tạm $WINDOWS.~BT và $Windows.~WS bị khóa/kẹt để ngăn chặn mã lỗi 0x80070490
+            let ps_clean_stale = r#"
+                $stalePaths = @("C:\$WINDOWS.~BT", "C:\$Windows.~WS", "D:\$WINDOWS.~BT", "D:\$Windows.~WS")
+                foreach ($p in $stalePaths) {
+                    if (Test-Path $p) {
+                        try {
+                            takeown /F "$p" /A /R /D Y 2>&1 | Out-Null
+                            icacls "$p" /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
+                            Remove-Item -Path $p -Recurse -Force -ErrorAction SilentlyContinue
+                        } catch {}
+                    }
+                }
+            "#;
+            let mut clean_cmd = Command::new("powershell");
+            clean_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_clean_stale]);
+            #[cfg(windows)]
+            clean_cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = clean_cmd.output();
+            append_log("[DỌN DẸP] Đã dọn dẹp thư mục tạm $WINDOWS.~BT và $Windows.~WS tránh xung đột lỗi 0x80070490.");
 
+            let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
+            let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
 
-
-                "/auto clean /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none"
-
-
-
+            let setup_args = if mode == "custom" {
+                format!("/DynamicUpdate disable /compat ignorewarning /tempdrive {}", temp_drive_letter)
+            } else if mode == "clean" {
+                format!("/auto clean /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_letter)
             } else {
-
-
-
-                "/auto upgrade /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none"
-
-
-
+                format!("/auto upgrade /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_letter)
             };
 
 
@@ -8490,7 +8505,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
-            let mode_label = if mode == "clean" { "Cài Mới (Clean Install)" } else { "Cài Đè / Nâng Cấp (In-Place Upgrade)" };
+            let mode_label = if mode == "custom" { "Tùy Chọn Phân Vùng (Custom Setup)" } else if mode == "clean" { "Cài Mới (Clean Install)" } else { "Cài Đè / Nâng Cấp (In-Place Upgrade)" };
 
 
 
@@ -9936,6 +9951,10 @@ if ('{auto_reboot}' -eq 'True') {{
     // ========================================================================
 
 
+
+    if act == "get_target_partitions" || act == "target_partitions" || act == "collect_target_partitions" {
+        return get_target_partitions();
+    }
 
     if act == "detect_win_install_env" || act == "kiem_tra_moi_truong_cai_win" || act == "check_vm_install_env" {
 
@@ -24230,6 +24249,45 @@ pub fn zalo_delete_data(path: String, days: i32) -> String {
     let result = run_ps_oneshot(&ps);
     append_log(&format!("Zalo deletion completed. Items removed: {}", result));
     result
+}
+
+pub fn get_target_partitions() -> (bool, String) {
+    let ps = r#"& {
+        $disks = @(Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 } | ForEach-Object {
+            $f = [math]::Round($_.FreeSpace / 1GB, 1)
+            $s = [math]::Round($_.Size / 1GB, 1)
+            $sys = ($_.DeviceID -eq $env:SystemDrive)
+            [PSCustomObject]@{
+                drive_letter = $_.DeviceID
+                label = if ($_.VolumeName) { $_.VolumeName } else { 'Local Disk' }
+                free_gb = $f
+                total_gb = $s
+                is_system = [bool]$sys
+            }
+        })
+        if ($disks.Count -gt 0) {
+            $disks | ConvertTo-Json -Compress
+        } else {
+            '[]'
+        }
+    }"#;
+    let mut cmd = Command::new("powershell");
+    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    match cmd.output() {
+        Ok(out) => {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if s.is_empty() || s.starts_with("null") {
+                (false, "[]".to_string())
+            } else if s.starts_with('{') {
+                (true, format!("[{}]", s))
+            } else {
+                (true, s)
+            }
+        }
+        Err(_) => (false, "[]".to_string()),
+    }
 }
 
 #[cfg(test)]

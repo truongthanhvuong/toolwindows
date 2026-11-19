@@ -149,7 +149,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.215";
+pub const APP_VERSION: &str = "20.5.909.216";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -617,12 +617,22 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         let (success, msg) = system_ops::execute_system_action("get_installed_apps", body);
         let valid_data = if !success || (!msg.starts_with('[') && !msg.starts_with('{')) { "[]" } else { &msg };
         json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, valid_data);
+    } else if cmd == "get_target_partitions" {
+        let (success, data) = system_ops::get_target_partitions();
+        json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, data);
+    } else if cmd == "start_win_deploy" || cmd == "deploy_windows" {
+        // Dispatch deploy_windows with target_drive and parameters into system_ops
+        let (success, msg) = system_ops::execute_system_action("start_win_deploy", body);
+        json_resp = format!(r#"{{"success":{},"message":"{}"}}"#, success, escape_json_str(&msg));
     } else if cmd == "run_system_action" {
         let act_id = system_ops::extract_json_field(body, "actionId")
             .unwrap_or("general");
 
         let (success, msg) = system_ops::execute_system_action(act_id, body);
-        if (act_id == "check_pro_license" || act_id == "activate_pro_key" || act_id == "zalo_scan_all" || act_id == "zalo_clear_cache" || act_id == "scan_missing_drivers") && msg.trim().starts_with('{') {
+        if act_id == "get_target_partitions" {
+            let valid_data = if !success || (!msg.starts_with('[') && !msg.starts_with('{')) { "[]" } else { &msg };
+            json_resp = format!(r#"{{"success":{},"data":{}}}"#, success, valid_data);
+        } else if (act_id == "check_pro_license" || act_id == "activate_pro_key" || act_id == "zalo_scan_all" || act_id == "zalo_clear_cache" || act_id == "scan_missing_drivers") && msg.trim().starts_with('{') {
             json_resp = msg;
         } else if act_id == "browse_iso" || act_id == "browse_file" {
             let escaped_path = if success { escape_json_str(&msg) } else { String::new() };

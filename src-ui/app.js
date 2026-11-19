@@ -7767,78 +7767,82 @@ getAppIconMarkup(app) +
 
 
   function selectDeployMode(mode) {
-
-    const targetMode = mode === "clean" ? "clean" : "upgrade";
-
+    const targetMode = (mode === "clean" || mode === "custom") ? mode : "upgrade";
     const radio = document.querySelector(`input[name="deploy-mode"][value="${targetMode}"]`);
-
     if (radio) radio.checked = true;
 
-
-
     const cardUpgrade = document.getElementById("card-mode-upgrade");
-
     const cardClean = document.getElementById("card-mode-clean");
-
+    const cardCustom = document.getElementById("card-mode-custom");
     const dotUpgrade = document.getElementById("dot-mode-upgrade");
-
     const dotClean = document.getElementById("dot-mode-clean");
+    const dotCustom = document.getElementById("dot-mode-custom");
 
-
+    [cardUpgrade, cardClean, cardCustom].forEach(c => {
+      if (c) {
+        c.classList.remove("border-2", "border-primary", "border-secondary", "border-indigo-500", "bg-primary-container/15", "bg-secondary-container/15", "bg-indigo-50/50", "shadow-md");
+        c.classList.add("border-transparent", "bg-surface-container");
+      }
+    });
+    if (dotUpgrade) dotUpgrade.className = "w-2.5 h-2.5 rounded-full";
+    if (dotClean) dotClean.className = "w-2.5 h-2.5 rounded-full";
+    if (dotCustom) dotCustom.className = "w-2.5 h-2.5 rounded-full";
 
     if (targetMode === "upgrade") {
-
       if (cardUpgrade) {
-
         cardUpgrade.classList.add("border-2", "border-primary", "bg-primary-container/15", "shadow-md");
-
         cardUpgrade.classList.remove("border-transparent", "bg-surface-container");
-
       }
-
-      if (cardClean) {
-
-        cardClean.classList.remove("border-2", "border-secondary", "bg-secondary-container/15", "shadow-md");
-
-        cardClean.classList.add("border-transparent", "bg-surface-container");
-
-      }
-
       if (dotUpgrade) dotUpgrade.classList.add("bg-primary-container");
-
-      if (dotClean) dotClean.classList.remove("bg-secondary-container");
-
       showToast("Chế Độ Cài Đặt", "Đã chọn: Cài Đè / Nâng Cấp Hệ Điều Hành (Giữ nguyên 100% dữ liệu)", "info");
-
-    } else {
-
+    } else if (targetMode === "clean") {
       if (cardClean) {
-
         cardClean.classList.add("border-2", "border-secondary", "bg-secondary-container/15", "shadow-md");
-
         cardClean.classList.remove("border-transparent", "bg-surface-container");
-
       }
-
-      if (cardUpgrade) {
-
-        cardUpgrade.classList.remove("border-2", "border-primary", "bg-primary-container/15", "shadow-md");
-
-        cardUpgrade.classList.add("border-transparent", "bg-surface-container");
-
-      }
-
       if (dotClean) dotClean.classList.add("bg-secondary-container");
-
-      if (dotUpgrade) dotUpgrade.classList.remove("bg-primary-container");
-
-      showToast("Chế Độ Cài Đặt", "Đã chọn: Cài Mới Hoàn Toàn (Format sạch phân vùng ổ C:)", "warning");
-
+      showToast("Chế Độ Cài Đặt", "Đã chọn: Cài Mới Hoàn Toàn (Format sạch phân vùng)", "warning");
+    } else {
+      if (cardCustom) {
+        cardCustom.classList.add("border-2", "border-indigo-500", "bg-indigo-50/50", "shadow-md");
+        cardCustom.classList.remove("border-transparent", "bg-surface-container");
+      }
+      if (dotCustom) dotCustom.classList.add("bg-indigo-500");
+      showToast("Chế Độ Cài Đặt", "Đã chọn: Tùy Chọn Phân Vùng (Hiển thị bảng chọn ổ đĩa Windows Setup)", "info");
     }
-
   }
 
   window.selectDeployMode = selectDeployMode;
+
+  async function loadTargetPartitions() {
+    try {
+      const res = await invokeRust("run_system_action", { actionId: "get_target_partitions" });
+      let partitions = [];
+      if (res && res.data && Array.isArray(res.data)) {
+        partitions = res.data;
+      } else if (res && res.message) {
+        try {
+          const parsed = JSON.parse(res.message);
+          if (Array.isArray(parsed)) partitions = parsed;
+        } catch (_) {}
+      }
+      const sel = document.getElementById("select-target-drive");
+      if (sel && partitions.length > 0) {
+        sel.innerHTML = "";
+        partitions.forEach((p) => {
+          const opt = document.createElement("option");
+          opt.value = p.drive_letter;
+          opt.innerText = `Ổ ${p.drive_letter} [${p.label || "Local Disk"}] — ${p.free_gb} GB trống / ${p.total_gb} GB ${p.is_system ? "(Windows đang chạy)" : ""}`;
+          if (p.is_system) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
+    } catch (e) {
+      console.warn("loadTargetPartitions error:", e);
+    }
+  }
+  window.loadTargetPartitions = loadTargetPartitions;
+
 
 
 
@@ -7903,6 +7907,8 @@ getAppIconMarkup(app) +
     safeAttachClick("card-mode-upgrade", () => selectDeployMode("upgrade"));
 
     safeAttachClick("card-mode-clean", () => selectDeployMode("clean"));
+    safeAttachClick("card-mode-custom", () => selectDeployMode("custom"));
+    loadTargetPartitions();
 
     safeAttachClick("btn-browse-iso", () => browseIsoFile());
 
@@ -8811,7 +8817,7 @@ getAppIconMarkup(app) +
 
 
   async function initWinDeployEnv() {
-
+    loadTargetPartitions();
     try {
 
       const res = await invokeRust("run_system_action", { actionId: "detect_win_install_env" });
@@ -9051,6 +9057,8 @@ getAppIconMarkup(app) +
     const modeEl = document.querySelector('input[name="deploy-mode"]:checked');
 
     const deployMode = modeEl ? modeEl.value : "upgrade";
+    const targetDriveEl = document.getElementById("select-target-drive");
+    const targetDrive = targetDriveEl ? (targetDriveEl.value || "C:") : "C:";
 
     const cbBackupDrivers = document.getElementById("cb-deploy-backup-drivers");
 
@@ -9065,7 +9073,8 @@ getAppIconMarkup(app) +
     }
     if (typeof window.appendConsoleLog === "function") {
       window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Khởi chạy triển khai Windows Setup với file: " + isoPath);
-      window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Chế độ: " + (deployMode === "clean" ? "Cài Mới (Clean Install)" : "Nâng Cấp / Cài Đè (In-Place Upgrade)"));
+      window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Chế độ: " + (deployMode === "clean" ? "Cài Mới (Clean Install)" : (deployMode === "custom" ? "Tùy Chọn Phân Vùng (Custom Setup)" : "Nâng Cấp / Cài Đè (In-Place Upgrade)")));
+      window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Ổ đĩa cài đặt / tempdrive: " + targetDrive);
       if (shouldBackupSystem) window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Tùy chọn: Tự động sao lưu Windows C:");
       if (shouldBackupDrivers) window.appendConsoleLog("[CÀI WIN TỰ ĐỘNG] Tùy chọn: Tự động sao lưu Driver phần cứng");
     }
@@ -9099,6 +9108,8 @@ getAppIconMarkup(app) +
         mode: deployMode,
 
         deployMode: deployMode,
+        target_drive: targetDrive,
+        targetDrive: targetDrive,
 
         backup_system: shouldBackupSystem ? "true" : "false",
 
