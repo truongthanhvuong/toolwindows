@@ -2096,7 +2096,7 @@ foreach ($zRoot in $zRoots) {{
             $dlP = Join-Path $_.FullName 'ZaloDownloads'
             if (Test-Path $dlP) {{
                 if (-not $dlCandidates.Contains($dlP)) {{ $dlCandidates.Add($dlP) }}
-            }} elseif ($_.Name -match '^\d+$') {{
+            }} elseif ($_.Name -notmatch '^(action|qos|temp|update)$') {{
                 if (-not $dlCandidates.Contains($_.FullName)) {{ $dlCandidates.Add($_.FullName) }}
             }}
         }}
@@ -2107,29 +2107,35 @@ foreach ($zRoot in $zRoots) {{
         }}
     }}
 
-    # Documents\Zalo Received Files
+    # Documents & Downloads Zalo scan
     try {{
         $parentProf = Split-Path (Split-Path $zRoot -Parent) -Parent
-        $docZalo = Join-Path $parentProf 'Documents\Zalo Received Files'
-        if (Test-Path $docZalo) {{
-            if (-not $dlCandidates.Contains($docZalo)) {{ $dlCandidates.Add($docZalo) }}
-            $dzFiles = Get-ChildItem $docZalo -Recurse -File -ErrorAction SilentlyContinue
-            if ($dzFiles) {{
-                $totalMedia += ($dzFiles | Measure-Object Length -Sum).Sum
-                $mediaCount += $dzFiles.Count
+        @(
+            (Join-Path $parentProf 'Documents\Zalo Received Files'),
+            (Join-Path $parentProf 'Downloads\Zalo Received Files'),
+            (Join-Path $parentProf 'Downloads\Zalo')
+        ) | ForEach-Object {{
+            if (Test-Path $_) {{
+                if (-not $dlCandidates.Contains($_)) {{ $dlCandidates.Add($_) }}
+                $dzFiles = Get-ChildItem $_ -Recurse -File -ErrorAction SilentlyContinue
+                if ($dzFiles) {{
+                    $totalMedia += ($dzFiles | Measure-Object Length -Sum).Sum
+                    $mediaCount += $dzFiles.Count
+                }}
             }}
         }}
     }} catch {{}}
 
-    # Cache scan
+    # Cache scan (deduplicated case-insensitively to prevent double-counting on NTFS)
     $cacheSubdirs = @(
-        'Cache', 'cache', 'Code Cache', 'DawnCache', 'GPUCache', 'blob_storage', 'Temp', 'temp',
+        'Cache', 'Code Cache', 'DawnCache', 'GPUCache', 'blob_storage', 'Temp',
         'Partitions\zalo\Cache', 'Partitions\zalo\Code Cache', 'Partitions\zalo\DawnCache',
         'Partitions\zalo\GPUCache', 'Partitions\zalo\blob_storage'
     )
+    $scannedCachePaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     foreach ($cs in $cacheSubdirs) {{
         $cp = Join-Path $zRoot $cs
-        if (Test-Path $cp) {{
+        if ((Test-Path $cp) -and $scannedCachePaths.Add($cp)) {{
             $cf = Get-ChildItem $cp -Recurse -File -ErrorAction SilentlyContinue
             if ($cf) {{ $totalCache += ($cf | Measure-Object Length -Sum).Sum }}
         }}
@@ -14181,11 +14187,11 @@ if ('{auto_reboot}' -eq 'True') {{
             # Tu dong ke thua quyen Admin cao nhat ma khong dung Verb RunAs gay loi Win32Exception
             $updateScript = @"
 Start-Sleep -Milliseconds 2500
-taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
-taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
+taskkill /F /IM "VUONGTT_Toolkit.exe" /T >`$null 2>&1
+taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >`$null 2>&1
 Stop-Process -Name 'VUONGTT_Toolkit','VUONGTT_Toolkit_Rust' -Force -ErrorAction SilentlyContinue
-Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | Where-Object {{ \$_.CommandLine -like '*127.0.0.1*' }} | Stop-Process -Force -ErrorAction SilentlyContinue
-for (\$i = 0; \$i -lt 25; \$i++) {{
+Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | Where-Object {{ `$_.CommandLine -like '*127.0.0.1*' }} | Stop-Process -Force -ErrorAction SilentlyContinue
+for (`$i = 0; `$i -lt 25; `$i++) {{
     try {{
         Copy-Item -Path '$tempExe' -Destination '$currExe' -Force -ErrorAction Stop
         break
@@ -14196,21 +14202,21 @@ for (\$i = 0; \$i -lt 25; \$i++) {{
 if (Test-Path 'E:\toolwindows\VUONGTT_Toolkit.exe') {{
     Copy-Item -Path '$tempExe' -Destination 'E:\toolwindows\VUONGTT_Toolkit.exe' -Force -ErrorAction SilentlyContinue
 }}
-if (Test-Path "\$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe") {{
-    Copy-Item -Path '$tempExe' -Destination "\$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" -Force -ErrorAction SilentlyContinue
+if (Test-Path "`$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe") {{
+    Copy-Item -Path '$tempExe' -Destination "`$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" -Force -ErrorAction SilentlyContinue
 }}
 Unblock-File -LiteralPath '$currExe' -ErrorAction SilentlyContinue
 # Download version.json moi nhat de cap nhat local version
 try {{
-    $ts2 = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-    $verUrl = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$ts2"
-    $wv2 = New-Object System.Net.WebClient
-    $wv2.Headers.Add("Cache-Control", "no-cache")
-    $verDir = Split-Path '$currExe' -Parent
-    $verDest = Join-Path $verDir "version.json"
-    $wv2.DownloadFile($verUrl, $verDest)
-    if (Test-Path "$env:ProgramData\VUONGTT_Toolkit") {{
-        Copy-Item -Path $verDest -Destination "$env:ProgramData\VUONGTT_Toolkit\version.json" -Force -ErrorAction SilentlyContinue
+    `$ts2 = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    `$verUrl = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=`$ts2"
+    `$wv2 = New-Object System.Net.WebClient
+    `$wv2.Headers.Add("Cache-Control", "no-cache")
+    `$verDir = Split-Path '$currExe' -Parent
+    `$verDest = Join-Path `$verDir "version.json"
+    `$wv2.DownloadFile(`$verUrl, `$verDest)
+    if (Test-Path "`$env:ProgramData\VUONGTT_Toolkit") {{
+        Copy-Item -Path `$verDest -Destination "`$env:ProgramData\VUONGTT_Toolkit\version.json" -Force -ErrorAction SilentlyContinue
     }}
 }} catch {{}}
 Start-Process -FilePath '$currExe'

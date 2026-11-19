@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.212";
+pub const APP_VERSION: &str = "20.5.909.213";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -540,7 +540,8 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
         let days_str = system_ops::extract_json_field(body, "days").unwrap_or("30");
         let days = days_str.parse::<i32>().unwrap_or(30);
         let deleted = system_ops::zalo_delete_data(path.to_string(), days);
-        json_resp = format!(r#"{{"success":true,"deleted":{}}}"#, deleted);
+        let del_cnt = deleted.trim().parse::<i64>().unwrap_or(0);
+        json_resp = format!(r#"{{"success":true,"deleted":{}}}"#, del_cnt);
     } else if cmd == "get_uwp_apps" {
         let apps = system_ops::collect_uwp_apps();
         json_resp = format!(r#"{{"success":true,"data":{}}}"#, apps);
@@ -806,7 +807,7 @@ mod tests {
         let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"verify_office_license\"}";
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":false"), "verify_office_license must return success=false: {}", resp);
-        assert!(resp.contains("khÃ´ng tá»“n táº¡i"), "Expected action not found error: {}", resp);
+        assert!(resp.contains("không tồn tại") || resp.contains("hỗ trợ"), "Expected action not found error: {}", resp);
     }
 
     #[test]
