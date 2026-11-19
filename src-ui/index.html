@@ -2606,7 +2606,7 @@
 
 
 
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.206</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.207</span>
 
 
 
@@ -12819,6 +12819,31 @@
             </div>
             <div style="background:#0f172a;border-radius:8px;padding:12px;min-height:60px;max-height:150px;overflow-y:auto;font-family:monospace;font-size:11px;color:#94a3b8;" id="zalo-log-box">
               <span style="color:#475569;">Nhấn &quot;Quét&quot; để phân tích dữ liệu Zalo...</span>
+            </div>
+            <!-- Zalo Data Breakdown Panel -->
+            <div id="zalo-breakdown-panel" style="display:none;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:14px;">
+              <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px;">📊 Thông tin dữ liệu Zalo trên máy</div>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;">
+                  <div style="font-size:11px;color:#166534;font-weight:600;margin-bottom:4px;">📁 Tổng Zalo</div>
+                  <div style="font-size:20px;font-weight:800;color:#15803d;" id="zalo-size-total">—</div>
+                </div>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;">
+                  <div style="font-size:11px;color:#1e40af;font-weight:600;margin-bottom:4px;">🖼️ Ảnh/Video tải về</div>
+                  <div style="font-size:20px;font-weight:800;color:#1d4ed8;" id="zalo-size-media">—</div>
+                  <div style="font-size:10px;color:#64748b;">Có thể xóa an toàn</div>
+                </div>
+                <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;">
+                  <div style="font-size:11px;color:#9a3412;font-weight:600;margin-bottom:4px;">🗑️ Bộ nhớ đệm (Cache)</div>
+                  <div style="font-size:20px;font-weight:800;color:#c2410c;" id="zalo-size-cache">—</div>
+                  <div style="font-size:10px;color:#64748b;">Có thể xóa an toàn</div>
+                </div>
+                <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:12px;">
+                  <div style="font-size:11px;color:#6b21a8;font-weight:600;margin-bottom:4px;">⚙️ Dữ liệu hệ thống</div>
+                  <div style="font-size:20px;font-weight:800;color:#7c3aed;" id="zalo-size-system">—</div>
+                  <div style="font-size:10px;color:#64748b;">Không nên xóa</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

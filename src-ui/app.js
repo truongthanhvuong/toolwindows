@@ -327,6 +327,15 @@
 
 
     if (!found) return;
+    // Auto-trigger scan when switching to Zalo/Don Dep view
+    if (targetId === "view-it-helpdesk") {
+      setTimeout(function() {
+        if (typeof window.zaloScanAll === "function") {
+          window.zaloScanAll();
+        }
+      }, 300);
+    }
+
 
 
 
@@ -12457,25 +12466,150 @@ getAppIconMarkup(app) +
     box.scrollTop = box.scrollHeight;
   };
 
+  // Helper: format bytes
+  function zaloFmtSize(bytes) {
+    if (!bytes || bytes === 0) return '0 MB';
+    if (bytes >= 1073741824) return (bytes/1073741824).toFixed(2) + ' GB';
+    return (bytes/1048576).toFixed(1) + ' MB';
+  }
+
   window.zaloDetectPath = async function() {
-    zaloLog('🔍 Đang tự động tìm thư mục Zalo...', '#60a5fa');
+    zaloLog('🔍 Đang tự động tìm thư mục ZaloDownloads...', '#60a5fa');
     try {
-      const ps = '$base = "$env:APPDATA\\ZaloData\\media"; if(Test-Path $base){ Get-ChildItem $base -Directory -ErrorAction SilentlyContinue | ForEach-Object { $dl = Join-Path $_.FullName "ZaloDownloads"; if(Test-Path $dl){ Write-Output $dl } } }';
+      const ps = `
+$found = @()
+$profiles = @($env:APPDATA)
+try {
+  Get-ChildItem 'C:\\Users' -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    $ap = Join-Path $_.FullName 'AppData\\Roaming'
+    if (Test-Path $ap) { $profiles += $ap }
+  }
+} catch {}
+$profiles = $profiles | Select-Object -Unique
+foreach ($ap in $profiles) {
+  $base = Join-Path $ap 'ZaloData\\media'
+  if (Test-Path $base) {
+    Get-ChildItem $base -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+      $dl = Join-Path $_.FullName 'ZaloDownloads'
+      if (Test-Path $dl) { $found += $dl }
+    }
+  }
+}
+if ($found.Count -gt 0) { $found[0] } else { '' }
+`;
       const res = await invokeRust('run_powershell', { script: ps });
       let found = '';
-      if (res && res.output) { const lines = res.output.split('\n').map(function(s){return s.trim();}).filter(function(s){return s.length>5;}); if(lines.length>0) found = lines[0]; }
+      if (res && res.output) {
+        found = res.output.split('\n').map(s => s.trim()).filter(s => s.length > 5)[0] || '';
+      }
       const inp = document.getElementById('zalo-path-input');
-      if (found && inp) { inp.value = found; zaloLog('✅ Tìm thấy: ' + found, '#34d399'); }
-      else { zaloLog('⚠️ Không tìm thấy tự động. Vui lòng nhập thủ công đường dẫn ZaloDownloads.', '#fbbf24'); }
+      if (found && inp) {
+        inp.value = found;
+        zaloLog('✅ Tìm thấy: ' + found, '#34d399');
+      } else {
+        zaloLog('⚠️ Không tìm thấy ZaloDownloads. Đang quét toàn bộ Zalo...', '#fbbf24');
+      }
+      await window.zaloScanAll();
     } catch(e) {
-      zaloLog('⚠️ Không thể tự động tìm. Vui lòng nhập thủ công.', '#fbbf24');
+      zaloLog('⚠️ Lỗi: ' + String(e), '#f87171');
+    }
+  };
+
+  // Scan ALL Zalo data with breakdown
+  window.zaloScanAll = async function() {
+    zaloLog('📊 Đang quét toàn bộ dữ liệu Zalo...', '#60a5fa');
+    try {
+      const ps = `
+$profiles = @($env:APPDATA)
+try {
+  Get-ChildItem 'C:\\Users' -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    $ap = Join-Path $_.FullName 'AppData\\Roaming'
+    if (Test-Path $ap) { $profiles += $ap }
+  }
+} catch {}
+$profiles = $profiles | Select-Object -Unique
+$totalAll=0; $totalMedia=0; $mediaCount=0; $totalCache=0; $dlPaths=@()
+foreach ($ap in $profiles) {
+  $zaloRoot = Join-Path $ap 'ZaloData'
+  if (-not (Test-Path $zaloRoot)) { continue }
+  $allFiles = Get-ChildItem $zaloRoot -Recurse -File -ErrorAction SilentlyContinue
+  if ($allFiles) { $totalAll += ($allFiles | Measure-Object Length -Sum).Sum }
+  $mediaBase = Join-Path $zaloRoot 'media'
+  if (Test-Path $mediaBase) {
+    Get-ChildItem $mediaBase -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+      $dlPath = Join-Path $_.FullName 'ZaloDownloads'
+      if (Test-Path $dlPath) {
+        $dlPaths += $dlPath
+        $dlFiles = Get-ChildItem $dlPath -Recurse -File -ErrorAction SilentlyContinue
+        if ($dlFiles) { $sz=($dlFiles|Measure-Object Length -Sum).Sum; $totalMedia+=$sz; $mediaCount+=$dlFiles.Count }
+      }
+    }
+  }
+  @('Cache','cache','Temp','temp') | ForEach-Object {
+    $cp = Join-Path $zaloRoot $_
+    if (Test-Path $cp) {
+      $cf = Get-ChildItem $cp -Recurse -File -ErrorAction SilentlyContinue
+      if ($cf) { $totalCache += ($cf|Measure-Object Length -Sum).Sum }
+    }
+  }
+}
+$totalSystem = [Math]::Max(0, $totalAll - $totalMedia - $totalCache)
+[PSCustomObject]@{ total_all=$totalAll; total_media=$totalMedia; media_count=$mediaCount; total_cache=$totalCache; total_system=$totalSystem; dl_paths=($dlPaths -join '|') } | ConvertTo-Json -Compress
+`;
+      const res = await invokeRust('run_powershell', { script: ps });
+      if (res && res.output) {
+        let raw = res.output.trim();
+        const j1 = raw.indexOf('{'), j2 = raw.lastIndexOf('}');
+        if (j1 >= 0 && j2 > j1) raw = raw.substring(j1, j2+1);
+        try {
+          const d = JSON.parse(raw);
+          const totalAll   = d.total_all    || 0;
+          const totalMedia = d.total_media  || 0;
+          const mediaCount = d.media_count  || 0;
+          const totalCache = d.total_cache  || 0;
+          const totalSys   = d.total_system || 0;
+
+          const el = document.getElementById('zalo-scan-result');
+          if (el) el.style.display = 'block';
+          const fc = document.getElementById('zalo-file-count');
+          if (fc) fc.textContent = Number(mediaCount).toLocaleString('vi-VN') + ' file media';
+          const ts2 = document.getElementById('zalo-total-size');
+          if (ts2) ts2.textContent = zaloFmtSize(totalMedia);
+          const ls = document.getElementById('zalo-last-scanned');
+          if (ls) ls.textContent = new Date().toLocaleTimeString('vi-VN');
+
+          const bp = document.getElementById('zalo-breakdown-panel');
+          if (bp) {
+            bp.style.display = 'block';
+            const setEl = (id, val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
+            setEl('zalo-size-total',  zaloFmtSize(totalAll));
+            setEl('zalo-size-media',  zaloFmtSize(totalMedia));
+            setEl('zalo-size-cache',  zaloFmtSize(totalCache));
+            setEl('zalo-size-system', zaloFmtSize(totalSys));
+          }
+
+          const inp = document.getElementById('zalo-path-input');
+          if (inp && !inp.value.trim() && d.dl_paths) {
+            const fp = d.dl_paths.split('|')[0];
+            if (fp) inp.value = fp;
+          }
+
+          zaloLog('✅ Tổng Zalo: ' + zaloFmtSize(totalAll) + ' | Ảnh/Video tải về: ' + zaloFmtSize(totalMedia) + ' (' + mediaCount + ' file) | Cache: ' + zaloFmtSize(totalCache) + ' | Hệ thống: ' + zaloFmtSize(totalSys), '#34d399');
+        } catch(je) {
+          zaloLog('⚠️ Không thể phân tích JSON: ' + raw.substring(0,120), '#fbbf24');
+        }
+      } else {
+        zaloLog('⚠️ Không tìm thấy dữ liệu Zalo trên máy này.', '#fbbf24');
+      }
+    } catch(e) {
+      zaloLog('❌ Lỗi quét: ' + String(e), '#f87171');
     }
   };
 
   window.zaloScanData = async function() {
     const inp = document.getElementById('zalo-path-input');
     const path = inp ? inp.value.trim() : '';
-    if (!path) { zaloLog('❌ Vui lòng nhập đường dẫn thư mục Zalo trước.', '#f87171'); return; }
+    if (!path) { await window.zaloScanAll(); return; }
     zaloLog('📊 Đang quét: ' + path, '#60a5fa');
     try {
       const res = await invokeRust('zalo_scan', { path: path });
@@ -12496,36 +12630,6 @@ getAppIconMarkup(app) +
       }
     } catch(e) {
       zaloLog('❌ Lỗi quét: ' + (e && e.message ? e.message : String(e)), '#f87171');
-    }
-  };
-
-  window.zaloDeleteData = async function() {
-    const inp = document.getElementById('zalo-path-input');
-    const path = inp ? inp.value.trim() : '';
-    if (!path) { zaloLog('❌ Vui lòng nhập đường dẫn thư mục Zalo trước.', '#f87171'); return; }
-    let days = _zaloDays;
-    if (days === -1) {
-      const ci = document.getElementById('zalo-custom-days');
-      days = ci ? (parseInt(ci.value) || 30) : 30;
-    }
-    if (!window.confirm('⚠️ Xác nhận: Xóa toàn bộ file Zalo cũ hơn ' + days + ' ngày tại:\n' + path + '\n\nThao tác này KHÔNG THỂ HOÀN TÁC!')) {
-      zaloLog('ℹ️ Người dùng đã hủy.', '#94a3b8'); return;
-    }
-    const btn = document.getElementById('btn-zalo-delete');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xóa...'; }
-    zaloLog('🗑️ Xóa file cũ hơn ' + days + ' ngày tại: ' + path, '#f97316');
-    try {
-      const res = await invokeRust('zalo_delete', { path: path, days: days });
-      if (res && res.success) {
-        zaloLog('✅ Xong! Đã xóa ' + (res.deleted||0) + ' file. Đang quét lại...', '#34d399');
-        await zaloScanData();
-      } else {
-        zaloLog('⚠️ Có lỗi khi xóa. Kiểm tra quyền truy cập thư mục.', '#fbbf24');
-      }
-    } catch(e) {
-      zaloLog('❌ Lỗi: ' + (e && e.message ? e.message : String(e)), '#f87171');
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '🗑️ Xóa file Zalo cũ ngay'; }
     }
   };
   // ===================== END ZALO DATA MANAGER =====================
