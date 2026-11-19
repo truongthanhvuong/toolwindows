@@ -2606,7 +2606,7 @@
 
 
 
-        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.204</span>
+        <span id="app-version-badge" class="px-2 py-0.5 rounded bg-surface-container-high font-code-sm text-code-sm text-secondary">v20.5.909.206</span>
 
 
 
@@ -12773,51 +12773,53 @@
 
 
         <!-- ===== ZALO CLEANUP SECTION ===== -->
-        <div class="glass-card p-5 mt-2" style="border:1.5px solid #bfdbfe;border-radius:16px;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-            <div style="width:40px;height:40px;border-radius:12px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="font-size:22px;">💬</span>
+        <div class="col-span-12">
+          <div class="glass-card p-5 mt-2" style="border:1.5px solid #bfdbfe;border-radius:16px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <div style="width:40px;height:40px;border-radius:12px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="font-size:22px;">💬</span>
+              </div>
+              <div>
+                <div style="font-size:16px;font-weight:700;color:#1e293b;">Dọn Dẹp Dữ Liệu Zalo</div>
+                <div style="font-size:12px;color:#64748b;">Xóa file tải về, cache Zalo cũ theo thời gian tùy chọn</div>
+              </div>
             </div>
-            <div>
-              <div style="font-size:15px;font-weight:700;color:#1e293b;">Dọn Dẹp Dữ Liệu Zalo</div>
-              <div style="font-size:11px;color:#64748b;">Xóa file tải về, cache Zalo cũ theo thời gian tùy chọn</div>
+            <div style="margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">📁 Thư mục ZaloDownloads</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <input id="zalo-path-input" type="text" placeholder="C:\Users\[Tên]\AppData\Roaming\ZaloData\media\[ZaloID]\ZaloDownloads"
+                  style="flex:1;min-width:280px;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;color:#374151;background:#fff;" />
+                <button onclick="zaloDetectPath()" style="padding:8px 16px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🔍 Tự động tìm</button>
+                <button onclick="zaloScanData()" style="padding:8px 16px;background:#0f766e;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📊 Quét</button>
+              </div>
+              <div id="zalo-scan-result" style="display:none;margin-top:8px;padding:8px 14px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;">
+                <span style="color:#065f46;font-weight:700;" id="zalo-file-count">0 file</span>
+                &nbsp;—&nbsp;
+                <span style="color:#065f46;font-weight:700;" id="zalo-total-size">0 MB</span>
+                &nbsp;|&nbsp;
+                <span style="color:#374151;font-size:11px;" id="zalo-last-scanned">—</span>
+              </div>
             </div>
-          </div>
-          <div style="margin-bottom:12px;">
-            <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">📁 Thư mục ZaloDownloads</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-              <input id="zalo-path-input" type="text" placeholder="C:\Users\[Tên]\AppData\Roaming\ZaloData\media\[ZaloID]\ZaloDownloads"
-                style="flex:1;min-width:200px;padding:7px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:11px;color:#374151;background:#fff;" />
-              <button onclick="zaloDetectPath()" style="padding:7px 14px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">🔍 Tự động tìm</button>
-              <button onclick="zaloScanData()" style="padding:7px 14px;background:#0f766e;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">📊 Quét</button>
+            <div style="margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">⏱️ Giữ lại file trong vòng</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <button onclick="zaloSetDays(90)" id="zalo-opt-90" style="padding:7px 18px;border-radius:8px;border:2px solid #3b82f6;background:#3b82f6;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">3 tháng</button>
+                <button onclick="zaloSetDays(180)" id="zalo-opt-180" style="padding:7px 18px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:12px;font-weight:600;cursor:pointer;">6 tháng</button>
+                <button onclick="zaloSetDays(365)" id="zalo-opt-365" style="padding:7px 18px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:12px;font-weight:600;cursor:pointer;">12 tháng</button>
+                <button onclick="zaloSetDays(-1)" id="zalo-opt-custom" style="padding:7px 18px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:12px;font-weight:600;cursor:pointer;">✏️ Tùy chỉnh</button>
+                <span id="zalo-custom-days-box" style="display:none;align-items:center;gap:6px;">
+                  <input id="zalo-custom-days" type="number" min="1" max="3650" value="30" style="width:72px;padding:6px 8px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;" />
+                  <span style="font-size:12px;color:#64748b;">ngày</span>
+                </span>
+              </div>
             </div>
-            <div id="zalo-scan-result" style="display:none;margin-top:8px;padding:8px 12px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;">
-              <span style="color:#065f46;font-weight:700;" id="zalo-file-count">0 file</span>
-              &nbsp;—&nbsp;
-              <span style="color:#065f46;font-weight:700;" id="zalo-total-size">0 MB</span>
-              &nbsp;|&nbsp;
-              <span style="color:#374151;font-size:11px;" id="zalo-last-scanned">—</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+              <button onclick="zaloDeleteData()" id="btn-zalo-delete" style="padding:10px 24px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🗑️ Xóa file Zalo cũ ngay</button>
+              <button onclick="zaloScanData()" style="padding:10px 16px;background:#64748b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Quét lại</button>
             </div>
-          </div>
-          <div style="margin-bottom:12px;">
-            <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">⏱️ Giữ lại file trong vòng</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-              <button onclick="zaloSetDays(90)" id="zalo-opt-90" style="padding:6px 14px;border-radius:8px;border:2px solid #3b82f6;background:#3b82f6;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">3 tháng</button>
-              <button onclick="zaloSetDays(180)" id="zalo-opt-180" style="padding:6px 14px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:11px;font-weight:600;cursor:pointer;">6 tháng</button>
-              <button onclick="zaloSetDays(365)" id="zalo-opt-365" style="padding:6px 14px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:11px;font-weight:600;cursor:pointer;">12 tháng</button>
-              <button onclick="zaloSetDays(-1)" id="zalo-opt-custom" style="padding:6px 14px;border-radius:8px;border:2px solid #d1d5db;background:#fff;color:#374151;font-size:11px;font-weight:600;cursor:pointer;">✏️ Tùy chỉnh</button>
-              <span id="zalo-custom-days-box" style="display:none;align-items:center;gap:4px;">
-                <input id="zalo-custom-days" type="number" min="1" max="3650" value="30" style="width:70px;padding:5px 8px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;" />
-                <span style="font-size:12px;color:#64748b;">ngày</span>
-              </span>
+            <div style="background:#0f172a;border-radius:8px;padding:12px;min-height:60px;max-height:150px;overflow-y:auto;font-family:monospace;font-size:11px;color:#94a3b8;" id="zalo-log-box">
+              <span style="color:#475569;">Nhấn &quot;Quét&quot; để phân tích dữ liệu Zalo...</span>
             </div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-            <button onclick="zaloDeleteData()" id="btn-zalo-delete" style="padding:9px 20px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">🗑️ Xóa file Zalo cũ ngay</button>
-            <button onclick="zaloScanData()" style="padding:9px 14px;background:#64748b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Quét lại</button>
-          </div>
-          <div style="background:#0f172a;border-radius:8px;padding:10px;min-height:60px;max-height:150px;overflow-y:auto;font-family:monospace;font-size:11px;color:#94a3b8;" id="zalo-log-box">
-            <span style="color:#475569;">Nhấn &quot;Quét&quot; để phân tích dữ liệu Zalo...</span>
           </div>
         </div>
         <!-- ===== END ZALO CLEANUP SECTION ===== -->

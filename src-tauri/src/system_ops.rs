@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 
 
 
@@ -13980,6 +13980,19 @@ if (Test-Path "\$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe") {{
     Copy-Item -Path '$tempExe' -Destination "\$env:ProgramData\VUONGTT_Toolkit\VUONGTT_Toolkit.exe" -Force -ErrorAction SilentlyContinue
 }}
 Unblock-File -LiteralPath '$currExe' -ErrorAction SilentlyContinue
+# Download version.json moi nhat de cap nhat local version
+try {{
+    $ts2 = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    $verUrl = "https://raw.githubusercontent.com/truongthanhvuong/toolwindows/main/version.json?t=$ts2"
+    $wv2 = New-Object System.Net.WebClient
+    $wv2.Headers.Add("Cache-Control", "no-cache")
+    $verDir = Split-Path '$currExe' -Parent
+    $verDest = Join-Path $verDir "version.json"
+    $wv2.DownloadFile($verUrl, $verDest)
+    if (Test-Path "$env:ProgramData\VUONGTT_Toolkit") {{
+        Copy-Item -Path $verDest -Destination "$env:ProgramData\VUONGTT_Toolkit\version.json" -Force -ErrorAction SilentlyContinue
+    }}
+}} catch {{}}
 Start-Process -FilePath '$currExe'
 Start-Sleep -Seconds 2
 Remove-Item -Path '$tempExe' -Force -ErrorAction SilentlyContinue
