@@ -7771,6 +7771,13 @@ getAppIconMarkup(app) +
     const radio = document.querySelector(`input[name="deploy-mode"][value="${targetMode}"]`);
     if (radio) radio.checked = true;
 
+    // Reset and unfreeze btn-start-deploy if user switches mode
+    const btnDeploy = document.getElementById("btn-start-deploy");
+    if (btnDeploy && !window.isDeploying) {
+      btnDeploy.disabled = false;
+      btnDeploy.innerHTML = `<span class="material-symbols-outlined text-[18px]">play_circle</span><span>Bắt Đầu Cài Đặt Windows Ngay</span>`;
+    }
+
     const cardUpgrade = document.getElementById("card-mode-upgrade");
     const cardClean = document.getElementById("card-mode-clean");
     const cardCustom = document.getElementById("card-mode-custom");
@@ -9122,15 +9129,17 @@ getAppIconMarkup(app) +
       });
 
       if (res && res.success) {
-
         showToast("Cài Đặt Windows", res.message || "Đã kích hoạt Windows Setup thành công!", "success");
-
         if (btn) {
-
           btn.innerHTML = `<span class="material-symbols-outlined text-[20px]">check</span><span>ĐÃ KÍCH HOẠT THÀNH CÔNG</span>`;
-
+          // Tự động khôi phục nút bấm sau 4 giây để người dùng có thể kích hoạt lại nếu muốn
+          setTimeout(() => {
+            if (btn && !window.isDeploying) {
+              btn.disabled = false;
+              btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">play_circle</span><span>Bắt Đầu Cài Đặt Windows Ngay</span>`;
+            }
+          }, 4000);
         }
-
       } else {
 
         showToast("Lỗi Cài Đặt", (res && res.message) ? res.message : "Không thể khởi chạy bộ cài Windows", "error");

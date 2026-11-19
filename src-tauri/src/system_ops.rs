@@ -8443,7 +8443,7 @@ th { background: #222a3d; color: #6ffbbe; }
             let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
 
             let setup_args = if mode == "custom" {
-                format!("/DynamicUpdate disable /compat ignorewarning /tempdrive {}", temp_drive_letter)
+                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_letter)
             } else if mode == "clean" {
                 format!("/auto clean /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_letter)
             } else {
@@ -8457,47 +8457,40 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
             let ps_run = format!(
-
-
-
                 r#"
-
-
-
-                Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\"
-
-
-
+                $drv = "{}"
+                $argsList = '/c start "" "{}\setup.exe" {}'
+                try {{
+                    Start-Process -FilePath "cmd.exe" -ArgumentList $argsList -WorkingDirectory "$drv\" -WindowStyle Hidden -ErrorAction Stop
+                    Write-Output "LAUNCH_OK"
+                }} catch {{
+                    try {{
+                        & cmd.exe /c start "" "$drv\setup.exe" {}
+                        Write-Output "FALLBACK_OK"
+                    }} catch {{
+                        try {{
+                            Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\"
+                            Write-Output "FALLBACK_PS_OK"
+                        }} catch {{
+                            Write-Output "ERR_LAUNCH:$($_.Exception.Message)"
+                        }}
+                    }}
+                }}
                 "#,
-
-
-
-                drv, setup_args, drv
+                drv, drv, setup_args, setup_args, drv, setup_args, drv
             );
 
-
-
-
-
-
-
             let mut run_cmd = Command::new("powershell");
-
-
-
             run_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_run]);
-
-
-
             #[cfg(windows)]
-
-
-
             run_cmd.creation_flags(CREATE_NO_WINDOW);
+            let run_output = run_cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
 
-
-
-            let _ = run_cmd.spawn();
+            if run_output.contains("ERR_LAUNCH") {
+                let err_detail = run_output.split("ERR_LAUNCH:").nth(1).unwrap_or("Lỗi không xác định").trim();
+                append_log(&format!("[LỖI KHỞI CHẠY SETUP] Không thể khởi chạy Windows Setup: {}", err_detail));
+                return (false, format!("Không thể khởi chạy Windows Setup từ ổ [{}]: {}", drv, err_detail));
+            }
 
 
 
