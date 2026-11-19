@@ -93,7 +93,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.211";
+pub const APP_VERSION: &str = "20.5.909.212";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -565,7 +565,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
             .unwrap_or("general");
 
         let (success, msg) = system_ops::execute_system_action(act_id, body);
-        if (act_id == "check_pro_license" || act_id == "activate_pro_key") && msg.trim().starts_with('{') {
+        if (act_id == "check_pro_license" || act_id == "activate_pro_key" || act_id == "zalo_scan_all" || act_id == "zalo_clear_cache") && msg.trim().starts_with('{') {
             json_resp = msg;
         } else if act_id == "browse_iso" || act_id == "browse_file" {
             let escaped_path = if success { escape_json_str(&msg) } else { String::new() };
@@ -863,6 +863,24 @@ mod tests {
         let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"activate_pro_key\",\"key\":\"\"}";
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":false"), "Empty key must return success: false: {}", resp);
+    }
+
+    #[test]
+    fn test_ipc_zalo_scan_all() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"zalo_scan_all\"}";
+        let resp = route_ipc_request(req, &flag);
+        println!("IPC ZALO RESPONSE: [{}]", resp);
+        assert!(resp.contains("total_all"));
+    }
+
+    #[test]
+    fn test_ipc_zalo_scan_with_custom_path() {
+        let flag = AtomicBool::new(true);
+        let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"zalo_scan_all\",\"path\":\"C:\\\\Users\\\\vuongtt\\\\AppData\\\\Roaming\\\\ZaloData\"}";
+        let resp = route_ipc_request(req, &flag);
+        println!("IPC ZALO CUSTOM PATH RESPONSE: [{}]", resp);
+        assert!(resp.contains("total_all"));
     }
 }
 

@@ -1995,79 +1995,162 @@ pub fn execute_system_action(action_id: &str, params_json: &str) -> (bool, Strin
     // ===== ZALO SCAN ALL (Rust-side PS, avoids JS IPC escaping bugs) =====
     if act == "zalo_scan_all" {
         append_log("zalo_scan_all: starting full Zalo data scan via Rust backend");
-        let ps_code = r#"
-$profiles = [System.Collections.Generic.List[string]]::new()
-# Collect AppData\Roaming paths from all C:\Users subdirs
-try {
-    $usersDir = 'C:\Users'
-    if (Test-Path $usersDir) {
-        Get-ChildItem $usersDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-            $ap = Join-Path $_.FullName 'AppData\Roaming'
-            if (Test-Path $ap) { $profiles.Add($ap) }
-        }
-    }
-} catch {}
-# Also add current user's AppData (preserved under admin elevation on most systems)
-if ($env:USERPROFILE -and (Test-Path $env:USERPROFILE)) {
-    $ap2 = Join-Path $env:USERPROFILE 'AppData\Roaming'
-    if ((Test-Path $ap2) -and (-not $profiles.Contains($ap2))) { $profiles.Add($ap2) }
-}
-$totalAll=0; $totalMedia=0; $mediaCount=0; $totalCache=0
-$dlPaths=[System.Collections.Generic.List[string]]::new()
-foreach ($ap in $profiles) {
-    $zaloRoot = Join-Path $ap 'ZaloData'
-    if (-not (Test-Path $zaloRoot)) { continue }
-    # Total all files in ZaloData
-    $allFiles = Get-ChildItem $zaloRoot -Recurse -File -ErrorAction SilentlyContinue
-    if ($allFiles) { $totalAll += ($allFiles | Measure-Object Length -Sum).Sum }
-    # Media: ZaloDownloads inside media\<id>\
-    $mediaBase = Join-Path $zaloRoot 'media'
-    if (Test-Path $mediaBase) {
-        Get-ChildItem $mediaBase -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-            $dlPath = Join-Path $_.FullName 'ZaloDownloads'
-            if (Test-Path $dlPath) {
-                if (-not $dlPaths.Contains($dlPath)) { $dlPaths.Add($dlPath) }
-            } else {
-                # Add user media folder if ZaloDownloads subfolder not explicitly created
-                if (-not $dlPaths.Contains($_.FullName)) { $dlPaths.Add($_.FullName) }
-            }
-        }
+        let target_path = extract_json_field(params_json, "path").unwrap_or("");
+        let target_path_clean = target_path.replace('\'', "''");
+        let ps_code = format!(r#"
+$targetPath = '{0}'
+$zRoots = [System.Collections.Generic.List[string]]::new()
+$dlCandidates = [System.Collections.Generic.List[string]]::new()
+
+# 1. Target path from UI if provided
+if ($targetPath -and (Test-Path $targetPath)) {{
+    if ($targetPath -match '(?i)ZaloDownloads') {{
+        $dlCandidates.Add($targetPath)
+    }}
+    $curr = $targetPath
+    for ($i = 0; $i -lt 6; $i++) {{
+        if (-not $curr) {{ break }}
+        if ((Split-Path $curr -Leaf) -match '(?i)^ZaloData$') {{
+            if (-not $zRoots.Contains($curr)) {{ $zRoots.Add($curr) }}
+            break
+        }}
+        $curr = Split-Path $curr -Parent
+    }}
+}}
+
+# 2. Environment variables of current session & user profile
+@($env:APPDATA, $env:LOCALAPPDATA, $env:USERPROFILE) | ForEach-Object {{
+    if ($_ -and (Test-Path $_)) {{
+        @(Join-Path $_ 'ZaloData', Join-Path $_ 'AppData\Roaming\ZaloData', Join-Path $_ 'AppData\Local\ZaloData') | ForEach-Object {{
+            if ((Test-Path $_) -and (-not $zRoots.Contains($_))) {{ $zRoots.Add($_) }}
+        }}
+    }}
+}}
+
+# 3. Registry User Profiles: HKLM ProfileList
+try {{
+    Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*' -ErrorAction SilentlyContinue | ForEach-Object {{
+        $p = $_.ProfileImagePath
+        if ($p -and (Test-Path $p)) {{
+            @(Join-Path $p 'AppData\Roaming\ZaloData', Join-Path $p 'AppData\Local\ZaloData') | ForEach-Object {{
+                if ((Test-Path $_) -and (-not $zRoots.Contains($_))) {{ $zRoots.Add($_) }}
+            }}
+        }}
+    }}
+}} catch {{}}
+
+# 4. Mounted user hives: HKEY_USERS Volatile Environment
+try {{
+    Get-ChildItem Registry::HKEY_USERS -ErrorAction SilentlyContinue | Where-Object {{ $_.Name -match 'S-1-5-21' -and $_.Name -notmatch '_Classes' }} | ForEach-Object {{
+        $vol = Join-Path $_.PSPath 'Volatile Environment'
+        if (Test-Path $vol) {{
+            $vp = Get-ItemProperty $vol -ErrorAction SilentlyContinue
+            if ($vp.APPDATA) {{
+                $zd = Join-Path $vp.APPDATA 'ZaloData'
+                if ((Test-Path $zd) -and (-not $zRoots.Contains($zd))) {{ $zRoots.Add($zd) }}
+            }}
+            if ($vp.USERPROFILE) {{
+                $zd2 = Join-Path $vp.USERPROFILE 'AppData\Roaming\ZaloData'
+                if ((Test-Path $zd2) -and (-not $zRoots.Contains($zd2))) {{ $zRoots.Add($zd2) }}
+            }}
+        }}
+    }}
+}} catch {{}}
+
+# 5. Direct search across all users in SystemDrive\Users and C:\Users
+try {{
+    @((Join-Path $env:SystemDrive 'Users'), 'C:\Users') | Select-Object -Unique | ForEach-Object {{
+        if (Test-Path $_) {{
+            Get-ChildItem $_ -Directory -ErrorAction SilentlyContinue | ForEach-Object {{
+                $zd = Join-Path $_.FullName 'AppData\Roaming\ZaloData'
+                if ((Test-Path $zd) -and (-not $zRoots.Contains($zd))) {{ $zRoots.Add($zd) }}
+            }}
+        }}
+    }}
+}} catch {{}}
+
+# 6. Check common drives (C:, D:, E:) for root ZaloData
+try {{
+    Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue | ForEach-Object {{
+        $rootZD = Join-Path $_.Root 'ZaloData'
+        if ((Test-Path $rootZD) -and (-not $zRoots.Contains($rootZD))) {{ $zRoots.Add($rootZD) }}
+    }}
+}} catch {{}}
+
+$totalAll = 0
+$totalMedia = 0
+$mediaCount = 0
+$totalCache = 0
+
+foreach ($zRoot in $zRoots) {{
+    # Total size of all files in this ZaloData
+    $allFiles = Get-ChildItem $zRoot -Recurse -File -ErrorAction SilentlyContinue
+    if ($allFiles) {{
+        $totalAll += ($allFiles | Measure-Object Length -Sum).Sum
+    }}
+
+    # Media scan
+    $mediaBase = Join-Path $zRoot 'media'
+    if (Test-Path $mediaBase) {{
+        Get-ChildItem $mediaBase -Directory -ErrorAction SilentlyContinue | ForEach-Object {{
+            $dlP = Join-Path $_.FullName 'ZaloDownloads'
+            if (Test-Path $dlP) {{
+                if (-not $dlCandidates.Contains($dlP)) {{ $dlCandidates.Add($dlP) }}
+            }} elseif ($_.Name -match '^\d+$') {{
+                if (-not $dlCandidates.Contains($_.FullName)) {{ $dlCandidates.Add($_.FullName) }}
+            }}
+        }}
         $mFiles = Get-ChildItem $mediaBase -Recurse -File -ErrorAction SilentlyContinue
-        if ($mFiles) {
+        if ($mFiles) {{
             $totalMedia += ($mFiles | Measure-Object Length -Sum).Sum
             $mediaCount += $mFiles.Count
-        }
-    }
+        }}
+    }}
+
     # Documents\Zalo Received Files
-    try {
-        $uDir = Split-Path $ap -Parent
-        $docZalo = Join-Path $uDir 'Documents\Zalo Received Files'
-        if (Test-Path $docZalo) {
-            if (-not $dlPaths.Contains($docZalo)) { $dlPaths.Add($docZalo) }
+    try {{
+        $parentProf = Split-Path (Split-Path $zRoot -Parent) -Parent
+        $docZalo = Join-Path $parentProf 'Documents\Zalo Received Files'
+        if (Test-Path $docZalo) {{
+            if (-not $dlCandidates.Contains($docZalo)) {{ $dlCandidates.Add($docZalo) }}
             $dzFiles = Get-ChildItem $docZalo -Recurse -File -ErrorAction SilentlyContinue
-            if ($dzFiles) {
+            if ($dzFiles) {{
                 $totalMedia += ($dzFiles | Measure-Object Length -Sum).Sum
                 $mediaCount += $dzFiles.Count
-            }
-        }
-    } catch {}
-    # Cache folders
-    @('Cache','cache','Temp','temp','tmpfiles','Code Cache','DawnCache','GPUCache','blob_storage','Partitions\zalo\Cache','Partitions\zalo\Code Cache','Partitions\zalo\DawnCache','Partitions\zalo\GPUCache','Partitions\zalo\blob_storage') | ForEach-Object {
-        $cp = Join-Path $zaloRoot $_
-        if (Test-Path $cp) {
+            }}
+        }}
+    }} catch {{}}
+
+    # Cache scan
+    $cacheSubdirs = @(
+        'Cache', 'cache', 'Code Cache', 'DawnCache', 'GPUCache', 'blob_storage', 'Temp', 'temp',
+        'Partitions\zalo\Cache', 'Partitions\zalo\Code Cache', 'Partitions\zalo\DawnCache',
+        'Partitions\zalo\GPUCache', 'Partitions\zalo\blob_storage'
+    )
+    foreach ($cs in $cacheSubdirs) {{
+        $cp = Join-Path $zRoot $cs
+        if (Test-Path $cp) {{
             $cf = Get-ChildItem $cp -Recurse -File -ErrorAction SilentlyContinue
-            if ($cf) { $totalCache += ($cf | Measure-Object Length -Sum).Sum }
-        }
-    }
-}
+            if ($cf) {{ $totalCache += ($cf | Measure-Object Length -Sum).Sum }}
+        }}
+    }}
+}}
+
 $totalSystem = [Math]::Max(0, $totalAll - $totalMedia - $totalCache)
-$dlPathsStr = ($dlPaths -join '|')
-[PSCustomObject]@{
-    total_all=$totalAll; total_media=$totalMedia; media_count=$mediaCount;
-    total_cache=$totalCache; total_system=$totalSystem; dl_paths=$dlPathsStr
-} | ConvertTo-Json -Compress
-"#;
-        let out = run_ps_oneshot(ps_code);
+$dlPathsStr = ($dlCandidates -join '|')
+
+[PSCustomObject]@{{
+    success = $true
+    total_all = $totalAll
+    total_media = $totalMedia
+    media_count = $mediaCount
+    total_cache = $totalCache
+    total_system = $totalSystem
+    dl_paths = $dlPathsStr
+    zalo_roots = ($zRoots -join '|')
+}} | ConvertTo-Json -Compress
+"#, target_path_clean);
+        let out = run_ps_oneshot(&ps_code);
         append_log(&format!("zalo_scan_all output: {}", &out[..out.len().min(200)]));
         return (true, out);
     }

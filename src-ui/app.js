@@ -12472,19 +12472,37 @@ getAppIconMarkup(app) +
     return (bytes/1048576).toFixed(1) + ' MB';
   }
 
+  function extractZaloData(res) {
+    if (!res) return null;
+    if (res.total_all !== undefined || res.dl_paths !== undefined) {
+      return res;
+    }
+    if (res.data && (res.data.total_all !== undefined || res.data.dl_paths !== undefined)) {
+      return res.data;
+    }
+    if (res.message && typeof res.message === 'string') {
+      let raw = res.message.trim();
+      const j1 = raw.indexOf('{'), j2 = raw.lastIndexOf('}');
+      if (j1 >= 0 && j2 > j1) raw = raw.substring(j1, j2 + 1);
+      try {
+        return JSON.parse(raw);
+      } catch (_) {}
+    }
+    return null;
+  }
+
   window.zaloDetectPath = async function() {
     zaloLog('🔍 Đang tự động tìm thư mục ZaloDownloads...', '#60a5fa');
     try {
-      // Use Rust backend to avoid JS→IPC string escaping issues
-      const res = await invokeRust('run_system_action', { actionId: 'zalo_scan_all' });
-      let found = '';
-      if (res && res.message) {
-        try {
-          const d = JSON.parse(res.message.trim());
-          if (d && d.dl_paths) found = d.dl_paths.split('|')[0] || '';
-        } catch(_) {}
-      }
       const inp = document.getElementById('zalo-path-input');
+      const currentPath = inp ? inp.value.trim() : '';
+      const res = await invokeRust('run_system_action', { actionId: 'zalo_scan_all', path: currentPath });
+      const d = extractZaloData(res);
+      let found = '';
+      if (d && d.dl_paths) {
+        const parts = d.dl_paths.split('|').filter(p => p.length > 0);
+        found = parts.find(p => /ZaloDownloads/i.test(p)) || parts[0] || '';
+      }
       if (found && inp) {
         inp.value = found;
         zaloLog('✅ Tìm thấy: ' + found, '#34d399');
@@ -12501,49 +12519,43 @@ getAppIconMarkup(app) +
   window.zaloScanAll = async function() {
     zaloLog('📊 Đang quét toàn bộ dữ liệu Zalo...', '#60a5fa');
     try {
-      // Use Rust backend (run_system_action → zalo_scan_all) to avoid JS IPC escaping
-      const res = await invokeRust('run_system_action', { actionId: 'zalo_scan_all' });
-      let raw = (res && res.message) ? res.message.trim() : '';
-      if (raw) {
-        const j1 = raw.indexOf('{'), j2 = raw.lastIndexOf('}');
-        if (j1 >= 0 && j2 > j1) raw = raw.substring(j1, j2+1);
-        try {
-          const d = JSON.parse(raw);
-          const totalAll   = d.total_all    || 0;
-          const totalMedia = d.total_media  || 0;
-          const mediaCount = d.media_count  || 0;
-          const totalCache = d.total_cache  || 0;
-          const totalSys   = d.total_system || 0;
+      const inp = document.getElementById('zalo-path-input');
+      const currentPath = inp ? inp.value.trim() : '';
+      const res = await invokeRust('run_system_action', { actionId: 'zalo_scan_all', path: currentPath });
+      const d = extractZaloData(res);
+      if (d && (d.total_all !== undefined || d.dl_paths !== undefined)) {
+        const totalAll   = d.total_all    || 0;
+        const totalMedia = d.total_media  || 0;
+        const mediaCount = d.media_count  || 0;
+        const totalCache = d.total_cache  || 0;
+        const totalSys   = d.total_system || 0;
 
-          const el = document.getElementById('zalo-scan-result');
-          if (el) el.style.display = 'block';
-          const fc = document.getElementById('zalo-file-count');
-          if (fc) fc.textContent = Number(mediaCount).toLocaleString('vi-VN') + ' file media';
-          const ts2 = document.getElementById('zalo-total-size');
-          if (ts2) ts2.textContent = zaloFmtSize(totalMedia);
-          const ls = document.getElementById('zalo-last-scanned');
-          if (ls) ls.textContent = new Date().toLocaleTimeString('vi-VN');
+        const el = document.getElementById('zalo-scan-result');
+        if (el) el.style.display = 'block';
+        const fc = document.getElementById('zalo-file-count');
+        if (fc) fc.textContent = Number(mediaCount).toLocaleString('vi-VN') + ' file media';
+        const ts2 = document.getElementById('zalo-total-size');
+        if (ts2) ts2.textContent = zaloFmtSize(totalMedia);
+        const ls = document.getElementById('zalo-last-scanned');
+        if (ls) ls.textContent = new Date().toLocaleTimeString('vi-VN');
 
-          const bp = document.getElementById('zalo-breakdown-panel');
-          if (bp) {
-            bp.style.display = 'block';
-            const setEl = (id, val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
-            setEl('zalo-size-total',  zaloFmtSize(totalAll));
-            setEl('zalo-size-media',  zaloFmtSize(totalMedia));
-            setEl('zalo-size-cache',  zaloFmtSize(totalCache));
-            setEl('zalo-size-system', zaloFmtSize(totalSys));
-          }
-
-          const inp = document.getElementById('zalo-path-input');
-          if (inp && !inp.value.trim() && d.dl_paths) {
-            const fp = d.dl_paths.split('|')[0];
-            if (fp) inp.value = fp;
-          }
-
-          zaloLog('✅ Tổng Zalo: ' + zaloFmtSize(totalAll) + ' | Ảnh/Video tải về: ' + zaloFmtSize(totalMedia) + ' (' + mediaCount + ' file) | Cache: ' + zaloFmtSize(totalCache) + ' | Hệ thống: ' + zaloFmtSize(totalSys), '#34d399');
-        } catch(je) {
-          zaloLog('⚠️ Không thể phân tích JSON: ' + raw.substring(0,120), '#fbbf24');
+        const bp = document.getElementById('zalo-breakdown-panel');
+        if (bp) {
+          bp.style.display = 'block';
+          const setEl = (id, val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
+          setEl('zalo-size-total',  zaloFmtSize(totalAll));
+          setEl('zalo-size-media',  zaloFmtSize(totalMedia));
+          setEl('zalo-size-cache',  zaloFmtSize(totalCache));
+          setEl('zalo-size-system', zaloFmtSize(totalSys));
         }
+
+        if (inp && !inp.value.trim() && d.dl_paths) {
+          const parts = d.dl_paths.split('|').filter(p => p.length > 0);
+          const best = parts.find(p => /ZaloDownloads/i.test(p)) || parts[0] || '';
+          if (best) inp.value = best;
+        }
+
+        zaloLog('✅ Tổng Zalo: ' + zaloFmtSize(totalAll) + ' | Ảnh/Video tải về: ' + zaloFmtSize(totalMedia) + ' (' + mediaCount + ' file) | Cache: ' + zaloFmtSize(totalCache) + ' | Hệ thống: ' + zaloFmtSize(totalSys), '#34d399');
       } else {
         zaloLog('⚠️ Không tìm thấy dữ liệu Zalo trên máy này.', '#fbbf24');
       }
