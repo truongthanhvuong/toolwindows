@@ -13960,17 +13960,17 @@ if ('{auto_reboot}' -eq 'True') {{
             # Khoi chay tien trinh PowerShell ngam doc lap de thay the binary va khoi dong lai
             # Tu dong ke thua quyen Admin cao nhat ma khong dung Verb RunAs gay loi Win32Exception
             $updateScript = @"
-Start-Sleep -Milliseconds 1200
+Start-Sleep -Milliseconds 2500
 taskkill /F /IM "VUONGTT_Toolkit.exe" /T >nul 2>&1
 taskkill /F /IM "VUONGTT_Toolkit_Rust.exe" /T >nul 2>&1
 Stop-Process -Name 'VUONGTT_Toolkit','VUONGTT_Toolkit_Rust' -Force -ErrorAction SilentlyContinue
 Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | Where-Object {{ \$_.CommandLine -like '*127.0.0.1*' }} | Stop-Process -Force -ErrorAction SilentlyContinue
-for (\$i = 0; \$i -lt 25; \$i++) {{
+for (\$i = 0; \$i -lt 40; \$i++) {{
     try {{
         Copy-Item -Path '$tempExe' -Destination '$currExe' -Force -ErrorAction Stop
         break
     }} catch {{
-        Start-Sleep -Milliseconds 400
+        Start-Sleep -Milliseconds 600
     }}
 }}
 if (Test-Path 'E:\toolwindows\VUONGTT_Toolkit.exe') {{

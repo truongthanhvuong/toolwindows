@@ -11024,19 +11024,18 @@ getAppIconMarkup(app) +
 
       if (applyRes && applyRes.success) {
 
-        showToast("Cập Nhật Thành Công", "Đã tải xong bản mới nhất! Ứng dụng đang tự động thay thế và khởi động lại sau 2 giây...", "success");
+        showToast("Cập Nhật Thành Công", "Đã tải xong! Ứng dụng sẽ tự đóng và khởi động lại sau 5 giây...", "success");
         if (typeof window.appendConsoleLog === "function") {
-          window.appendConsoleLog("[CẬP NHẬT GITHUB] Tải thành công! Ứng dụng đang tự động thay thế binary và khởi động lại...");
+          window.appendConsoleLog("[CẬP NHẬT GITHUB] ✅ Tải thành công! Tiến trình nâng cấp đang chạy ngầm...");
+          window.appendConsoleLog("[CẬP NHẬT GITHUB] ⏳ Ứng dụng tự đóng sau 5 giây để hoàn tất nâng cấp...");
         }
-
         setTimeout(async () => {
-          try {
-            await invokeRust("window_control", { action: "close" });
-          } catch (_) {}
-          try {
-            window.close();
-          } catch (_) {}
-        }, 1200);
+          if (typeof window.appendConsoleLog === "function") {
+            window.appendConsoleLog("[CẬP NHẬT GITHUB] 🔄 Đang đóng ứng dụng...");
+          }
+          try { await invokeRust("window_control", { action: "close" }); } catch (_) {}
+          try { window.close(); } catch (_) {}
+        }, 5000);
 
       } else {
 
