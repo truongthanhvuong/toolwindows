@@ -1,6 +1,6 @@
 // ============================================================================
-//   VUONGTT TOOL PRO 2026 â€” RUST TAURI V2 ENTRY POINT (src-tauri/src/main.rs)
-//   Fluent OS Utility â€” 13+1 Stitch Screens Desktop Engine
+//   VUONGTT TOOL PRO 2026 Ã¢â‚¬â€ RUST TAURI V2 ENTRY POINT (src-tauri/src/main.rs)
+//   Fluent OS Utility Ã¢â‚¬â€ 13+1 Stitch Screens Desktop Engine
 // ============================================================================
 
 #![windows_subsystem = "windows"]
@@ -149,7 +149,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.230";
+pub const APP_VERSION: &str = "20.5.909.232";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -650,7 +650,7 @@ pub fn route_ipc_request(req: &str, is_running: &AtomicBool) -> String {
             );
         }
     } else {
-        json_resp = r#"{"success":false,"message":"Lá»—i: Lá»‡nh IPC khÃ´ng há»£p lá»‡ hoáº·c chÆ°a Ä‘Æ°á»£c há»— trá»£!"}"#.to_string();
+        json_resp = r#"{"success":false,"message":"LÃ¡Â»â€”i: LÃ¡Â»â€¡nh IPC khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡ hoÃ¡ÂºÂ·c chÃ†Â°a Ã„â€˜Ã†Â°Ã¡Â»Â£c hÃ¡Â»â€” trÃ¡Â»Â£!"}"#.to_string();
     }
 
     json_resp
@@ -731,10 +731,10 @@ fn main() {
         }
     });
 
-    // 5. Ghi nháº­n mÃ¡y tráº¡m hiá»‡n táº¡i vÃ o há»‡ thá»‘ng Admin Fleet Monitor
+    // 5. Ghi nhÃ¡ÂºÂ­n mÃƒÂ¡y trÃ¡ÂºÂ¡m hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i vÃƒÂ o hÃ¡Â»â€¡ thÃ¡Â»â€˜ng Admin Fleet Monitor
     let _ = system_ops::record_device_heartbeat("", "", "", "", "");
 
-    // 5.1 Tá»± Ä‘á»™ng táº¡o biá»ƒu tÆ°á»£ng Shortcut trÃªn Desktop trá» Ä‘áº¿n tool khi khá»Ÿi cháº¡y
+    // 5.1 TÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng tÃ¡ÂºÂ¡o biÃ¡Â»Æ’u tÃ†Â°Ã¡Â»Â£ng Shortcut trÃƒÂªn Desktop trÃ¡Â»Â Ã„â€˜Ã¡ÂºÂ¿n tool khi khÃ¡Â»Å¸i chÃ¡ÂºÂ¡y
     let _ = system_ops::ensure_desktop_shortcut();
 
     // 6. Open Edge App Mode Window
@@ -770,20 +770,20 @@ fn main() {
         let _ = Command::new("cmd").args(["/c", "start", &url]).status();
     }
 
-    // 6. Master Lifecycle Watchdog: Giá»¯ tiáº¿n trÃ¬nh Rust sá»‘ng liÃªn tá»¥c theo cá»­a sá»• giao diá»‡n!
+    // 6. Master Lifecycle Watchdog: GiÃ¡Â»Â¯ tiÃ¡ÂºÂ¿n trÃƒÂ¬nh Rust sÃ¡Â»â€˜ng liÃƒÂªn tÃ¡Â»Â¥c theo cÃ¡Â»Â­a sÃ¡Â»â€¢ giao diÃ¡Â»â€¡n!
     while is_running.load(Ordering::SeqCst) {
         thread::sleep(std::time::Duration::from_millis(500));
 
         if let Ok(act) = last_activity.lock() {
             let elapsed = act.elapsed();
             if has_connected.load(Ordering::SeqCst) {
-                // Sau khi client Ä‘Ã£ káº¿t ná»‘i láº§n Ä‘áº§u:
-                // Náº¿u quÃ¡ 6 giÃ¢y khÃ´ng cÃ²n heartbeat/request -> Cá»­a sá»• Edge Ä‘Ã£ Ä‘Ã³ng -> Tá»± Ä‘á»™ng thoÃ¡t sáº¡ch sáº½!
+                // Sau khi client Ã„â€˜ÃƒÂ£ kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i lÃ¡ÂºÂ§n Ã„â€˜Ã¡ÂºÂ§u:
+                // NÃ¡ÂºÂ¿u quÃƒÂ¡ 6 giÃƒÂ¢y khÃƒÂ´ng cÃƒÂ²n heartbeat/request -> CÃ¡Â»Â­a sÃ¡Â»â€¢ Edge Ã„â€˜ÃƒÂ£ Ã„â€˜ÃƒÂ³ng -> TÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng thoÃƒÂ¡t sÃ¡ÂºÂ¡ch sÃ¡ÂºÂ½!
                 if elapsed > std::time::Duration::from_secs(6) {
                     break;
                 }
             } else {
-                // Chá» tá»‘i Ä‘a 60 giÃ¢y cho Edge má»Ÿ vÃ  gá»­i request Ä‘áº§u tiÃªn
+                // ChÃ¡Â»Â tÃ¡Â»â€˜i Ã„â€˜a 60 giÃƒÂ¢y cho Edge mÃ¡Â»Å¸ vÃƒÂ  gÃ¡Â»Â­i request Ã„â€˜Ã¡ÂºÂ§u tiÃƒÂªn
                 if elapsed > std::time::Duration::from_secs(60) {
                     break;
                 }
@@ -805,7 +805,7 @@ mod tests {
         let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"unknown_action_xyz_123\",\"payload\":{}}";
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":false"), "Unknown command must return success=false: {}", resp);
-        assert!(resp.contains("Lá»—i: Lá»‡nh IPC khÃ´ng há»£p lá»‡"), "Expected error message: {}", resp);
+        assert!(resp.contains("LÃ¡Â»â€”i: LÃ¡Â»â€¡nh IPC khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡"), "Expected error message: {}", resp);
     }
 
     #[test]
@@ -876,7 +876,7 @@ mod tests {
         let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"verify_office_license\"}";
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":false"), "verify_office_license must return success=false: {}", resp);
-        assert!(resp.contains("không tồn tại") || resp.contains("hỗ trợ"), "Expected action not found error: {}", resp);
+        assert!(resp.contains("khÃ´ng tá»“n táº¡i") || resp.contains("há»— trá»£"), "Expected action not found error: {}", resp);
     }
 
     #[test]
@@ -953,4 +953,5 @@ mod tests {
         assert!(resp.contains("total_all"));
     }
 }
+
 

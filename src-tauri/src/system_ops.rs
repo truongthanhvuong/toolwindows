@@ -8461,20 +8461,86 @@ th { background: #222a3d; color: #6ffbbe; }
                 # 3. Bo qua toan bo OOBE (mang, WiFi, Privacy questions, Microsoft Account)
                 # 4. Tu dong tao tai khoan Local Admin va AutoLogon thang vao Windows Desktop
                 # 5. Inject BypassNRO de ngan chan ep buoc ket noi mang tren Windows 11
+                                # Unattend XML day du cho silent install hoan toan (Rufus/WinToHDD standard 2026):
+                # - DiskConfiguration: Tu dong format o C: (Disk 0 GPT/EFI), WillShowUI=Never -> khong hien man hinh chon phan vung
+                # - ImageInstall: Tu dong chon Windows 11 Pro vao C:, WillShowUI=Never -> khong hien man hinh chon edition
+                # - windowsPE: Bypass TPM/SecureBoot/RAM/CPU qua LabConfig, chap nhan EULA, chon Pro key
+                # - specialize: BypassNRO, DisablePrivacyExperience, timezone Vietnam
+                # - oobeSystem: Tat hoan toan OOBE, tao Local Admin, AutoLogon -> tu vao Desktop
                 $unattendXml = @'
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
   <settings pass="windowsPE">
-    <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+    <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
       <SetupUILanguage>
         <UILanguage>en-US</UILanguage>
+        <WillShowUI>Never</WillShowUI>
       </SetupUILanguage>
       <InputLocale>0409:00000409</InputLocale>
       <SystemLocale>en-US</SystemLocale>
       <UILanguage>en-US</UILanguage>
+      <UILanguageFallback>en-US</UILanguageFallback>
       <UserLocale>en-US</UserLocale>
     </component>
-    <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+    <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+      <DiskConfiguration>
+        <WillShowUI>Never</WillShowUI>
+        <Disk wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <DiskID>0</DiskID>
+          <WillWipeDisk>true</WillWipeDisk>
+          <CreatePartitions>
+            <CreatePartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+              <Order>1</Order>
+              <Type>EFI</Type>
+              <Size>300</Size>
+            </CreatePartition>
+            <CreatePartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+              <Order>2</Order>
+              <Type>MSR</Type>
+              <Size>128</Size>
+            </CreatePartition>
+            <CreatePartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+              <Order>3</Order>
+              <Type>Primary</Type>
+              <Extend>true</Extend>
+            </CreatePartition>
+          </CreatePartitions>
+          <ModifyPartitions>
+            <ModifyPartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+              <Order>1</Order>
+              <PartitionID>1</PartitionID>
+              <Format>FAT32</Format>
+              <Label>System</Label>
+            </ModifyPartition>
+            <ModifyPartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+              <Order>2</Order>
+              <PartitionID>2</PartitionID>
+            </ModifyPartition>
+            <ModifyPartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+              <Order>3</Order>
+              <PartitionID>3</PartitionID>
+              <Format>NTFS</Format>
+              <Label>Windows</Label>
+              <Letter>C</Letter>
+            </ModifyPartition>
+          </ModifyPartitions>
+        </Disk>
+      </DiskConfiguration>
+      <ImageInstall>
+        <OSImage>
+          <WillShowUI>Never</WillShowUI>
+          <InstallFrom>
+            <MetaData wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+              <Key>/IMAGE/NAME</Key>
+              <Value>Windows 11 Pro</Value>
+            </MetaData>
+          </InstallFrom>
+          <InstallTo>
+            <DiskID>0</DiskID>
+            <PartitionID>3</PartitionID>
+          </InstallTo>
+        </OSImage>
+      </ImageInstall>
       <UserData>
         <AcceptEula>true</AcceptEula>
         <FullName>Admin</FullName>
@@ -8505,11 +8571,15 @@ th { background: #222a3d; color: #6ffbbe; }
           <Order>5</Order>
           <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassStorageCheck /t REG_DWORD /d 1 /f</Path>
         </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>6</Order>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
       </RunSynchronous>
     </component>
   </settings>
   <settings pass="specialize">
-    <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+    <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
       <RunSynchronous>
         <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
           <Order>1</Order>
@@ -8521,15 +8591,19 @@ th { background: #222a3d; color: #6ffbbe; }
         </RunSynchronousCommand>
       </RunSynchronous>
     </component>
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+      <ComputerName>VUONGTT-PC</ComputerName>
+      <TimeZone>SE Asia Standard Time</TimeZone>
+    </component>
   </settings>
   <settings pass="oobeSystem">
-    <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+    <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
       <InputLocale>0409:00000409</InputLocale>
       <SystemLocale>en-US</SystemLocale>
       <UILanguage>en-US</UILanguage>
       <UserLocale>en-US</UserLocale>
     </component>
-    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
       <OOBE>
         <HideEULAPage>true</HideEULAPage>
         <HideLocalAccountScreen>true</HideLocalAccountScreen>
@@ -8537,6 +8611,8 @@ th { background: #222a3d; color: #6ffbbe; }
         <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
         <NetworkLocation>Work</NetworkLocation>
         <ProtectYourPC>3</ProtectYourPC>
+        <SkipMachineOOBE>true</SkipMachineOOBE>
+        <SkipUserOOBE>true</SkipUserOOBE>
       </OOBE>
       <UserAccounts>
         <LocalAccounts>
@@ -8639,11 +8715,11 @@ th { background: #222a3d; color: #6ffbbe; }
             // Ghi chú cú pháp Microsoft: Cờ /auto không được phép đi kèm /unattend: trên dòng lệnh vì xung đột tham số.
             // Trình cài đặt SetupHost sẽ tự động nhận diện autounattend.xml và Panther\unattend.xml đã được ghi sẵn ở các bước chuẩn bị.
             let setup_args = if mode == "clean" {
-                format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
             } else if mode == "custom" {
                 format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
             };
 
             let ps_run = format!(
@@ -8658,7 +8734,9 @@ th { background: #222a3d; color: #6ffbbe; }
                 # Uu tien sources\setupprep.exe (dong co In-OS Setup Engine hien dai cua Microsoft)
                 # Ke tiep la sources\setup.exe (Windows Setup Engine thuc thu, ho tro day du cac tham so dong lenh)
                 # Fallback: root setup.exe neu khong tim thay sources
-                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} elseif (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} else {{ "$drv\setup.exe" }}
+                # QUAN TRONG: Phai dung sources\setup.exe (khong phai setupprep.exe) voi /product server + /compat ignorewarning
+                # setup.exe nhan flag nay TRUOC khi load appraiser; setupprep.exe chay appraiser TRUOC => van bi 0x80070003-0x40008
+                $setupExe = if (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} elseif (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} else {{ "$drv\sources\setupprep.exe" }}
                 # Thu muc lam viec phai la goc o dia cai dat $drv de dam bao cac duong dan tuong doi trong bo cai khong bi ERROR_PATH_NOT_FOUND (0x80070003)
                 $workDir = $drv
 
@@ -26780,11 +26858,11 @@ mod tests {
         let temp_drive_arg = if clean_target.is_empty() { "C" } else { clean_target };
         let mode = "clean";
         let setup_args = if mode == "clean" {
-            format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+            format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
         } else if mode == "custom" {
             format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
         } else {
-            format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+            format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
         };
 
         assert!(setup_args.contains("/auto clean"), "Clean mode must specify /auto clean");
@@ -26809,6 +26887,7 @@ mod tests {
     }
 
 }
+
 
 
 

@@ -1,13 +1,4 @@
-[
-    {
-        "hostname":  "TEST-PC-99",
-        "serialNumber":  "TEST-BIOS-SN-99",
-        "ipAddress":  "192.168.1.99",
-        "osCaption":  "Windows 11 Test",
-        "lastSeen":  "2026-11-20 10:40:34",
-        "hwid":  "HWID-TEST-99",
-        "status":  "Active"
-    },
+﻿[
     {
         "hostname":  "DESKTOP-BJ38TQN",
         "serialNumber":  "VMware-56 4d e2 13 93 ef f7 37-ab c7 85 07 f9 03 fc ab",
@@ -27,12 +18,12 @@
         "status":  "Active"
     },
     {
-        "hostname":  "DESKTOP-BJ38TQN",
-        "serialNumber":  "SN-DESKTOP-BJ38TQN",
-        "ipAddress":  "127.0.0.1",
-        "osCaption":  "Windows 11 Pro 64-bit",
-        "lastSeen":  "2026-11-13 12:59:08",
-        "hwid":  "HWID-SN-DESKTOP-BJ38TQN",
+        "hostname":  "TEST-PC-99",
+        "serialNumber":  "TEST-BIOS-SN-99",
+        "ipAddress":  "192.168.1.99",
+        "osCaption":  "Windows 11 Test",
+        "lastSeen":  "2026-11-20 10:40:34",
+        "hwid":  "HWID-TEST-99",
         "status":  "Active"
     },
     {
