@@ -8909,17 +8909,26 @@ th { background: #222a3d; color: #6ffbbe; }
             std::thread::spawn(move || {
                 let setupact_path = format!(r"{}:\$WINDOWS.~BT\Sources\Panther\setupact.log", temp_drive_char);
                 let setuperr_path = format!(r"{}:\$WINDOWS.~BT\Sources\Panther\setuperr.log", temp_drive_char);
+                let setupact_alt = format!(r"{}:\$WINDOWS.~BT\Panther\setupact.log", temp_drive_char);
+                let setuperr_alt = format!(r"{}:\$WINDOWS.~BT\Panther\setuperr.log", temp_drive_char);
                 let mut last_size: u64 = 0;
-                for i in 1..=100 {
+                for i in 1..=600 {
                     std::thread::sleep(std::time::Duration::from_secs(3));
-                    if let Ok(meta) = std::fs::metadata(&setupact_path) {
+                    let act_path = if std::path::Path::new(&setupact_path).exists() {
+                        &setupact_path
+                    } else if std::path::Path::new(&setupact_alt).exists() {
+                        &setupact_alt
+                    } else {
+                        &setupact_path
+                    };
+                    if let Ok(meta) = std::fs::metadata(act_path) {
                         let cur_size = meta.len();
                         if cur_size > last_size {
                             last_size = cur_size;
-                            if let Ok(content) = std::fs::read_to_string(&setupact_path) {
+                            if let Ok(content) = std::fs::read_to_string(act_path) {
                                 for line in content.lines().rev().take(8) {
                                     let l = line.trim();
-                                    if l.contains("Progress:") || l.contains("Percent") || l.contains("Phase") || l.contains("Copying") || l.contains("Executing") {
+                                    if l.contains("Progress:") || l.contains("Percent") || l.contains("Phase") || l.contains("Copying") || l.contains("Executing") || l.contains("reboot") || l.contains("Restart") {
                                         append_log(&format!("[TIẾN ĐỘ SETUP] {}", l));
                                         break;
                                     }
@@ -8927,9 +8936,14 @@ th { background: #222a3d; color: #6ffbbe; }
                             }
                         }
                     }
-                    if let Ok(err_meta) = std::fs::metadata(&setuperr_path) {
+                    let err_path = if std::path::Path::new(&setuperr_path).exists() {
+                        &setuperr_path
+                    } else {
+                        &setuperr_alt
+                    };
+                    if let Ok(err_meta) = std::fs::metadata(err_path) {
                         if err_meta.len() > 0 {
-                            if let Ok(err_content) = std::fs::read_to_string(&setuperr_path) {
+                            if let Ok(err_content) = std::fs::read_to_string(err_path) {
                                 let last_err = err_content.lines().rev().find(|l| !l.trim().is_empty() && !l.contains("Telemetry")).unwrap_or("");
                                 if !last_err.is_empty() {
                                     append_log(&format!("[LOG LỖI SETUP] {}", last_err.trim()));
