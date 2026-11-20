@@ -8630,25 +8630,58 @@ th { background: #222a3d; color: #6ffbbe; }
                     Set-Content -Path "$wsusDir\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
                 }} catch {{}}
 
-                # KICH HOAT VA DAM BAO DICH VU WINDOWS SECURITY CENTER (wscsvc) HOAT DONG
-                # Provider wsc:setup se truy van wscsvc, neu service bi tat hoac thieu key se gay loi 0x80070003
+                # KICH HOAT VA DAM BAO DICH VU WINDOWS SECURITY CENTER (wscsvc) VA SECURITY HEALTH HOAT DONG
+                # Provider wsc:setup se truy van wscsvc va SecurityHealthService, neu service bi tat hoac thieu key se gay loi 0x80070003
                 try {{
                     reg.exe add "HKLM\SYSTEM\CurrentControlSet\Services\wscsvc" /v Start /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+                    reg.exe add "HKLM\SYSTEM\CurrentControlSet\Services\wscsvc" /v DelayedAutoStart /t REG_DWORD /d 0 /f 2>&1 | Out-Null
                     Set-Service -Name "wscsvc" -StartupType Automatic -ErrorAction SilentlyContinue
                     Start-Service -Name "wscsvc" -ErrorAction SilentlyContinue
                 }} catch {{}}
 
-                # DAM BAO THU MUC PLATFORM WINDOWS DEFENDER TON TAI DE wsc:setup KHONG BAO PATH NOT FOUND
                 try {{
-                    $wdPlatform = "$env:ProgramData\Microsoft\Windows Defender\Platform"
-                    if (-not (Test-Path $wdPlatform)) {{ New-Item -Path $wdPlatform -ItemType Directory -Force 2>&1 | Out-Null }}
+                    reg.exe add "HKLM\SYSTEM\CurrentControlSet\Services\SecurityHealthService" /v Start /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+                    Set-Service -Name "SecurityHealthService" -StartupType Automatic -ErrorAction SilentlyContinue
+                    Start-Service -Name "SecurityHealthService" -ErrorAction SilentlyContinue
                 }} catch {{}}
 
-                # SUA CHUA TRIET DE BANG BCD VA DIEM TRO BOOT VE DUNG PHAN VUNG ESP
-                # Nguyen nhan cot loi 0x80070003 - 0x40008: ConX::Compatibility::CSystemAbstraction::GetSystemVolumeNtPath
-                # truy van BCD de lay phan vung boot, neu truoc do bcdboot chay /s C: thi BCD se tro ve partition=C:.
-                # Tren he thong UEFI, C: khong phai partition kieu ESP (c12a7328-f81f-11d2-ba4b-00a0c93ec93b)
-                # khien ham GetSystemVolumeNtPath bao loi ERROR_PATH_NOT_FOUND (0x80070003)!
+                # DAM BAO THU MUC PLATFORM WINDOWS DEFENDER & HEALTH TON TAI DE wsc:setup KHONG BAO PATH NOT FOUND (0x80070003)
+                try {{
+                    $secDirs = @(
+                        "$env:ProgramData\Microsoft\Windows Defender\Platform",
+                        "$env:ProgramData\Microsoft\Windows Defender\Scans",
+                        "$env:ProgramData\Microsoft\Windows Security Health",
+                        "$env:SystemDrive\Windows\System32\SecurityHealth"
+                    )
+                    foreach ($sd in $secDirs) {{
+                        if (-not (Test-Path $sd)) {{ New-Item -Path $sd -ItemType Directory -Force 2>&1 | Out-Null }}
+                    }}
+                }} catch {{}}
+
+                # DON DEP WINDOWS UPDATE CACHE VA DOWNLOADS TRUOC KHI CAI WIN NGAN NGA CORRUPTED BITS GAY 0x80070003
+                try {{
+                    $swDownload = "$env:SystemRoot\SoftwareDistribution\Download"
+                    if (Test-Path $swDownload) {{
+                        Get-ChildItem -Path $swDownload -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                    }}
+                }} catch {{}}
+
+                # GO BO TRIET DE BAT KY MOUNT POINT KY TU O DIA NAO (S:, Z:, Y:, ...) DANG GAN VAO PHAN VUNG ESP
+                # ConX::Compatibility::CSystemAbstraction::GetSystemVolumeNtPath tim kiem phan vung EFI an nguyen ban
+                # Neu ESP bi gan ky tu o dia (nhu S: hay Z:) hoac BCD tro vao partition=C:, ham nay se tra ve ERROR_PATH_NOT_FOUND (0x80070003)!
+                try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
+                try {{ mountvol Z: /D 2>&1 | Out-Null }} catch {{}}
+                try {{ mountvol Y: /D 2>&1 | Out-Null }} catch {{}}
+                try {{
+                    Get-Partition | Where-Object {{ $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | ForEach-Object {{
+                        if ($_.DriveLetter) {{
+                            Remove-PartitionAccessPath -DiskNumber $_.DiskNumber -PartitionNumber $_.PartitionNumber -AccessPath "$($_.DriveLetter):" -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                            mountvol "$($_.DriveLetter):" /D 2>&1 | Out-Null
+                        }}
+                    }}
+                }} catch {{}}
+
+                # XOA BO TRIET DE CAC TEP BOOT SAI VI TRI TREN C:\ DO BCDBOOT CU DE LAI GAY XUNG DOT VOI PHAN VUNG ESP
                 $bogusBoot = @("C:\EFI", "C:\Boot", "C:\bootmgr", "C:\bootmgr.efi")
                 foreach ($b in $bogusBoot) {{
                     if (Test-Path $b) {{
@@ -8662,26 +8695,13 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
 
-                # Tim phan vung EFI System Partition thuc te tren o dia GPT
+                # TAI THIET LAP BCD STORE VA DIEM TRO BOOT CHUAN XAC QUA FIRMWARE UEFI NVRAM:
+                # Dung bcdboot truc tiep voi cờ /bcdclean full va /p giup xoa sach moi ban ghi BCD tro sai thiet bi ma khong can gan ky tu o dia
                 try {{
-                    $espPart = Get-Partition | Where-Object {{ $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | Select-Object -First 1
-                    if ($espPart) {{
-                        $espLetter = "Z"
-                        try {{
-                            Add-PartitionAccessPath -DiskNumber $espPart.DiskNumber -PartitionNumber $espPart.PartitionNumber -AccessPath "$($espLetter):" -ErrorAction SilentlyContinue 2>&1 | Out-Null
-                            if (Test-Path "$($espLetter):\EFI") {{
-                                bcdboot "$env:SystemRoot" /s "$($espLetter):" /f UEFI /p 2>&1 | Out-Null
-                            }}
-                        }} catch {{}} finally {{
-                            try {{ Remove-PartitionAccessPath -DiskNumber $espPart.DiskNumber -PartitionNumber $espPart.PartitionNumber -AccessPath "$($espLetter):" -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
-                            try {{ mountvol "$($espLetter):" /D 2>&1 | Out-Null }} catch {{}}
-                        }}
-                    }} else {{
-                        try {{ bcdboot "$env:SystemRoot" /p 2>&1 | Out-Null }} catch {{}}
-                    }}
+                    bcdboot "$env:SystemRoot" /bcdclean full /p 2>&1 | Out-Null
                 }} catch {{}}
 
-                # Chu dong go bo triet de mount point S: va Z: neu con ton tai
+                # Bao dam mot lan nua cac mount point S: va Z: khong con ton tai
                 try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
                 try {{ mountvol Z: /D 2>&1 | Out-Null }} catch {{}}
                 "#,
@@ -8719,8 +8739,10 @@ th { background: #222a3d; color: #6ffbbe; }
                 $isoPath = "{}"
 
                 # Tuyet doi khong mount EFI ra o S: (mountvol S: /S) vi gan ky tu o dia cho ESP se truc tiep gay loi Setup 0x80070003 - 0x40008
-                # Chu dong go bo triet de mount point S: neu con sot lai tu cac phien truoc
+                # Chu dong go bo triet de moi mount point (S:, Z:, Y:) neu con sot lai tu cac phien truoc
                 try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
+                try {{ mountvol Z: /D 2>&1 | Out-Null }} catch {{}}
+                try {{ mountvol Y: /D 2>&1 | Out-Null }} catch {{}}
 
                 # Thu muc lam viec PHAI la o dia dich ($targetDrive:\) co quyen doc ghi, TUYET DOI KHONG dung o ISO read-only $drv
                 # vi dat working directory tai o dia chi doc se truc tiep gay ma loi 0x80070490 (ERROR_NOT_FOUND)

@@ -66,6 +66,24 @@ Assert-Test "5. SetupConfig.ini phai duoc cau hinh day du Unattend va Compat=Ign
     $opsContent -match 'Compat=IgnoreWarning'
 }
 
+# 6. Kich hoat va cuong che wscsvc va SecurityHealthService de provider wsc:setup khong bao loi
+Assert-Test "6. Kich hoat wscsvc va SecurityHealthService de provider wsc:setup khong bi loi" {
+    $opsContent -match 'wscsvc' -and
+    $opsContent -match 'SecurityHealthService'
+}
+
+# 7. Khoi tao cac thu muc Windows Defender Platform & Health de tranh ERROR_PATH_NOT_FOUND (0x80070003)
+Assert-Test "7. Khoi tao thu muc Windows Defender Platform va Security Health" {
+    $opsContent -match 'Windows Defender\\Platform' -and
+    $opsContent -match 'Windows Security Health'
+}
+
+# 8. Go bo triet de mount point o dia khoi ESP va chay bcdboot /bcdclean full /p de firmware NVRAM tu nhan ESP
+Assert-Test "8. Go bo mount point o dia khoi ESP va chay bcdboot /bcdclean full /p" {
+    $opsContent -match 'mountvol S: \/D' -and
+    $opsContent -match 'bcdboot.*\/bcdclean full \/p'
+}
+
 Write-Host "`n======================================================================" -ForegroundColor Cyan
 Write-Host "   KET QUA KIEM THU: $passedCount PASS, $failedCount FAIL" -ForegroundColor $(if ($failedCount -eq 0) { "Green" } else { "Red" })
 Write-Host "======================================================================" -ForegroundColor Cyan
