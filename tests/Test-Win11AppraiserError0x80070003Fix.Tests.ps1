@@ -43,9 +43,11 @@ Assert-Test "2. Phai chu dong go mount point S: (mountvol S: /D) de tranh xung d
     $opsContent -match 'mountvol S: /D'
 }
 
-# 3. Phai tao tep appraiserres.dll 0-byte vao $WINDOWS.~BT\Sources de triet tieu hardware appraisal engine
-Assert-Test "3. Phai tao tep appraiserres.dll 0-byte vao $stagingDir\Sources de triet tieu hardware appraisal" {
-    $opsContent -match 'appraiserres\.dll'
+# 3. Tuyet doi khong tao tep appraiserres.dll 0-byte vi gay loi 0x80070003 - 0x40008 tren Windows 11 24H2/25H2
+# Thay vao do phai sao chep DLL goc tu bo cai $drv\sources hoac xoa bo tep 0-byte bi loi
+Assert-Test "3. Khong tao tep appraiserres.dll 0-byte va tu dong dong bo DLL hop le tu bo cai hoac xoa tep 0-byte" {
+    (-not ($opsContent -match 'Set-Content\s+-Path\s+"\$srcDir\\appraiserres\.dll"\s+-Value\s+\$null')) -and
+    ($opsContent -match 'appraiserres\.dll')
 }
 
 # 4. Thu muc lam viec $workDir phai la root $drv cua ISO

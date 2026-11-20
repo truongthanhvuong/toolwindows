@@ -8427,10 +8427,14 @@ th { background: #222a3d; color: #6ffbbe; }
             let ps_clean_and_prep = format!(
                 r#"
                 $targetDrive = "{}"
+                $drv = "{}"
                 $stalePaths = @("C:\`$WINDOWS.~BT", "C:\`$Windows.~WS", "D:\`$WINDOWS.~BT", "D:\`$Windows.~WS", "$($targetDrive):\`$WINDOWS.~BT", "$($targetDrive):\`$Windows.~WS")
 
                 # Dung tat ca tien trinh setup cu co the dang giu khoa file
                 Stop-Process -Name "setup", "setupprep", "SetupHost", "CompatTelRunner" -Force -ErrorAction SilentlyContinue
+
+                # Xoa bo triet de moi tep appraiserres.dll 0-byte cu con sot lai tren he thong (nguyen nhan truc tiep gay loi 0x80070003 - 0x40008 tren Windows 11 24H2/25H2)
+                Get-ChildItem -Path "C:\`$WINDOWS.~BT", "$($targetDrive):\`$WINDOWS.~BT" -Recurse -Filter "appraiserres.dll" -ErrorAction SilentlyContinue | Where-Object {{ $_.Length -eq 0 }} | ForEach-Object {{ Remove-Item -Path $_.FullName -Force -ErrorAction SilentlyContinue }}
 
                 foreach ($p in $stalePaths) {{
                     if (Test-Path $p) {{
@@ -8448,8 +8452,7 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
 
-                # Khoi tao truoc thu muc staging $WINDOWS.~BT va Sources voi tep appraiserres.dll 0-byte
-                # Dieu nay triet tieu hoan toan trinh kiem tra phan cung Windows 11 Appraiser, loai bo loi 0x80070003 - 0x40008
+                # Khoi tao truoc thu muc staging $WINDOWS.~BT va Sources
                 $stagingDirs = @("$($targetDrive):\`$WINDOWS.~BT", "C:\`$WINDOWS.~BT")
 
                 # Cau hinh Unattend XML chuan vang (WinToHDD / Rufus standard)
@@ -8587,8 +8590,17 @@ th { background: #222a3d; color: #6ffbbe; }
 
                         icacls $stg /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
 
-                        # Tao tep appraiserres.dll 0-byte (chuan bypass cua Rufus va WinToHDD de bo qua hardware appraisal)
-                        Set-Content -Path "$srcDir\appraiserres.dll" -Value $null -Force 2>&1 | Out-Null
+                        # Dong bo appraiserres.dll chuan tu bo cai $drv\sources de chong loi LoadLibrary 0x80070003 - 0x40008 tren Windows 11 24H2/25H2
+                        # Tuyet doi khong tao tep 0-byte vi Windows 11 SetupHost se danh gia la corrupt image va huy tien trinh cai dat
+                        if (Test-Path "$drv\sources\appraiserres.dll") {{
+                            Copy-Item -Path "$drv\sources\appraiserres.dll" -Destination "$srcDir\appraiserres.dll" -Force 2>&1 | Out-Null
+                        }} elseif (Test-Path "$srcDir\appraiserres.dll") {{
+                            try {{
+                                if ((Get-Item "$srcDir\appraiserres.dll").Length -eq 0) {{
+                                    Remove-Item -Path "$srcDir\appraiserres.dll" -Force 2>&1 | Out-Null
+                                }}
+                            }} catch {{}}
+                        }}
 
                         # Nap PID.txt va ei.cfg khoa chat edition Windows Pro trong thu muc Sources
                         $pidContent = "[PID]`r`nValue=VK7JG-NPHTM-C97JM-9MPGT-3V66T`r`n"
@@ -8611,14 +8623,14 @@ th { background: #222a3d; color: #6ffbbe; }
                 # Chu dong go bo mount point S: neu truoc do con ton tai de tranh xung dot phan vung EFI
                 mountvol S: /D 2>&1 | Out-Null
                 "#,
-                temp_drive_letter
+                temp_drive_letter, drv
             );
             let mut clean_cmd = Command::new("powershell");
             clean_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_clean_and_prep]);
             #[cfg(windows)]
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
-            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và nạp bypass appraiserres.dll.", temp_drive_arg));
+            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và chuẩn hóa môi trường tương thích Windows 11.", temp_drive_arg));
             append_log("[CÀI WIN TỰ ĐỘNG] Đã cấu hình unattend.xml (mặc định Windows Pro, bỏ qua OOBE & tài khoản Microsoft, tự động tạo Admin và đăng nhập Desktop).");
 
             // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept, không kẹt màn hình phân vùng
