@@ -135,6 +135,28 @@ Assert-Test "16. Go bo triet de moi IFEO hook cho SetupHost.exe va chuan hoa HKL
     $opsContent -match 'SystemPartition'
 }
 
+# 17. Xoa bo triet de moi cache cu va log loi trong C:\Windows\Panther (compatscancache.dat, queues, setupinfo) de chong 0x80070003
+Assert-Test "17. Xoa sach bo nho dem compatscancache.dat va queue loi cu trong C:\Windows\Panther" {
+    $opsContent -match 'compatscancache\.dat' -and
+    $opsContent -match 'setupinfo' -and
+    $opsContent -match 'Remove-Item -Path \$pf'
+}
+
+# 18. Chuan hoa chinh xac tuyet doi HKLM:\SYSTEM\Setup\SystemPartition qua QueryDosDevice va Win32 API
+Assert-Test "18. Chuan hoa chinh xac NT Device Path cua SystemPartition qua QueryDosDevice va Win32VolHelper" {
+    $opsContent -match 'QueryDosDevice' -and
+    $opsContent -match 'Win32VolHelper' -and
+    $opsContent -match 'SystemPartition'
+}
+
+# 19. WinToHDD Dual-Engine: Trich xuat WinPE RAMDisk (boot.wim, boot.sdi) va kich hoat BCD bootsequence du phong
+Assert-Test "19. WinToHDD Dual-Engine trich xuat WinPE RAMDisk va thiet lap BCD bootsequence" {
+    $opsContent -match 'ramdiskoptions' -and
+    $opsContent -match 'boot\.sdi' -and
+    $opsContent -match 'boot\.wim' -and
+    $opsContent -match 'bcdedit /bootsequence'
+}
+
 Write-Host "`n======================================================================" -ForegroundColor Cyan
 Write-Host "   KET QUA KIEM THU: $passedCount PASS, $failedCount FAIL" -ForegroundColor $(if ($failedCount -eq 0) { "Green" } else { "Red" })
 Write-Host "======================================================================" -ForegroundColor Cyan

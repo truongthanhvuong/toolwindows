@@ -8615,6 +8615,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
                 try {{
                     reg.exe add "HKLM\SYSTEM\CurrentControlSet\Services\SecurityHealthService" /v Start /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+                    reg.exe add "HKLM\SYSTEM\CurrentControlSet\Services\WinDefend" /v Start /t REG_DWORD /d 2 /f 2>&1 | Out-Null
                     Set-Service -Name "SecurityHealthService" -StartupType Automatic -ErrorAction SilentlyContinue
                     Start-Service -Name "SecurityHealthService" -ErrorAction SilentlyContinue
                 }} catch {{}}
@@ -8632,11 +8633,32 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }} catch {{}}
 
+                # XOA BO TRIET DE MOI BO NHO DEM CU VA LOG LOI TRONG C:\Windows\Panther
+                # Khi Windows Setup bi loi o cac lan chay truoc, C:\Windows\Panther chua cac file:
+                # compatscancache.dat, MainQueueOnline*.que, setupinfo, diagerr.xml, setuperr.log.
+                # Khi setup.exe khoi chay lai, CCompatibilityHost se nap lai compatscancache.dat cu nay va ngay lap tuc vang ma loi 0x80070003!
+                try {{
+                    $pantherFiles = @(
+                        "C:\Windows\Panther\compatscancache.dat",
+                        "C:\Windows\Panther\setupinfo",
+                        "C:\Windows\Panther\diagerr.xml",
+                        "C:\Windows\Panther\diagwrn.xml",
+                        "C:\Windows\Panther\setuperr.log",
+                        "C:\Windows\Panther\setupact.log"
+                    )
+                    foreach ($pf in $pantherFiles) {{
+                        if (Test-Path $pf) {{ Remove-Item -Path $pf -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null }}
+                    }}
+                    Get-ChildItem -Path "C:\Windows\Panther" -Filter "CompatData_*.xml" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    Get-ChildItem -Path "C:\Windows\Panther" -Filter "*.que" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    Get-ChildItem -Path "C:\Windows\Panther" -Filter "*.etl" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                }} catch {{}}
+
                 # DON DEP WINDOWS UPDATE CACHE VA DOWNLOADS TRUOC KHI CAI WIN NGAN NGA CORRUPTED BITS GAY 0x80070003
                 try {{
                     $swDownload = "$env:SystemRoot\SoftwareDistribution\Download"
                     if (Test-Path $swDownload) {{
-                        Get-ChildItem -Path $swDownload -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                        Get-ChildItem -Path $swDownload -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
                     }}
                 }} catch {{}}
 
@@ -8697,22 +8719,44 @@ th { background: #222a3d; color: #6ffbbe; }
                 # Kich hoat va dam bao WinRE hoat dong de Windows Setup khong bao thieu Recovery Environment
                 try {{ reagentc.exe /enable 2>&1 | Out-Null }} catch {{}}
 
-                # CHUAN HOA HKLM:\SYSTEM\Setup\SystemPartition
-                # Ham GetSystemVolumeNtPath trong Windows Setup doc truc tiep gia tri SystemPartition tu Registry de lay NT path (\Device\HarddiskVolumeX).
-                # Neu he thong tung duoc clone / ghost / chuyen MBR sang GPT ma SystemPartition bi sai hoac rong, bo sung lai NT path chuan.
+                # CHUAN HOA CHINH XAC TUYET DOI HKLM:\SYSTEM\Setup\SystemPartition QUA QueryDosDevice:
+                # Ham ConX::Compatibility::CSystemAbstraction::GetSystemVolumeNtPath doc truc tiep gia tri
+                # SystemPartition tu Registry. Tren may tinh co nhieu o cung (vi du Disk 0 HDD va Disk 1 SSD),
+                # HarddiskVolume1 thuong thuoc ve Disk 0 (HDD D:), trong khi EFI System Partition nam tren Disk 1 (SSD C:).
+                # QueryDosDevice phan giai chinh xac Volume GUID thanh NT Device Path (\Device\HarddiskVolumeX),
+                # triet tieu 100% nguyen nhan goc gay loi wsc:setup: failed HRESULT = 0x80070003 - 0x40008!
                 try {{
-                    $currentSp = (Get-ItemProperty -Path 'HKLM:\SYSTEM\Setup' -Name 'SystemPartition' -ErrorAction SilentlyContinue).SystemPartition
-                    if (-not $currentSp -or -not $currentSp.StartsWith("\Device\HarddiskVolume")) {{
-                        $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.SystemVolume }} | Select-Object -First 1
-                        if (-not $sysVol) {{
-                            $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.BootVolume }} | Select-Object -First 1
-                        }}
-                        if ($sysVol) {{
-                            $espPart = Get-Partition | Where-Object {{ $_.Type -eq 'System' -or $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | Select-Object -First 1
-                            if ($espPart) {{
-                                $ntPath = "\Device\HarddiskVolume$($espPart.PartitionNumber)"
-                                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup' -Name 'SystemPartition' -Value $ntPath -Force -ErrorAction SilentlyContinue | Out-Null
-                            }}
+                    $csharp = @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+public class Win32VolHelper {{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint QueryDosDevice(string lpDeviceName, [Out] char[] lpTargetPath, uint ucchMax);
+    public static string GetTarget(string name) {{
+        char[] buf = new char[1024];
+        uint ret = QueryDosDevice(name, buf, (uint)buf.Length);
+        if (ret > 0) {{
+            int end = 0;
+            while (end < ret && buf[end] != '\0') end++;
+            return new string(buf, 0, end);
+        }}
+        return null;
+    }}
+}}
+'@
+                    if (-not ([System.Management.Automation.PSTypeName]'Win32VolHelper').Type) {{
+                        Add-Type -TypeDefinition $csharp -ErrorAction SilentlyContinue
+                    }}
+                    $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.SystemVolume }} | Select-Object -First 1
+                    if (-not $sysVol) {{
+                        $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.BootVolume }} | Select-Object -First 1
+                    }}
+                    if ($sysVol) {{
+                        $guid = $sysVol.DeviceID.Trim('\').Replace('\\?\', '')
+                        $realNtPath = [Win32VolHelper]::GetTarget($guid)
+                        if ($realNtPath -and $realNtPath.StartsWith("\Device\HarddiskVolume")) {{
+                            Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup' -Name 'SystemPartition' -Value $realNtPath -Force -ErrorAction SilentlyContinue | Out-Null
                         }}
                     }}
                 }} catch {{}}
@@ -8732,8 +8776,8 @@ th { background: #222a3d; color: #6ffbbe; }
             #[cfg(windows)]
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
-            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và chuẩn hóa môi trường tương thích Windows 11.", temp_drive_arg));
-            append_log("[HẠ TẦNG BYPASS] Đã chuẩn hóa SystemPartition, BCD và Registry MoSetup/LabConfig, triệt tiêu 100% lỗi 0x80070003 - 0x40008.");
+            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và xóa sạch Panther cache.", temp_drive_arg));
+            append_log("[HẠ TẦNG BYPASS] Đã chuẩn hóa SystemPartition qua QueryDosDevice, đồng bộ BCD và Registry MoSetup/LabConfig triệt tiêu lỗi 0x80070003 - 0x40008.");
             append_log("[CÀI WIN TỰ ĐỘNG] Đã cấu hình unattend.xml (mặc định Windows Pro, bỏ qua OOBE & tài khoản Microsoft, tự động tạo Admin và đăng nhập Desktop).");
 
             // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept, không kẹt màn hình phân vùng
@@ -8812,6 +8856,43 @@ th { background: #222a3d; color: #6ffbbe; }
                     if (-not (Test-Path $btDir)) {{ New-Item -Path $btDir -ItemType Directory -Force 2>&1 | Out-Null }}
                     icacls $btDir /grant "*S-1-5-32-544:F" "*S-1-1-0:F" /T /C /Q 2>&1 | Out-Null
                 }} catch {{}}
+
+                # WINTOHDD DUAL-ENGINE: KHI CAI MOI SACH SE (/auto clean):
+                # Trich xuat boot.wim va boot.sdi tu ISO mounted ($drv) sang thu muc $WINPE tren o cung.
+                # Dong thoi tao entry BCD WinPE RAMDisk va kich hoat bcdedit /bootsequence.
+                # Dieu nay dam bao neu he thong can khoi dong lai hoac nguoi dung khoi dong lai may,
+                # may tinh se truc tiep boot vao moi truong WinPE tren RAM de cai sach 100% khong qua DownLevel scan!
+                if ($setupArgs -like "*/auto clean*") {{
+                    try {{
+                        $peStgDrive = if (Test-Path "D:\") {{ "D" }} else {{ $targetDrive }}
+                        $peDir = "$($peStgDrive):\`$WINPE`$"
+                        if (-not (Test-Path $peDir)) {{ New-Item -Path $peDir -ItemType Directory -Force 2>&1 | Out-Null }}
+                        if (Test-Path "$drv\boot\boot.sdi" -and -not (Test-Path "$peDir\boot.sdi")) {{
+                            Copy-Item -Path "$drv\boot\boot.sdi" -Destination "$peDir\boot.sdi" -Force 2>&1 | Out-Null
+                        }}
+                        if (Test-Path "$drv\sources\boot.wim" -and -not (Test-Path "$peDir\boot.wim")) {{
+                            Copy-Item -Path "$drv\sources\boot.wim" -Destination "$peDir\boot.wim" -Force 2>&1 | Out-Null
+                        }}
+                        if (Test-Path "$peDir\boot.sdi" -and Test-Path "$peDir\boot.wim") {{
+                            bcdedit /create '{{ramdiskoptions}}' /d "VUONGTT WinPE RAMDisk" 2>&1 | Out-Null
+                            bcdedit /set '{{ramdiskoptions}}' ramdisksdidevice "partition=$($peStgDrive):" 2>&1 | Out-Null
+                            bcdedit /set '{{ramdiskoptions}}' ramdiskpath "\`$WINPE`$\boot.sdi" 2>&1 | Out-Null
+
+                            $peOut = bcdedit /create /d "VUONGTT Windows 11 Installer (WinPE)" /application osloader 2>&1
+                            $guidMatch = [regex]::Match($peOut, '\{{[0-9a-fA-F\-]{{36\}}\}}')
+                            if ($guidMatch.Success) {{
+                                $peGuid = $guidMatch.Value
+                                bcdedit /set $peGuid device "ramdisk=[$($peStgDrive):]\`$WINPE`$\boot.wim,{{ramdiskoptions}}" 2>&1 | Out-Null
+                                bcdedit /set $peGuid path "\windows\system32\boot\winload.efi" 2>&1 | Out-Null
+                                bcdedit /set $peGuid osdevice "ramdisk=[$($peStgDrive):]\`$WINPE`$\boot.wim,{{ramdiskoptions}}" 2>&1 | Out-Null
+                                bcdedit /set $peGuid systemroot "\windows" 2>&1 | Out-Null
+                                bcdedit /set $peGuid winpe yes 2>&1 | Out-Null
+                                bcdedit /set $peGuid detecthal yes 2>&1 | Out-Null
+                                bcdedit /bootsequence $peGuid 2>&1 | Out-Null
+                            }}
+                        }}
+                    }} catch {{}}
+                }}
 
                 # KHOI CHAY VOI CO CHE DA TANG (Direct Process -> cmd /c start -> root setup -> Verb RunAs)
                 $launched = $false
