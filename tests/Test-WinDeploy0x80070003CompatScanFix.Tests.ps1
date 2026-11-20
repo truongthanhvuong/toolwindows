@@ -157,6 +157,20 @@ Assert-Test "19. WinToHDD Dual-Engine trich xuat WinPE RAMDisk va thiet lap BCD 
     $opsContent -match 'bcdedit /bootsequence'
 }
 
+# 20. Tiem khoa HwReqChkVars va xoa stale markers de bypass hoan toan hwreqchk.dll tren Windows 11 24H2/25H2
+Assert-Test "20. Tiem khoa HwReqChkVars va xoa stale markers de bypass hoan toan hwreqchk.dll" {
+    $opsContent -match 'HwReqChk' -and
+    $opsContent -match 'HwReqChkVars' -and
+    $opsContent -match 'SQ_SecureBootCapable=TRUE' -and
+    $opsContent -match 'TargetVersionUpgradeExperienceIndicators'
+}
+
+# 21. Tu dong su dung o dem an toan D: khi cai sach se len C: de chong xung dot xoa phan vung boot
+Assert-Test "21. Tu dong lua chon o dem D: khi cai dat moi sach se len C:" {
+    $opsContent -match 'clean_target\.eq_ignore_ascii_case\("C"\)' -and
+    $opsContent -match 'temp_drive_letter = "D"'
+}
+
 Write-Host "`n======================================================================" -ForegroundColor Cyan
 Write-Host "   KET QUA KIEM THU: $passedCount PASS, $failedCount FAIL" -ForegroundColor $(if ($failedCount -eq 0) { "Green" } else { "Red" })
 Write-Host "======================================================================" -ForegroundColor Cyan

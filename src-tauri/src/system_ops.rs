@@ -8421,7 +8421,10 @@ th { background: #222a3d; color: #6ffbbe; }
 
             // 3. Chuẩn hóa ổ đích / tempdrive và dọn dẹp cache tạm $WINDOWS.~BT, $Windows.~WS để ngăn chặn mã lỗi 0x80070490
             let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':').trim();
-            let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
+            let mut temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
+            if clean_target.eq_ignore_ascii_case("C") && std::path::Path::new(r"D:\").exists() {
+                temp_drive_letter = "D";
+            }
             let temp_drive_arg = temp_drive_letter;
 
             let ps_clean_and_prep = format!(
@@ -8753,12 +8756,24 @@ public class Win32VolHelper {{
                         $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.BootVolume }} | Select-Object -First 1
                     }}
                     if ($sysVol) {{
-                        $guid = $sysVol.DeviceID.Trim('\').Replace('\\?\', '')
+                        $idx = $sysVol.DeviceID.IndexOf("Volume{{")
+                        $guid = if ($idx -ge 0) {{ $sysVol.DeviceID.Substring($idx).TrimEnd('\') }} else {{ $sysVol.DeviceID }}
                         $realNtPath = [Win32VolHelper]::GetTarget($guid)
                         if ($realNtPath -and $realNtPath.StartsWith("\Device\HarddiskVolume")) {{
                             Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup' -Name 'SystemPartition' -Value $realNtPath -Force -ErrorAction SilentlyContinue | Out-Null
                         }}
                     }}
+                }} catch {{}}
+
+                # TIEM KHOA HwReqChkVars VA XOA STALE COMPAT MARKERS DE BYPASS HOAN TOAN hwreqchk.dll TREN WINDOWS 11 24H2/25H2:
+                # hwreqchk.dll doc HwReqChkVars truc tiep tu Registry de danh gia TPM, SecureBoot, RAM va CPU.
+                # Khi duoc thiet lap, ExecuteDownLevelMode se bo qua toan bo phan tich phan cung va luon tra ve SUCCESS!
+                try {{
+                    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers" -Recurse -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared" -Recurse -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators" -Recurse -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\HwReqChk" -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    reg.exe add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\HwReqChk" /v "HwReqChkVars" /t REG_MULTI_SZ /s "," /d "SQ_SecureBootCapable=TRUE,SQ_SecureBootEnabled=TRUE,SQ_TpmVersion=2,SQ_RamMB=8192,SQ_CpuFamily=6" /f 2>&1 | Out-Null
                 }} catch {{}}
 
                 # GO BO TRIET DE MOI IFEO HOOK VA SCRIPT get11.cmd CU CHO SetupHost.exe:
