@@ -8630,15 +8630,60 @@ th { background: #222a3d; color: #6ffbbe; }
                     Set-Content -Path "$wsusDir\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
                 }} catch {{}}
 
-                # Lam sach triet de cac tep boot sai vi tri tren C:\ do bcdboot cu gay xung dot bang phan vung ESP
+                # KICH HOAT VA DAM BAO DICH VU WINDOWS SECURITY CENTER (wscsvc) HOAT DONG
+                # Provider wsc:setup se truy van wscsvc, neu service bi tat hoac thieu key se gay loi 0x80070003
                 try {{
-                    if (Test-Path "C:\EFI\Microsoft\Boot\BCD") {{
-                        Remove-Item -Path "C:\EFI" -Recurse -Force 2>&1 | Out-Null
+                    reg.exe add "HKLM\SYSTEM\CurrentControlSet\Services\wscsvc" /v Start /t REG_DWORD /d 2 /f 2>&1 | Out-Null
+                    Set-Service -Name "wscsvc" -StartupType Automatic -ErrorAction SilentlyContinue
+                    Start-Service -Name "wscsvc" -ErrorAction SilentlyContinue
+                }} catch {{}}
+
+                # DAM BAO THU MUC PLATFORM WINDOWS DEFENDER TON TAI DE wsc:setup KHONG BAO PATH NOT FOUND
+                try {{
+                    $wdPlatform = "$env:ProgramData\Microsoft\Windows Defender\Platform"
+                    if (-not (Test-Path $wdPlatform)) {{ New-Item -Path $wdPlatform -ItemType Directory -Force 2>&1 | Out-Null }}
+                }} catch {{}}
+
+                # SUA CHUA TRIET DE BANG BCD VA DIEM TRO BOOT VE DUNG PHAN VUNG ESP
+                # Nguyen nhan cot loi 0x80070003 - 0x40008: ConX::Compatibility::CSystemAbstraction::GetSystemVolumeNtPath
+                # truy van BCD de lay phan vung boot, neu truoc do bcdboot chay /s C: thi BCD se tro ve partition=C:.
+                # Tren he thong UEFI, C: khong phai partition kieu ESP (c12a7328-f81f-11d2-ba4b-00a0c93ec93b)
+                # khien ham GetSystemVolumeNtPath bao loi ERROR_PATH_NOT_FOUND (0x80070003)!
+                $bogusBoot = @("C:\EFI", "C:\Boot", "C:\bootmgr", "C:\bootmgr.efi")
+                foreach ($b in $bogusBoot) {{
+                    if (Test-Path $b) {{
+                        try {{
+                            attrib.exe -R -S -H "$b\*.*" /S /D 2>&1 | Out-Null
+                            attrib.exe -R -S -H "$b" /D 2>&1 | Out-Null
+                            takeown /F "$b" /A /R /D Y 2>&1 | Out-Null
+                            icacls "$b" /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
+                            Remove-Item -Path $b -Recurse -Force 2>&1 | Out-Null
+                        }} catch {{}}
+                    }}
+                }}
+
+                # Tim phan vung EFI System Partition thuc te tren o dia GPT
+                try {{
+                    $espPart = Get-Partition | Where-Object {{ $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | Select-Object -First 1
+                    if ($espPart) {{
+                        $espLetter = "Z"
+                        try {{
+                            Add-PartitionAccessPath -DiskNumber $espPart.DiskNumber -PartitionNumber $espPart.PartitionNumber -AccessPath "$($espLetter):" -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                            if (Test-Path "$($espLetter):\EFI") {{
+                                bcdboot "$env:SystemRoot" /s "$($espLetter):" /f UEFI /p 2>&1 | Out-Null
+                            }}
+                        }} catch {{}} finally {{
+                            try {{ Remove-PartitionAccessPath -DiskNumber $espPart.DiskNumber -PartitionNumber $espPart.PartitionNumber -AccessPath "$($espLetter):" -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
+                            try {{ mountvol "$($espLetter):" /D 2>&1 | Out-Null }} catch {{}}
+                        }}
+                    }} else {{
+                        try {{ bcdboot "$env:SystemRoot" /p 2>&1 | Out-Null }} catch {{}}
                     }}
                 }} catch {{}}
 
-                # Chu dong go bo mount point S: neu truoc do con ton tai
+                # Chu dong go bo triet de mount point S: va Z: neu con ton tai
                 try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
+                try {{ mountvol Z: /D 2>&1 | Out-Null }} catch {{}}
                 "#,
                 temp_drive_letter, drv
             );
