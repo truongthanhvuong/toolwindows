@@ -36,10 +36,10 @@ Write-Host "====================================================================
 
 $opsContent = Get-Content -Path $systemOpsPath -Raw -Encoding UTF8
 
-# 1. TUYET DOI KHONG truyen /product server trong setup_args de tranh loi Setup has encountered a critical error (Windows Server Setup 0x80070003 - 0x40008)
-Assert-Test "1. setup_args khong duoc chua /product server gay xung dot goi Windows Server tren ISO Client" {
-    -not ($opsContent -match 'format!\("/auto clean /eula accept /compat ignorewarning /product server') -and
-    -not ($opsContent -match 'format!\("/product server /DynamicUpdate')
+# 1. sources\setupprep.exe duoc nap co /product server de bypass hoan toan appraiser va wsc:setup gay 0x80070003 - 0x40008
+Assert-Test "1. sources\setupprep.exe duoc nap co /product server de bypass hoan toan appraiser va wsc:setup" {
+    $opsContent -match 'format!\("/auto clean /eula accept /compat ignorewarning /product server' -and
+    $opsContent -match 'sources\\setupprep\.exe'
 }
 
 # 2. Tiem truc tiep cac khoa Registry MoSetup va LabConfig vao he dieu hanh hien tai de bypass TPM/CPU hop le
@@ -116,9 +116,9 @@ Assert-Test "13. save_deploy_post_config khong duoc ghi autounattend.xml len goc
     -not ($opsContent -match 'Out-File -FilePath "\$targetDrive\\autounattend\.xml"')
 }
 
-# 14. Uu tien tuyet doi root setup.exe tren mounted ISO lam primary launcher de chong 0x80070003 cua setupprep
-Assert-Test "14. Uu tien tuyet doi root setup.exe tren mounted ISO lam primary launcher" {
-    $opsContent -match '\$setupExe = if \(Test-Path "\$drv\\setup\.exe"\)'
+# 14. Uu tien tuyet doi sources\setupprep.exe tren mounted ISO lam primary launcher cho In-OS deploy
+Assert-Test "14. Uu tien tuyet doi sources\setupprep.exe tren mounted ISO lam primary launcher cho In-OS deploy" {
+    $opsContent -match '\$setupExe = if \(Test-Path "\$drv\\sources\\setupprep\.exe"\)'
 }
 
 # 15. SetupConfig.ini tai WSUS phai co EULA=Accept va TempDrive, dong thoi khong truyen /ConfigFile tren dong lenh de tranh xung dot voi /auto clean

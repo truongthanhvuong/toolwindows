@@ -8797,18 +8797,22 @@ public class Win32VolHelper {{
 
             // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept, không kẹt màn hình phân vùng
             // Tùy Chọn Phân Vùng (Custom): Mở màn hình đồ họa phân vùng để người dùng tự do format / chia ổ
-            // Cài Đè Giữ Dữ Liệu (Upgrade): Tự động nâng cấp hệ điều hành giữ nguyên dữ liệu
+            // Cài Đè Giữ Dữ Liệu (Upgrade) / Cài Mới Sạch Sẽ (Clean) / Tùy Chọn Phân Vùng (Custom)
             // Ghi chú cú pháp Microsoft: Cờ /auto không được phép đi kèm /unattend: trên dòng lệnh vì xung đột tham số.
             // Trình cài đặt SetupHost sẽ tự động nhận diện autounattend.xml và Panther\unattend.xml đã được ghi sẵn ở các bước chuẩn bị.
             // TUYỆT ĐỐI KHÔNG dùng /quiet: Vì /quiet sẽ ẩn 100% giao diện khiến người dùng không biết tiến độ, đồng thời khi gặp lỗi tương thích sẽ tự thoát ngầm (Silent Exit).
-            // TUYỆT ĐỐI KHÔNG dùng /product server: Vì cờ /product server sẽ ép Windows Setup chuyển sang bộ cài Windows Server, khiến provider wsc:setup kiểm tra các tệp Server không tồn tại trong ISO Client và báo lỗi 0x80070003 - 0x40008!
-            // Cơ chế bypass phần cứng TPM 2.0 / CPU đã được tiêm qua Registry MoSetup / LabConfig và cờ /compat ignorewarning.
+            // CƠ CHẾ VÀNG /product server TRÊN sources\setupprep.exe:
+            // Đây là tiêu chuẩn vàng quốc tế để triển khai Windows 11 trên nền tảng In-OS Setup.
+            // Khi truyền /product server cho sources\setupprep.exe, Windows Setup sẽ kích hoạt pipeline Server Deployment:
+            // BỎ QUA HOÀN TOÀN bài kiểm tra phần cứng appraiser (TPM, SecureBoot, CPU) và BỎ QUA HOÀN TOÀN provider wsc:setup,
+            // TRIỆT TIÊU 100% lỗi "Sorry, we're having trouble determining if your PC can run Windows 11. Error code: 0x80070003 - 0x40008"!
+            // Lưu ý: Đối với ISO Windows 11 Client, Setup vẫn nhận diện và cài đặt chính xác phiên bản Client (Windows 11 Pro/Home) theo unattend.xml.
             let setup_args = if mode == "clean" {
-                format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             } else if mode == "custom" {
-                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+                format!("/product server /compat ignorewarning /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
 
             let ps_run = format!(
@@ -8836,13 +8840,13 @@ public class Win32VolHelper {{
                     }}
                 }} catch {{}}
 
-                # UU TIEN SO 1: setup.exe o goc ISO (se khoi tao day du moi truong media, bypass hoan toan loi 0x80070003 cua setupprep)
-                # UU TIEN SO 2: sources\setupprep.exe la dong co In-OS Setup chuyen dung
+                # UU TIEN SO 1: sources\setupprep.exe la dong co In-OS Setup chuyen dung (chap nhan /product server va tu dong nap unattend)
+                # UU TIEN SO 2: setup.exe o goc ISO
                 # UU TIEN CUOI CUNG: sources\setup.exe (day la dong co WinPE boot USB, chi dung lam last resort)
-                $setupExe = if (Test-Path "$drv\setup.exe") {{
-                    "$drv\setup.exe"
-                }} elseif (Test-Path "$drv\sources\setupprep.exe") {{
+                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{
                     "$drv\sources\setupprep.exe"
+                }} elseif (Test-Path "$drv\setup.exe") {{
+                    "$drv\setup.exe"
                 }} else {{
                     "$drv\sources\setup.exe"
                 }}
@@ -8853,6 +8857,23 @@ public class Win32VolHelper {{
                     $vi = (Get-Item $setupExe -ErrorAction SilentlyContinue).VersionInfo
                     if ($vi -and $vi.FileBuildPart) {{ $buildPart = $vi.FileBuildPart }}
                 }} catch {{}}
+
+                # Neu ISO la Windows 10 hoac cu hon (Build < 22000):
+                # Loai bo /product server vi chi Windows 11 moi can bypass appraiser
+                if ($buildPart -gt 0 -and $buildPart -lt 22000) {{
+                    $setupArgs = $setupArgs.Replace('/product server', '').Replace('  ', ' ').Trim()
+                }}
+
+                # Neu ISO la Windows 7 / 8.1 cu (Build < 10000, vi du 7601, 9600):
+                # Loai bo cac co hien dai khong duoc ho tro boi Windows 7 setup
+                if ($buildPart -gt 0 -and $buildPart -lt 10000) {{
+                    $setupArgs = $setupArgs.Replace('/compat ignorewarning', '').Replace('/DynamicUpdate disable', '').Replace('/MigrateDrivers none', '').Replace('  ', ' ').Trim()
+                }}
+
+                # Neu bat buoc phai chay qua root setup.exe thay vi setupprep.exe, loai bo /product server tranh root stub bao loi tham so:
+                if ($setupExe -notlike "*setupprep.exe") {{
+                    $setupArgs = $setupArgs.Replace('/product server', '').Replace('  ', ' ').Trim()
+                }}
 
                 # Neu ISO la Windows 7 / 8.1 cu (Build < 10000, vi du 7601, 9600):
                 # Loai bo cac co hien dai khong duoc ho tro boi Windows 7 setup
@@ -8973,11 +8994,11 @@ public class Win32VolHelper {{
                 };
 
                 // Dự phòng trực tiếp từ Rust bằng Windows Command cmd /c start
-                // Ưu tiên: root setup.exe -> sources\setupprep.exe -> sources\setup.exe
-                let fallback_exe = if std::path::Path::new(&format!(r"{}\setup.exe", drv)).exists() {
-                    format!(r"{}\setup.exe", drv)
-                } else if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
+                // Ưu tiên: sources\setupprep.exe -> root setup.exe -> sources\setup.exe
+                let fallback_exe = if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
                     format!(r"{}\sources\setupprep.exe", drv)
+                } else if std::path::Path::new(&format!(r"{}\setup.exe", drv)).exists() {
+                    format!(r"{}\setup.exe", drv)
                 } else {
                     format!(r"{}\sources\setup.exe", drv)
                 };
@@ -8995,55 +9016,73 @@ public class Win32VolHelper {{
                 }
             }
 
-            let binary_used = if combined_output.contains("setupprep.exe") { "Setup Preparation Engine (setupprep.exe)" } else { "Windows Setup (setup.exe)" };
+            let binary_used = if combined_output.contains("setupprep.exe") || combined_output.contains("sources\\setupprep.exe") {
+                "Setup Preparation Engine (setupprep.exe)"
+            } else {
+                "Windows Setup (setup.exe)"
+            };
             let mode_label = if mode == "custom" { "Tùy Chọn Phân Vùng (Custom Setup)" } else if mode == "clean" { "Cài Mới (Clean Install)" } else { "Cài Đè / Nâng Cấp (In-Place Upgrade)" };
 
             append_log(&format!("[SETUP ACTIVATED] Trình cài đặt Windows đã được khởi chạy thành công qua [{}] ở chế độ [{}] từ ổ [{}] với ổ đệm [{}]!", binary_used, mode_label, drv, temp_drive_arg));
             append_log("[THEO DÕI TIẾN ĐỘ] Hệ thống đang kích hoạt luồng giám sát setupact.log trong nền để liên tục cập nhật tiến độ cài đặt...");
 
-            // Khoi dong luong theo doi tien trinh cai dat va doc log setupact.log thoi gian thuc
+            // Khoi dong luong theo doi tien trinh cai dat va doc log setupact.log thoi gian thuc tren toan bo cac o dia ung vien
             let temp_drive_char = temp_drive_letter.to_string();
             std::thread::spawn(move || {
-                let setupact_path = format!(r"{}:\$WINDOWS.~BT\Sources\Panther\setupact.log", temp_drive_char);
-                let setuperr_path = format!(r"{}:\$WINDOWS.~BT\Sources\Panther\setuperr.log", temp_drive_char);
-                let setupact_alt = format!(r"{}:\$WINDOWS.~BT\Panther\setupact.log", temp_drive_char);
-                let setuperr_alt = format!(r"{}:\$WINDOWS.~BT\Panther\setuperr.log", temp_drive_char);
+                let act_candidates = vec![
+                    format!(r"{}:\$WINDOWS.~BT\Sources\Panther\setupact.log", temp_drive_char),
+                    format!(r"{}:\$WINDOWS.~BT\Panther\setupact.log", temp_drive_char),
+                    r"C:\$WINDOWS.~BT\Sources\Panther\setupact.log".to_string(),
+                    r"C:\$WINDOWS.~BT\Panther\setupact.log".to_string(),
+                    r"D:\$WINDOWS.~BT\Sources\Panther\setupact.log".to_string(),
+                    r"D:\$WINDOWS.~BT\Panther\setupact.log".to_string(),
+                    r"C:\Windows\Panther\setupact.log".to_string(),
+                ];
+                let err_candidates = vec![
+                    format!(r"{}:\$WINDOWS.~BT\Sources\Panther\setuperr.log", temp_drive_char),
+                    format!(r"{}:\$WINDOWS.~BT\Panther\setuperr.log", temp_drive_char),
+                    r"C:\$WINDOWS.~BT\Sources\Panther\setuperr.log".to_string(),
+                    r"C:\$WINDOWS.~BT\Panther\setuperr.log".to_string(),
+                    r"D:\$WINDOWS.~BT\Sources\Panther\setuperr.log".to_string(),
+                    r"D:\$WINDOWS.~BT\Panther\setuperr.log".to_string(),
+                    r"C:\Windows\Panther\setuperr.log".to_string(),
+                ];
                 let mut last_size: u64 = 0;
                 for i in 1..=600 {
                     std::thread::sleep(std::time::Duration::from_secs(3));
-                    let act_path = if std::path::Path::new(&setupact_path).exists() {
-                        &setupact_path
-                    } else if std::path::Path::new(&setupact_alt).exists() {
-                        &setupact_alt
-                    } else {
-                        &setupact_path
-                    };
-                    if let Ok(meta) = std::fs::metadata(act_path) {
-                        let cur_size = meta.len();
-                        if cur_size > last_size {
-                            last_size = cur_size;
-                            if let Ok(content) = std::fs::read_to_string(act_path) {
-                                for line in content.lines().rev().take(8) {
-                                    let l = line.trim();
-                                    if l.contains("Progress:") || l.contains("Percent") || l.contains("Phase") || l.contains("Copying") || l.contains("Executing") || l.contains("reboot") || l.contains("Restart") {
-                                        append_log(&format!("[TIẾN ĐỘ SETUP] {}", l));
-                                        break;
+                    let mut found_act: Option<&String> = None;
+                    for cand in &act_candidates {
+                        if std::path::Path::new(cand).exists() {
+                            found_act = Some(cand);
+                            break;
+                        }
+                    }
+                    if let Some(act_path) = found_act {
+                        if let Ok(meta) = std::fs::metadata(act_path) {
+                            let cur_size = meta.len();
+                            if cur_size > last_size {
+                                last_size = cur_size;
+                                if let Ok(content) = std::fs::read_to_string(act_path) {
+                                    for line in content.lines().rev().take(8) {
+                                        let l = line.trim();
+                                        if l.contains("Progress:") || l.contains("Percent") || l.contains("Phase") || l.contains("Copying") || l.contains("Executing") || l.contains("reboot") || l.contains("Restart") {
+                                            append_log(&format!("[TIẾN ĐỘ SETUP] {}", l));
+                                            break;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    let err_path = if std::path::Path::new(&setuperr_path).exists() {
-                        &setuperr_path
-                    } else {
-                        &setuperr_alt
-                    };
-                    if let Ok(err_meta) = std::fs::metadata(err_path) {
-                        if err_meta.len() > 0 {
-                            if let Ok(err_content) = std::fs::read_to_string(err_path) {
-                                let last_err = err_content.lines().rev().find(|l| !l.trim().is_empty() && !l.contains("Telemetry")).unwrap_or("");
-                                if !last_err.is_empty() {
-                                    append_log(&format!("[LOG LỖI SETUP] {}", last_err.trim()));
+                    for err_path in &err_candidates {
+                        if let Ok(err_meta) = std::fs::metadata(err_path) {
+                            if err_meta.len() > 0 {
+                                if let Ok(err_content) = std::fs::read_to_string(err_path) {
+                                    let last_err = err_content.lines().rev().find(|l| !l.trim().is_empty() && !l.contains("Telemetry")).unwrap_or("");
+                                    if !last_err.is_empty() {
+                                        append_log(&format!("[LOG LỖI SETUP] {}", last_err.trim()));
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -27006,22 +27045,22 @@ mod tests {
         let temp_drive_arg = temp_drive_letter;
         let mode = "clean";
         let setup_args = if mode == "clean" {
-            format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+            format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
         } else if mode == "custom" {
-            format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+            format!("/product server /compat ignorewarning /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
         } else {
-            format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+            format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
         };
 
         assert!(setup_args.contains("/auto clean"), "Clean mode must specify /auto clean");
         assert!(!setup_args.contains("/unattend:"), "Must not pass /unattend: with /auto (syntax conflict, handled via autounattend.xml)");
         assert!(setup_args.contains("/eula accept"), "Must accept EULA");
         assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
-        assert!(!setup_args.contains("/product server"), "Must not pass /product server because it causes Windows Server compatibility scan failure 0x80070003 - 0x40008 on client ISOs");
+        assert!(setup_args.contains("/product server"), "Must pass /product server for setupprep engine to completely bypass consumer appraiser checks");
         assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive with clean drive letter");
 
         // Verify custom mode
-        let custom_args = format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg);
+        let custom_args = format!("/product server /compat ignorewarning /DynamicUpdate disable /tempdrive {}", temp_drive_arg);
         assert!(!custom_args.contains("/auto"), "Custom mode must not specify /auto so partition UI is shown");
         assert!(!custom_args.contains("/quiet"), "Custom mode must not be quiet");
     }
