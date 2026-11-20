@@ -8483,10 +8483,9 @@ th { background: #222a3d; color: #6ffbbe; }
             // Ghi chú tương thích: Không truyền /product server trực tiếp vào runtime setup_args vì Windows 11 (24H2/25H2) sẽ báo lỗi:
             // "The installation process was launched with an invalid command line argument."
             // Thay vào đó, bypass TPM 2.0 / SecureBoot / CPU được thực thi triệt để qua Registry LabConfig & MoSetup và 0-byte appraiserres.dll.
-            // Đồng thời cờ /compat ignorewarning giúp vượt qua các cảnh báo tương thích mà không gây lỗi tham số.
             // (Tương thích tự động: /auto clean /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {})
             let setup_args = if mode == "custom" || mode == "clean" {
-                format!("/compat ignorewarning /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
                 format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
@@ -8496,27 +8495,13 @@ th { background: #222a3d; color: #6ffbbe; }
                 $drv = "{}"
                 $setupArgs = '{}'
 
-                # Dam bao go bo mount point S: neu truoc do con ton tai
-                mountvol S: /D 2>&1 | Out-Null
+                # Tuyet doi khong mount EFI ra o S: (mountvol S: /S) vi gan ky tu o dia cho ESP se truc tiep gay loi Setup 0x80070003 - 0x40008
+                # Chu dong go bo triet de mount point S: neu con sot lai tu cac phien truoc
+                try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
 
-                # Gắn mount point cho phân vùng EFI System Partition (nếu là UEFI) và sửa chữa BCD entry, sau do PHAI GO mountvol S: /D ngay lap tuc
-                try {{
-                    $espMounted = $false
-                    if (-not (Test-Path 'S:\EFI')) {{
-                        mountvol S: /S 2>&1 | Out-Null
-                        $espMounted = $true
-                    }}
-                    bcdboot $env:SystemDrive\Windows /s S: /f UEFI 2>&1 | Out-Null
-                    if ($espMounted) {{
-                        mountvol S: /D 2>&1 | Out-Null
-                    }}
-                }} catch {{
-                    mountvol S: /D 2>&1 | Out-Null
-                }}
-                mountvol S: /D 2>&1 | Out-Null
-
-                # Ưu tiên khởi chạy sources\setupprep.exe (động cơ In-OS Setup hiện đại của Microsoft, không kiểm tra BCD boot partition, không dính lỗi 0x80070490)
-                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} elseif (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} else {{ "$drv\sources\setup.exe" }}
+                # Uu tien setup.exe goc tren o dia cai dat de mo giao dien Windows Setup chuan (Clean Install / Custom Partitioning)
+                # Fallback: sources\setup.exe hoac sources\setupprep.exe
+                $setupExe = if (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} elseif (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} else {{ "$drv\sources\setupprep.exe" }}
                 # Thu muc lam viec phai la goc o dia cai dat $drv de dam bao cac duong dan tuong doi trong bo cai khong bi ERROR_PATH_NOT_FOUND (0x80070003)
                 $workDir = $drv
                 $argArray = $setupArgs.Split(' ') | Where-Object {{ $_ -ne '' }}
