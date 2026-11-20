@@ -149,7 +149,7 @@ const EMBEDDED_TROUBLESHOOT_DB: &str = include_str!("../../src/Data/Troubleshoot
 
 const EMBEDDED_JS: &str = include_str!("../../src-ui/app.js");
 const EMBEDDED_TAILWIND_JS: &str = include_str!("../../src-ui/tailwind.js");
-pub const APP_VERSION: &str = "20.5.909.233";
+pub const APP_VERSION: &str = "20.5.909.234";
 
 fn get_embedded_office_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
     let clean = path.trim_start_matches('/').to_lowercase();
@@ -876,7 +876,7 @@ mod tests {
         let req = "POST /api/rust-invoke HTTP/1.1\r\n\r\n{\"command\":\"run_system_action\",\"actionId\":\"verify_office_license\"}";
         let resp = route_ipc_request(req, &flag);
         assert!(resp.contains("\"success\":false"), "verify_office_license must return success=false: {}", resp);
-        assert!(resp.contains("khÃ´ng tá»“n táº¡i") || resp.contains("há»— trá»£"), "Expected action not found error: {}", resp);
+        assert!(resp.contains("không tồn tại") || resp.contains("hỗ trợ"), "Expected action not found error: {}", resp);
     }
 
     #[test]
