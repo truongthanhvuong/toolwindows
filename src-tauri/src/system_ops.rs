@@ -8469,65 +8469,18 @@ th { background: #222a3d; color: #6ffbbe; }
                 # Khoi tao bien
                 $stagingDirs = @()
 
-                # Cau hinh Unattend XML chuan vang khong dung DiskConfiguration de chong loi "error selecting partition":
-                # LUU Y QUAN TRONG: DiskConfiguration chi ho tro khi boot tu WinPE/USB, khong ho tro khi chay tu Windows dang chay
+                # Cau hinh Unattend XML chuan vang khong dung windowsPE / DiskConfiguration de chong loi "Select location to install":
+                # LUU Y QUAN TRONG: pass="windowsPE" chi ho tro khi boot tu USB/WinPE offline.
                 # Khi chay setup.exe tu Windows dang chay (/auto clean hoac /auto upgrade):
-                # - /auto clean tu dong format va cai moi len phan vung he dieu hanh hien tai (chuyen ban cu vao Windows.old)
+                # - /auto clean tu dong format va cai moi len phan vung he dieu hanh hien tai
                 # - /auto upgrade tu dong nang cap he dieu hanh giu nguyen du lieu ca nhan va ung dung
-                # - unattend.xml dong vai tro: Chap nhan EULA, chon key Win 11 Pro, bypass LabConfig/MoSetup, bo qua OOBE & AutoLogon vao Desktop
+                # - Neu chua pass="windowsPE", SetupHost se goi C810actionDiskManagement::GetDriveLetterFromUnattend,
+                #   bi loi 0xC1800108 do thieu DiskConfiguration va ep mo man hinh chon phan vung (noi nut Next bi grayed out).
+                # - Do do, unattend.xml cho In-OS deployment chi chua specialize va oobeSystem:
+                #   tu dong bo qua OOBE & tai khoan Microsoft (BypassNRO), tao user Admin va tu dong dang nhap.
                 $unattendXml = @'
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
-  <settings pass="windowsPE">
-    <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-      <SetupUILanguage>
-        <UILanguage>en-US</UILanguage>
-        <WillShowUI>Never</WillShowUI>
-      </SetupUILanguage>
-      <InputLocale>0409:00000409</InputLocale>
-      <SystemLocale>en-US</SystemLocale>
-      <UILanguage>en-US</UILanguage>
-      <UILanguageFallback>en-US</UILanguageFallback>
-      <UserLocale>en-US</UserLocale>
-    </component>
-    <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-      <UserData>
-        <AcceptEula>true</AcceptEula>
-        <FullName>Admin</FullName>
-        <Organization>Workgroup</Organization>
-        <ProductKey>
-          <Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
-          <WillShow>Never</WillShow>
-        </ProductKey>
-      </UserData>
-      <RunSynchronous>
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-          <Order>1</Order>
-          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
-        </RunSynchronousCommand>
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-          <Order>2</Order>
-          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
-        </RunSynchronousCommand>
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-          <Order>3</Order>
-          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
-        </RunSynchronousCommand>
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-          <Order>4</Order>
-          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassCPUCheck /t REG_DWORD /d 1 /f</Path>
-        </RunSynchronousCommand>
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-          <Order>5</Order>
-          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassStorageCheck /t REG_DWORD /d 1 /f</Path>
-        </RunSynchronousCommand>
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-          <Order>6</Order>
-          <Path>reg.exe add "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU /t REG_DWORD /d 1 /f</Path>
-        </RunSynchronousCommand>
-      </RunSynchronous>
-    </component>
-  </settings>
   <settings pass="specialize">
     <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
       <RunSynchronous>
@@ -8639,12 +8592,13 @@ th { background: #222a3d; color: #6ffbbe; }
                     Remove-Item -Path "C:\autounattend.xml", "$($targetDrive):\autounattend.xml", "D:\autounattend.xml" -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
                 }} catch {{}}
 
-                # Tao tep SetupConfig.ini chuan Microsoft
+                # Tao tep SetupConfig.ini chuan Microsoft tai WSUS va o dia dich
                 try {{
                     $wsusDir = "$env:SystemDrive\Users\Default\AppData\Local\Microsoft\Windows\WSUS"
                     if (-not (Test-Path $wsusDir)) {{ New-Item -Path $wsusDir -ItemType Directory -Force 2>&1 | Out-Null }}
-                    $setupConfigContent = "[SetupConfig]`r`nPriority=Normal`r`nCompat=IgnoreWarning`r`nShowOobe=None`r`nTelemetry=Disable`r`nDynamicUpdate=Disable`r`nTempDrive=$targetDrive`r`nUnattend=$sysPanther\unattend.xml`r`n"
+                    $setupConfigContent = "[SetupConfig]`r`nEULA=Accept`r`nPriority=Normal`r`nCompat=IgnoreWarning`r`nShowOobe=None`r`nTelemetry=Disable`r`nDynamicUpdate=Disable`r`nTempDrive=$targetDrive`r`nUnattend=$sysPanther\unattend.xml`r`n"
                     Set-Content -Path "$wsusDir\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
+                    Set-Content -Path "$($targetDrive):\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
                     if (Test-Path "$($targetDrive):\`$WINDOWS.~BT") {{
                         Set-Content -Path "$($targetDrive):\`$WINDOWS.~BT\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
                     }}
@@ -8845,6 +8799,10 @@ th { background: #222a3d; color: #6ffbbe; }
 
                 # TUYET DOI KHONG duoc xoa bo tham so setupArgs khi chay root setup.exe
                 $argArray = $setupArgs.Split(' ') | Where-Object {{ $_ -ne '' }}
+                $wsusConfigFile = "$env:SystemDrive\Users\Default\AppData\Local\Microsoft\Windows\WSUS\SetupConfig.ini"
+                if (Test-Path $wsusConfigFile) {{
+                    $argArray = @("/ConfigFile", $wsusConfigFile) + $argArray
+                }}
 
                 # Dam bao thu muc staging C:\$WINDOWS.~BT duoc cap toan quyen truy cap
                 try {{
@@ -8863,7 +8821,8 @@ th { background: #222a3d; color: #6ffbbe; }
                 }} catch {{
                     try {{
                         # 2. cmd.exe /c start
-                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c start `"`" `"$setupExe`" $setupArgs" -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
+                        $configFlag = if (Test-Path $wsusConfigFile) {{ "/ConfigFile `"$wsusConfigFile`" " }} else {{ "" }}
+                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c start `"`" `"$setupExe`" $configFlag$setupArgs" -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
                         Write-Output "LAUNCH_CMD_OK:$setupExe"
                         $launched = $true
                     }} catch {{
@@ -9084,140 +9043,50 @@ th { background: #222a3d; color: #6ffbbe; }
             
 
             $xmlContent = @"
-
 <?xml version="1.0" encoding="utf-8"?>
-
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
-
-  <settings pass="windowsPE">
-
-    <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-
-      <UserData>
-
-        <AcceptEula>true</AcceptEula>
-
-      </UserData>
-
-      <RunSynchronous>
-
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-
-          <Order>1</Order>
-
-          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
-
-        </RunSynchronousCommand>
-
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-
-          <Order>2</Order>
-
-          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
-
-        </RunSynchronousCommand>
-
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-
-          <Order>3</Order>
-
-          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
-
-        </RunSynchronousCommand>
-
-        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-
-          <Order>4</Order>
-
-          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassCPUCheck /t REG_DWORD /d 1 /f</Path>
-
-        </RunSynchronousCommand>
-
-      </RunSynchronous>
-
-    </component>
-
-  </settings>
-
   <settings pass="oobeSystem">
-
     <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-
       <OOBE>
-
         <HideEULAPage>true</HideEULAPage>
-
         <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
-
         <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
-
         <NetworkLocation>Work</NetworkLocation>
-
         <ProtectYourPC>3</ProtectYourPC>
-
       </OOBE>
-
       <UserAccounts>
-
         <LocalAccounts>
-
           <LocalAccount wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-
             <Name>{safe_user}</Name>
-
             <DisplayName>{safe_user}</DisplayName>
-
             <Group>Administrators</Group>
-
             <Password>
-
               <Value>{safe_pass}</Value>
-
               <PlainText>true</PlainText>
-
             </Password>
-
           </LocalAccount>
-
         </LocalAccounts>
-
       </UserAccounts>
-
       <RegisteredOwner>{safe_user}</RegisteredOwner>
-
       <ComputerName>{safe_pc}</ComputerName>
-
       <FirstLogonCommands>
-
         <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-
           <Order>1</Order>
-
           <CommandLine>powershell.exe -ExecutionPolicy Bypass -File "$dataDir\PostInstall.ps1"</CommandLine>
-
           <Description>Run PostInstall Script</Description>
-
         </SynchronousCommand>
-
       </FirstLogonCommands>
-
     </component>
-
   </settings>
-
 </unattend>
-
 "@
-
             $xmlContent | Out-File -FilePath "$dataDir\autounattend.xml" -Encoding UTF8 -Force
-
-            $xmlContent | Out-File -FilePath "$env:SystemDrive\autounattend.xml" -Encoding UTF8 -Force
-
-            if ($targetDrive -and $targetDrive -ne $env:SystemDrive) {{
-
-                $xmlContent | Out-File -FilePath "$targetDrive\autounattend.xml" -Encoding UTF8 -Force
-
-            }}
+            $xmlContent | Out-File -FilePath "$dataDir\unattend.xml" -Encoding UTF8 -Force
+            $sysPanther = "$env:SystemDrive\Windows\Panther"
+            if (-not (Test-Path $sysPanther)) {{ New-Item -Path $sysPanther -ItemType Directory -Force 2>&1 | Out-Null }}
+            $xmlContent | Out-File -FilePath "$sysPanther\unattend.xml" -Encoding UTF8 -Force
+            # Xoa bo triet de autounattend.xml tren goc tat ca cac o dia de ngan chan loi GetDriveLetterFromUnattend 0xC1800108
+            Remove-Item -Path "$env:SystemDrive\autounattend.xml", "$targetDrive\autounattend.xml", "C:\autounattend.xml", "D:\autounattend.xml" -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
 
 
 

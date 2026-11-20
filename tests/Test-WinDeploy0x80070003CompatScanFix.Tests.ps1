@@ -104,6 +104,30 @@ Assert-Test "11. Khong duoc tao autounattend.xml tren C:\ de tranh loi GetDriveL
     $opsContent -match 'Remove-Item -Path "C:\\autounattend\.xml"'
 }
 
+# 12. unattend.xml cho In-OS deploy tuyet doi khong chua pass="windowsPE" de chong loi GetDriveLetterFromUnattend 0xC1800108
+Assert-Test "12. unattend.xml cho In-OS deploy khong duoc chua pass='windowsPE' gay ket man hinh chon phan vung" {
+    -not ($opsContent -match '(?s)\$unattendXml = @''.*?<settings pass="windowsPE">') -and
+    ($opsContent -match '(?s)\$unattendXml = @''.*?<settings pass="specialize">')
+}
+
+# 13. save_deploy_post_config khong duoc ghi file autounattend.xml len goc o dia he thong hoac target
+Assert-Test "13. save_deploy_post_config khong duoc ghi autounattend.xml len goc o dia he thong" {
+    -not ($opsContent -match 'Out-File -FilePath "\$env:SystemDrive\\autounattend\.xml"') -and
+    -not ($opsContent -match 'Out-File -FilePath "\$targetDrive\\autounattend\.xml"')
+}
+
+# 14. Uu tien tuyet doi root setup.exe tren mounted ISO lam primary launcher de chong 0x80070003 cua setupprep
+Assert-Test "14. Uu tien tuyet doi root setup.exe tren mounted ISO lam primary launcher" {
+    $opsContent -match '\$setupExe = if \(Test-Path "\$drv\\setup\.exe"\)'
+}
+
+# 15. SetupConfig.ini phai duoc truyen kem /ConfigFile va chua EULA=Accept + TempDrive
+Assert-Test "15. SetupConfig.ini duoc truyen kem /ConfigFile va co EULA=Accept, TempDrive" {
+    $opsContent -match 'EULA=Accept' -and
+    $opsContent -match '\/ConfigFile' -and
+    $opsContent -match 'TempDrive=\$targetDrive'
+}
+
 Write-Host "`n======================================================================" -ForegroundColor Cyan
 Write-Host "   KET QUA KIEM THU: $passedCount PASS, $failedCount FAIL" -ForegroundColor $(if ($failedCount -eq 0) { "Green" } else { "Red" })
 Write-Host "======================================================================" -ForegroundColor Cyan
