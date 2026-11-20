@@ -8420,9 +8420,9 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
             // 3. Chuẩn hóa ổ đích / tempdrive và dọn dẹp cache tạm $WINDOWS.~BT, $Windows.~WS để ngăn chặn mã lỗi 0x80070490
-            let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
+            let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':').trim();
             let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
-            let temp_drive_arg = format!("{}:\\", temp_drive_letter);
+            let temp_drive_arg = temp_drive_letter;
 
             let ps_clean_and_prep = format!(
                 r#"
@@ -8634,6 +8634,27 @@ th { background: #222a3d; color: #6ffbbe; }
                     Set-Content -Path "C:\autounattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
                 }} catch {{}}
 
+                # Ghi unattend.xml vao Windows\Panther cua he dieu hanh hien tai de dam bao In-OS setup doc thanh cong
+                try {{
+                    $sysPanther = "$env:SystemDrive\Windows\Panther"
+                    if (-not (Test-Path $sysPanther)) {{ New-Item -Path $sysPanther -ItemType Directory -Force 2>&1 | Out-Null }}
+                    Set-Content -Path "$sysPanther\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
+                }} catch {{}}
+
+                # Tao tep SetupConfig.ini chuan Microsoft de bao dam 100% che do cai dat im lang va bypass appraiser
+                try {{
+                    $wsusDir = "$env:SystemDrive\Users\Default\AppData\Local\Microsoft\Windows\WSUS"
+                    if (-not (Test-Path $wsusDir)) {{ New-Item -Path $wsusDir -ItemType Directory -Force 2>&1 | Out-Null }}
+                    $setupConfigContent = "[SetupConfig]`r`nPriority=Normal`r`nCompat=IgnoreWarning`r`nShowOobe=None`r`nTelemetry=Disable`r`nDynamicUpdate=Disable`r`n"
+                    Set-Content -Path "$wsusDir\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
+                    Set-Content -Path "$($targetDrive):\`$WINDOWS.~BT\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
+                }} catch {{}}
+
+                # Lam sach va dam bao BCD Boot Store ket noi chuan xac voi he thong boot chong loi 0x80070490
+                try {{ bcdboot "$env:SystemRoot" /s "$env:SystemDrive" /f ALL 2>&1 | Out-Null }} catch {{
+                    try {{ bcdboot "$env:SystemRoot" /f ALL 2>&1 | Out-Null }} catch {{}}
+                }}
+
                 # Chu dong go bo mount point S: neu truoc do con ton tai de tranh xung dot phan vung EFI
                 mountvol S: /D 2>&1 | Out-Null
                 "#,
@@ -8655,9 +8676,9 @@ th { background: #222a3d; color: #6ffbbe; }
             let setup_args = if mode == "clean" {
                 format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
             } else if mode == "custom" {
-                // Custom: Khong dung /auto de setup mo man hinh phan vung do hoa; dung /eula accept va /compat ignorewarning de bypass kiem tra
+                // Custom: Khong dung /auto de setup mo man hinh phan vung do hoa; dung /product server de bypass kiem tra
                 // KHONG dung /quiet vi can man hinh partition selection hien ra cho user
-                format!("/eula accept /compat ignorewarning /product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+                format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
                 format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
             };
@@ -8676,8 +8697,16 @@ th { background: #222a3d; color: #6ffbbe; }
                 # vi dat working directory tai o dia chi doc se truc tiep gay ma loi 0x80070490 (ERROR_NOT_FOUND)
                 $workDir = "$($targetDrive):\"
 
-                # Uu tien sources\setup.exe / sources\setupprep.exe / root setup.exe
-                $setupExe = if (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} elseif (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} else {{ "$drv\setup.exe" }}
+                # UU TIEN SO 1: sources\setupprep.exe la dong co In-OS Setup chuyen dung duoc Microsoft thiet ke de chay tu Windows dang chay
+                # UU TIEN SO 2: setup.exe o goc ISO (se tu dong chuyen tiep qua setupprep.exe)
+                # UU TIEN CUOI CUNG: sources\setup.exe (day la dong co WinPE boot USB, chi dung lam last resort)
+                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{
+                    "$drv\sources\setupprep.exe"
+                }} elseif (Test-Path "$drv\setup.exe") {{
+                    "$drv\setup.exe"
+                }} else {{
+                    "$drv\sources\setup.exe"
+                }}
 
                 # TU DONG NHAN DIEN PHIEN BAN WINDOWS TRONG ISO DE HO TRO TOAN BO CAC BAN WINDOWS (Win 11, Win 10, Win 8.1, Win 7, Server):
                 $buildPart = 0
@@ -8732,10 +8761,10 @@ th { background: #222a3d; color: #6ffbbe; }
                             }}
                         }} catch {{
                             try {{
-                                # 4. Fallback sang sources\setupprep.exe voi -Verb RunAs
-                                if (Test-Path "$drv\sources\setupprep.exe") {{
-                                    Start-Process -FilePath "$drv\sources\setupprep.exe" -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
-                                    Write-Output "LAUNCH_SETUPPREP_RUNAS_OK:$drv\sources\setupprep.exe"
+                                # 4. Fallback sang sources\setup.exe voi -Verb RunAs
+                                if (Test-Path "$drv\sources\setup.exe") {{
+                                    Start-Process -FilePath "$drv\sources\setup.exe" -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
+                                    Write-Output "LAUNCH_SOURCES_SETUP_RUNAS_OK:$drv\sources\setup.exe"
                                     $launched = $true
                                 }}
                             }} catch {{
@@ -8775,21 +8804,19 @@ th { background: #222a3d; color: #6ffbbe; }
                 };
 
                 // Dự phòng trực tiếp từ Rust bằng Windows Command cmd /c start
-                // Uu tien: sources\setup.exe -> root setup.exe -> sources\setupprep.exe (setupprep.exe chi la last resort)
-                let fallback_exe = if std::path::Path::new(&format!(r"{}\sources\setup.exe", drv)).exists() {
-                    format!(r"{}\sources\setup.exe", drv)
+                // Ưu tiên: sources\setupprep.exe -> root setup.exe -> sources\setup.exe
+                let fallback_exe = if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
+                    format!(r"{}\sources\setupprep.exe", drv)
                 } else if std::path::Path::new(&format!(r"{}\setup.exe", drv)).exists() {
                     format!(r"{}\setup.exe", drv)
                 } else {
-                    format!(r"{}\sources\setupprep.exe", drv)
+                    format!(r"{}\sources\setup.exe", drv)
                 };
                 let mut direct_cmd = Command::new("cmd");
                 direct_cmd.current_dir(format!(r"{}:\", temp_drive_letter));
                 direct_cmd.args(["/c", "start", "", &fallback_exe]);
-                if !fallback_exe.ends_with(r"\setup.exe") || fallback_exe.contains(r"\sources\") {
-                    for a in setup_args.split_whitespace() {
-                        direct_cmd.arg(a);
-                    }
+                for a in setup_args.split_whitespace() {
+                    direct_cmd.arg(a);
                 }
                 #[cfg(windows)]
                 direct_cmd.creation_flags(CREATE_NO_WINDOW);
@@ -26828,12 +26855,12 @@ mod tests {
         let target_drive = "C:";
         let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
         let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
-        let temp_drive_arg = format!("{}:\\", temp_drive_letter);
+        let temp_drive_arg = temp_drive_letter;
         let mode = "clean";
         let setup_args = if mode == "clean" {
             format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
         } else if mode == "custom" {
-            format!("/eula accept /compat ignorewarning /product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+            format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
         } else {
             format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
         };
@@ -26843,13 +26870,13 @@ mod tests {
         assert!(setup_args.contains("/eula accept"), "Must accept EULA");
         assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
         assert!(setup_args.contains("/product server"), "Must pass product server flag to bypass consumer appraiser");
-        assert!(setup_args.contains("/tempdrive C:\\"), "Must pass tempdrive with drive and backslash");
+        assert!(setup_args.contains("/quiet"), "Must pass /quiet for silent install");
+        assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive with clean drive letter");
 
         // Verify custom mode
-        let custom_args = format!("/eula accept /compat ignorewarning /product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg);
+        let custom_args = format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg);
         assert!(!custom_args.contains("/auto"), "Custom mode must not specify /auto so partition UI is shown");
         assert!(!custom_args.contains("/quiet"), "Custom mode must not be quiet");
-        assert!(custom_args.contains("/compat ignorewarning"));
     }
 
     #[test]
