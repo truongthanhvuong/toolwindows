@@ -8422,7 +8422,7 @@ th { background: #222a3d; color: #6ffbbe; }
             // 3. Chuẩn hóa ổ đích / tempdrive và dọn dẹp cache tạm $WINDOWS.~BT, $Windows.~WS để ngăn chặn mã lỗi 0x80070490
             let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
             let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
-            let temp_drive_arg = temp_drive_letter;
+            let temp_drive_arg = format!("{}:\\", temp_drive_letter);
 
             let ps_clean_and_prep = format!(
                 r#"
@@ -8666,48 +8666,78 @@ th { background: #222a3d; color: #6ffbbe; }
                 r#"
                 $drv = "{}"
                 $setupArgs = '{}'
+                $targetDrive = "{}"
 
                 # Tuyet doi khong mount EFI ra o S: (mountvol S: /S) vi gan ky tu o dia cho ESP se truc tiep gay loi Setup 0x80070003 - 0x40008
                 # Chu dong go bo triet de mount point S: neu con sot lai tu cac phien truoc
                 try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
 
-                # Uu tien sources\setupprep.exe (dong co In-OS Setup Engine hien dai cua Microsoft)
-                # Ke tiep la sources\setup.exe (Windows Setup Engine thuc thu, ho tro day du cac tham so dong lenh)
-                # Fallback: root setup.exe neu khong tim thay sources
-                # QUAN TRONG: Phai dung sources\setup.exe (khong phai setupprep.exe) voi /product server + /compat ignorewarning
-                # setup.exe nhan flag nay TRUOC khi load appraiser; setupprep.exe chay appraiser TRUOC => van bi 0x80070003-0x40008
-                $setupExe = if (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} elseif (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} else {{ "$drv\sources\setupprep.exe" }}
-                # Thu muc lam viec phai la goc o dia cai dat $drv de dam bao cac duong dan tuong doi trong bo cai khong bi ERROR_PATH_NOT_FOUND (0x80070003)
-                $workDir = $drv
+                # Thu muc lam viec PHAI la o dia dich ($targetDrive:\) co quyen doc ghi, TUYET DOI KHONG dung o ISO read-only $drv
+                # vi dat working directory tai o dia chi doc se truc tiep gay ma loi 0x80070490 (ERROR_NOT_FOUND)
+                $workDir = "$($targetDrive):\"
 
-                # Neu bat buoc phai fallback ve root setup.exe (nap autorun.dll), loai bo cac tham so khong duoc autorun.dll ho tro de chong loi Invalid Command Line Argument
-                if ($setupExe -like "*\setup.exe" -and -not ($setupExe -like "*\sources\*")) {{
-                    $setupArgs = if ($setupArgs -like "*/auto upgrade*") {{ "/auto:upgrade" }} else {{ "" }}
+                # Uu tien sources\setup.exe / sources\setupprep.exe / root setup.exe
+                $setupExe = if (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} elseif (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} else {{ "$drv\setup.exe" }}
+
+                # TU DONG NHAN DIEN PHIEN BAN WINDOWS TRONG ISO DE HO TRO TOAN BO CAC BAN WINDOWS (Win 11, Win 10, Win 8.1, Win 7, Server):
+                $buildPart = 0
+                try {{
+                    $vi = (Get-Item $setupExe -ErrorAction SilentlyContinue).VersionInfo
+                    if ($vi -and $vi.FileBuildPart) {{ $buildPart = $vi.FileBuildPart }}
+                }} catch {{}}
+
+                # Neu ISO la Windows 10 (Build < 22000, vi du 19041-19045) hoac Windows 7/8.1:
+                # Loai bo co /product server vi chi Windows 11 Modern Setup moi ho tro co nay; Windows 10 se bao invalid argument neu giu /product server
+                if ($buildPart -gt 0 -and $buildPart -lt 22000) {{
+                    $setupArgs = $setupArgs.Replace('/product server', '').Replace('  ', ' ').Trim()
                 }}
+
+                # Neu ISO la Windows 7 / 8.1 cu (Build < 10000, vi du 7601, 9600):
+                # Loai bo cac co hien dai khong duoc ho tro boi Windows 7 setup
+                if ($buildPart -gt 0 -and $buildPart -lt 10000) {{
+                    $setupArgs = $setupArgs.Replace('/compat ignorewarning', '').Replace('/DynamicUpdate disable', '').Replace('/MigrateDrivers none', '').Replace('  ', ' ').Trim()
+                }}
+
+                # TUYET DOI KHONG duoc xoa bo tham so setupArgs khi chay root setup.exe
                 $argArray = $setupArgs.Split(' ') | Where-Object {{ $_ -ne '' }}
 
+                # Dam bao thu muc staging C:\$WINDOWS.~BT duoc cap toan quyen truy cap
+                try {{
+                    $btDir = "$($targetDrive):\`$WINDOWS.~BT"
+                    if (-not (Test-Path $btDir)) {{ New-Item -Path $btDir -ItemType Directory -Force 2>&1 | Out-Null }}
+                    icacls $btDir /grant "*S-1-5-32-544:F" "*S-1-1-0:F" /T /C /Q 2>&1 | Out-Null
+                }} catch {{}}
+
+                # KHOI CHAY VOI DAC QUYEN ELEVATED ADMINISTRATOR (-Verb RunAs) 100% TREN MOI DUONG DU PHONG
+                # Ngan chan loi 0x80070490 do tien trinh khong co quyen Admin truy van BCD System Store
                 $launched = $false
                 try {{
-                    # Uu tien Start-Process voi -Verb RunAs de dam bao Windows Setup chay toan quyen NT Authority truy cap BCD khong bi loi 0x80070490
+                    # 1. Start-Process truc tiep voi -Verb RunAs
                     Start-Process -FilePath $setupExe -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
                     Write-Output "LAUNCH_OK:$setupExe"
                     $launched = $true
                 }} catch {{
                     try {{
-                        # Khoi chay cmd.exe /c start "" "$setupExe" (chay setup.exe an toan chong loi The request is not supported)
-                        & cmd.exe /c start "" "$setupExe" $argArray
-                        Write-Output "LAUNCH_CMD_OK:$setupExe"
+                        # 2. cmd.exe /c start voi -Verb RunAs (chong loi The request is not supported tren mot so loai o dia quang ao UDF)
+                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c start `"`" `"$setupExe`" $setupArgs" -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
+                        Write-Output "LAUNCH_CMD_RUNAS_OK:$setupExe"
                         $launched = $true
                     }} catch {{
                         try {{
-                            & explorer.exe "$setupExe"
-                            Write-Output "LAUNCH_EXPLORER_OK:$setupExe"
-                            $launched = $true
+                            # 3. Fallback sang root setup.exe voi -Verb RunAs
+                            if (Test-Path "$drv\setup.exe") {{
+                                Start-Process -FilePath "$drv\setup.exe" -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
+                                Write-Output "LAUNCH_ROOT_RUNAS_OK:$drv\setup.exe"
+                                $launched = $true
+                            }}
                         }} catch {{
                             try {{
-                                Start-Process -FilePath "{}\sources\setupprep.exe" -ArgumentList "{}" -WorkingDirectory "{}\" -Verb RunAs
-                                Write-Output "FALLBACK_PS_OK"
-                                $launched = $true
+                                # 4. Fallback sang sources\setupprep.exe voi -Verb RunAs
+                                if (Test-Path "$drv\sources\setupprep.exe") {{
+                                    Start-Process -FilePath "$drv\sources\setupprep.exe" -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
+                                    Write-Output "LAUNCH_SETUPPREP_RUNAS_OK:$drv\sources\setupprep.exe"
+                                    $launched = $true
+                                }}
                             }} catch {{
                                 Write-Output "ERR_LAUNCH:$($_.Exception.Message)"
                             }}
@@ -8715,7 +8745,7 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
                 "#,
-                drv, setup_args, drv, setup_args, drv
+                drv, setup_args, temp_drive_letter
             );
 
             let mut run_cmd = Command::new("powershell");
@@ -8754,6 +8784,7 @@ th { background: #222a3d; color: #6ffbbe; }
                     format!(r"{}\sources\setupprep.exe", drv)
                 };
                 let mut direct_cmd = Command::new("cmd");
+                direct_cmd.current_dir(format!(r"{}:\", temp_drive_letter));
                 direct_cmd.args(["/c", "start", "", &fallback_exe]);
                 if !fallback_exe.ends_with(r"\setup.exe") || fallback_exe.contains(r"\sources\") {
                     for a in setup_args.split_whitespace() {
@@ -26796,7 +26827,8 @@ mod tests {
     fn test_system_ops_win_deploy_silent_pro_unattend() {
         let target_drive = "C:";
         let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
-        let temp_drive_arg = if clean_target.is_empty() { "C" } else { clean_target };
+        let temp_drive_letter = if clean_target.is_empty() { "C" } else { clean_target };
+        let temp_drive_arg = format!("{}:\\", temp_drive_letter);
         let mode = "clean";
         let setup_args = if mode == "clean" {
             format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
@@ -26811,7 +26843,7 @@ mod tests {
         assert!(setup_args.contains("/eula accept"), "Must accept EULA");
         assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
         assert!(setup_args.contains("/product server"), "Must pass product server flag to bypass consumer appraiser");
-        assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive");
+        assert!(setup_args.contains("/tempdrive C:\\"), "Must pass tempdrive with drive and backslash");
 
         // Verify custom mode
         let custom_args = format!("/eula accept /compat ignorewarning /product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg);
