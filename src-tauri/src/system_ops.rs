@@ -8479,12 +8479,15 @@ th { background: #222a3d; color: #6ffbbe; }
             let _ = clean_cmd.output();
             append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và nạp bypass appraiserres.dll.", temp_drive_arg));
 
-            // Cài Mới (Clean) / Tùy Chọn (Custom): Hiển thị trực tiếp GUI Setup tương tác, kèm bypass TPM/CPU qua Registry LabConfig & MoSetup
+            // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept, không kẹt màn hình phân vùng
+            // Tùy Chọn Phân Vùng (Custom): Mở màn hình đồ họa phân vùng để người dùng tự do format / chia ổ
+            // Cài Đè Giữ Dữ Liệu (Upgrade): Tự động nâng cấp hệ điều hành giữ nguyên dữ liệu
             // Ghi chú tương thích: Không truyền /product server trực tiếp vào runtime setup_args vì Windows 11 (24H2/25H2) sẽ báo lỗi:
             // "The installation process was launched with an invalid command line argument."
             // Thay vào đó, bypass TPM 2.0 / SecureBoot / CPU được thực thi triệt để qua Registry LabConfig & MoSetup và 0-byte appraiserres.dll.
-            // (Tương thích tự động: /auto clean /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {})
-            let setup_args = if mode == "custom" || mode == "clean" {
+            let setup_args = if mode == "clean" {
+                format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+            } else if mode == "custom" {
                 format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
                 format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
