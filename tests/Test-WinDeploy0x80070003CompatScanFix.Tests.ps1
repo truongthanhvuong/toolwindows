@@ -78,10 +78,11 @@ Assert-Test "7. Khoi tao thu muc Windows Defender Platform va Security Health" {
     $opsContent -match 'Windows Security Health'
 }
 
-# 8. Go bo triet de mount point o dia khoi ESP va chay bcdboot /bcdclean full /p de firmware NVRAM tu nhan ESP
-Assert-Test "8. Go bo mount point o dia khoi ESP va chay bcdboot /bcdclean full /p" {
-    $opsContent -match 'mountvol S: \/D' -and
-    $opsContent -match 'bcdboot.*\/bcdclean full \/p'
+# 8. Mount ESP va chay bcdboot /s ... /f UEFI /p de tai lap bootmgr tro dung vao ESP, sau do dismount
+Assert-Test "8. Mount ESP va chay bcdboot /s ... /f UEFI /p de phuc hoi bootmgr ve ESP thuc" {
+    $opsContent -match 'mountvol.*\/S' -and
+    $opsContent -match 'bcdboot.*\/s.*\/f UEFI' -and
+    $opsContent -match 'mountvol.*\/D'
 }
 
 Write-Host "`n======================================================================" -ForegroundColor Cyan

@@ -8666,12 +8666,39 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }} catch {{}}
 
-                # GO BO TRIET DE BAT KY MOUNT POINT KY TU O DIA NAO (S:, Z:, Y:, ...) DANG GAN VAO PHAN VUNG ESP
-                # ConX::Compatibility::CSystemAbstraction::GetSystemVolumeNtPath tim kiem phan vung EFI an nguyen ban
-                # Neu ESP bi gan ky tu o dia (nhu S: hay Z:) hoac BCD tro vao partition=C:, ham nay se tra ve ERROR_PATH_NOT_FOUND (0x80070003)!
+                # TIM PHAN VUNG ESP THUC TE VA TAI THIET LAP BCD TRO DUNG VAO ESP QUA BCDBOOT
+                # Tren he thong UEFI GPT: ConX::Compatibility::CSystemAbstraction::GetSystemVolumeNtPath
+                # truy van BCD {{bootmgr}} de lay NT Device Path cua phan vung khoi dong (ESP).
+                # Neu truoc do BCD bi ghi de tro vao partition=C: hoac ESP bi mat/sai mount point,
+                # ham GetSystemVolumeNtPath se tra ve ERROR_PATH_NOT_FOUND (0x80070003),
+                # khien pha tham dinh tuong thich (0x40008) tu provider wsc:setup bi crash!
+                try {{
+                    $espPart = Get-Partition | Where-Object {{ $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | Select-Object -First 1
+                    if ($espPart) {{
+                        $usedLetters = (Get-Volume | Where-Object {{ $_.DriveLetter }} | ForEach-Object {{ $_.DriveLetter.ToString().ToUpper() }})
+                        $candidateLetters = @("S", "Z", "Y", "X", "W", "V")
+                        $mountLetter = $candidateLetters | Where-Object {{ $usedLetters -notcontains $_ }} | Select-Object -First 1
+                        if (-not $mountLetter) {{ $mountLetter = "S" }}
+
+                        # 1. Mount ESP vao mountLetter
+                        try {{ mountvol "$($mountLetter):" /D 2>&1 | Out-Null }} catch {{}}
+                        mountvol "$($mountLetter):" /S 2>&1 | Out-Null
+
+                        # 2. Ghi de BCD chinh hang va thiet lap bootmgr device tro dung vao ESP
+                        bcdboot "$env:SystemRoot" /s "$($mountLetter):" /f UEFI /p 2>&1 | Out-Null
+
+                        # 3. Kiem tra va dismount mountLetter de ESP tro lai thanh volume he thong an nguyen ban
+                        mountvol "$($mountLetter):" /D 2>&1 | Out-Null
+                    }} else {{
+                        bcdboot "$env:SystemRoot" /f ALL /p 2>&1 | Out-Null
+                    }}
+                }} catch {{}}
+
+                # Go bo triet de moi mount point du phong (S:, Z:, Y:, X:) neu con sot lai
                 try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
                 try {{ mountvol Z: /D 2>&1 | Out-Null }} catch {{}}
                 try {{ mountvol Y: /D 2>&1 | Out-Null }} catch {{}}
+                try {{ mountvol X: /D 2>&1 | Out-Null }} catch {{}}
                 try {{
                     Get-Partition | Where-Object {{ $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | ForEach-Object {{
                         if ($_.DriveLetter) {{
@@ -8681,7 +8708,7 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }} catch {{}}
 
-                # XOA BO TRIET DE CAC TEP BOOT SAI VI TRI TREN C:\ DO BCDBOOT CU DE LAI GAY XUNG DOT VOI PHAN VUNG ESP
+                # Xoa bo triet de cac tep boot sai vi tri tren C:\ do bcdboot cu de lai gay xung dot voi phan vung ESP
                 $bogusBoot = @("C:\EFI", "C:\Boot", "C:\bootmgr", "C:\bootmgr.efi")
                 foreach ($b in $bogusBoot) {{
                     if (Test-Path $b) {{
@@ -8695,15 +8722,8 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
 
-                # TAI THIET LAP BCD STORE VA DIEM TRO BOOT CHUAN XAC QUA FIRMWARE UEFI NVRAM:
-                # Dung bcdboot truc tiep voi cờ /bcdclean full va /p giup xoa sach moi ban ghi BCD tro sai thiet bi ma khong can gan ky tu o dia
-                try {{
-                    bcdboot "$env:SystemRoot" /bcdclean full /p 2>&1 | Out-Null
-                }} catch {{}}
-
-                # Bao dam mot lan nua cac mount point S: va Z: khong con ton tai
-                try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
-                try {{ mountvol Z: /D 2>&1 | Out-Null }} catch {{}}
+                # Kich hoat va dam bao WinRE hoat dong de Windows Setup khong bao thieu Recovery Environment
+                try {{ reagentc.exe /enable 2>&1 | Out-Null }} catch {{}}
                 "#,
                 temp_drive_letter, drv
             );
