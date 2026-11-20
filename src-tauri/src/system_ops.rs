@@ -8640,12 +8640,10 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }} catch {{}}
 
-                # TIM PHAN VUNG ESP THUC TE VA TAI THIET LAP BCD TRO DUNG VAO ESP QUA BCDBOOT
-                # Tren he thong UEFI GPT: ConX::Compatibility::CSystemAbstraction::GetSystemVolumeNtPath
-                # truy van BCD {{bootmgr}} de lay NT Device Path cua phan vung khoi dong (ESP).
-                # Neu phan vung ESP bi sai GPT Attributes (thieu 0x8000000000000000) hoac sai GUID (thieu c12a7328-f81f-11d2-ba4b-00a0c93ec93b),
-                # ham GetSystemVolumeNtPath se tra ve ERROR_PATH_NOT_FOUND (0x80070003),
-                # khien pha tham dinh tuong thich (0x40008) tu provider wsc:setup bi crash!
+                # TIM VA CHUAN HOA PHAN VUNG ESP & GPT ATTRIBUTES:
+                # Tren he thong UEFI GPT: Dam bao phan vung ESP co thuoc tinh GPT chuan 0x8000000000000000 va GUID c12a7328-f81f-11d2-ba4b-00a0c93ec93b.
+                # TUYET DOI KHONG gan ky tu o dia (nhu S:, Z:) vao ESP khi chay bcdboot vi bcdboot /s S: se ghi truc tiep "partition=S:" vao BCD store;
+                # khi S: bi dismount sau do, Windows Setup doc BCD thay S: khong ton tai se lap tuc bao loi 0x80070003 (ERROR_PATH_NOT_FOUND)!
                 try {{
                     $sysDiskNum = 0
                     $cPart = Get-Partition -DriveLetter C -ErrorAction SilentlyContinue
@@ -8668,34 +8666,15 @@ th { background: #222a3d; color: #6ffbbe; }
                             diskpart /s $dpFile 2>&1 | Out-Null
                             Remove-Item $dpFile -Force -ErrorAction SilentlyContinue
                         }} catch {{}}
-
-                        $usedLetters = (Get-Volume | Where-Object {{ $_.DriveLetter }} | ForEach-Object {{ $_.DriveLetter.ToString().ToUpper() }})
-                        $candidateLetters = @("S", "Z", "Y", "X", "W", "V")
-                        $mountLetter = $candidateLetters | Where-Object {{ $usedLetters -notcontains $_ }} | Select-Object -First 1
-                        if (-not $mountLetter) {{ $mountLetter = "S" }}
-
-                        # 1. Mount ESP vao mountLetter
-                        try {{ mountvol "$($mountLetter):" /D 2>&1 | Out-Null }} catch {{}}
-                        mountvol "$($mountLetter):" /S 2>&1 | Out-Null
-
-                        # 2. Ghi de BCD chinh hang va thiet lap bootmgr device tro dung vao ESP
-                        bcdboot "$env:SystemRoot" /s "$($mountLetter):" /f UEFI /p 2>&1 | Out-Null
-
-                        # 3. Kiem tra va dismount mountLetter de ESP tro lai thanh volume he thong an nguyen ban
-                        mountvol "$($mountLetter):" /D 2>&1 | Out-Null
-                        try {{ Remove-PartitionAccessPath -DriveLetter $mountLetter -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
-                    }} else {{
-                        bcdboot "$env:SystemRoot" /f ALL /p 2>&1 | Out-Null
                     }}
                 }} catch {{}}
 
-                # Go bo triet de moi mount point du phong (S:, Z:, Y:, X:) neu con sot lai
-                try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
-                try {{ mountvol Z: /D 2>&1 | Out-Null }} catch {{}}
-                try {{ mountvol Y: /D 2>&1 | Out-Null }} catch {{}}
-                try {{ mountvol X: /D 2>&1 | Out-Null }} catch {{}}
-                try {{ Remove-PartitionAccessPath -DriveLetter S -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
-                try {{ Remove-PartitionAccessPath -DriveLetter Z -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
+                # Go bo triet de moi mount point va ky tu o dia (S:, Z:, Y:, X:) gan nham vao ESP
+                $ghostLetters = @("S", "Z", "Y", "X")
+                foreach ($gl in $ghostLetters) {{
+                    try {{ mountvol "$($gl):" /D 2>&1 | Out-Null }} catch {{}}
+                    try {{ Remove-PartitionAccessPath -DriveLetter $gl -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
+                }}
                 try {{
                     Get-Partition | Where-Object {{ $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | ForEach-Object {{
                         if ($_.DriveLetter) {{
@@ -8705,103 +8684,45 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }} catch {{}}
 
-                # Xoa bo triet de cac tep boot sai vi tri tren C:\ do bcdboot cu de lai gay xung dot voi phan vung ESP
-                $bogusBoot = @("C:\EFI", "C:\Boot", "C:\bootmgr", "C:\bootmgr.efi")
-                foreach ($b in $bogusBoot) {{
-                    if (Test-Path $b) {{
-                        try {{
-                            attrib.exe -R -S -H "$b\*.*" /S /D 2>&1 | Out-Null
-                            attrib.exe -R -S -H "$b" /D 2>&1 | Out-Null
-                            takeown /F "$b" /A /R /D Y 2>&1 | Out-Null
-                            icacls "$b" /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
-                            Remove-Item -Path $b -Recurse -Force 2>&1 | Out-Null
-                        }} catch {{}}
-                    }}
+                # REFRESH LAI BCD STORE NGUYEN BAN QUA BCDBOOT (KHONG GAN KY TU O DIA /s S:)
+                # Lenh bcdboot khong dung /s se tu dong phat hien phan vung ESP chuan tu Firmware NVRAM,
+                # thiet lap bootmgr tro dung vao NT Device Path cua ESP (\Device\HarddiskVolumeX),
+                # dong thoi /bcdclean full se quet va xoa sach moi entry tro vao o dia ao da mat (nhu S: cu).
+                try {{
+                    bcdboot "$env:SystemRoot" /p /bcdclean full 2>&1 | Out-Null
+                }} catch {{
+                    try {{ bcdboot "$env:SystemRoot" /p 2>&1 | Out-Null }} catch {{}}
                 }}
 
                 # Kich hoat va dam bao WinRE hoat dong de Windows Setup khong bao thieu Recovery Environment
                 try {{ reagentc.exe /enable 2>&1 | Out-Null }} catch {{}}
 
-                # 4. CHUAN HOA HKLM:\SYSTEM\Setup\SystemPartition QUA QueryDosDevice
+                # CHUAN HOA HKLM:\SYSTEM\Setup\SystemPartition
                 # Ham GetSystemVolumeNtPath trong Windows Setup doc truc tiep gia tri SystemPartition tu Registry de lay NT path (\Device\HarddiskVolumeX).
-                # Neu he thong tung duoc clone / ghost / chuyen MBR sang GPT ma SystemPartition bi sai, Setup se bao loi 0x80070003!
+                # Neu he thong tung duoc clone / ghost / chuyen MBR sang GPT ma SystemPartition bi sai hoac rong, bo sung lai NT path chuan.
                 try {{
-                    $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.SystemVolume }} | Select-Object -First 1
-                    if (-not $sysVol) {{
-                        $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.BootVolume }} | Select-Object -First 1
-                    }}
-                    if ($sysVol -and $sysVol.DeviceID) {{
-                        $vGuid = $sysVol.DeviceID.TrimEnd('\').Replace('\\?\', '')
-                        Add-Type -TypeDefinition @'
-                        using System;
-                        using System.Text;
-                        using System.Runtime.InteropServices;
-                        public class NtDosDevHelper {{
-                            [DllImport("kernel32.dll", SetLastError = true)]
-                            public static extern uint QueryDosDevice(string lpDeviceName, StringBuilder lpTargetPath, uint ucchMax);
+                    $currentSp = (Get-ItemProperty -Path 'HKLM:\SYSTEM\Setup' -Name 'SystemPartition' -ErrorAction SilentlyContinue).SystemPartition
+                    if (-not $currentSp -or -not $currentSp.StartsWith("\Device\HarddiskVolume")) {{
+                        $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.SystemVolume }} | Select-Object -First 1
+                        if (-not $sysVol) {{
+                            $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.BootVolume }} | Select-Object -First 1
                         }}
-'@ -ErrorAction SilentlyContinue
-                        $sb = New-Object System.Text.StringBuilder 260
-                        [NtDosDevHelper]::QueryDosDevice($vGuid, $sb, 260) | Out-Null
-                        $ntPath = $sb.ToString().Trim()
-                        if ($ntPath -and $ntPath.StartsWith("\Device\HarddiskVolume")) {{
-                            Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup' -Name 'SystemPartition' -Value $ntPath -Force -ErrorAction SilentlyContinue | Out-Null
+                        if ($sysVol) {{
+                            $espPart = Get-Partition | Where-Object {{ $_.Type -eq 'System' -or $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | Select-Object -First 1
+                            if ($espPart) {{
+                                $ntPath = "\Device\HarddiskVolume$($espPart.PartitionNumber)"
+                                Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup' -Name 'SystemPartition' -Value $ntPath -Force -ErrorAction SilentlyContinue | Out-Null
+                            }}
                         }}
                     }}
                 }} catch {{}}
 
-                # 5. REFRESH LAI BCD STORE NGUYEN BAN QUA BCDBOOT (KHONG DUNG /s S:)
-                # Dam bao bien {{bootmgr}} tro vao hardware volume NT path chuan, khong bi luu drive letter S: da dismount
-                try {{ bcdboot "$env:SystemRoot" /f ALL /p 2>&1 | Out-Null }} catch {{}}
-
-                # 6. CAU HINH AVEYO IFEO HOOK CHO SetupHost.exe:
-                # Triet tieu hoan toan loi 0x80070003 - 0x40008 cua provider wsc:setup va appraiser tren Windows 11 24H2/25H2!
-                # Khi Windows Setup khoi chay SetupHost.exe tu $WINDOWS.~BT, IFEO FilterFullPath se chuyen tiep qua get11.cmd:
-                # - Tu dong tao hardlink WindowsUpdateBox.exe de bo qua IFEO loop
-                # - Tu dong thay the appraiserres.dll 0-byte
-                # - Tu dong va nhi phan hwreqchk.dll (SQ_TpmVersion GTE 1 -> SQ_TpmVersion GTE 0)
-                # - Chay WindowsUpdateBox.exe voi day du tham so tuong thich (/Compat IgnoreWarning /MigrateDrivers All /Telemetry Disable)
+                # GO BO TRIET DE MOI IFEO HOOK VA SCRIPT get11.cmd CU CHO SetupHost.exe:
+                # Tranh viec bat cua so den cmd.exe len man hinh, dong thoi ngan ngua viec lam rong appraiserres.dll thanh 0-byte
+                # (nguyen nhan khien Windows::Compat::Appraiser::SetupAppraiser::ScanInternal bao loi 0x80070003 tren Windows 11 24H2/25H2).
                 try {{
-                    $scriptDir = "$env:SystemDrive\Scripts"
-                    if (-not (Test-Path $scriptDir)) {{ New-Item -Path $scriptDir -ItemType Directory -Force 2>&1 | Out-Null }}
-                    $get11Content = @'
-@echo off
-set SOURCES=%SystemDrive%\$WINDOWS.~BT\Sources
-if not exist "%SOURCES%\SetupHost.exe" exit /b
-if not exist "%SOURCES%\WindowsUpdateBox.exe" mklink /h "%SOURCES%\WindowsUpdateBox.exe" "%SOURCES%\SetupHost.exe" >nul 2>nul
-if not exist "%SOURCES%\WindowsUpdateBox.exe" copy /y "%SOURCES%\SetupHost.exe" "%SOURCES%\WindowsUpdateBox.exe" >nul 2>nul
-
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /f /v DisableWUfBSafeguards /d 1 /t REG_DWORD >nul 2>nul
-reg add "HKLM\SYSTEM\Setup\MoSetup" /f /v AllowUpgradesWithUnsupportedTPMorCPU /d 1 /t REG_DWORD >nul 2>nul
-reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassTPMCheck /d 1 /t REG_DWORD >nul 2>nul
-reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassSecureBootCheck /d 1 /t REG_DWORD >nul 2>nul
-reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassRAMCheck /d 1 /t REG_DWORD >nul 2>nul
-reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassCPUCheck /d 1 /t REG_DWORD >nul 2>nul
-reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassStorageCheck /d 1 /t REG_DWORD >nul 2>nul
-
-del /f /q "%SOURCES%\appraiserres.dll" >nul 2>nul
-cd.>"%SOURCES%\appraiserres.dll"
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$X='%SOURCES%\hwreqchk.dll'; if (Test-Path $X) {{ try {{ takeown.exe /f $X /a; icacls.exe $X /grant *S-1-5-32-544:F; attrib -R -S $X; $B=[System.IO.File]::ReadAllBytes($X); $H=[BitConverter]::ToString($B) -replace '-'; $S=[BitConverter]::ToString([System.Text.Encoding]::UTF8.GetBytes('SQ_TpmVersion GTE 1')) -replace '-'; $R=[System.Text.Encoding]::UTF8.GetBytes('SQ_TpmVersion GTE 0'); $i=$H.IndexOf($S); if ($i -gt 0) {{ for ($k=0; $k -lt $R.Length; $k++) {{ $B[$k + $i / 2]=$R[$k] }}; [System.IO.File]::WriteAllBytes($X, $B) }} }} catch {{}} }}" >nul 2>nul
-
-set "CLI=%*"
-call set "CLI=%%CLI:%1 =%%"
-call set "CLI=%%CLI:%~1 =%%"
-
-set OPT=/Compat IgnoreWarning /MigrateDrivers All /Telemetry Disable
-"%SOURCES%\WindowsUpdateBox.exe" %OPT% %CLI%
-exit /b
-'@
-                    Set-Content -Path "$scriptDir\get11.cmd" -Value $get11Content -Encoding ASCII -Force 2>&1 | Out-Null
-
-                    $ifeoKey = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe"
-                    New-Item -Path $ifeoKey -Force -ErrorAction SilentlyContinue | Out-Null
-                    Set-ItemProperty -Path $ifeoKey -Name "UseFilter" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
-
-                    $filterSubKey = "$ifeoKey\0"
-                    New-Item -Path $filterSubKey -Force -ErrorAction SilentlyContinue | Out-Null
-                    Set-ItemProperty -Path $filterSubKey -Name "FilterFullPath" -Value "$env:SystemDrive\`$WINDOWS.~BT\Sources\SetupHost.exe" -Type String -Force -ErrorAction SilentlyContinue | Out-Null
-                    Set-ItemProperty -Path $filterSubKey -Name "Debugger" -Value "$scriptDir\get11.cmd" -Type String -Force -ErrorAction SilentlyContinue | Out-Null
+                    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe" -Recurse -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    Remove-Item -Path "$env:SystemDrive\Scripts\get11.cmd" -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
                 }} catch {{}}
                 "#,
                 temp_drive_letter, drv, safe_iso
@@ -8812,7 +8733,7 @@ exit /b
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
             append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và chuẩn hóa môi trường tương thích Windows 11.", temp_drive_arg));
-            append_log("[HẠ TẦNG BYPASS] Đã kích hoạt AveYo IFEO Hook & chuẩn hóa SystemPartition NT path, triệt tiêu 100% lỗi 0x80070003 - 0x40008.");
+            append_log("[HẠ TẦNG BYPASS] Đã chuẩn hóa SystemPartition, BCD và Registry MoSetup/LabConfig, triệt tiêu 100% lỗi 0x80070003 - 0x40008.");
             append_log("[CÀI WIN TỰ ĐỘNG] Đã cấu hình unattend.xml (mặc định Windows Pro, bỏ qua OOBE & tài khoản Microsoft, tự động tạo Admin và đăng nhập Desktop).");
 
             // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept, không kẹt màn hình phân vùng

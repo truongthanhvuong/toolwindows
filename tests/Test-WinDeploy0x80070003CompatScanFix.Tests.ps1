@@ -78,11 +78,11 @@ Assert-Test "7. Khoi tao thu muc Windows Defender Platform va Security Health" {
     $opsContent -match 'Windows Security Health'
 }
 
-# 8. Mount ESP va chay bcdboot /s ... /f UEFI /p de tai lap bootmgr tro dung vao ESP, sau do dismount
-Assert-Test "8. Mount ESP va chay bcdboot /s ... /f UEFI /p de phuc hoi bootmgr ve ESP thuc" {
-    $opsContent -match 'mountvol.*\/S' -and
-    $opsContent -match 'bcdboot.*\/s.*\/f UEFI' -and
-    $opsContent -match 'mountvol.*\/D'
+# 8. Refresh va lam sach BCD he thong qua bcdboot /p /bcdclean full ma khong gan ky tu o dia /s S:
+Assert-Test "8. Refresh va lam sach BCD he thong qua bcdboot /p /bcdclean full ma khong gan ky tu o dia /s S:" {
+    $opsContent -match 'bcdboot.*\$env:SystemRoot.*/p' -and
+    $opsContent -match 'mountvol.*\$gl.*\/D' -and
+    -not ($opsContent -match 'bcdboot.*\$env:SystemRoot.*/s.*\$mountLetter')
 }
 
 # 9. Chuan hoa GPT Attributes 0x8000000000000000 va partition id cua ESP qua diskpart / Set-Partition
@@ -128,12 +128,10 @@ Assert-Test "15. SetupConfig.ini co EULA=Accept, TempDrive va dong lenh khong tr
     -not ($opsContent -match '@\("\/ConfigFile"')
 }
 
-# 16. Cau hinh AveYo IFEO hook cho SetupHost.exe va chuan hoa HKLM:\SYSTEM\Setup\SystemPartition qua QueryDosDevice de loai bo 100% loi 0x80070003
-Assert-Test "16. Cau hinh AveYo IFEO hook cho SetupHost.exe va chuan hoa HKLM:\SYSTEM\Setup\SystemPartition" {
-    $opsContent -match 'get11\.cmd' -and
-    $opsContent -match 'Image File Execution Options\\SetupHost\.exe' -and
-    $opsContent -match 'FilterFullPath' -and
-    $opsContent -match 'QueryDosDevice' -and
+# 16. Go bo triet de moi IFEO hook cho SetupHost.exe de tranh popup cmd va crash SetupAppraiser, dong thoi chuan hoa SystemPartition
+Assert-Test "16. Go bo triet de moi IFEO hook cho SetupHost.exe va chuan hoa HKLM:\SYSTEM\Setup\SystemPartition" {
+    $opsContent -match 'Remove-Item.*Image File Execution Options\\SetupHost\.exe' -and
+    $opsContent -match 'Remove-Item.*get11\.cmd' -and
     $opsContent -match 'SystemPartition'
 }
 
