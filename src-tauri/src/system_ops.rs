@@ -8784,8 +8784,12 @@ cd.>"%SOURCES%\appraiserres.dll"
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$X='%SOURCES%\hwreqchk.dll'; if (Test-Path $X) {{ try {{ takeown.exe /f $X /a; icacls.exe $X /grant *S-1-5-32-544:F; attrib -R -S $X; $B=[System.IO.File]::ReadAllBytes($X); $H=[BitConverter]::ToString($B) -replace '-'; $S=[BitConverter]::ToString([System.Text.Encoding]::UTF8.GetBytes('SQ_TpmVersion GTE 1')) -replace '-'; $R=[System.Text.Encoding]::UTF8.GetBytes('SQ_TpmVersion GTE 0'); $i=$H.IndexOf($S); if ($i -gt 0) {{ for ($k=0; $k -lt $R.Length; $k++) {{ $B[$k + $i / 2]=$R[$k] }}; [System.IO.File]::WriteAllBytes($X, $B) }} }} catch {{}} }}" >nul 2>nul
 
+set "CLI=%*"
+call set "CLI=%%CLI:%1 =%%"
+call set "CLI=%%CLI:%~1 =%%"
+
 set OPT=/Compat IgnoreWarning /MigrateDrivers All /Telemetry Disable
-"%SOURCES%\WindowsUpdateBox.exe" %OPT% %*
+"%SOURCES%\WindowsUpdateBox.exe" %OPT% %CLI%
 exit /b
 '@
                     Set-Content -Path "$scriptDir\get11.cmd" -Value $get11Content -Encoding ASCII -Force 2>&1 | Out-Null
@@ -9028,15 +9032,15 @@ exit /b
                         }
                     }
                     if i % 10 == 0 {
-                        // Kiem tra tien trinh Setup co thuc su dang chay khong
+                        // Kiem tra tien trinh Setup co thuc su dang chay khong (bao gom ca WindowsUpdateBox tu AveYo IFEO hook)
                         let proc_check = std::process::Command::new("powershell")
-                            .args(["-NoProfile", "-Command", "Get-Process -Name 'setup', 'SetupHost', 'setupprep' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"])
+                            .args(["-NoProfile", "-Command", "Get-Process -Name 'setup', 'SetupHost', 'setupprep', 'WindowsUpdateBox' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"])
                             .output();
                         let pids = proc_check.map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string()).unwrap_or_default();
                         if !pids.is_empty() {
                             let first_pid = pids.lines().next().unwrap_or("").trim();
                             append_log(&format!("[TIẾN TRÌNH CÀI ĐẶT] Đang sao chép tệp và chuẩn bị môi trường boot (đã chạy {}s, Setup PID: {}). Vui lòng không tắt máy...", i * 3, first_pid));
-                        } else if i >= 10 {
+                        } else if i >= 30 {
                             append_log(&format!("[THÔNG BÁO] Tiến trình Windows Setup đã hoàn tất hoặc tự thoát (đã chạy {}s). Vui lòng kiểm tra màn hình hoặc khởi động lại.", i * 3));
                             // Don dep IFEO hook SetupHost.exe sau khi Setup ket thuc
                             let _ = std::process::Command::new("powershell")
