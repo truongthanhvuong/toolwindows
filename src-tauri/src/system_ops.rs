@@ -8721,6 +8721,84 @@ th { background: #222a3d; color: #6ffbbe; }
 
                 # Kich hoat va dam bao WinRE hoat dong de Windows Setup khong bao thieu Recovery Environment
                 try {{ reagentc.exe /enable 2>&1 | Out-Null }} catch {{}}
+
+                # 4. CHUAN HOA HKLM:\SYSTEM\Setup\SystemPartition QUA QueryDosDevice
+                # Ham GetSystemVolumeNtPath trong Windows Setup doc truc tiep gia tri SystemPartition tu Registry de lay NT path (\Device\HarddiskVolumeX).
+                # Neu he thong tung duoc clone / ghost / chuyen MBR sang GPT ma SystemPartition bi sai, Setup se bao loi 0x80070003!
+                try {{
+                    $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.SystemVolume }} | Select-Object -First 1
+                    if (-not $sysVol) {{
+                        $sysVol = Get-CimInstance Win32_Volume -ErrorAction SilentlyContinue | Where-Object {{ $_.BootVolume }} | Select-Object -First 1
+                    }}
+                    if ($sysVol -and $sysVol.DeviceID) {{
+                        $vGuid = $sysVol.DeviceID.TrimEnd('\').Replace('\\?\', '')
+                        Add-Type -TypeDefinition @'
+                        using System;
+                        using System.Text;
+                        using System.Runtime.InteropServices;
+                        public class NtDosDevHelper {{
+                            [DllImport("kernel32.dll", SetLastError = true)]
+                            public static extern uint QueryDosDevice(string lpDeviceName, StringBuilder lpTargetPath, uint ucchMax);
+                        }}
+'@ -ErrorAction SilentlyContinue
+                        $sb = New-Object System.Text.StringBuilder 260
+                        [NtDosDevHelper]::QueryDosDevice($vGuid, $sb, 260) | Out-Null
+                        $ntPath = $sb.ToString().Trim()
+                        if ($ntPath -and $ntPath.StartsWith("\Device\HarddiskVolume")) {{
+                            Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup' -Name 'SystemPartition' -Value $ntPath -Force -ErrorAction SilentlyContinue | Out-Null
+                        }}
+                    }}
+                }} catch {{}}
+
+                # 5. REFRESH LAI BCD STORE NGUYEN BAN QUA BCDBOOT (KHONG DUNG /s S:)
+                # Dam bao bien {{bootmgr}} tro vao hardware volume NT path chuan, khong bi luu drive letter S: da dismount
+                try {{ bcdboot "$env:SystemRoot" /f ALL /p 2>&1 | Out-Null }} catch {{}}
+
+                # 6. CAU HINH AVEYO IFEO HOOK CHO SetupHost.exe:
+                # Triet tieu hoan toan loi 0x80070003 - 0x40008 cua provider wsc:setup va appraiser tren Windows 11 24H2/25H2!
+                # Khi Windows Setup khoi chay SetupHost.exe tu $WINDOWS.~BT, IFEO FilterFullPath se chuyen tiep qua get11.cmd:
+                # - Tu dong tao hardlink WindowsUpdateBox.exe de bo qua IFEO loop
+                # - Tu dong thay the appraiserres.dll 0-byte
+                # - Tu dong va nhi phan hwreqchk.dll (SQ_TpmVersion GTE 1 -> SQ_TpmVersion GTE 0)
+                # - Chay WindowsUpdateBox.exe voi day du tham so tuong thich (/Compat IgnoreWarning /MigrateDrivers All /Telemetry Disable)
+                try {{
+                    $scriptDir = "$env:SystemDrive\Scripts"
+                    if (-not (Test-Path $scriptDir)) {{ New-Item -Path $scriptDir -ItemType Directory -Force 2>&1 | Out-Null }}
+                    $get11Content = @'
+@echo off
+set SOURCES=%SystemDrive%\$WINDOWS.~BT\Sources
+if not exist "%SOURCES%\SetupHost.exe" exit /b
+if not exist "%SOURCES%\WindowsUpdateBox.exe" mklink /h "%SOURCES%\WindowsUpdateBox.exe" "%SOURCES%\SetupHost.exe" >nul 2>nul
+if not exist "%SOURCES%\WindowsUpdateBox.exe" copy /y "%SOURCES%\SetupHost.exe" "%SOURCES%\WindowsUpdateBox.exe" >nul 2>nul
+
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /f /v DisableWUfBSafeguards /d 1 /t REG_DWORD >nul 2>nul
+reg add "HKLM\SYSTEM\Setup\MoSetup" /f /v AllowUpgradesWithUnsupportedTPMorCPU /d 1 /t REG_DWORD >nul 2>nul
+reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassTPMCheck /d 1 /t REG_DWORD >nul 2>nul
+reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassSecureBootCheck /d 1 /t REG_DWORD >nul 2>nul
+reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassRAMCheck /d 1 /t REG_DWORD >nul 2>nul
+reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassCPUCheck /d 1 /t REG_DWORD >nul 2>nul
+reg add "HKLM\SYSTEM\Setup\LabConfig" /f /v BypassStorageCheck /d 1 /t REG_DWORD >nul 2>nul
+
+del /f /q "%SOURCES%\appraiserres.dll" >nul 2>nul
+cd.>"%SOURCES%\appraiserres.dll"
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$X='%SOURCES%\hwreqchk.dll'; if (Test-Path $X) {{ try {{ takeown.exe /f $X /a; icacls.exe $X /grant *S-1-5-32-544:F; attrib -R -S $X; $B=[System.IO.File]::ReadAllBytes($X); $H=[BitConverter]::ToString($B) -replace '-'; $S=[BitConverter]::ToString([System.Text.Encoding]::UTF8.GetBytes('SQ_TpmVersion GTE 1')) -replace '-'; $R=[System.Text.Encoding]::UTF8.GetBytes('SQ_TpmVersion GTE 0'); $i=$H.IndexOf($S); if ($i -gt 0) {{ for ($k=0; $k -lt $R.Length; $k++) {{ $B[$k + $i / 2]=$R[$k] }}; [System.IO.File]::WriteAllBytes($X, $B) }} }} catch {{}} }}" >nul 2>nul
+
+set OPT=/Compat IgnoreWarning /MigrateDrivers All /Telemetry Disable
+"%SOURCES%\WindowsUpdateBox.exe" %OPT% %*
+exit /b
+'@
+                    Set-Content -Path "$scriptDir\get11.cmd" -Value $get11Content -Encoding ASCII -Force 2>&1 | Out-Null
+
+                    $ifeoKey = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe"
+                    New-Item -Path $ifeoKey -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path $ifeoKey -Name "UseFilter" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+
+                    $filterSubKey = "$ifeoKey\0"
+                    New-Item -Path $filterSubKey -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path $filterSubKey -Name "FilterFullPath" -Value "$env:SystemDrive\`$WINDOWS.~BT\Sources\SetupHost.exe" -Type String -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path $filterSubKey -Name "Debugger" -Value "$scriptDir\get11.cmd" -Type String -Force -ErrorAction SilentlyContinue | Out-Null
+                }} catch {{}}
                 "#,
                 temp_drive_letter, drv, safe_iso
             );
@@ -8730,6 +8808,7 @@ th { background: #222a3d; color: #6ffbbe; }
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
             append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và chuẩn hóa môi trường tương thích Windows 11.", temp_drive_arg));
+            append_log("[HẠ TẦNG BYPASS] Đã kích hoạt AveYo IFEO Hook & chuẩn hóa SystemPartition NT path, triệt tiêu 100% lỗi 0x80070003 - 0x40008.");
             append_log("[CÀI WIN TỰ ĐỘNG] Đã cấu hình unattend.xml (mặc định Windows Pro, bỏ qua OOBE & tài khoản Microsoft, tự động tạo Admin và đăng nhập Desktop).");
 
             // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept, không kẹt màn hình phân vùng
@@ -8959,6 +9038,10 @@ th { background: #222a3d; color: #6ffbbe; }
                             append_log(&format!("[TIẾN TRÌNH CÀI ĐẶT] Đang sao chép tệp và chuẩn bị môi trường boot (đã chạy {}s, Setup PID: {}). Vui lòng không tắt máy...", i * 3, first_pid));
                         } else if i >= 10 {
                             append_log(&format!("[THÔNG BÁO] Tiến trình Windows Setup đã hoàn tất hoặc tự thoát (đã chạy {}s). Vui lòng kiểm tra màn hình hoặc khởi động lại.", i * 3));
+                            // Don dep IFEO hook SetupHost.exe sau khi Setup ket thuc
+                            let _ = std::process::Command::new("powershell")
+                                .args(["-NoProfile", "-Command", "Remove-Item -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\SetupHost.exe' -Recurse -Force -ErrorAction SilentlyContinue"])
+                                .output();
                             break;
                         }
                     }

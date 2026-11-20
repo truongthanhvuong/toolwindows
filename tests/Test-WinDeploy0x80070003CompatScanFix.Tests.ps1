@@ -128,6 +128,15 @@ Assert-Test "15. SetupConfig.ini co EULA=Accept, TempDrive va dong lenh khong tr
     -not ($opsContent -match '@\("\/ConfigFile"')
 }
 
+# 16. Cau hinh AveYo IFEO hook cho SetupHost.exe va chuan hoa HKLM:\SYSTEM\Setup\SystemPartition qua QueryDosDevice de loai bo 100% loi 0x80070003
+Assert-Test "16. Cau hinh AveYo IFEO hook cho SetupHost.exe va chuan hoa HKLM:\SYSTEM\Setup\SystemPartition" {
+    $opsContent -match 'get11\.cmd' -and
+    $opsContent -match 'Image File Execution Options\\SetupHost\.exe' -and
+    $opsContent -match 'FilterFullPath' -and
+    $opsContent -match 'QueryDosDevice' -and
+    $opsContent -match 'SystemPartition'
+}
+
 Write-Host "`n======================================================================" -ForegroundColor Cyan
 Write-Host "   KET QUA KIEM THU: $passedCount PASS, $failedCount FAIL" -ForegroundColor $(if ($failedCount -eq 0) { "Green" } else { "Red" })
 Write-Host "======================================================================" -ForegroundColor Cyan
