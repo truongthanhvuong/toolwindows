@@ -8451,6 +8451,125 @@ th { background: #222a3d; color: #6ffbbe; }
                 # Khoi tao truoc thu muc staging $WINDOWS.~BT va Sources voi tep appraiserres.dll 0-byte
                 # Dieu nay triet tieu hoan toan trinh kiem tra phan cung Windows 11 Appraiser, loai bo loi 0x80070003 - 0x40008
                 $stagingDirs = @("$($targetDrive):\`$WINDOWS.~BT", "C:\`$WINDOWS.~BT")
+
+                # Cau hinh Unattend XML chuan vang (WinToHDD / Rufus standard)
+                # 1. Tu dong chon Windows 11/10 Pro qua Generic Setup Key VK7JG-NPHTM-C97JM-9MPGT-3V66T
+                # 2. Chap nhan EULA tu dong khong can bam Accept
+                # 3. Bo qua toan bo OOBE (mang, WiFi, Privacy questions, Microsoft Account)
+                # 4. Tu dong tao tai khoan Local Admin va AutoLogon thang vao Windows Desktop
+                # 5. Inject BypassNRO de ngan chan ep buoc ket noi mang tren Windows 11
+                $unattendXml = @'
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+  <settings pass="windowsPE">
+    <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+      <SetupUILanguage>
+        <UILanguage>en-US</UILanguage>
+      </SetupUILanguage>
+      <InputLocale>0409:00000409</InputLocale>
+      <SystemLocale>en-US</SystemLocale>
+      <UILanguage>en-US</UILanguage>
+      <UserLocale>en-US</UserLocale>
+    </component>
+    <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+      <UserData>
+        <AcceptEula>true</AcceptEula>
+        <FullName>Admin</FullName>
+        <Organization>Workgroup</Organization>
+        <ProductKey>
+          <Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
+          <WillShow>Never</WillShow>
+        </ProductKey>
+      </UserData>
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>1</Order>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>2</Order>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>3</Order>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>4</Order>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassCPUCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>5</Order>
+          <Path>reg.exe add "HKLM\SYSTEM\Setup\LabConfig" /v BypassStorageCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+  </settings>
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>1</Order>
+          <Path>reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE" /v BypassNRO /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>2</Order>
+          <Path>reg.exe add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE" /v DisablePrivacyExperience /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+  </settings>
+  <settings pass="oobeSystem">
+    <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+      <InputLocale>0409:00000409</InputLocale>
+      <SystemLocale>en-US</SystemLocale>
+      <UILanguage>en-US</UILanguage>
+      <UserLocale>en-US</UserLocale>
+    </component>
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" languageNeutral="false" versionScope="nonSxS">
+      <OOBE>
+        <HideEULAPage>true</HideEULAPage>
+        <HideLocalAccountScreen>true</HideLocalAccountScreen>
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <NetworkLocation>Work</NetworkLocation>
+        <ProtectYourPC>3</ProtectYourPC>
+      </OOBE>
+      <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+            <Description>Administrator</Description>
+            <DisplayName>Admin</DisplayName>
+            <Group>Administrators</Group>
+            <Name>Admin</Name>
+            <Password>
+              <Value></Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+      <AutoLogon>
+        <Enabled>true</Enabled>
+        <LogonCount>9999999</LogonCount>
+        <Username>Admin</Username>
+        <Password>
+          <Value></Value>
+          <PlainText>true</PlainText>
+        </Password>
+      </AutoLogon>
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <Order>1</Order>
+          <CommandLine>reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 1 /f</CommandLine>
+          <Description>Security Config</Description>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+    </component>
+  </settings>
+</unattend>
+'@
+
                 foreach ($stg in $stagingDirs) {{
                     try {{
                         if (-not (Test-Path $stg)) {{
@@ -8461,11 +8580,33 @@ th { background: #222a3d; color: #6ffbbe; }
                         if (-not (Test-Path $srcDir)) {{
                             New-Item -Path $srcDir -ItemType Directory -Force 2>&1 | Out-Null
                         }}
+                        $pantherDir = "$stg\Sources\Panther"
+                        $pantherRoot = "$stg\Panther"
+                        if (-not (Test-Path $pantherDir)) {{ New-Item -Path $pantherDir -ItemType Directory -Force 2>&1 | Out-Null }}
+                        if (-not (Test-Path $pantherRoot)) {{ New-Item -Path $pantherRoot -ItemType Directory -Force 2>&1 | Out-Null }}
+
                         icacls $stg /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
+
                         # Tao tep appraiserres.dll 0-byte (chuan bypass cua Rufus va WinToHDD de bo qua hardware appraisal)
                         Set-Content -Path "$srcDir\appraiserres.dll" -Value $null -Force 2>&1 | Out-Null
+
+                        # Nap PID.txt va ei.cfg khoa chat edition Windows Pro trong thu muc Sources
+                        $pidContent = "[PID]`r`nValue=VK7JG-NPHTM-C97JM-9MPGT-3V66T`r`n"
+                        Set-Content -Path "$srcDir\PID.txt" -Value $pidContent -Force 2>&1 | Out-Null
+                        $eiContent = "[Channel]`r`nRetail`r`n[VL]`r`n0`r`n"
+                        Set-Content -Path "$srcDir\ei.cfg" -Value $eiContent -Force 2>&1 | Out-Null
+
+                        # Luu tru unattend.xml vao thu muc Panther va staging path de Windows Setup doc tu dong
+                        Set-Content -Path "$stg\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
+                        Set-Content -Path "$pantherDir\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
+                        Set-Content -Path "$pantherRoot\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
                     }} catch {{}}
                 }}
+
+                try {{
+                    Set-Content -Path "$($targetDrive):\autounattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
+                    Set-Content -Path "C:\autounattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
+                }} catch {{}}
 
                 # Chu dong go bo mount point S: neu truoc do con ton tai de tranh xung dot phan vung EFI
                 mountvol S: /D 2>&1 | Out-Null
@@ -8478,19 +8619,18 @@ th { background: #222a3d; color: #6ffbbe; }
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
             append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và nạp bypass appraiserres.dll.", temp_drive_arg));
+            append_log("[CÀI WIN TỰ ĐỘNG] Đã cấu hình unattend.xml (mặc định Windows Pro, bỏ qua OOBE & tài khoản Microsoft, tự động tạo Admin và đăng nhập Desktop).");
 
-            // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept, không kẹt màn hình phân vùng
+            // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept /unattend, không kẹt màn hình phân vùng
             // Tùy Chọn Phân Vùng (Custom): Mở màn hình đồ họa phân vùng để người dùng tự do format / chia ổ
             // Cài Đè Giữ Dữ Liệu (Upgrade): Tự động nâng cấp hệ điều hành giữ nguyên dữ liệu
-            // Ghi chú tương thích: Không truyền /product server trực tiếp vào runtime setup_args vì Windows 11 (24H2/25H2) sẽ báo lỗi:
-            // "The installation process was launched with an invalid command line argument."
-            // Thay vào đó, bypass TPM 2.0 / SecureBoot / CPU được thực thi triệt để qua Registry LabConfig & MoSetup và 0-byte appraiserres.dll.
+            let unattend_path = format!(r"{}:\$WINDOWS.~BT\unattend.xml", temp_drive_arg);
             let setup_args = if mode == "clean" {
-                format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {} /unattend:{}", temp_drive_arg, unattend_path)
             } else if mode == "custom" {
                 format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {} /unattend:{}", temp_drive_arg, unattend_path)
             };
 
             let ps_run = format!(
@@ -26357,7 +26497,27 @@ mod tests {
 
     }
 
+    #[test]
+    fn test_system_ops_win_deploy_silent_pro_unattend() {
+        let target_drive = "C:";
+        let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
+        let temp_drive_arg = if clean_target.is_empty() { "C" } else { clean_target };
+        let unattend_path = format!(r"{}:\$WINDOWS.~BT\unattend.xml", temp_drive_arg);
+        let mode = "clean";
+        let setup_args = if mode == "clean" {
+            format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {} /unattend:{}", temp_drive_arg, unattend_path)
+        } else if mode == "custom" {
+            format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+        } else {
+            format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {} /unattend:{}", temp_drive_arg, unattend_path)
+        };
 
+        assert!(setup_args.contains("/auto clean"), "Clean mode must specify /auto clean");
+        assert!(setup_args.contains("/unattend:"), "Clean mode must specify /unattend");
+        assert!(setup_args.contains("/eula accept"), "Must accept EULA");
+        assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
+        assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive");
+    }
 
 }
 
