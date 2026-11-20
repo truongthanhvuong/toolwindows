@@ -8632,8 +8632,11 @@ th { background: #222a3d; color: #6ffbbe; }
                 try {{
                     if (-not (Test-Path $sysPanther)) {{ New-Item -Path $sysPanther -ItemType Directory -Force 2>&1 | Out-Null }}
                     Set-Content -Path "$sysPanther\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
-                    Set-Content -Path "$($targetDrive):\autounattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
-                    Set-Content -Path "C:\autounattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
+                    # TUYET DOI KHONG tao autounattend.xml tren goc C:\ hoac o dia dich vi autounattend.xml o goc dia
+                    # chi danh cho USB boot offline; khi In-OS setup doc thay C:\autounattend.xml, CUIActionDiskManagement::GetDriveLetterFromUnattend
+                    # se bi loi 0xC1800108 do thieu DiskConfiguration va ep dung lai o man hinh "Select location to install Windows"!
+                    # Xoa bo triet de moi file autounattend.xml con sot lai tren cac o dia:
+                    Remove-Item -Path "C:\autounattend.xml", "$($targetDrive):\autounattend.xml", "D:\autounattend.xml" -Force -ErrorAction SilentlyContinue 2>&1 | Out-Null
                 }} catch {{}}
 
                 # Tao tep SetupConfig.ini chuan Microsoft
@@ -8805,13 +8808,13 @@ th { background: #222a3d; color: #6ffbbe; }
                 # vi dat working directory tai o dia chi doc se truc tiep gay ma loi 0x80070490 (ERROR_NOT_FOUND)
                 $workDir = "$($targetDrive):\"
 
-                # UU TIEN SO 1: setup.exe o goc ISO (se tu dong khoi tao day du moi truong media roi chuyen tiep qua setupprep.exe)
-                # UU TIEN SO 2: sources\setupprep.exe la dong co In-OS Setup chuyen dung duoc Microsoft thiet ke de chay tu Windows dang chay
+                # UU TIEN SO 1: sources\setupprep.exe la dong co In-OS Setup chuyen dung (khong tao diagnostics tren o ISO read-only va xu ly tu dong che do /auto clean)
+                # UU TIEN SO 2: setup.exe o goc ISO (se tu dong chuyen tiep qua setupprep.exe)
                 # UU TIEN CUOI CUNG: sources\setup.exe (day la dong co WinPE boot USB, chi dung lam last resort)
-                $setupExe = if (Test-Path "$drv\setup.exe") {{
-                    "$drv\setup.exe"
-                }} elseif (Test-Path "$drv\sources\setupprep.exe") {{
+                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{
                     "$drv\sources\setupprep.exe"
+                }} elseif (Test-Path "$drv\setup.exe") {{
+                    "$drv\setup.exe"
                 }} else {{
                     "$drv\sources\setup.exe"
                 }}
@@ -8903,11 +8906,11 @@ th { background: #222a3d; color: #6ffbbe; }
                 };
 
                 // Dự phòng trực tiếp từ Rust bằng Windows Command cmd /c start
-                // Ưu tiên: root setup.exe -> sources\setupprep.exe -> sources\setup.exe
-                let fallback_exe = if std::path::Path::new(&format!(r"{}\setup.exe", drv)).exists() {
-                    format!(r"{}\setup.exe", drv)
-                } else if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
+                // Ưu tiên: sources\setupprep.exe -> root setup.exe -> sources\setup.exe
+                let fallback_exe = if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
                     format!(r"{}\sources\setupprep.exe", drv)
+                } else if std::path::Path::new(&format!(r"{}\setup.exe", drv)).exists() {
+                    format!(r"{}\setup.exe", drv)
                 } else {
                     format!(r"{}\sources\setup.exe", drv)
                 };

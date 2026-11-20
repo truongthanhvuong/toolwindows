@@ -98,6 +98,12 @@ Assert-Test "10. Go bo cac anh ISO ao stale de tranh xung dot catalog voi provid
     $opsContent -match 'Dismount-DiskImage'
 }
 
+# 11. Khong duoc tao autounattend.xml tai goc o dia (C:\autounattend.xml) trong In-OS deploy vi gay loi GetDriveLetterFromUnattend 0xC1800108 va mo man hinh phan vung
+Assert-Test "11. Khong duoc tao autounattend.xml tren C:\ de tranh loi GetDriveLetterFromUnattend 0xC1800108" {
+    -not ($opsContent -match 'Set-Content -Path "C:\\autounattend\.xml"') -and
+    $opsContent -match 'Remove-Item -Path "C:\\autounattend\.xml"'
+}
+
 Write-Host "`n======================================================================" -ForegroundColor Cyan
 Write-Host "   KET QUA KIEM THU: $passedCount PASS, $failedCount FAIL" -ForegroundColor $(if ($failedCount -eq 0) { "Green" } else { "Red" })
 Write-Host "======================================================================" -ForegroundColor Cyan
