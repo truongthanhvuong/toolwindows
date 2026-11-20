@@ -53,9 +53,9 @@ Assert-Test "4. Thu muc lam viec $workDir phai la root $drv thay vi Split-Path $
     $opsContent -match '\$workDir\s*=\s*\$drv'
 }
 
-# 5. Uu tien setup.exe goc o root $drv de mo giao dien Windows Setup chuan (Clean Install / Custom Partitioning)
-Assert-Test "5. Uu tien setup.exe goc o root $drv de mo giao dien Windows Setup chuan thay vi setupprep.exe" {
-    $opsContent -match '\$setupExe\s*=\s*if\s*\(Test-Path\s*"\$drv\\setup\.exe"\)'
+# 5. Uu tien sources\setupprep.exe hoac sources\setup.exe de nap dong co SetupHost hien dai
+Assert-Test "5. Uu tien sources\setupprep.exe hoac sources\setup.exe truoc root setup.exe de chong loi invalid argument" {
+    $opsContent -match '\$setupExe\s*=\s*if\s*\(Test-Path\s*"\$drv\\sources\\setupprep\.exe"\)'
 }
 
 # 6. Runtime setup_args khong duoc chua /product server

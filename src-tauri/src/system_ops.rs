@@ -8621,16 +8621,17 @@ th { background: #222a3d; color: #6ffbbe; }
             append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và nạp bypass appraiserres.dll.", temp_drive_arg));
             append_log("[CÀI WIN TỰ ĐỘNG] Đã cấu hình unattend.xml (mặc định Windows Pro, bỏ qua OOBE & tài khoản Microsoft, tự động tạo Admin và đăng nhập Desktop).");
 
-            // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept /unattend, không kẹt màn hình phân vùng
+            // Cài Mới Sạch Sẽ (Clean): Tự động hóa clean install bằng /auto clean /eula accept, không kẹt màn hình phân vùng
             // Tùy Chọn Phân Vùng (Custom): Mở màn hình đồ họa phân vùng để người dùng tự do format / chia ổ
             // Cài Đè Giữ Dữ Liệu (Upgrade): Tự động nâng cấp hệ điều hành giữ nguyên dữ liệu
-            let unattend_path = format!(r"{}:\$WINDOWS.~BT\unattend.xml", temp_drive_arg);
+            // Ghi chú cú pháp Microsoft: Cờ /auto không được phép đi kèm /unattend: trên dòng lệnh vì xung đột tham số.
+            // Trình cài đặt SetupHost sẽ tự động nhận diện autounattend.xml và Panther\unattend.xml đã được ghi sẵn ở các bước chuẩn bị.
             let setup_args = if mode == "clean" {
-                format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {} /unattend:{}", temp_drive_arg, unattend_path)
+                format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             } else if mode == "custom" {
                 format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {} /unattend:{}", temp_drive_arg, unattend_path)
+                format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
 
             let ps_run = format!(
@@ -8642,11 +8643,17 @@ th { background: #222a3d; color: #6ffbbe; }
                 # Chu dong go bo triet de mount point S: neu con sot lai tu cac phien truoc
                 try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
 
-                # Uu tien setup.exe goc tren o dia cai dat de mo giao dien Windows Setup chuan (Clean Install / Custom Partitioning)
-                # Fallback: sources\setup.exe hoac sources\setupprep.exe
-                $setupExe = if (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} elseif (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} else {{ "$drv\sources\setupprep.exe" }}
+                # Uu tien sources\setupprep.exe (dong co In-OS Setup Engine hien dai cua Microsoft)
+                # Ke tiep la sources\setup.exe (Windows Setup Engine thuc thu, ho tro day du cac tham so dong lenh)
+                # Fallback: root setup.exe neu khong tim thay sources
+                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} elseif (Test-Path "$drv\sources\setup.exe") {{ "$drv\sources\setup.exe" }} else {{ "$drv\setup.exe" }}
                 # Thu muc lam viec phai la goc o dia cai dat $drv de dam bao cac duong dan tuong doi trong bo cai khong bi ERROR_PATH_NOT_FOUND (0x80070003)
                 $workDir = $drv
+
+                # Neu bat buoc phai fallback ve root setup.exe (nap autorun.dll), loai bo cac tham so khong duoc autorun.dll ho tro de chong loi Invalid Command Line Argument
+                if ($setupExe -like "*\setup.exe" -and -not ($setupExe -like "*\sources\*")) {{
+                    $setupArgs = if ($setupArgs -like "*/auto upgrade*") {{ "/auto:upgrade" }} else {{ "" }}
+                }}
                 $argArray = $setupArgs.Split(' ') | Where-Object {{ $_ -ne '' }}
 
                 $launched = $false
@@ -8668,7 +8675,7 @@ th { background: #222a3d; color: #6ffbbe; }
                             $launched = $true
                         }} catch {{
                             try {{
-                                Start-Process -FilePath "{}\setup.exe" -ArgumentList "{}" -WorkingDirectory "{}\" -Verb RunAs
+                                Start-Process -FilePath "{}\sources\setupprep.exe" -ArgumentList "{}" -WorkingDirectory "{}\" -Verb RunAs
                                 Write-Output "FALLBACK_PS_OK"
                                 $launched = $true
                             }} catch {{
@@ -8708,11 +8715,19 @@ th { background: #222a3d; color: #6ffbbe; }
                 };
 
                 // Dự phòng trực tiếp từ Rust bằng Windows Command cmd /c start
-                let fallback_exe = format!(r"{}\setup.exe", drv);
+                let fallback_exe = if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
+                    format!(r"{}\sources\setupprep.exe", drv)
+                } else if std::path::Path::new(&format!(r"{}\sources\setup.exe", drv)).exists() {
+                    format!(r"{}\sources\setup.exe", drv)
+                } else {
+                    format!(r"{}\setup.exe", drv)
+                };
                 let mut direct_cmd = Command::new("cmd");
                 direct_cmd.args(["/c", "start", "", &fallback_exe]);
-                for a in setup_args.split_whitespace() {
-                    direct_cmd.arg(a);
+                if !fallback_exe.ends_with(r"\setup.exe") || fallback_exe.contains(r"\sources\") {
+                    for a in setup_args.split_whitespace() {
+                        direct_cmd.arg(a);
+                    }
                 }
                 #[cfg(windows)]
                 direct_cmd.creation_flags(CREATE_NO_WINDOW);
@@ -26751,18 +26766,17 @@ mod tests {
         let target_drive = "C:";
         let clean_target = target_drive.trim_end_matches('\\').trim_end_matches(':');
         let temp_drive_arg = if clean_target.is_empty() { "C" } else { clean_target };
-        let unattend_path = format!(r"{}:\$WINDOWS.~BT\unattend.xml", temp_drive_arg);
         let mode = "clean";
         let setup_args = if mode == "clean" {
-            format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {} /unattend:{}", temp_drive_arg, unattend_path)
+            format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
         } else if mode == "custom" {
             format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
         } else {
-            format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {} /unattend:{}", temp_drive_arg, unattend_path)
+            format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
         };
 
         assert!(setup_args.contains("/auto clean"), "Clean mode must specify /auto clean");
-        assert!(setup_args.contains("/unattend:"), "Clean mode must specify /unattend");
+        assert!(!setup_args.contains("/unattend:"), "Must not pass /unattend: with /auto (syntax conflict, handled via autounattend.xml)");
         assert!(setup_args.contains("/eula accept"), "Must accept EULA");
         assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
         assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive");

@@ -65,9 +65,9 @@ Assert-Test "5. Luu tru unattend.xml vao thu muc Panther va staging path de Wind
     $opsContent -match 'Panther\\unattend\.xml' -or $opsContent -match 'Sources\\Panther'
 }
 
-# 6. setup_args trong che do clean phai truyen /unattend:<path> den unattend.xml
-Assert-Test "6. setup_args che do clean phai kem tham so /unattend de cai dat im lang 100%" {
-    $opsContent -match '\/auto clean.*\/unattend:'
+# 6. setup_args trong che do clean phai dung cu phap chuan /auto clean va khong kem /unattend: (chong loi cu phap vi unattend da duoc nap qua autounattend.xml)
+Assert-Test "6. setup_args che do clean phai dung cu phap /auto clean chuan Microsoft khong gay loi tham so" {
+    $opsContent -match '\/auto clean \/eula accept' -and (-not ($opsContent -match 'format!\("[^"]*\/auto clean[^"]*\/unattend:'))
 }
 
 # 7. specialize pass phai inject BypassNRO vao Registry de Windows 11 khong bat ket noi mang
