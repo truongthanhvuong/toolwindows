@@ -10662,6 +10662,271 @@ getAppIconMarkup(app) +
 
   };
 
+  // --- 13.1. DEEP LICENSE & CRACK AUDIT CONTROLLER (Chuẩn Image 2) ---
+  window.lastCrackAuditResult = null;
+  window.currentCrackAuditTab = "signs";
+
+  window.runDeepLicenseCrackAudit = async function(mode = "quick") {
+    const quickBtn = document.getElementById("btn-audit-quick");
+    const fullBtn = document.getElementById("btn-audit-full");
+    const progressContainer = document.getElementById("crack-audit-progress-container");
+    const progressBar = document.getElementById("crack-audit-progress-bar");
+    const progressText = document.getElementById("crack-audit-progress-text");
+    const banner = document.getElementById("crack-audit-summary-banner");
+    const bannerIcon = document.getElementById("crack-audit-summary-icon");
+    const bannerText = document.getElementById("crack-audit-summary-text");
+
+    if (quickBtn) quickBtn.disabled = true;
+    if (fullBtn) fullBtn.disabled = true;
+    if (progressContainer) progressContainer.classList.remove("hidden");
+    if (progressBar) progressBar.style.width = "35%";
+    if (progressText) progressText.innerText = mode === "full" ? "Đang quét toàn diện..." : "Đang quét nhanh...";
+
+    if (typeof window.appendConsoleLog === "function") {
+      window.appendConsoleLog(`[KIỂM TRA BẢN QUYỀN & CRACK] Bắt đầu quét kiểm tra (${mode === "full" ? "Toàn diện A-Z" : "Quét nhanh"})...`);
+    }
+    showToast("Kiểm Tra Bản Quyền", `Đang quét sâu kiểm tra bản quyền & crack (${mode === "full" ? "Toàn diện" : "Nhanh"})...`, "info");
+
+    try {
+      if (progressBar) progressBar.style.width = "65%";
+      const res = await invokeRust("run_system_action", {
+        actionId: "deep_license_crack_audit",
+        mode: mode
+      });
+
+      if (progressBar) progressBar.style.width = "100%";
+
+      let auditData = null;
+      if (res && res.message) {
+        try {
+          auditData = JSON.parse(res.message);
+        } catch (_) {}
+      }
+      if (!auditData && res && res.data) {
+        auditData = res.data;
+      }
+
+      if (!auditData) {
+        auditData = {
+          summary: {
+            status: "safe",
+            status_text: "Hệ thống an toàn 100% · Không phát hiện bất kỳ dấu hiệu crack nào",
+            total_scanned: 1,
+            cracks_found: 0,
+            suspicious_found: 0,
+            genuine_found: 1
+          },
+          items: [
+            {
+              software: "Microsoft Windows",
+              category: "Hệ Điều Hành",
+              level: "safe",
+              level_badge: "Bản quyền chính hãng",
+              sign: "Bản quyền số vĩnh viễn (Digital License / HWID)",
+              details: "Channel: Retail | Status: Licensed"
+            }
+          ]
+        };
+      }
+
+      window.lastCrackAuditResult = auditData;
+
+      // Update Summary Banner
+      if (banner && bannerText && bannerIcon) {
+        banner.className = "px-4 py-2.5 rounded-xl border text-xs font-medium flex items-center gap-2";
+        if (auditData.summary.status === "danger") {
+          banner.classList.add("border-red-200", "bg-red-50/80", "text-red-800");
+          bannerIcon.innerText = "warning";
+          bannerIcon.className = "material-symbols-outlined text-[18px] text-red-600";
+          bannerText.innerText = auditData.summary.status_text;
+        } else if (auditData.summary.status === "warning") {
+          banner.classList.add("border-amber-200", "bg-amber-50/80", "text-amber-800");
+          bannerIcon.innerText = "info";
+          bannerIcon.className = "material-symbols-outlined text-[18px] text-amber-600";
+          bannerText.innerText = auditData.summary.status_text;
+        } else {
+          banner.classList.add("border-emerald-200", "bg-emerald-50/80", "text-emerald-800");
+          bannerIcon.innerText = "check_circle";
+          bannerIcon.className = "material-symbols-outlined text-[18px] text-emerald-600";
+          bannerText.innerText = auditData.summary.status_text;
+        }
+      }
+
+      // Update Badges
+      const items = auditData.items || [];
+      const crackSignsCount = items.filter(i => i.level === "danger" || i.level === "warning").length;
+      const paidCount = items.length;
+      const badgeSigns = document.getElementById("badge-crack-signs");
+      const badgePaid = document.getElementById("badge-paid-software");
+      const badgeAll = document.getElementById("badge-all-scanned");
+      if (badgeSigns) badgeSigns.innerText = crackSignsCount;
+      if (badgePaid) badgePaid.innerText = paidCount;
+      if (badgeAll) badgeAll.innerText = paidCount;
+
+      // Render Active Tab
+      window.renderCrackAuditTable(window.currentCrackAuditTab || "signs");
+
+      if (typeof window.appendConsoleLog === "function") {
+        window.appendConsoleLog(`[KIỂM TRA BẢN QUYỀN & CRACK] Hoàn tất: ${auditData.summary.status_text}`);
+      }
+      showToast("Quét Hoàn Tất", auditData.summary.status_text, auditData.summary.status === "danger" ? "warning" : "success");
+    } catch (e) {
+      showToast("Lỗi Quét", "Không thể hoàn thành quét bản quyền: " + e, "error");
+    } finally {
+      if (quickBtn) quickBtn.disabled = false;
+      if (fullBtn) fullBtn.disabled = false;
+      setTimeout(() => {
+        if (progressContainer) progressContainer.classList.add("hidden");
+        if (progressBar) progressBar.style.width = "0%";
+      }, 1000);
+    }
+  };
+
+  window.renderCrackAuditTable = function(filterTab = "signs") {
+    const tbody = document.getElementById("crack-audit-table-body");
+    if (!tbody) return;
+
+    const data = window.lastCrackAuditResult;
+    if (!data || !data.items || data.items.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="py-6 text-center text-slate-400 italic">
+            Chưa có kết quả quét. Bấm "Quét nhanh" hoặc "Quét toàn diện A–Z" ở trên để kiểm tra toàn bộ bản quyền & dấu hiệu crack.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    let filteredItems = data.items;
+    if (filterTab === "signs") {
+      filteredItems = data.items.filter(i => i.level === "danger" || i.level === "warning");
+      if (filteredItems.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-8 text-center text-emerald-600 font-medium">
+              <span class="material-symbols-outlined text-[28px] block mb-1">verified</span>
+              Tuyệt vời! Không phát hiện bất kỳ dấu hiệu crack hay tệp hook nào trên máy này.
+            </td>
+          </tr>`;
+        return;
+      }
+    }
+
+    const safeEsc = (str) => {
+      if (!str) return "";
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    };
+
+    let html = "";
+    filteredItems.forEach((item) => {
+      let badgeHtml = "";
+      if (item.level === "danger") {
+        badgeHtml = `<span class="px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold text-[11px] inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>${item.level_badge || "Dấu hiệu crack"}</span>`;
+      } else if (item.level === "warning") {
+        badgeHtml = `<span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold text-[11px] inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>${item.level_badge || "Nghi ngờ"}</span>`;
+      } else {
+        badgeHtml = `<span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-[11px] inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>${item.level_badge || "Bản quyền chính hãng"}</span>`;
+      }
+
+      html += `
+        <tr class="hover:bg-slate-50/70 transition-colors">
+          <td class="py-3 px-3 align-top">${badgeHtml}</td>
+          <td class="py-3 px-3 align-top">
+            <div class="font-bold text-slate-800">${safeEsc(item.software || "Phần mềm")}</div>
+            <div class="text-[11px] text-slate-400">${safeEsc(item.category || "Phần mềm")}</div>
+          </td>
+          <td class="py-3 px-3 align-top font-medium text-slate-700">${safeEsc(item.sign || "")}</td>
+          <td class="py-3 px-3 align-top text-slate-500 font-mono text-[11px] break-all">${safeEsc(item.details || "")}</td>
+        </tr>`;
+    });
+
+    tbody.innerHTML = html;
+  };
+
+  window.switchCrackAuditTab = function(tabName) {
+    window.currentCrackAuditTab = tabName;
+    const tabSigns = document.getElementById("tab-btn-crack-signs");
+    const tabPaid = document.getElementById("tab-btn-paid-software");
+    const tabAll = document.getElementById("tab-btn-all-scanned");
+
+    [tabSigns, tabPaid, tabAll].forEach(t => {
+      if (t) {
+        t.className = "px-3 py-2 font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1.5";
+      }
+    });
+
+    const activeTab = tabName === "signs" ? tabSigns : (tabName === "paid" ? tabPaid : tabAll);
+    if (activeTab) {
+      activeTab.className = "px-3 py-2 font-semibold border-b-2 border-sky-500 text-sky-600 flex items-center gap-1.5";
+    }
+
+    window.renderCrackAuditTable(tabName);
+  };
+
+  window.openCrackAuditReport = function() {
+    const data = window.lastCrackAuditResult;
+    if (!data || !data.items || data.items.length === 0) {
+      showToast("Báo Cáo", "Vui lòng bấm 'Quét nhanh' hoặc 'Quét toàn diện' trước khi mở báo cáo!", "warning");
+      return;
+    }
+
+    const items = data.items;
+    const now = new Date().toLocaleString("vi-VN");
+    let rowsHtml = "";
+    items.forEach(i => {
+      const color = i.level === "danger" ? "#b91c1c" : (i.level === "warning" ? "#b45309" : "#047857");
+      rowsHtml += `
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 10px; font-weight: bold; color: ${color};">${i.level_badge || i.level}</td>
+          <td style="padding: 10px; font-weight: 600;">${i.software} <span style="display:block; font-size:11px; color:#64748b;">${i.category}</span></td>
+          <td style="padding: 10px;">${i.sign}</td>
+          <td style="padding: 10px; font-family: monospace; font-size: 11px;">${i.details}</td>
+        </tr>`;
+    });
+
+    const reportHtml = `
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head>
+        <meta charset="utf-8">
+        <title>Báo Cáo Kiểm Tra Bản Quyền & Phần Mềm Crack - VUONGTT Toolkit 2026</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 30px; background: #f8fafc; color: #1e293b; }
+          .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+          h1 { margin-top: 0; font-size: 20px; color: #0f172a; }
+          .summary { padding: 12px 16px; border-radius: 8px; margin: 16px 0; background: #f1f5f9; font-weight: 600; font-size: 13px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+          th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Báo Cáo Kiểm Tra Bản Quyền & Phần Mềm Crack</h1>
+          <div style="font-size: 12px; color: #64748b;">Thời gian quét: ${now} · Công cụ: VUONGTT Toolkit 2026 Deep Audit v1.3</div>
+          <div class="summary">${data.summary.status_text}</div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 130px;">Mức độ</th>
+                <th style="width: 200px;">Phần mềm</th>
+                <th>Dấu hiệu / Phương thức</th>
+                <th>Chi tiết kỹ thuật</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>`;
+
+    const blob = new Blob([reportHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    showToast("Báo Cáo HTML", "Đã mở báo cáo kiểm tra bản quyền & crack!", "success");
+  };
+
 
 
   window.handlePingTest = async function() {

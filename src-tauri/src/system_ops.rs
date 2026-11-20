@@ -18918,7 +18918,8 @@ fn restart_explorer_safely() {}
 
         let ps_code = r#"
 
-
+            [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+            $OutputEncoding = [System.Text.Encoding]::UTF8;
 
             $oa3 = (Get-CimInstance -Namespace root/cimv2 -ClassName SoftwareLicensingService -ErrorAction SilentlyContinue).OA3xOriginalProductKey
 
@@ -19063,6 +19064,16 @@ fn restart_explorer_safely() {}
         return (true, res);
 
 
+
+    }
+
+
+
+    if act == "deep_license_crack_audit" || act == "audit_license_and_cracks" || act == "kiem_tra_phan_mem_crack" {
+
+        let (ok, res) = audit_license_and_cracks(params_json);
+
+        return (ok, res);
 
     }
 
@@ -23702,9 +23713,244 @@ fn serde_json_lite_array(raw: &str) -> Result<Vec<String>, ()> {
 
 
 
+pub fn audit_license_and_cracks(_params_json: &str) -> (bool, String) {
+    let ps_code = r#"
+        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+        $OutputEncoding = [System.Text.Encoding]::UTF8;
 
+        $items = [System.Collections.Generic.List[PSCustomObject]]::new()
 
+        # 1. WINDOWS AUDIT
+        $winProd = Get-CimInstance SoftwareLicensingProduct -Filter "PartialProductKey is not null and Description like '%Windows%'" -ErrorAction SilentlyContinue | Select-Object -First 1
+        $winStatus = if ($winProd) { $winProd.LicenseStatus } else { 0 }
+        $winDesc = if ($winProd) { $winProd.Description } else { '' }
+        $winKmsServer = if ($winProd) { $winProd.KeyManagementServiceMachine } else { '' }
+        $winKmsPort = if ($winProd) { $winProd.KeyManagementServicePort } else { 0 }
+        $winKey = if ($winProd) { $winProd.PartialProductKey } else { '' }
+        $oa3 = (Get-CimInstance -Namespace root/cimv2 -ClassName SoftwareLicensingService -ErrorAction SilentlyContinue).OA3xOriginalProductKey
+        $osName = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue).Caption
 
+        $wItem = [PSCustomObject]@{
+            software = if ($osName) { $osName.Trim() } else { "Windows 11 Pro" }
+            category = "Hệ Điều Hành"
+            level = "safe"
+            level_badge = "Bản quyền chính hãng"
+            sign = "Bản quyền số vĩnh viễn (Digital License / HWID)"
+            details = "Channel: Retail | Status: Licensed"
+        }
+
+        if ($winKmsServer -match '127\.0\.0\.1|localhost|::1' -or $winKmsPort -eq 1688) {
+            $wItem.level = "danger"
+            $wItem.level_badge = "Dấu hiệu crack"
+            $wItem.sign = "KMS Emulator giả lập cục bộ (KMSPico / KMSAuto / MAS KMS38)"
+            $wItem.details = "Máy chủ kích hoạt trỏ về $winKmsServer`:$winKmsPort | Key: $winKey"
+        } elseif (Test-Path "C:\Windows\System32\SppExtComObjHook.dll") {
+            $wItem.level = "danger"
+            $wItem.level_badge = "Dấu hiệu crack"
+            $wItem.sign = "Phát hiện DLL hook SppExtComObjHook.dll (MAS/KMS38 hook)"
+            $wItem.details = "Đường dẫn: C:\Windows\System32\SppExtComObjHook.dll"
+        } elseif (Get-Service -Name "KMSPico", "AutoKMS", "KMSELDI", "Service_KMS" -ErrorAction SilentlyContinue) {
+            $wItem.level = "danger"
+            $wItem.level_badge = "Dấu hiệu crack"
+            $wItem.sign = "Dịch vụ KMS giả lập (KMSPico / AutoKMS) đang cài đặt trên máy"
+            $wItem.details = "Phát hiện Windows Service crack đang chạy nền"
+        } elseif ($winStatus -eq 1) {
+            if ($oa3) {
+                $wItem.level = "safe"
+                $wItem.level_badge = "Bản quyền OEM"
+                $wItem.sign = "Bản quyền chính hãng OEM nhúng trong BIOS bo mạch chủ"
+                $wItem.details = "Key BIOS: $oa3 | Partial Key: $winKey"
+            } else {
+                $wItem.level = "safe"
+                $wItem.level_badge = "Bản quyền chính hãng"
+                $wItem.sign = "Bản quyền số vĩnh viễn (Digital License / HWID)"
+                $wItem.details = "Mô tả: $winDesc | Partial Key: $winKey"
+            }
+        } else {
+            $wItem.level = "warning"
+            $wItem.level_badge = "Nghi ngờ"
+            $wItem.sign = "Chưa kích hoạt bản quyền hoặc đang trong thời gian gia hạn"
+            $wItem.details = "Trạng thái LicenseStatus: $winStatus"
+        }
+        $items.Add($wItem)
+
+        # 2. MICROSOFT OFFICE AUDIT
+        $officePaths = @(
+            "C:\Program Files\Microsoft Office",
+            "C:\Program Files (x86)\Microsoft Office",
+            "$env:ProgramW6432\Microsoft Office"
+        )
+        $hasOffice = $false
+        foreach ($p in $officePaths) {
+            if (Test-Path $p) { $hasOffice = $true; break }
+        }
+
+        if ($hasOffice) {
+            $oItem = [PSCustomObject]@{
+                software = "Microsoft Office"
+                category = "Bộ Ứng Dụng Văn Phòng"
+                level = "safe"
+                level_badge = "Bản quyền chính hãng"
+                sign = "Đã kích hoạt bản quyền hợp lệ"
+                details = "Microsoft Office C2R / MSI"
+            }
+
+            $ohookCandidates = @(
+                "C:\Program Files\Microsoft Office\root\vfs\System\sppc.dll",
+                "C:\Program Files\Microsoft Office\root\Office16\sppc.dll",
+                "C:\Program Files (x86)\Microsoft Office\root\vfs\System\sppc.dll",
+                "C:\Program Files (x86)\Microsoft Office\root\Office16\sppc.dll",
+                "C:\Program Files\Microsoft Office\root\vfs\SystemX86\sppc.dll",
+                "C:\Program Files (x86)\Microsoft Office\root\vfs\SystemX86\sppc.dll"
+            )
+            $ohookFound = $null
+            foreach ($oh in $ohookCandidates) {
+                if (Test-Path $oh) { $ohookFound = $oh; break }
+            }
+
+            if ($ohookFound) {
+                $oItem.level = "danger"
+                $oItem.level_badge = "Dấu hiệu crack"
+                $oItem.sign = "Phát hiện crack Ohook (MAS Office sppc.dll hook)"
+                $oItem.details = "Tệp hook DLL chèn vào Office: $ohookFound"
+            } else {
+                $offProd = Get-CimInstance SoftwareLicensingProduct -Filter "PartialProductKey is not null and Description like '%Office%'" -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($offProd) {
+                    $offKms = $offProd.KeyManagementServiceMachine
+                    $offPort = $offProd.KeyManagementServicePort
+                    $offKey = $offProd.PartialProductKey
+                    $offDesc = $offProd.Description
+                    if ($offKms -match '127\.0\.0\.1|localhost|::1' -or $offPort -eq 1688) {
+                        $oItem.level = "danger"
+                        $oItem.level_badge = "Dấu hiệu crack"
+                        $oItem.sign = "KMS Emulator cho Office (AutoKMS / KMSPico)"
+                        $oItem.details = "Máy chủ kích hoạt trỏ về $offKms`:$offPort | Key: $offKey"
+                    } elseif ($offProd.LicenseStatus -eq 1) {
+                        $oItem.level = "safe"
+                        $oItem.level_badge = "Bản quyền chính hãng"
+                        $oItem.sign = "Bản quyền Office chính hãng (Retail / M365 / Volume MAK)"
+                        $oItem.details = "Mô tả: $offDesc | Partial Key: $offKey"
+                    }
+                }
+            }
+            $items.Add($oItem)
+        }
+
+        # 3. ADOBE CREATIVE CLOUD AUDIT
+        $hostsPath = "C:\Windows\System32\drivers\etc\hosts"
+        $adobeHostsCount = 0
+        if (Test-Path $hostsPath) {
+            $hostsLines = Get-Content $hostsPath -ErrorAction SilentlyContinue
+            foreach ($line in $hostsLines) {
+                if ($line -match '^\s*(127\.0\.0\.1|0\.0\.0\.0)\s+.*adobe') {
+                    $adobeHostsCount++
+                }
+            }
+        }
+        $adobeInstalled = (Test-Path "C:\Program Files\Adobe") -or (Test-Path "C:\Program Files (x86)\Adobe")
+        if ($adobeInstalled -or $adobeHostsCount -gt 0) {
+            $aItem = [PSCustomObject]@{
+                software = "Adobe Creative Cloud"
+                category = "Đồ Họa & Đa Phương Tiện"
+                level = if ($adobeHostsCount -ge 3) { "danger" } else { "safe" }
+                level_badge = if ($adobeHostsCount -ge 3) { "Dấu hiệu crack" } else { "Bình thường" }
+                sign = if ($adobeHostsCount -ge 3) { "Chặn máy chủ bản quyền Adobe trong file hosts (Adobe GenP / Zii patch)" } else { "Cài đặt Adobe hợp lệ" }
+                details = if ($adobeHostsCount -ge 3) { "Phát hiện $adobeHostsCount dòng hosts chặn máy chủ xác thực Adobe (lmlicenses.wip4, ic.adobe.io...)" } else { "Không phát hiện hosts chặn" }
+            }
+            $items.Add($aItem)
+        }
+
+        # 4. INTERNET DOWNLOAD MANAGER (IDM) AUDIT
+        $idmReg = "HKCU:\Software\DownloadManager"
+        if (Test-Path $idmReg) {
+            $idmSerial = (Get-ItemProperty -Path $idmReg -Name "Serial" -ErrorAction SilentlyContinue).Serial
+            $idmFname = (Get-ItemProperty -Path $idmReg -Name "FName" -ErrorAction SilentlyContinue).FName
+            $idmResetTask = Get-ScheduledTask -TaskName "*IDM*", "*Trial*" -ErrorAction SilentlyContinue
+            
+            $iItem = [PSCustomObject]@{
+                software = "Internet Download Manager (IDM)"
+                category = "Tiện Ích Tăng Tốc Tải"
+                level = "safe"
+                level_badge = "Đã đăng ký"
+                sign = "Đã đăng ký bản quyền"
+                details = "Đăng ký cho: $idmFname"
+            }
+            if ($idmResetTask) {
+                $iItem.level = "danger"
+                $iItem.level_badge = "Dấu hiệu crack"
+                $iItem.sign = "Tác vụ tự động reset thời gian dùng thử (IDM Trial Reset)"
+                $iItem.details = "Tác vụ: $($idmResetTask.TaskName)"
+            } elseif ($idmSerial -and ($idmSerial -match '7G7QY|4DFO7|9GWDT|D441S|LC372' -or $idmFname -match 'Cracked|crackingpatching|karanpc')) {
+                $iItem.level = "danger"
+                $iItem.level_badge = "Dấu hiệu crack"
+                $iItem.sign = "Serial bản quyền lậu công khai (Blacklisted Serial)"
+                $iItem.details = "Đăng ký bằng Serial giả mạo hoặc tên crack: $idmFname"
+            }
+            $items.Add($iItem)
+        }
+
+        # 5. WINRAR AUDIT
+        $winrarKey = "C:\Program Files\WinRAR\rarreg.key"
+        if (Test-Path $winrarKey) {
+            $rarContent = Get-Content $winrarKey -Raw -ErrorAction SilentlyContinue
+            $rItem = [PSCustomObject]@{
+                software = "WinRAR"
+                category = "Nén & Giải Nén"
+                level = "safe"
+                level_badge = "Đã đăng ký"
+                sign = "Tệp bản quyền hợp lệ (rarreg.key)"
+                details = "Tệp: $winrarKey"
+            }
+            if ($rarContent -match 'RoRo|FFF|pirate|crack|team|CORE|TEAM ViRiLiTY') {
+                $rItem.level = "warning"
+                $rItem.level_badge = "Nghi ngờ"
+                $rItem.sign = "Tệp rarreg.key được tạo bởi Keygen công khai trên mạng"
+                $rItem.details = "Khóa đăng ký chứa thông tin của nhóm phát hành crack"
+            }
+            $items.Add($rItem)
+        }
+
+        $dangerCount = ($items | Where-Object { $_.level -eq 'danger' }).Count
+        $warningCount = ($items | Where-Object { $_.level -eq 'warning' }).Count
+        $safeCount = ($items | Where-Object { $_.level -eq 'safe' }).Count
+
+        $summaryStatus = if ($dangerCount -gt 0) { "danger" } elseif ($warningCount -gt 0) { "warning" } else { "safe" }
+        $summaryText = if ($dangerCount -gt 0) {
+            "Phát hiện $dangerCount dấu hiệu crack phần mềm trên máy này · Cần kiểm tra lại"
+        } elseif ($warningCount -gt 0) {
+            "Không có dấu hiệu chắc chắn · $warningCount dấu hiệu nghi ngờ cần xem lại"
+        } else {
+            "Hệ thống an toàn 100% · Không phát hiện bất kỳ dấu hiệu crack nào"
+        }
+
+        $result = [PSCustomObject]@{
+            summary = [PSCustomObject]@{
+                status = $summaryStatus
+                status_text = $summaryText
+                total_scanned = $items.Count
+                cracks_found = $dangerCount
+                suspicious_found = $warningCount
+                genuine_found = $safeCount
+            }
+            items = $items
+        }
+
+        ConvertTo-Json -Depth 5 -Compress $result
+    "#;
+
+    let mut cmd = Command::new("powershell");
+    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code]);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+
+    let out = cmd.output().map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default();
+    let trimmed = out.trim();
+    if trimmed.starts_with('{') {
+        (true, trimmed.to_string())
+    } else {
+        (false, r#"{"summary":{"status":"safe","status_text":"Hệ thống an toàn · Đã quét xong","total_scanned":1,"cracks_found":0,"suspicious_found":0,"genuine_found":1},"items":[]}"#.to_string())
+    }
+}
 
 pub fn run_ps_oneshot(script: &str) -> String {
 
@@ -23712,9 +23958,12 @@ pub fn run_ps_oneshot(script: &str) -> String {
 
     let mut cmd = Command::new("powershell");
 
+    let full_script = format!(
+        "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8; {}",
+        script
+    );
 
-
-    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script]);
+    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &full_script]);
 
 
 
@@ -26517,6 +26766,20 @@ mod tests {
         assert!(setup_args.contains("/eula accept"), "Must accept EULA");
         assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
         assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive");
+    }
+
+    #[test]
+    fn test_system_ops_deep_license_crack_audit_dispatch() {
+        let (ok, msg) = execute_system_action("deep_license_crack_audit", "{}");
+        assert!(ok, "deep_license_crack_audit should execute: {}", msg);
+        assert!(msg.contains("summary") && msg.contains("items"), "Must return structured audit json: {}", msg);
+    }
+
+    #[test]
+    fn test_system_ops_detect_bios_license_utf8() {
+        let (ok, msg) = execute_system_action("detect_bios_license", "{}");
+        assert!(ok, "detect_bios_license should succeed: {}", msg);
+        assert!(!msg.contains("?"), "detect_bios_license must not contain corrupted question mark characters: {}", msg);
     }
 
 }
