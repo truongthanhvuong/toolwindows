@@ -85,6 +85,19 @@ Assert-Test "8. Mount ESP va chay bcdboot /s ... /f UEFI /p de phuc hoi bootmgr 
     $opsContent -match 'mountvol.*\/D'
 }
 
+# 9. Chuan hoa GPT Attributes 0x8000000000000000 va partition id cua ESP qua diskpart / Set-Partition
+Assert-Test "9. Chuan hoa GPT Attributes 0x8000000000000000 va partition id cua ESP qua diskpart / Set-Partition" {
+    $opsContent -match '0x8000000000000000' -and
+    $opsContent -match 'c12a7328-f81f-11d2-ba4b-00a0c93ec93b' -and
+    $opsContent -match 'diskpart'
+}
+
+# 10. Go bo cac anh ISO ao stale de tranh xung dot catalog voi provider wsc:setup
+Assert-Test "10. Go bo cac anh ISO ao stale de tranh xung dot catalog voi provider wsc:setup" {
+    $opsContent -match 'MSFT_DiskImage' -and
+    $opsContent -match 'Dismount-DiskImage'
+}
+
 Write-Host "`n======================================================================" -ForegroundColor Cyan
 Write-Host "   KET QUA KIEM THU: $passedCount PASS, $failedCount FAIL" -ForegroundColor $(if ($failedCount -eq 0) { "Green" } else { "Red" })
 Write-Host "======================================================================" -ForegroundColor Cyan

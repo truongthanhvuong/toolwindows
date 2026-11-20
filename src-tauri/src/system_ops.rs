@@ -8428,6 +8428,20 @@ th { background: #222a3d; color: #6ffbbe; }
                 r#"
                 $targetDrive = "{}"
                 $drv = "{}"
+                $currentIso = '{}'
+
+                # 0. Go bo tat ca anh ISO ao khong phai file ISO hien tai (tranh xung dot nhieu o dia cai dat ao gay loi 0x80070003 - 0x40008)
+                try {{
+                    $allMounted = Get-CimInstance -ClassName MSFT_DiskImage -Namespace root/Microsoft/Windows/Storage -ErrorAction SilentlyContinue
+                    if ($allMounted) {{
+                        foreach ($img in $allMounted) {{
+                            if ($img.ImagePath -and ($currentIso -eq '' -or $img.ImagePath -ne $currentIso)) {{
+                                Dismount-DiskImage -ImagePath $img.ImagePath -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                            }}
+                        }}
+                    }}
+                }} catch {{}}
+
                 $stalePaths = @("C:\`$WINDOWS.~BT", "C:\`$Windows.~WS", "D:\`$WINDOWS.~BT", "D:\`$Windows.~WS", "$($targetDrive):\`$WINDOWS.~BT", "$($targetDrive):\`$Windows.~WS")
 
                 # Dung tat ca tien trinh setup cu co the dang giu khoa file
@@ -8669,12 +8683,32 @@ th { background: #222a3d; color: #6ffbbe; }
                 # TIM PHAN VUNG ESP THUC TE VA TAI THIET LAP BCD TRO DUNG VAO ESP QUA BCDBOOT
                 # Tren he thong UEFI GPT: ConX::Compatibility::CSystemAbstraction::GetSystemVolumeNtPath
                 # truy van BCD {{bootmgr}} de lay NT Device Path cua phan vung khoi dong (ESP).
-                # Neu truoc do BCD bi ghi de tro vao partition=C: hoac ESP bi mat/sai mount point,
+                # Neu phan vung ESP bi sai GPT Attributes (thieu 0x8000000000000000) hoac sai GUID (thieu c12a7328-f81f-11d2-ba4b-00a0c93ec93b),
                 # ham GetSystemVolumeNtPath se tra ve ERROR_PATH_NOT_FOUND (0x80070003),
                 # khien pha tham dinh tuong thich (0x40008) tu provider wsc:setup bi crash!
                 try {{
-                    $espPart = Get-Partition | Where-Object {{ $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | Select-Object -First 1
+                    $sysDiskNum = 0
+                    $cPart = Get-Partition -DriveLetter C -ErrorAction SilentlyContinue
+                    if ($cPart) {{ $sysDiskNum = $cPart.DiskNumber }}
+
+                    $espPart = Get-Partition -DiskNumber $sysDiskNum -ErrorAction SilentlyContinue | Where-Object {{
+                        $_.Type -eq 'System' -or $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' -or ($_.Size -le 1GB -and $_.Offset -lt 2GB)
+                    }} | Select-Object -First 1
+
                     if ($espPart) {{
+                        # Chuan hoa ID va GPT Attributes qua Set-Partition va DiskPart de dam bao Windows Setup nhan dien ESP
+                        try {{
+                            Set-Partition -DiskNumber $sysDiskNum -PartitionNumber $espPart.PartitionNumber -GptType '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                        }} catch {{}}
+
+                        try {{
+                            $dpFile = "$env:TEMP\esp_fix_$([Guid]::NewGuid().ToString().Substring(0,8)).txt"
+                            $dpText = "select disk $sysDiskNum`r`nselect partition $($espPart.PartitionNumber)`r`nset id=c12a7328-f81f-11d2-ba4b-00a0c93ec93b`r`ngpt attributes=0x8000000000000000`r`nexit`r`n"
+                            [System.IO.File]::WriteAllText($dpFile, $dpText, [System.Text.Encoding]::ASCII)
+                            diskpart /s $dpFile 2>&1 | Out-Null
+                            Remove-Item $dpFile -Force -ErrorAction SilentlyContinue
+                        }} catch {{}}
+
                         $usedLetters = (Get-Volume | Where-Object {{ $_.DriveLetter }} | ForEach-Object {{ $_.DriveLetter.ToString().ToUpper() }})
                         $candidateLetters = @("S", "Z", "Y", "X", "W", "V")
                         $mountLetter = $candidateLetters | Where-Object {{ $usedLetters -notcontains $_ }} | Select-Object -First 1
@@ -8689,6 +8723,7 @@ th { background: #222a3d; color: #6ffbbe; }
 
                         # 3. Kiem tra va dismount mountLetter de ESP tro lai thanh volume he thong an nguyen ban
                         mountvol "$($mountLetter):" /D 2>&1 | Out-Null
+                        try {{ Remove-PartitionAccessPath -DriveLetter $mountLetter -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
                     }} else {{
                         bcdboot "$env:SystemRoot" /f ALL /p 2>&1 | Out-Null
                     }}
@@ -8699,6 +8734,8 @@ th { background: #222a3d; color: #6ffbbe; }
                 try {{ mountvol Z: /D 2>&1 | Out-Null }} catch {{}}
                 try {{ mountvol Y: /D 2>&1 | Out-Null }} catch {{}}
                 try {{ mountvol X: /D 2>&1 | Out-Null }} catch {{}}
+                try {{ Remove-PartitionAccessPath -DriveLetter S -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
+                try {{ Remove-PartitionAccessPath -DriveLetter Z -ErrorAction SilentlyContinue 2>&1 | Out-Null }} catch {{}}
                 try {{
                     Get-Partition | Where-Object {{ $_.GptType -eq '{{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}}' }} | ForEach-Object {{
                         if ($_.DriveLetter) {{
@@ -8725,7 +8762,7 @@ th { background: #222a3d; color: #6ffbbe; }
                 # Kich hoat va dam bao WinRE hoat dong de Windows Setup khong bao thieu Recovery Environment
                 try {{ reagentc.exe /enable 2>&1 | Out-Null }} catch {{}}
                 "#,
-                temp_drive_letter, drv
+                temp_drive_letter, drv, safe_iso
             );
             let mut clean_cmd = Command::new("powershell");
             clean_cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_clean_and_prep]);
@@ -8768,13 +8805,13 @@ th { background: #222a3d; color: #6ffbbe; }
                 # vi dat working directory tai o dia chi doc se truc tiep gay ma loi 0x80070490 (ERROR_NOT_FOUND)
                 $workDir = "$($targetDrive):\"
 
-                # UU TIEN SO 1: sources\setupprep.exe la dong co In-OS Setup chuyen dung duoc Microsoft thiet ke de chay tu Windows dang chay
-                # UU TIEN SO 2: setup.exe o goc ISO (se tu dong chuyen tiep qua setupprep.exe)
+                # UU TIEN SO 1: setup.exe o goc ISO (se tu dong khoi tao day du moi truong media roi chuyen tiep qua setupprep.exe)
+                # UU TIEN SO 2: sources\setupprep.exe la dong co In-OS Setup chuyen dung duoc Microsoft thiet ke de chay tu Windows dang chay
                 # UU TIEN CUOI CUNG: sources\setup.exe (day la dong co WinPE boot USB, chi dung lam last resort)
-                $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{
-                    "$drv\sources\setupprep.exe"
-                }} elseif (Test-Path "$drv\setup.exe") {{
+                $setupExe = if (Test-Path "$drv\setup.exe") {{
                     "$drv\setup.exe"
+                }} elseif (Test-Path "$drv\sources\setupprep.exe") {{
+                    "$drv\sources\setupprep.exe"
                 }} else {{
                     "$drv\sources\setup.exe"
                 }}
@@ -8866,11 +8903,11 @@ th { background: #222a3d; color: #6ffbbe; }
                 };
 
                 // Dự phòng trực tiếp từ Rust bằng Windows Command cmd /c start
-                // Ưu tiên: sources\setupprep.exe -> root setup.exe -> sources\setup.exe
-                let fallback_exe = if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
-                    format!(r"{}\sources\setupprep.exe", drv)
-                } else if std::path::Path::new(&format!(r"{}\setup.exe", drv)).exists() {
+                // Ưu tiên: root setup.exe -> sources\setupprep.exe -> sources\setup.exe
+                let fallback_exe = if std::path::Path::new(&format!(r"{}\setup.exe", drv)).exists() {
                     format!(r"{}\setup.exe", drv)
+                } else if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
+                    format!(r"{}\sources\setupprep.exe", drv)
                 } else {
                     format!(r"{}\sources\setup.exe", drv)
                 };
