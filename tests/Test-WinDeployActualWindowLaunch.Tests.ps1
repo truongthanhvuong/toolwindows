@@ -51,7 +51,8 @@ Assert-Test "3. Rust backend phai doc ca stdout va stderr cua tien trinh khoi ch
 # 4. Che do Clean / Custom phai truyen /tempdrive de chong 0x80070490 va dam bao GUI hien thi
 Assert-Test "4. Che do Clean va Custom phai ho tro hien thi GUI kem tham so /tempdrive" {
     $opsContent -match 'format!\("/product server /DynamicUpdate disable /tempdrive \{\}"' -or
-    $opsContent -match 'format!\("/DynamicUpdate disable /tempdrive \{\}"'
+    $opsContent -match 'format!\("/DynamicUpdate disable /tempdrive \{\}"' -or
+    $opsContent -match 'format!\("/compat ignorewarning /DynamicUpdate disable /tempdrive \{\}"'
 }
 
 # 5. Phai co co che khoi chay da tang (Start-Process, cmd /c start, explorer.exe, native spawn)

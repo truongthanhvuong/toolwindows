@@ -8448,14 +8448,27 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
 
-                # Khoi tao truoc thu muc staging $WINDOWS.~BT voi quyen Administrator day du
-                $stagingDir = "$($targetDrive):\`$WINDOWS.~BT"
-                try {{
-                    if (-not (Test-Path $stagingDir)) {{
-                        New-Item -Path "$($targetDrive):\`$WINDOWS.~BT" -ItemType Directory -Force 2>&1 | Out-Null
-                        icacls $stagingDir /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
-                    }}
-                }} catch {{}}
+                # Khoi tao truoc thu muc staging $WINDOWS.~BT va Sources voi tep appraiserres.dll 0-byte
+                # Dieu nay triet tieu hoan toan trinh kiem tra phan cung Windows 11 Appraiser, loai bo loi 0x80070003 - 0x40008
+                $stagingDirs = @("$($targetDrive):\`$WINDOWS.~BT", "C:\`$WINDOWS.~BT")
+                foreach ($stg in $stagingDirs) {{
+                    try {{
+                        if (-not (Test-Path $stg)) {{
+                            New-Item -Path "$($targetDrive):\`$WINDOWS.~BT" -ItemType Directory -Force 2>&1 | Out-Null
+                            New-Item -Path $stg -ItemType Directory -Force 2>&1 | Out-Null
+                        }}
+                        $srcDir = "$stg\Sources"
+                        if (-not (Test-Path $srcDir)) {{
+                            New-Item -Path $srcDir -ItemType Directory -Force 2>&1 | Out-Null
+                        }}
+                        icacls $stg /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
+                        # Tao tep appraiserres.dll 0-byte (chuan bypass cua Rufus va WinToHDD de bo qua hardware appraisal)
+                        Set-Content -Path "$srcDir\appraiserres.dll" -Value $null -Force 2>&1 | Out-Null
+                    }} catch {{}}
+                }}
+
+                # Chu dong go bo mount point S: neu truoc do con ton tai de tranh xung dot phan vung EFI
+                mountvol S: /D 2>&1 | Out-Null
                 "#,
                 temp_drive_letter
             );
@@ -8464,34 +8477,48 @@ th { background: #222a3d; color: #6ffbbe; }
             #[cfg(windows)]
             clean_cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = clean_cmd.output();
-            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ và giải phóng phân vùng tạm {}: ($WINDOWS.~BT) ngăn chặn triệt để mã lỗi 0x80070490.", temp_drive_arg));
+            append_log(&format!("[DỌN DẸP & CHUẨN BỊ] Đã dọn dẹp cache cũ, giải phóng phân vùng tạm {}: ($WINDOWS.~BT) và nạp bypass appraiserres.dll.", temp_drive_arg));
 
             // Cài Mới (Clean) / Tùy Chọn (Custom): Hiển thị trực tiếp GUI Setup tương tác, kèm bypass TPM/CPU qua Registry LabConfig & MoSetup
             // Ghi chú tương thích: Không truyền /product server trực tiếp vào runtime setup_args vì Windows 11 (24H2/25H2) sẽ báo lỗi:
             // "The installation process was launched with an invalid command line argument."
-            // Thay vào đó, bypass TPM 2.0 / SecureBoot / CPU được thực thi triệt để qua Registry LabConfig & MoSetup.
-            // (Hỗ trợ cấu hình tự động: /auto clean /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {})
+            // Thay vào đó, bypass TPM 2.0 / SecureBoot / CPU được thực thi triệt để qua Registry LabConfig & MoSetup và 0-byte appraiserres.dll.
+            // Đồng thời cờ /compat ignorewarning giúp vượt qua các cảnh báo tương thích mà không gây lỗi tham số.
+            // (Tương thích tự động: /auto clean /eula accept /product server /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {})
             let setup_args = if mode == "custom" || mode == "clean" {
-                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+                format!("/compat ignorewarning /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /eula accept /DynamicUpdate disable /compat ignorewarning /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
 
             let ps_run = format!(
                 r#"
                 $drv = "{}"
                 $setupArgs = '{}'
-                # Gắn mount point cho phân vùng EFI System Partition (nếu là UEFI) và sửa chữa BCD entry
+
+                # Dam bao go bo mount point S: neu truoc do con ton tai
+                mountvol S: /D 2>&1 | Out-Null
+
+                # Gắn mount point cho phân vùng EFI System Partition (nếu là UEFI) và sửa chữa BCD entry, sau do PHAI GO mountvol S: /D ngay lap tuc
                 try {{
+                    $espMounted = $false
                     if (-not (Test-Path 'S:\EFI')) {{
                         mountvol S: /S 2>&1 | Out-Null
+                        $espMounted = $true
                     }}
                     bcdboot $env:SystemDrive\Windows /s S: /f UEFI 2>&1 | Out-Null
-                }} catch {{}}
+                    if ($espMounted) {{
+                        mountvol S: /D 2>&1 | Out-Null
+                    }}
+                }} catch {{
+                    mountvol S: /D 2>&1 | Out-Null
+                }}
+                mountvol S: /D 2>&1 | Out-Null
 
                 # Ưu tiên khởi chạy sources\setupprep.exe (động cơ In-OS Setup hiện đại của Microsoft, không kiểm tra BCD boot partition, không dính lỗi 0x80070490)
                 $setupExe = if (Test-Path "$drv\sources\setupprep.exe") {{ "$drv\sources\setupprep.exe" }} elseif (Test-Path "$drv\setup.exe") {{ "$drv\setup.exe" }} else {{ "$drv\sources\setup.exe" }}
-                $workDir = Split-Path $setupExe -Parent
+                # Thu muc lam viec phai la goc o dia cai dat $drv de dam bao cac duong dan tuong doi trong bo cai khong bi ERROR_PATH_NOT_FOUND (0x80070003)
+                $workDir = $drv
                 $argArray = $setupArgs.Split(' ') | Where-Object {{ $_ -ne '' }}
 
                 $launched = $false

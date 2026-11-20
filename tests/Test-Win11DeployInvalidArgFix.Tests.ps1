@@ -45,9 +45,9 @@ Assert-Test "2. Tham so /tempdrive phai truyen o dia sach se (C hoac C:), khong 
     (-not $hasTrailingSlashInTempdrive)
 }
 
-# 3. Che do clean va custom phai su dung cu phap chuan cua Modern Setup
+# 3. Che do clean va custom phai su dung cu phap chuan cua Modern Setup (co the kem /compat ignorewarning)
 Assert-Test "3. Che do clean va custom su dung cu phap hop le /DynamicUpdate disable /tempdrive" {
-    $opsContent -match 'format!\("/DynamicUpdate disable /tempdrive \{\}"'
+    ($opsContent -match 'format!\("/DynamicUpdate disable /tempdrive \{\}"') -or ($opsContent -match 'format!\("/compat ignorewarning /DynamicUpdate disable /tempdrive \{\}"')
 }
 
 # 4. Che do upgrade phai su dung cu phap chuan /auto upgrade /eula accept
