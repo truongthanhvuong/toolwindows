@@ -8452,8 +8452,8 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
 
-                # Khoi tao truoc thu muc staging $WINDOWS.~BT va Sources
-                $stagingDirs = @("$($targetDrive):\`$WINDOWS.~BT", "C:\`$WINDOWS.~BT")
+                # Khoi tao bien
+                $stagingDirs = @()
 
                 # Cau hinh Unattend XML chuan vang khong dung DiskConfiguration de chong loi "error selecting partition":
                 # LUU Y QUAN TRONG: DiskConfiguration chi ho tro khi boot tu WinPE/USB, khong ho tro khi chay tu Windows dang chay
@@ -8587,76 +8587,58 @@ th { background: #222a3d; color: #6ffbbe; }
 
 
 
-                foreach ($stg in $stagingDirs) {{
-                    try {{
-                        if (-not (Test-Path $stg)) {{
-                            New-Item -Path "$($targetDrive):\`$WINDOWS.~BT" -ItemType Directory -Force 2>&1 | Out-Null
-                            New-Item -Path $stg -ItemType Directory -Force 2>&1 | Out-Null
-                        }}
-                        $srcDir = "$stg\Sources"
-                        if (-not (Test-Path $srcDir)) {{
-                            New-Item -Path $srcDir -ItemType Directory -Force 2>&1 | Out-Null
-                        }}
-                        $pantherDir = "$stg\Sources\Panther"
-                        $pantherRoot = "$stg\Panther"
-                        if (-not (Test-Path $pantherDir)) {{ New-Item -Path $pantherDir -ItemType Directory -Force 2>&1 | Out-Null }}
-                        if (-not (Test-Path $pantherRoot)) {{ New-Item -Path $pantherRoot -ItemType Directory -Force 2>&1 | Out-Null }}
-
-                        icacls $stg /grant "*S-1-5-32-544:F" /T /C /Q 2>&1 | Out-Null
-
-                        # Dong bo appraiserres.dll chuan tu bo cai $drv\sources de chong loi LoadLibrary 0x80070003 - 0x40008 tren Windows 11 24H2/25H2
-                        # Tuyet doi khong tao tep 0-byte vi Windows 11 SetupHost se danh gia la corrupt image va huy tien trinh cai dat
-                        if (Test-Path "$drv\sources\appraiserres.dll") {{
-                            Copy-Item -Path "$drv\sources\appraiserres.dll" -Destination "$srcDir\appraiserres.dll" -Force 2>&1 | Out-Null
-                        }} elseif (Test-Path "$srcDir\appraiserres.dll") {{
-                            try {{
-                                if ((Get-Item "$srcDir\appraiserres.dll").Length -eq 0) {{
-                                    Remove-Item -Path "$srcDir\appraiserres.dll" -Force 2>&1 | Out-Null
-                                }}
-                            }} catch {{}}
-                        }}
-
-                        # Nap PID.txt va ei.cfg khoa chat edition Windows Pro trong thu muc Sources
-                        $pidContent = "[PID]`r`nValue=VK7JG-NPHTM-C97JM-9MPGT-3V66T`r`n"
-                        Set-Content -Path "$srcDir\PID.txt" -Value $pidContent -Force 2>&1 | Out-Null
-                        $eiContent = "[Channel]`r`nRetail`r`n[VL]`r`n0`r`n"
-                        Set-Content -Path "$srcDir\ei.cfg" -Value $eiContent -Force 2>&1 | Out-Null
-
-                        # Luu tru unattend.xml vao thu muc Panther va staging path de Windows Setup doc tu dong
-                        Set-Content -Path "$stg\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
-                        Set-Content -Path "$pantherDir\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
-                        Set-Content -Path "$pantherRoot\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
-                    }} catch {{}}
-                }}
-
+                # TIEM TRUC TIEP CAC KHOA REGISTRY BYPASS PHAN CUNG CHUAN MICROSOFT VAO HE THONG HIEN HANH:
+                # Giup Windows Setup tu dong bo qua kiem tra TPM 2.0, SecureBoot, CPU the he cu, RAM, Storage.
+                # TUYET DOI KHONG dung co /product server vi co do ep Setup chay che do Windows Server,
+                # khien provider wsc:setup kiem tra goi Server khong tim thay tren dia ISO Windows 11 Client va vang loi 0x80070003 - 0x40008!
                 try {{
+                    New-Item -Path 'HKLM:\SYSTEM\Setup\MoSetup' -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\MoSetup' -Name 'AllowUpgradesWithUnsupportedTPMOrCPU' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                    New-Item -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassTPMCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassSecureBootCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassRAMCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassCPUCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassStorageCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                    Set-ItemProperty -Path 'HKLM:\SYSTEM\Setup\LabConfig' -Name 'BypassDiskCheck' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                }} catch {{}}
+
+                # Dam bao thu muc staging goc tren o dich ton tai va co toan quyen ghi (khong tao truoc thu muc con Sources)
+                try {{
+                    if (-not (Test-Path "$($targetDrive):\`$WINDOWS.~BT")) {{
+                        New-Item -Path "$($targetDrive):\`$WINDOWS.~BT" -ItemType Directory -Force 2>&1 | Out-Null
+                    }}
+                    icacls "$($targetDrive):\`$WINDOWS.~BT" /grant "*S-1-5-32-544:F" "*S-1-1-0:F" /T /C /Q 2>&1 | Out-Null
+                }} catch {{}}
+
+                # Ghi unattend.xml vao cac vi tri chuan Microsoft de In-OS setup tu dong nap
+                # TUYET DOI KHONG tao truoc thu muc $WINDOWS.~BT\Sources vi khi Sources da ton tai voi vai tep roi rac,
+                # Windows Setup se ngo nhan day la thu muc staging cu va provider wsc:setup khong tim thay cac DLL con lai gay ma loi 0x80070003!
+                $sysPanther = "$env:SystemDrive\Windows\Panther"
+                try {{
+                    if (-not (Test-Path $sysPanther)) {{ New-Item -Path $sysPanther -ItemType Directory -Force 2>&1 | Out-Null }}
+                    Set-Content -Path "$sysPanther\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
                     Set-Content -Path "$($targetDrive):\autounattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
                     Set-Content -Path "C:\autounattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
                 }} catch {{}}
 
-                # Ghi unattend.xml vao Windows\Panther cua he dieu hanh hien tai de dam bao In-OS setup doc thanh cong
-                try {{
-                    $sysPanther = "$env:SystemDrive\Windows\Panther"
-                    if (-not (Test-Path $sysPanther)) {{ New-Item -Path $sysPanther -ItemType Directory -Force 2>&1 | Out-Null }}
-                    Set-Content -Path "$sysPanther\unattend.xml" -Value $unattendXml -Encoding UTF8 -Force 2>&1 | Out-Null
-                }} catch {{}}
-
-                # Tao tep SetupConfig.ini chuan Microsoft de bao dam 100% che do cai dat im lang va bypass appraiser
+                # Tao tep SetupConfig.ini chuan Microsoft
                 try {{
                     $wsusDir = "$env:SystemDrive\Users\Default\AppData\Local\Microsoft\Windows\WSUS"
                     if (-not (Test-Path $wsusDir)) {{ New-Item -Path $wsusDir -ItemType Directory -Force 2>&1 | Out-Null }}
-                    $setupConfigContent = "[SetupConfig]`r`nPriority=Normal`r`nCompat=IgnoreWarning`r`nShowOobe=None`r`nTelemetry=Disable`r`nDynamicUpdate=Disable`r`n"
+                    $setupConfigContent = "[SetupConfig]`r`nPriority=Normal`r`nCompat=IgnoreWarning`r`nShowOobe=None`r`nTelemetry=Disable`r`nDynamicUpdate=Disable`r`nUnattend=$sysPanther\unattend.xml`r`n"
                     Set-Content -Path "$wsusDir\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
-                    Set-Content -Path "$($targetDrive):\`$WINDOWS.~BT\SetupConfig.ini" -Value $setupConfigContent -Encoding UTF8 -Force 2>&1 | Out-Null
                 }} catch {{}}
 
-                # Lam sach va dam bao BCD Boot Store ket noi chuan xac voi he thong boot chong loi 0x80070490
-                try {{ bcdboot "$env:SystemRoot" /s "$env:SystemDrive" /f ALL 2>&1 | Out-Null }} catch {{
-                    try {{ bcdboot "$env:SystemRoot" /f ALL 2>&1 | Out-Null }} catch {{}}
-                }}
+                # Lam sach triet de cac tep boot sai vi tri tren C:\ do bcdboot cu gay xung dot bang phan vung ESP
+                try {{
+                    if (Test-Path "C:\EFI\Microsoft\Boot\BCD") {{
+                        Remove-Item -Path "C:\EFI" -Recurse -Force 2>&1 | Out-Null
+                    }}
+                }} catch {{}}
 
-                # Chu dong go bo mount point S: neu truoc do con ton tai de tranh xung dot phan vung EFI
-                mountvol S: /D 2>&1 | Out-Null
+                # Chu dong go bo mount point S: neu truoc do con ton tai
+                try {{ mountvol S: /D 2>&1 | Out-Null }} catch {{}}
                 "#,
                 temp_drive_letter, drv
             );
@@ -8674,13 +8656,14 @@ th { background: #222a3d; color: #6ffbbe; }
             // Ghi chú cú pháp Microsoft: Cờ /auto không được phép đi kèm /unattend: trên dòng lệnh vì xung đột tham số.
             // Trình cài đặt SetupHost sẽ tự động nhận diện autounattend.xml và Panther\unattend.xml đã được ghi sẵn ở các bước chuẩn bị.
             // TUYỆT ĐỐI KHÔNG dùng /quiet: Vì /quiet sẽ ẩn 100% giao diện khiến người dùng không biết tiến độ, đồng thời khi gặp lỗi tương thích sẽ tự thoát ngầm (Silent Exit).
+            // TUYỆT ĐỐI KHÔNG dùng /product server: Vì cờ /product server sẽ ép Windows Setup chuyển sang bộ cài Windows Server, khiến provider wsc:setup kiểm tra các tệp Server không tồn tại trong ISO Client và báo lỗi 0x80070003 - 0x40008!
+            // Cơ chế bypass phần cứng TPM 2.0 / CPU đã được tiêm qua Registry MoSetup / LabConfig và cờ /compat ignorewarning.
             let setup_args = if mode == "clean" {
-                format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             } else if mode == "custom" {
-                // Custom: Khong dung /auto de setup mo man hinh phan vung do hoa; dung /product server de bypass kiem tra
-                format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+                format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
 
             let ps_run = format!(
@@ -8715,19 +8698,6 @@ th { background: #222a3d; color: #6ffbbe; }
                     $vi = (Get-Item $setupExe -ErrorAction SilentlyContinue).VersionInfo
                     if ($vi -and $vi.FileBuildPart) {{ $buildPart = $vi.FileBuildPart }}
                 }} catch {{}}
-
-                # Nhan dien Windows 11 chuan xac:
-                # 1. wpx.dll hoac appraiserwc.dll ton tai trong thu muc sources cua ISO (chi co tren Windows 11)
-                # 2. Hoac duong dan tệp ISO chua tu khoa Win11 / 22H2 / 23H2 / 24H2 / 25H2
-                $isWin11 = ($drv -and (Test-Path "$drv\sources\wpx.dll")) -or `
-                           ($drv -and (Test-Path "$drv\sources\appraiserwc.dll")) -or `
-                           ($drv -and (Test-Path "$drv\sources\setuphost.exe")) -or `
-                           ($isoPath -match "Win11|Windows\s*11|22H2|23H2|24H2|25H2")
-
-                # Chi loai bo co /product server neu ISO ro rang la Windows 10 hoac cu hon (khong phai Win 11):
-                if (-not $isWin11 -and $buildPart -gt 0 -and $buildPart -lt 22000) {{
-                    $setupArgs = $setupArgs.Replace('/product server', '').Replace('  ', ' ').Trim()
-                }}
 
                 # Neu ISO la Windows 7 / 8.1 cu (Build < 10000, vi du 7601, 9600):
                 # Loai bo cac co hien dai khong duoc ho tro boi Windows 7 setup
@@ -26903,22 +26873,22 @@ mod tests {
         let temp_drive_arg = temp_drive_letter;
         let mode = "clean";
         let setup_args = if mode == "clean" {
-            format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+            format!("/auto clean /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
         } else if mode == "custom" {
-            format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+            format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
         } else {
-            format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
+            format!("/auto upgrade /eula accept /compat ignorewarning /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
         };
 
         assert!(setup_args.contains("/auto clean"), "Clean mode must specify /auto clean");
         assert!(!setup_args.contains("/unattend:"), "Must not pass /unattend: with /auto (syntax conflict, handled via autounattend.xml)");
         assert!(setup_args.contains("/eula accept"), "Must accept EULA");
         assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
-        assert!(setup_args.contains("/product server"), "Must pass product server flag to bypass consumer appraiser");
+        assert!(!setup_args.contains("/product server"), "Must not pass /product server because it causes Windows Server compatibility scan failure 0x80070003 - 0x40008 on client ISOs");
         assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive with clean drive letter");
 
         // Verify custom mode
-        let custom_args = format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg);
+        let custom_args = format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg);
         assert!(!custom_args.contains("/auto"), "Custom mode must not specify /auto so partition UI is shown");
         assert!(!custom_args.contains("/quiet"), "Custom mode must not be quiet");
     }
