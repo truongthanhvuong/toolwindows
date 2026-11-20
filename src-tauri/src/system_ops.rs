@@ -8673,14 +8673,14 @@ th { background: #222a3d; color: #6ffbbe; }
             // Cài Đè Giữ Dữ Liệu (Upgrade): Tự động nâng cấp hệ điều hành giữ nguyên dữ liệu
             // Ghi chú cú pháp Microsoft: Cờ /auto không được phép đi kèm /unattend: trên dòng lệnh vì xung đột tham số.
             // Trình cài đặt SetupHost sẽ tự động nhận diện autounattend.xml và Panther\unattend.xml đã được ghi sẵn ở các bước chuẩn bị.
+            // TUYỆT ĐỐI KHÔNG dùng /quiet: Vì /quiet sẽ ẩn 100% giao diện khiến người dùng không biết tiến độ, đồng thời khi gặp lỗi tương thích sẽ tự thoát ngầm (Silent Exit).
             let setup_args = if mode == "clean" {
-                format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
+                format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             } else if mode == "custom" {
                 // Custom: Khong dung /auto de setup mo man hinh phan vung do hoa; dung /product server de bypass kiem tra
-                // KHONG dung /quiet vi can man hinh partition selection hien ra cho user
                 format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
-                format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
+                format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
             };
 
             let ps_run = format!(
@@ -8688,6 +8688,7 @@ th { background: #222a3d; color: #6ffbbe; }
                 $drv = "{}"
                 $setupArgs = '{}'
                 $targetDrive = "{}"
+                $isoPath = "{}"
 
                 # Tuyet doi khong mount EFI ra o S: (mountvol S: /S) vi gan ky tu o dia cho ESP se truc tiep gay loi Setup 0x80070003 - 0x40008
                 # Chu dong go bo triet de mount point S: neu con sot lai tu cac phien truoc
@@ -8715,9 +8716,16 @@ th { background: #222a3d; color: #6ffbbe; }
                     if ($vi -and $vi.FileBuildPart) {{ $buildPart = $vi.FileBuildPart }}
                 }} catch {{}}
 
-                # Neu ISO la Windows 10 (Build < 22000, vi du 19041-19045) hoac Windows 7/8.1:
-                # Loai bo co /product server vi chi Windows 11 Modern Setup moi ho tro co nay; Windows 10 se bao invalid argument neu giu /product server
-                if ($buildPart -gt 0 -and $buildPart -lt 22000) {{
+                # Nhan dien Windows 11 chuan xac:
+                # 1. wpx.dll hoac appraiserwc.dll ton tai trong thu muc sources cua ISO (chi co tren Windows 11)
+                # 2. Hoac duong dan tệp ISO chua tu khoa Win11 / 22H2 / 23H2 / 24H2 / 25H2
+                $isWin11 = ($drv -and (Test-Path "$drv\sources\wpx.dll")) -or `
+                           ($drv -and (Test-Path "$drv\sources\appraiserwc.dll")) -or `
+                           ($drv -and (Test-Path "$drv\sources\setuphost.exe")) -or `
+                           ($isoPath -match "Win11|Windows\s*11|22H2|23H2|24H2|25H2")
+
+                # Chi loai bo co /product server neu ISO ro rang la Windows 10 hoac cu hon (khong phai Win 11):
+                if (-not $isWin11 -and $buildPart -gt 0 -and $buildPart -lt 22000) {{
                     $setupArgs = $setupArgs.Replace('/product server', '').Replace('  ', ' ').Trim()
                 }}
 
@@ -8737,36 +8745,33 @@ th { background: #222a3d; color: #6ffbbe; }
                     icacls $btDir /grant "*S-1-5-32-544:F" "*S-1-1-0:F" /T /C /Q 2>&1 | Out-Null
                 }} catch {{}}
 
-                # KHOI CHAY VOI DAC QUYEN ELEVATED ADMINISTRATOR (-Verb RunAs) 100% TREN MOI DUONG DU PHONG
-                # Ngan chan loi 0x80070490 do tien trinh khong co quyen Admin truy van BCD System Store
+                # KHOI CHAY VOI CO CHE DA TANG (Direct Process -> cmd /c start -> root setup -> Verb RunAs)
                 $launched = $false
                 try {{
-                    # 1. Start-Process truc tiep voi -Verb RunAs
-                    Start-Process -FilePath $setupExe -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
+                    # 1. Start-Process truc tiep
+                    Start-Process -FilePath $setupExe -ArgumentList $argArray -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
                     Write-Output "LAUNCH_OK:$setupExe"
                     $launched = $true
                 }} catch {{
                     try {{
-                        # 2. cmd.exe /c start voi -Verb RunAs (chong loi The request is not supported tren mot so loai o dia quang ao UDF)
-                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c start `"`" `"$setupExe`" $setupArgs" -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
-                        Write-Output "LAUNCH_CMD_RUNAS_OK:$setupExe"
+                        # 2. cmd.exe /c start
+                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c start `"`" `"$setupExe`" $setupArgs" -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
+                        Write-Output "LAUNCH_CMD_OK:$setupExe"
                         $launched = $true
                     }} catch {{
                         try {{
-                            # 3. Fallback sang root setup.exe voi -Verb RunAs
+                            # 3. Fallback sang root setup.exe
                             if (Test-Path "$drv\setup.exe") {{
-                                Start-Process -FilePath "$drv\setup.exe" -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
-                                Write-Output "LAUNCH_ROOT_RUNAS_OK:$drv\setup.exe"
+                                Start-Process -FilePath "$drv\setup.exe" -ArgumentList $argArray -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
+                                Write-Output "LAUNCH_ROOT_OK:$drv\setup.exe"
                                 $launched = $true
                             }}
                         }} catch {{
                             try {{
-                                # 4. Fallback sang sources\setup.exe voi -Verb RunAs
-                                if (Test-Path "$drv\sources\setup.exe") {{
-                                    Start-Process -FilePath "$drv\sources\setup.exe" -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
-                                    Write-Output "LAUNCH_SOURCES_SETUP_RUNAS_OK:$drv\sources\setup.exe"
-                                    $launched = $true
-                                }}
+                                # 4. Fallback qua Verb RunAs
+                                Start-Process -FilePath $setupExe -ArgumentList $argArray -WorkingDirectory $workDir -Verb RunAs -WindowStyle Normal -ErrorAction Stop
+                                Write-Output "LAUNCH_RUNAS_OK:$setupExe"
+                                $launched = $true
                             }} catch {{
                                 Write-Output "ERR_LAUNCH:$($_.Exception.Message)"
                             }}
@@ -8774,7 +8779,7 @@ th { background: #222a3d; color: #6ffbbe; }
                     }}
                 }}
                 "#,
-                drv, setup_args, temp_drive_letter
+                drv, setup_args, temp_drive_letter, iso_path
             );
 
             let mut run_cmd = Command::new("powershell");
@@ -8830,10 +8835,50 @@ th { background: #222a3d; color: #6ffbbe; }
             let mode_label = if mode == "custom" { "Tùy Chọn Phân Vùng (Custom Setup)" } else if mode == "clean" { "Cài Mới (Clean Install)" } else { "Cài Đè / Nâng Cấp (In-Place Upgrade)" };
 
             append_log(&format!("[SETUP ACTIVATED] Trình cài đặt Windows đã được khởi chạy thành công qua [{}] ở chế độ [{}] từ ổ [{}] với ổ đệm [{}]!", binary_used, mode_label, drv, temp_drive_arg));
+            append_log("[THEO DÕI TIẾN ĐỘ] Hệ thống đang kích hoạt luồng giám sát setupact.log trong nền để liên tục cập nhật tiến độ cài đặt...");
+
+            // Khoi dong luong theo doi tien trinh cai dat va doc log setupact.log thoi gian thuc
+            let temp_drive_char = temp_drive_letter.to_string();
+            std::thread::spawn(move || {
+                let setupact_path = format!(r"{}:\$WINDOWS.~BT\Sources\Panther\setupact.log", temp_drive_char);
+                let setuperr_path = format!(r"{}:\$WINDOWS.~BT\Sources\Panther\setuperr.log", temp_drive_char);
+                let mut last_size: u64 = 0;
+                for i in 1..=100 {
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    if let Ok(meta) = std::fs::metadata(&setupact_path) {
+                        let cur_size = meta.len();
+                        if cur_size > last_size {
+                            last_size = cur_size;
+                            if let Ok(content) = std::fs::read_to_string(&setupact_path) {
+                                for line in content.lines().rev().take(8) {
+                                    let l = line.trim();
+                                    if l.contains("Progress:") || l.contains("Percent") || l.contains("Phase") || l.contains("Copying") || l.contains("Executing") {
+                                        append_log(&format!("[TIẾN ĐỘ SETUP] {}", l));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if let Ok(err_meta) = std::fs::metadata(&setuperr_path) {
+                        if err_meta.len() > 0 {
+                            if let Ok(err_content) = std::fs::read_to_string(&setuperr_path) {
+                                let last_err = err_content.lines().rev().find(|l| !l.trim().is_empty() && !l.contains("Telemetry")).unwrap_or("");
+                                if !last_err.is_empty() {
+                                    append_log(&format!("[LOG LỖI SETUP] {}", last_err.trim()));
+                                }
+                            }
+                        }
+                    }
+                    if i % 10 == 0 {
+                        append_log(&format!("[TIẾN TRÌNH CÀI ĐẶT] Đang sao chép tệp và chuẩn bị môi trường boot (đã chạy {}s). Vui lòng không tắt máy...", i * 3));
+                    }
+                }
+            });
 
             return (
                 true,
-                format!("Đã nạp ảnh ISO / Ổ đĩa [{}] và khởi chạy [{}] chế độ [{}] (ổ đệm {}) thành công!", drv, binary_used, mode_label, temp_drive_arg),
+                format!("Đã nạp ảnh ISO / Ổ đĩa [{}] và khởi chạy [{}] chế độ [{}] (ổ đệm {}) thành công! Vui lòng theo dõi cửa sổ cài đặt Windows Setup trên màn hình.", drv, binary_used, mode_label, temp_drive_arg),
             );
 
 
@@ -26858,11 +26903,11 @@ mod tests {
         let temp_drive_arg = temp_drive_letter;
         let mode = "clean";
         let setup_args = if mode == "clean" {
-            format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
+            format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
         } else if mode == "custom" {
             format!("/product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
         } else {
-            format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
+            format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /tempdrive {}", temp_drive_arg)
         };
 
         assert!(setup_args.contains("/auto clean"), "Clean mode must specify /auto clean");
@@ -26870,7 +26915,6 @@ mod tests {
         assert!(setup_args.contains("/eula accept"), "Must accept EULA");
         assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
         assert!(setup_args.contains("/product server"), "Must pass product server flag to bypass consumer appraiser");
-        assert!(setup_args.contains("/quiet"), "Must pass /quiet for silent install");
         assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive with clean drive letter");
 
         // Verify custom mode
