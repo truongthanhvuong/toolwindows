@@ -8798,11 +8798,9 @@ th { background: #222a3d; color: #6ffbbe; }
                 }}
 
                 # TUYET DOI KHONG duoc xoa bo tham so setupArgs khi chay root setup.exe
+                # TUYET DOI KHONG truyen /ConfigFile tren dong lenh kem voi /auto clean vi gay xung dot cu phap lam Setup thoat ngam.
+                # SetupConfig.ini da duoc dat tai thu muc WSUS mac dinh cua Windows, SetupHost se tu dong nap ngam.
                 $argArray = $setupArgs.Split(' ') | Where-Object {{ $_ -ne '' }}
-                $wsusConfigFile = "$env:SystemDrive\Users\Default\AppData\Local\Microsoft\Windows\WSUS\SetupConfig.ini"
-                if (Test-Path $wsusConfigFile) {{
-                    $argArray = @("/ConfigFile", $wsusConfigFile) + $argArray
-                }}
 
                 # Dam bao thu muc staging C:\$WINDOWS.~BT duoc cap toan quyen truy cap
                 try {{
@@ -8821,8 +8819,7 @@ th { background: #222a3d; color: #6ffbbe; }
                 }} catch {{
                     try {{
                         # 2. cmd.exe /c start
-                        $configFlag = if (Test-Path $wsusConfigFile) {{ "/ConfigFile `"$wsusConfigFile`" " }} else {{ "" }}
-                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c start `"`" `"$setupExe`" $configFlag$setupArgs" -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
+                        Start-Process -FilePath "cmd.exe" -ArgumentList "/c start `"`" `"$setupExe`" $setupArgs" -WorkingDirectory $workDir -WindowStyle Normal -ErrorAction Stop
                         Write-Output "LAUNCH_CMD_OK:$setupExe"
                         $launched = $true
                     }} catch {{
@@ -8952,7 +8949,18 @@ th { background: #222a3d; color: #6ffbbe; }
                         }
                     }
                     if i % 10 == 0 {
-                        append_log(&format!("[TIẾN TRÌNH CÀI ĐẶT] Đang sao chép tệp và chuẩn bị môi trường boot (đã chạy {}s). Vui lòng không tắt máy...", i * 3));
+                        // Kiem tra tien trinh Setup co thuc su dang chay khong
+                        let proc_check = std::process::Command::new("powershell")
+                            .args(["-NoProfile", "-Command", "Get-Process -Name 'setup', 'SetupHost', 'setupprep' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"])
+                            .output();
+                        let pids = proc_check.map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string()).unwrap_or_default();
+                        if !pids.is_empty() {
+                            let first_pid = pids.lines().next().unwrap_or("").trim();
+                            append_log(&format!("[TIẾN TRÌNH CÀI ĐẶT] Đang sao chép tệp và chuẩn bị môi trường boot (đã chạy {}s, Setup PID: {}). Vui lòng không tắt máy...", i * 3, first_pid));
+                        } else if i >= 10 {
+                            append_log(&format!("[THÔNG BÁO] Tiến trình Windows Setup đã hoàn tất hoặc tự thoát (đã chạy {}s). Vui lòng kiểm tra màn hình hoặc khởi động lại.", i * 3));
+                            break;
+                        }
                     }
                 }
             });

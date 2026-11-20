@@ -121,11 +121,11 @@ Assert-Test "14. Uu tien tuyet doi root setup.exe tren mounted ISO lam primary l
     $opsContent -match '\$setupExe = if \(Test-Path "\$drv\\setup\.exe"\)'
 }
 
-# 15. SetupConfig.ini phai duoc truyen kem /ConfigFile va chua EULA=Accept + TempDrive
-Assert-Test "15. SetupConfig.ini duoc truyen kem /ConfigFile va co EULA=Accept, TempDrive" {
+# 15. SetupConfig.ini tai WSUS phai co EULA=Accept va TempDrive, dong thoi khong truyen /ConfigFile tren dong lenh de tranh xung dot voi /auto clean
+Assert-Test "15. SetupConfig.ini co EULA=Accept, TempDrive va dong lenh khong truyen /ConfigFile tranh xung dot /auto clean" {
     $opsContent -match 'EULA=Accept' -and
-    $opsContent -match '\/ConfigFile' -and
-    $opsContent -match 'TempDrive=\$targetDrive'
+    $opsContent -match 'TempDrive=\$targetDrive' -and
+    -not ($opsContent -match '@\("\/ConfigFile"')
 }
 
 Write-Host "`n======================================================================" -ForegroundColor Cyan
