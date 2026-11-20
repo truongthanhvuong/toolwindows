@@ -27,23 +27,22 @@ Describe "Win Deploy Silent Install - Appraiser Bypass" {
             (Test-Path $setupSources) | Should -Be $true
         }
 
-        It "autounattend.xml phải có DiskConfiguration cho clean install silent" {
+        It "autounattend.xml KHÔNG được có DiskConfiguration khi chạy từ Windows (gây lỗi chọn phân vùng)" {
             $xmlPath = "C:\autounattend.xml"
             if (Test-Path $xmlPath) {
-                [xml]$xml = Get-Content $xmlPath
                 $xmlContent = Get-Content $xmlPath -Raw
-                # Phải có DiskConfiguration hoặc ImageInstall để không hiển thị màn hình phân vùng
-                ($xmlContent -like "*DiskConfiguration*") -or ($xmlContent -like "*ImageInstall*") | Should -Be $true
+                # DiskConfiguration chỉ dùng khi boot USB WinPE; dùng trong Windows sẽ gây lỗi 'error selecting partition'
+                ($xmlContent -like "*<DiskConfiguration>*") | Should -Be $false
             } else {
                 Set-ItResult -Pending -Because "autounattend.xml chưa được tạo"
             }
         }
 
-        It "autounattend.xml phải có InstallFrom với WIM/ESD index để silent" {
+        It "autounattend.xml KHÔNG được có ImageInstall với hard-coded partition khi chạy từ Windows" {
             $xmlPath = "C:\autounattend.xml"
             if (Test-Path $xmlPath) {
                 $xmlContent = Get-Content $xmlPath -Raw
-                ($xmlContent -like "*InstallFrom*") -or ($xmlContent -like "*ImageInstall*") | Should -Be $true
+                ($xmlContent -like "*<ImageInstall>*") | Should -Be $false
             } else {
                 Set-ItResult -Pending -Because "autounattend.xml chưa được tạo"
             }

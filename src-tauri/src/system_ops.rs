@@ -8455,18 +8455,12 @@ th { background: #222a3d; color: #6ffbbe; }
                 # Khoi tao truoc thu muc staging $WINDOWS.~BT va Sources
                 $stagingDirs = @("$($targetDrive):\`$WINDOWS.~BT", "C:\`$WINDOWS.~BT")
 
-                # Cau hinh Unattend XML chuan vang (WinToHDD / Rufus standard)
-                # 1. Tu dong chon Windows 11/10 Pro qua Generic Setup Key VK7JG-NPHTM-C97JM-9MPGT-3V66T
-                # 2. Chap nhan EULA tu dong khong can bam Accept
-                # 3. Bo qua toan bo OOBE (mang, WiFi, Privacy questions, Microsoft Account)
-                # 4. Tu dong tao tai khoan Local Admin va AutoLogon thang vao Windows Desktop
-                # 5. Inject BypassNRO de ngan chan ep buoc ket noi mang tren Windows 11
-                                # Unattend XML day du cho silent install hoan toan (Rufus/WinToHDD standard 2026):
-                # - DiskConfiguration: Tu dong format o C: (Disk 0 GPT/EFI), WillShowUI=Never -> khong hien man hinh chon phan vung
-                # - ImageInstall: Tu dong chon Windows 11 Pro vao C:, WillShowUI=Never -> khong hien man hinh chon edition
-                # - windowsPE: Bypass TPM/SecureBoot/RAM/CPU qua LabConfig, chap nhan EULA, chon Pro key
-                # - specialize: BypassNRO, DisablePrivacyExperience, timezone Vietnam
-                # - oobeSystem: Tat hoan toan OOBE, tao Local Admin, AutoLogon -> tu vao Desktop
+                # Cau hinh Unattend XML chuan vang khong dung DiskConfiguration de chong loi "error selecting partition":
+                # LUU Y QUAN TRONG: DiskConfiguration chi ho tro khi boot tu WinPE/USB, khong ho tro khi chay tu Windows dang chay
+                # Khi chay setup.exe tu Windows dang chay (/auto clean hoac /auto upgrade):
+                # - /auto clean tu dong format va cai moi len phan vung he dieu hanh hien tai (chuyen ban cu vao Windows.old)
+                # - /auto upgrade tu dong nang cap he dieu hanh giu nguyen du lieu ca nhan va ung dung
+                # - unattend.xml dong vai tro: Chap nhan EULA, chon key Win 11 Pro, bypass LabConfig/MoSetup, bo qua OOBE & AutoLogon vao Desktop
                 $unattendXml = @'
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
@@ -8483,64 +8477,6 @@ th { background: #222a3d; color: #6ffbbe; }
       <UserLocale>en-US</UserLocale>
     </component>
     <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-      <DiskConfiguration>
-        <WillShowUI>Never</WillShowUI>
-        <Disk wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-          <DiskID>0</DiskID>
-          <WillWipeDisk>true</WillWipeDisk>
-          <CreatePartitions>
-            <CreatePartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-              <Order>1</Order>
-              <Type>EFI</Type>
-              <Size>300</Size>
-            </CreatePartition>
-            <CreatePartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-              <Order>2</Order>
-              <Type>MSR</Type>
-              <Size>128</Size>
-            </CreatePartition>
-            <CreatePartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-              <Order>3</Order>
-              <Type>Primary</Type>
-              <Extend>true</Extend>
-            </CreatePartition>
-          </CreatePartitions>
-          <ModifyPartitions>
-            <ModifyPartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-              <Order>1</Order>
-              <PartitionID>1</PartitionID>
-              <Format>FAT32</Format>
-              <Label>System</Label>
-            </ModifyPartition>
-            <ModifyPartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-              <Order>2</Order>
-              <PartitionID>2</PartitionID>
-            </ModifyPartition>
-            <ModifyPartition wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-              <Order>3</Order>
-              <PartitionID>3</PartitionID>
-              <Format>NTFS</Format>
-              <Label>Windows</Label>
-              <Letter>C</Letter>
-            </ModifyPartition>
-          </ModifyPartitions>
-        </Disk>
-      </DiskConfiguration>
-      <ImageInstall>
-        <OSImage>
-          <WillShowUI>Never</WillShowUI>
-          <InstallFrom>
-            <MetaData wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-              <Key>/IMAGE/NAME</Key>
-              <Value>Windows 11 Pro</Value>
-            </MetaData>
-          </InstallFrom>
-          <InstallTo>
-            <DiskID>0</DiskID>
-            <PartitionID>3</PartitionID>
-          </InstallTo>
-        </OSImage>
-      </ImageInstall>
       <UserData>
         <AcceptEula>true</AcceptEula>
         <FullName>Admin</FullName>
@@ -8649,6 +8585,8 @@ th { background: #222a3d; color: #6ffbbe; }
 </unattend>
 '@
 
+
+
                 foreach ($stg in $stagingDirs) {{
                     try {{
                         if (-not (Test-Path $stg)) {{
@@ -8717,7 +8655,9 @@ th { background: #222a3d; color: #6ffbbe; }
             let setup_args = if mode == "clean" {
                 format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
             } else if mode == "custom" {
-                format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+                // Custom: Khong dung /auto de setup mo man hinh phan vung do hoa; dung /eula accept va /compat ignorewarning de bypass kiem tra
+                // KHONG dung /quiet vi can man hinh partition selection hien ra cho user
+                format!("/eula accept /compat ignorewarning /product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
             } else {
                 format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
             };
@@ -8805,12 +8745,13 @@ th { background: #222a3d; color: #6ffbbe; }
                 };
 
                 // Dự phòng trực tiếp từ Rust bằng Windows Command cmd /c start
-                let fallback_exe = if std::path::Path::new(&format!(r"{}\sources\setupprep.exe", drv)).exists() {
-                    format!(r"{}\sources\setupprep.exe", drv)
-                } else if std::path::Path::new(&format!(r"{}\sources\setup.exe", drv)).exists() {
+                // Uu tien: sources\setup.exe -> root setup.exe -> sources\setupprep.exe (setupprep.exe chi la last resort)
+                let fallback_exe = if std::path::Path::new(&format!(r"{}\sources\setup.exe", drv)).exists() {
                     format!(r"{}\sources\setup.exe", drv)
-                } else {
+                } else if std::path::Path::new(&format!(r"{}\setup.exe", drv)).exists() {
                     format!(r"{}\setup.exe", drv)
+                } else {
+                    format!(r"{}\sources\setupprep.exe", drv)
                 };
                 let mut direct_cmd = Command::new("cmd");
                 direct_cmd.args(["/c", "start", "", &fallback_exe]);
@@ -26860,7 +26801,7 @@ mod tests {
         let setup_args = if mode == "clean" {
             format!("/auto clean /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
         } else if mode == "custom" {
-            format!("/DynamicUpdate disable /tempdrive {}", temp_drive_arg)
+            format!("/eula accept /compat ignorewarning /product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg)
         } else {
             format!("/auto upgrade /eula accept /compat ignorewarning /product server /DynamicUpdate disable /MigrateDrivers none /quiet /tempdrive {}", temp_drive_arg)
         };
@@ -26869,7 +26810,14 @@ mod tests {
         assert!(!setup_args.contains("/unattend:"), "Must not pass /unattend: with /auto (syntax conflict, handled via autounattend.xml)");
         assert!(setup_args.contains("/eula accept"), "Must accept EULA");
         assert!(setup_args.contains("/compat ignorewarning"), "Must ignore compatibility warnings");
+        assert!(setup_args.contains("/product server"), "Must pass product server flag to bypass consumer appraiser");
         assert!(setup_args.contains("/tempdrive C"), "Must pass tempdrive");
+
+        // Verify custom mode
+        let custom_args = format!("/eula accept /compat ignorewarning /product server /DynamicUpdate disable /tempdrive {}", temp_drive_arg);
+        assert!(!custom_args.contains("/auto"), "Custom mode must not specify /auto so partition UI is shown");
+        assert!(!custom_args.contains("/quiet"), "Custom mode must not be quiet");
+        assert!(custom_args.contains("/compat ignorewarning"));
     }
 
     #[test]
