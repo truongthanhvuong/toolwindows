@@ -1,5 +1,14 @@
 [
     {
+        "hostname":  "DESKTOP-IPTTL8M",
+        "serialNumber":  "FPRMM74",
+        "ipAddress":  "192.168.110.94",
+        "osCaption":  "Microsoft Windows 11 Pro",
+        "lastSeen":  "2026-11-25 14:45:05",
+        "hwid":  "33762c56-e7bb-4922-b4d9-056127852a5d",
+        "status":  "Active"
+    },
+    {
         "hostname":  "TTH",
         "serialNumber":  "BY1843A32600310",
         "ipAddress":  "192.168.1.14",
